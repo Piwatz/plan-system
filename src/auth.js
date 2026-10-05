@@ -1,23 +1,19 @@
-// รหัสผ่านเก็บแบบเข้ารหัสทางเดียว (scrypt) อ่านย้อนกลับไม่ได้
-const crypto = require('crypto');
+// รหัสผ่านเก็บแบบเข้ารหัสทางเดียว (bcrypt ของ pgcrypto ในฐานข้อมูล) อ่านย้อนกลับไม่ได้
+// เข้ารหัสในฐานข้อมูล ไม่กิน CPU ของเซิร์ฟเวอร์ (Workers แบบฟรีให้ 10 ms ต่อคำขอ)
 const { q } = require('./db');
-const { rolesOf } = require('./workflow');
+const { rolesOf, signatureOf } = require('./workflow');
 
-function hashPassword(pw) {
-  const salt = crypto.randomBytes(16);
-  const hash = crypto.scryptSync(String(pw), salt, 64);
-  return `scrypt$${salt.toString('hex')}$${hash.toString('hex')}`;
+async function hashPassword(pw) {
+  return (await q.get("SELECT crypt(?, gen_salt('bf', 8)) AS h", String(pw))).h;
 }
 
-function verifyPassword(pw, stored) {
-  if (!stored || !stored.startsWith('scrypt$')) return false;
-  const [, saltHex, hashHex] = stored.split('$');
-  const expected = Buffer.from(hashHex, 'hex');
-  const got = crypto.scryptSync(String(pw), Buffer.from(saltHex, 'hex'), expected.length);
-  return crypto.timingSafeEqual(expected, got);
+// ตรวจรหัสผ่านของผู้ใช้คนนี้ในฐานข้อมูล ไม่ดึงรหัสที่เข้ารหัสแล้วออกมานอกฐาน
+async function verifyPassword(pw, userId) {
+  const r = await q.get('SELECT password_hash = crypt(?, password_hash) AS ok FROM users WHERE id = ?', String(pw), userId);
+  return Boolean(r && r.ok);
 }
 
-// กันการเดารหัสผ่าน: ผิดเกิน 8 ครั้งใน 10 นาที ต้องรอ
+// กันการเดารหัสผ่าน: ผิดเกิน 8 ครั้งใน 10 นาที ต้องรอ (ตอน 12 ย้ายไปเก็บในฐานข้อมูล)
 const attempts = new Map();
 const WINDOW_MS = 10 * 60 * 1000;
 const MAX_FAILS = 8;
@@ -56,20 +52,27 @@ function clearFails(key) {
 // ความยาวรหัสผ่านขั้นต่ำ: ครูใช้รหัสตัวเลข 4 หลักได้ (ฟังก์ชันเสริม pin)
 // ผู้ดูแลระบบ ผู้อำนวยการ และรองผู้อำนวยการต้อง 6 ตัวขึ้นไปเสมอ เพราะลงนามเอกสารราชการและคุมทั้งระบบ
 const STRONG_ROLES = ['director', 'deputy_academic'];
-function minPassword(user, pinOn) {
+async function minPassword(user, pinOn) {
   if (!pinOn || !user) return 6;
-  const roles = user.roles || (user.id ? q.all('SELECT role FROM user_roles WHERE user_id = ?', user.id).map((r) => r.role) : []);
+  const roles = user.roles || (user.id ? await rolesOf(user.id) : []);
   return user.is_admin || roles.some((r) => STRONG_ROLES.includes(r)) ? 6 : 4;
 }
 
-function loadUser(id) {
-  const u = q.get(
-    `SELECT u.*, d.name AS dept_name FROM users u LEFT JOIN departments d ON d.id = u.department_id
+// ผู้ใช้ที่เข้าระบบอยู่ ไม่ดึงรหัสผ่านที่เข้ารหัสแล้ว และไม่ดึงรูปลายเซ็น (หลายร้อย KB)
+// signature ได้เป็นที่อยู่ /media/signature?v=รุ่น ถ้ามีลายเซ็น (template ใช้เช็กว่ามีลายเซ็นและแสดงรูป)
+// งานที่ต้องใช้รูปลายเซ็นจริงให้เรียก signatureOf()
+async function loadUser(id) {
+  const u = await q.get(
+    `SELECT u.id, u.username, u.must_change_password, u.full_name, u.position, u.department_id, u.is_teacher, u.is_admin,
+       u.is_active, u.created_at, u.last_login_at, u.plan_quota,
+       CASE WHEN coalesce(u.signature, '') = '' THEN NULL ELSE '/media/signature?v=' || substr(md5(u.signature), 1, 8) END AS signature,
+       d.name AS dept_name
+     FROM users u LEFT JOIN departments d ON d.id = u.department_id
      WHERE u.id = ? AND u.is_active = 1`,
     id
   );
   if (!u) return null;
-  u.roles = rolesOf(u.id);
+  u.roles = await rolesOf(u.id);
   return u;
 }
 
@@ -99,6 +102,7 @@ module.exports = {
   recordFail,
   clearFails,
   loadUser,
+  signatureOf,
   requireLogin,
   requireAdmin,
 };

@@ -1,6 +1,7 @@
 // ฟังก์ชันเสริม: ทุกตัวมีสวิตช์เปิดปิดในหน้า "ฟังก์ชันเสริม" ซึ่งเฉพาะผู้ดูแลระบบเข้าได้
 // ทุกครั้งที่เปิดหรือปิด ระบบเก็บประวัติไว้ในตาราง audit_log ซึ่งแก้ไขหรือลบไม่ได้
-const { q, nowStr, getSettings, setSetting } = require('./db');
+const db = require('./db');
+const { q, nowStr, setSetting } = db;
 
 const FEATURES = [
   { key: 'chips', on: true, who: 'ครู', title: 'ประโยคสำเร็จรูปในบันทึกหลังแผน', desc: 'ครูแตะเลือกประโยคที่ใช้บ่อย และคัดลอกจากแผนก่อนหน้ามาแก้', offNote: 'ปิดอยู่ ครูจะไม่เห็นประโยคสำเร็จรูปและปุ่มคัดลอก ต้องพิมพ์เองทั้งหมด' },
@@ -54,9 +55,13 @@ function defaultSettings() {
   return out;
 }
 
+// settings เป็น null ให้อ่านจากข้อมูลอ้างอิงของคำขอ (ต้อง await db.ensureRefs() ก่อน)
+// ไม่มีคีย์ในฐาน (ฟังก์ชันที่เพิ่มใหม่หลังติดตั้ง) ใช้ค่าเริ่มต้นใน FEATURES เว็บจริงไม่ได้เติมคีย์ใหม่ทุกครั้งที่เริ่มระบบแล้ว
 function isOn(settings, key) {
-  const s = settings || getSettings();
-  return s[`ff_${key}`] === '1';
+  const s = settings || db.refs().settings;
+  const v = s[`ff_${key}`];
+  if (v === undefined || v === null) return Boolean(BY_KEY[key] && BY_KEY[key].on);
+  return v === '1';
 }
 
 // สถานะทุกฟังก์ชัน ใช้ในหน้าเว็บ เช่น ff.chips
@@ -65,7 +70,7 @@ function flags(settings) {
 }
 
 function audit(actor, action, detail = '') {
-  q.run(
+  return q.run(
     'INSERT INTO audit_log (at, user_id, user_name, action, detail) VALUES (?, ?, ?, ?, ?)',
     nowStr(),
     actor ? actor.id : null,
@@ -75,24 +80,25 @@ function audit(actor, action, detail = '') {
   );
 }
 
-function auditLog(limit = 50) {
+async function auditLog(limit = 50) {
   return q.all('SELECT * FROM audit_log ORDER BY id DESC LIMIT ?', limit);
 }
 
-function setFlag(key, on, actor) {
+async function setFlag(key, on, actor) {
   const f = BY_KEY[key];
   if (!f) throw new Error('unknown feature');
+  await db.ensureRefs();
   const was = isOn(null, key);
   if (was === Boolean(on)) return false;
-  q.tx(() => {
-    setSetting(`ff_${key}`, on ? '1' : '0');
-    audit(actor, `${on ? 'เปิด' : 'ปิด'} ${f.title}`, `ff_${key}`);
+  await q.tx(async () => {
+    await setSetting(`ff_${key}`, on ? '1' : '0');
+    await audit(actor, `${on ? 'เปิด' : 'ปิด'} ${f.title}`, `ff_${key}`);
   });
   return true;
 }
 
 function phrases(settings) {
-  const s = settings || getSettings();
+  const s = settings || db.refs().settings;
   const out = {};
   for (const g of PHRASE_GROUPS) {
     out[g.field] = String(s[`phrases_${g.key}`] || '')

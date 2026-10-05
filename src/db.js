@@ -76,6 +76,7 @@ function params(list) {
 }
 
 // ---------- ตัวต่อ ----------
+/** @type {any} */
 let backend = null;
 
 function mutex() {

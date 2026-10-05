@@ -134,6 +134,7 @@ function createApp() {
     next();
   });
 
+  app.use(require('./routes/media').signature);
   app.use(require('./routes/auth'));
   app.use(require('./routes/verify'));
   app.use(require('./routes/pages'));

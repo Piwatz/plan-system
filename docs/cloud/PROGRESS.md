@@ -64,3 +64,17 @@
 - `node --test tests/db.test.js`: tests 10 · pass 10 · fail 0 · ชุดทดสอบอื่นพังตามที่แผนตั้งใจ (กลับมาในตอน 8)
 
 **ตัดสินใจเองระหว่างทาง:** ครอบ `"current_role"` ให้อัตโนมัติในชั้นแปลง SQL (ข้ามข้อความในเครื่องหมายคำพูด) แทนการไล่แก้ทุกคำสั่ง ลดโอกาสลืม มีทดสอบครอบไว้ · ค่าตั้งที่ต้องดูต่อในตอน 7: หน้าตั้งค่าโรงเรียน (`src/routes/admin.js` 551) ต้องไม่เขียนที่อยู่ `/media/...` ทับรูปจริง
+
+## ตอน 5 · ตัวช่วยกลางรอฐานข้อมูล + ล็อกแถว + รหัสผ่านในฐาน (5 ต.ค. 2569) ผ่าน
+
+- `src/workflow.js`: ฟังก์ชันที่ยิงฐานเป็น async (submit approve sendBack withdraw submitAs overrideStep overrideAll advance progress inbox canView canWithdraw holders rolesOf getSub reviewsOf) · ฟังก์ชันที่ template เรียกคงเป็น sync อ่านจากข้อมูลอ้างอิง (allSteps activeSteps stepOf selfSign statusText rubric needsScore canReview scoreLevel) · ทางเข้า async ทุกตัว `await db.ensureRefs()` · ทั้ง 6 ฟังก์ชันที่เปลี่ยนสถานะเริ่ม transaction ด้วย `SELECT ... FOR UPDATE` (`lockSub`)
+- `src/auth.js`: รหัสผ่าน `crypt(?, gen_salt('bf', 8))` และ `password_hash = crypt(?, password_hash)` ในฐาน · `verifyPassword(pw, userId)` · `loadUser` เลือกคอลัมน์ชัด ไม่เอา password_hash · `minPassword` async · ตัวกันเดารหัสยังอยู่ในหน่วยความจำ (ตอน 12)
+- `src/features.js` (`isOn` ใช้ค่าเริ่มต้นใน FEATURES ถ้าไม่มีคีย์ · audit auditLog setFlag async) · `src/teaching.js` (async + upsert แบบ Postgres `teach_subjects.x` และ `GREATEST`) · `src/line.js` (async + แยก `tick()` ออกจาก setInterval ไว้ใช้กับ cron) · `src/upload.js` (อ่านขนาดไฟล์สูงสุดจาก req.settings หรือข้อมูลอ้างอิง) · `src/timetable.js` ไม่ยิงฐาน ไม่ต้องแก้
+- `scripts/seed-demo.js` async · `RETURNING id` · `ILIKE` · สร้างข้อมูลทดลองบน PGlite ได้ ผู้ใช้ 16 คน งาน 26 รายการ ใน 3.5 วินาที · ชื่อยังเป็นชื่อสมมติ
+- `scripts/check-await.js` (`npm run check-await`) จับแบบหลายบรรทัดได้ · `tsconfig.check.json` (`npm run check-types` strictNullChecks) · ไฟล์ของตอนนี้สะอาดทั้งสองตัว · ทั้งโปรเจกต์ยังเหลือใน routes และชุดทดสอบเดิม (check-await 336 จุด tsc 384 error เรื่อง Promise) ซึ่งเป็นงานตอน 6 ถึง 8
+- `tests/workflow.test.js` แปลงเป็น PGlite + เพิ่ม 2 ข้อ (ลงนามพร้อมกันผ่านครั้งเดียว · รหัสผ่าน bcrypt และ loadUser) · `node --test tests/workflow.test.js tests/db.test.js`: tests 22 · pass 22 · fail 0
+
+**ตัดสินใจเองระหว่างทาง (ต้องให้ผู้ใช้รู้):**
+1. แผนสั่งให้ `loadUser` ไม่ดึง `signature` แต่ template ใช้ `me.signature` ทั้งเช็กว่ามีลายเซ็นและแสดงรูป (detail profile home inbox quicksign) และห้ามแก้ template · จึงให้ `me.signature` เป็นที่อยู่ `/media/signature?v=รุ่น` (เส้นทางใหม่ เห็นเฉพาะลายเซ็นของตัวเอง) และให้ workflow อ่านรูปลายเซ็นจริงจากฐานทุกครั้งที่ส่งงานหรือลงนาม (`wf.signatureOf`) มีทดสอบยืนยันว่าเอกสารเก็บรูปจริง ไม่ใช่ที่อยู่
+2. ทดสอบลงนามพร้อมกันบน PGlite ผ่าน แต่ PGlite มี session เดียวจึงยังไม่ใช่การพิสูจน์ล็อกแถวจริง ต้องทดสอบซ้ำบน Postgres จริงในตอน 14 ตามแผน
+3. บน Supabase ฟังก์ชัน pgcrypto อยู่ใน schema `extensions` ต้องเช็ก search_path ในตอน 14

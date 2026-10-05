@@ -1,7 +1,8 @@
 // กฎการส่งต่องานผ่านผู้ตรวจทีละระดับ
 // ครูส่ง -> ระดับ 1 -> ระดับ 2 -> ... -> ระดับสุดท้ายอนุมัติ
 // ส่งกลับแก้ไขได้ทุกระดับ เมื่อครูส่งใหม่จะกลับไปที่ระดับที่ส่งคืน (หรือเริ่มใหม่ ตามที่ตั้งค่า)
-const { q, nowStr, getSettings } = require('./db');
+const db = require('./db');
+const { q, nowStr } = db;
 const features = require('./features');
 
 const ACTION_LABELS = {
@@ -28,8 +29,10 @@ const STATUS_LABELS = {
   approved: 'อนุมัติแล้ว',
 };
 
+// ---------- อ่านจากข้อมูลอ้างอิงของคำขอ (sync เพราะ template เรียก) ต้อง await db.ensureRefs() ที่ทางเข้าก่อน ----------
+
 function allSteps() {
-  return q.all('SELECT * FROM workflow_steps ORDER BY seq');
+  return db.refs().steps;
 }
 
 function activeSteps(docType) {
@@ -38,16 +41,16 @@ function activeSteps(docType) {
 }
 
 function stepOf(role) {
-  return role ? q.get('SELECT * FROM workflow_steps WHERE role = ?', role) : undefined;
+  return role ? allSteps().find((s) => s.role === role) : undefined;
 }
 
-function rolesOf(userId) {
-  return q.all('SELECT role FROM user_roles WHERE user_id = ?', userId).map((r) => r.role);
+async function rolesOf(userId) {
+  return (await q.all('SELECT role FROM user_roles WHERE user_id = ?', userId)).map((r) => r.role);
 }
 
 // รายชื่อคนที่ถือบทบาทของระดับนี้ (ระดับกลุ่มสาระ ดูเฉพาะกลุ่มสาระเดียวกับผู้ส่ง)
-function holders(step, sub) {
-  const rows = q.all(
+async function holders(step, sub) {
+  const rows = await q.all(
     `SELECT u.* FROM users u JOIN user_roles r ON r.user_id = u.id
      WHERE r.role = ? AND u.is_active = 1 ORDER BY u.full_name`,
     step.role
@@ -64,8 +67,23 @@ function getSub(id) {
   return q.get('SELECT * FROM submissions WHERE id = ?', id);
 }
 
+// รูปลายเซ็นจริง (data URL) ของผู้ใช้ ใช้ตอนส่งงานและลงนาม
+// req.me.signature เป็นแค่ที่อยู่รูป (/media/signature) จึงอ่านจากฐานเสมอ เว้นแต่เพิ่งเซ็นในคำขอนี้ (เป็น data URL อยู่แล้ว)
+async function signatureOf(user) {
+  if (!user) return null;
+  if (typeof user.signature === 'string' && user.signature.startsWith('data:')) return user.signature;
+  const r = await q.get('SELECT signature FROM users WHERE id = ?', user.id);
+  return (r && r.signature) || null;
+}
+
+// อ่านงานพร้อมล็อกแถวจนจบ transaction: ผู้ตรวจ 2 คนกดลงนามขั้นเดียวกันพร้อมกัน คนที่สองต้องรอแล้วเห็นสถานะใหม่
+// ต้องเป็นคำสั่งแรกใน transaction ของ submit approve sendBack withdraw submitAs overrideStep
+function lockSub(id) {
+  return q.get('SELECT * FROM submissions WHERE id = ? FOR UPDATE', id);
+}
+
 function log(subId, actor, fields) {
-  q.run(
+  return q.run(
     `INSERT INTO reviews (submission_id, role, step_label, user_id, user_name, user_position, action, comment,
        score_total, score_max, score_detail, signature, created_at)
      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
@@ -106,14 +124,14 @@ function notify(id) {
 // เดินหน้าไปยังระดับถัดไปที่ต้องตรวจ เริ่มจากลำดับ startSeq
 // ระดับที่ผู้ตรวจทุกคนคือผู้ส่งเอง จะถูกข้าม (เว้นแต่เปิดให้ลงนามงานของตัวเอง)
 // ระดับที่ยังไม่มีผู้ตรวจจะรอไว้จนกว่าผู้ดูแลระบบกำหนดคน
-function advance(subId, startSeq) {
-  const sub = getSub(subId);
+async function advance(subId, startSeq) {
+  const sub = await getSub(subId);
   const now = nowStr();
   const self = selfSign();
   for (const st of activeSteps(sub.doc_type).filter((s) => s.seq >= startSeq)) {
-    const h = holders(st, sub);
+    const h = await holders(st, sub);
     if (!self && h.length > 0 && h.every((u) => u.id === sub.teacher_id)) {
-      log(sub.id, null, {
+      await log(sub.id, null, {
         role: st.role,
         step_label: st.label,
         action: 'skip',
@@ -121,11 +139,11 @@ function advance(subId, startSeq) {
       });
       continue;
     }
-    q.run("UPDATE submissions SET status = 'pending', current_role = ?, updated_at = ? WHERE id = ?", st.role, now, sub.id);
+    await q.run("UPDATE submissions SET status = 'pending', current_role = ?, updated_at = ? WHERE id = ?", st.role, now, sub.id);
     notify(sub.id);
     return getSub(sub.id);
   }
-  q.run(
+  await q.run(
     "UPDATE submissions SET status = 'approved', current_role = NULL, completed_at = ?, updated_at = ? WHERE id = ?",
     now,
     now,
@@ -150,7 +168,7 @@ function canReview(user, sub, self = selfSign()) {
 }
 
 // ใครเปิดดูงานนี้ได้บ้าง
-function canView(user, sub) {
+async function canView(user, sub) {
   if (!user || !sub) return false;
   if (user.is_admin || isOwner(user, sub)) return true;
   for (const role of user.roles || []) {
@@ -159,15 +177,15 @@ function canView(user, sub) {
     if (st.scope === 'school') return true;
     if (st.scope === 'department' && user.department_id === sub.department_id) return true;
   }
-  return Boolean(q.get('SELECT 1 AS x FROM reviews WHERE submission_id = ? AND user_id = ? LIMIT 1', sub.id, user.id));
+  return Boolean(await q.get('SELECT 1 AS x FROM reviews WHERE submission_id = ? AND user_id = ? LIMIT 1', sub.id, user.id));
 }
 
 function rubric(docType) {
-  return q.all('SELECT * FROM rubric_items WHERE doc_type = ? AND is_active = 1 ORDER BY seq, id', docType);
+  return db.refs().rubrics.filter((r) => r.doc_type === docType && r.is_active);
 }
 
 function scoreStep() {
-  const role = getSettings().score_role;
+  const role = db.refs().settings.score_role;
   return role ? stepOf(role) : undefined;
 }
 
@@ -194,23 +212,25 @@ function scoreLevel(percent) {
 
 class WorkflowError extends Error {}
 
-function submit(subId, actor) {
-  return q.tx(() => {
-    const sub = getSub(subId);
+async function submit(subId, actor) {
+  await db.ensureRefs();
+  return q.tx(async () => {
+    const sub = await lockSub(subId);
     if (!isOwner(actor, sub)) throw new WorkflowError('ส่งได้เฉพาะงานของตนเอง');
     if (sub.status !== 'draft' && sub.status !== 'returned') throw new WorkflowError('งานนี้ส่งไปแล้ว');
     const now = nowStr();
-    const first = sub.status === 'draft' && !q.get("SELECT 1 AS x FROM reviews WHERE submission_id = ? AND action IN ('submit','resubmit') LIMIT 1", sub.id);
-    q.run(
+    const first = sub.status === 'draft' && !(await q.get("SELECT 1 AS x FROM reviews WHERE submission_id = ? AND action IN ('submit','resubmit') LIMIT 1", sub.id));
+    const sig = await signatureOf(actor);
+    await q.run(
       'UPDATE submissions SET teacher_signature = ?, submitted_at = COALESCE(submitted_at, ?), updated_at = ? WHERE id = ?',
-      actor.signature || null,
+      sig,
       now,
       now,
       sub.id
     );
-    log(sub.id, actor, { action: first ? 'submit' : 'resubmit', step_label: 'ครูผู้สอน', signature: actor.signature || null });
+    await log(sub.id, actor, { action: first ? 'submit' : 'resubmit', step_label: 'ครูผู้สอน', signature: sig });
     let startSeq = 0;
-    if (sub.status === 'returned' && getSettings().resubmit_mode !== 'restart') {
+    if (sub.status === 'returned' && db.refs().settings.resubmit_mode !== 'restart') {
       const st = stepOf(sub.returned_role);
       if (st) startSeq = st.seq;
     }
@@ -218,11 +238,12 @@ function submit(subId, actor) {
   });
 }
 
-function approve(subId, actor, { comment = '', scores = null, signature = null } = {}) {
-  return q.tx(() => {
-    const sub = getSub(subId);
+async function approve(subId, actor, { comment = '', scores = null, signature = null } = {}) {
+  await db.ensureRefs();
+  return q.tx(async () => {
+    const sub = await lockSub(subId);
     if (!canReview(actor, sub)) throw new WorkflowError('คุณไม่ใช่ผู้ตรวจของงานนี้ในขณะนี้');
-    const sig = signature || actor.signature;
+    const sig = signature || (await signatureOf(actor));
     if (!sig) throw new WorkflowError('กรุณาเซ็นชื่อก่อนลงนาม');
     const st = stepOf(sub.current_role);
     const fields = { role: st.role, step_label: st.label, action: 'approve', comment: String(comment).trim(), signature: sig };
@@ -238,7 +259,7 @@ function approve(subId, actor, { comment = '', scores = null, signature = null }
       const total = detail.reduce((a, d) => a + d.score, 0);
       const max = detail.reduce((a, d) => a + d.max, 0);
       Object.assign(fields, { score_total: total, score_max: max, score_detail: JSON.stringify(detail) });
-      q.run(
+      await q.run(
         'UPDATE submissions SET score_total = ?, score_max = ?, score_detail = ?, score_role = ? WHERE id = ?',
         total,
         max,
@@ -247,20 +268,21 @@ function approve(subId, actor, { comment = '', scores = null, signature = null }
         sub.id
       );
     }
-    log(sub.id, actor, fields);
+    await log(sub.id, actor, fields);
     return advance(sub.id, st.seq + 1);
   });
 }
 
-function sendBack(subId, actor, { comment = '' } = {}) {
-  return q.tx(() => {
-    const sub = getSub(subId);
+async function sendBack(subId, actor, { comment = '' } = {}) {
+  await db.ensureRefs();
+  return q.tx(async () => {
+    const sub = await lockSub(subId);
     if (!canReview(actor, sub)) throw new WorkflowError('คุณไม่ใช่ผู้ตรวจของงานนี้ในขณะนี้');
     const text = String(comment).trim();
     if (!text) throw new WorkflowError('กรุณาเขียนเหตุผลหรือสิ่งที่ต้องแก้ไข');
     const st = stepOf(sub.current_role);
-    log(sub.id, actor, { role: st.role, step_label: st.label, action: 'return', comment: text });
-    q.run(
+    await log(sub.id, actor, { role: st.role, step_label: st.label, action: 'return', comment: text });
+    await q.run(
       "UPDATE submissions SET status = 'returned', returned_role = ?, current_role = NULL, updated_at = ? WHERE id = ?",
       st.role,
       nowStr(),
@@ -271,27 +293,28 @@ function sendBack(subId, actor, { comment = '' } = {}) {
 }
 
 // ครูดึงงานกลับมาแก้ได้ ถ้ายังไม่มีผู้ตรวจคนไหนลงนามหลังการส่งครั้งล่าสุด
-function canWithdraw(user, sub) {
+async function canWithdraw(user, sub) {
   if (!isOwner(user, sub) || sub.status !== 'pending') return false;
-  const lastSubmit = q.get(
+  const lastSubmit = await q.get(
     "SELECT id, action FROM reviews WHERE submission_id = ? AND action IN ('submit','resubmit') ORDER BY id DESC LIMIT 1",
     sub.id
   );
   if (!lastSubmit) return false;
-  return !q.get("SELECT 1 AS x FROM reviews WHERE submission_id = ? AND id > ? AND action IN ('approve', 'override') LIMIT 1", sub.id, lastSubmit.id);
+  return !(await q.get("SELECT 1 AS x FROM reviews WHERE submission_id = ? AND id > ? AND action IN ('approve', 'override') LIMIT 1", sub.id, lastSubmit.id));
 }
 
-function withdraw(subId, actor) {
-  return q.tx(() => {
-    const sub = getSub(subId);
-    if (!canWithdraw(actor, sub)) throw new WorkflowError('ดึงกลับไม่ได้ เพราะมีผู้ตรวจลงนามแล้ว');
-    const lastSubmit = q.get(
+async function withdraw(subId, actor) {
+  await db.ensureRefs();
+  return q.tx(async () => {
+    const sub = await lockSub(subId);
+    if (!(await canWithdraw(actor, sub))) throw new WorkflowError('ดึงกลับไม่ได้ เพราะมีผู้ตรวจลงนามแล้ว');
+    const lastSubmit = await q.get(
       "SELECT action FROM reviews WHERE submission_id = ? AND action IN ('submit','resubmit') ORDER BY id DESC LIMIT 1",
       sub.id
     );
-    log(sub.id, actor, { action: 'withdraw', step_label: 'ครูผู้สอน' });
+    await log(sub.id, actor, { action: 'withdraw', step_label: 'ครูผู้สอน' });
     const status = lastSubmit.action === 'resubmit' ? 'returned' : 'draft';
-    q.run('UPDATE submissions SET status = ?, current_role = NULL, updated_at = ? WHERE id = ?', status, nowStr(), sub.id);
+    await q.run('UPDATE submissions SET status = ?, current_role = NULL, updated_at = ? WHERE id = ?', status, nowStr(), sub.id);
     return getSub(sub.id);
   });
 }
@@ -306,17 +329,18 @@ function adminCheck(actor, sub) {
   if (actor.id === sub.teacher_id) throw new WorkflowError('ผู้ดูแลระบบดำเนินการแทนในงานของตัวเองไม่ได้ ต้องให้ผู้ตรวจลงนามตามปกติ');
 }
 
-function submitAs(subId, actor) {
-  return q.tx(() => {
-    const sub = getSub(subId);
+async function submitAs(subId, actor) {
+  await db.ensureRefs();
+  return q.tx(async () => {
+    const sub = await lockSub(subId);
     adminCheck(actor, sub);
     if (sub.status !== 'draft' && sub.status !== 'returned') throw new WorkflowError('งานนี้ส่งไปแล้ว');
     const now = nowStr();
-    const first = !q.get("SELECT 1 AS x FROM reviews WHERE submission_id = ? AND action IN ('submit','resubmit') LIMIT 1", sub.id);
-    q.run('UPDATE submissions SET submitted_at = COALESCE(submitted_at, ?), updated_at = ? WHERE id = ?', now, now, sub.id);
-    log(sub.id, actor, { action: first ? 'submit' : 'resubmit', step_label: 'ผู้ดูแลระบบส่งแทนครู' });
+    const first = !(await q.get("SELECT 1 AS x FROM reviews WHERE submission_id = ? AND action IN ('submit','resubmit') LIMIT 1", sub.id));
+    await q.run('UPDATE submissions SET submitted_at = COALESCE(submitted_at, ?), updated_at = ? WHERE id = ?', now, now, sub.id);
+    await log(sub.id, actor, { action: first ? 'submit' : 'resubmit', step_label: 'ผู้ดูแลระบบส่งแทนครู' });
     let startSeq = 0;
-    if (sub.status === 'returned' && getSettings().resubmit_mode !== 'restart') {
+    if (sub.status === 'returned' && db.refs().settings.resubmit_mode !== 'restart') {
       const st = stepOf(sub.returned_role);
       if (st) startSeq = st.seq;
     }
@@ -324,21 +348,22 @@ function submitAs(subId, actor) {
   });
 }
 
-function overrideStep(subId, actor, { comment = '' } = {}) {
-  return q.tx(() => {
-    const sub = getSub(subId);
+async function overrideStep(subId, actor, { comment = '' } = {}) {
+  await db.ensureRefs();
+  return q.tx(async () => {
+    const sub = await lockSub(subId);
     adminCheck(actor, sub);
     if (sub.status !== 'pending' || !sub.current_role) throw new WorkflowError('งานนี้ไม่ได้รอผู้ตรวจอยู่');
     const st = stepOf(sub.current_role);
-    log(sub.id, actor, { role: st.role, step_label: st.label, action: 'override', comment: String(comment).trim() });
+    await log(sub.id, actor, { role: st.role, step_label: st.label, action: 'override', comment: String(comment).trim() });
     return advance(sub.id, st.seq + 1);
   });
 }
 
-function overrideAll(subId, actor, opts = {}) {
-  let sub = getSub(subId);
-  if (sub && (sub.status === 'draft' || sub.status === 'returned')) sub = submitAs(subId, actor);
-  for (let i = 0; i < 10 && sub.status === 'pending'; i++) sub = overrideStep(subId, actor, opts);
+async function overrideAll(subId, actor, opts = {}) {
+  let sub = await getSub(subId);
+  if (sub && (sub.status === 'draft' || sub.status === 'returned')) sub = await submitAs(subId, actor);
+  for (let i = 0; i < 10 && sub.status === 'pending'; i++) sub = await overrideStep(subId, actor, opts);
   return sub;
 }
 
@@ -347,11 +372,13 @@ function reviewsOf(subId) {
 }
 
 // สถานะของแต่ละระดับ ใช้วาดแถบความคืบหน้าและใบพิมพ์
-function progress(sub) {
+async function progress(sub) {
+  await db.ensureRefs();
   const self = selfSign();
-  const revs = reviewsOf(sub.id);
+  const revs = await reviewsOf(sub.id);
   const cur = stepOf(sub.current_role);
-  return activeSteps(sub.doc_type).map((st) => {
+  const out = [];
+  for (const st of activeSteps(sub.doc_type)) {
     const last = [...revs].reverse().find((r) => r.role === st.role && ['approve', 'override', 'skip', 'return'].includes(r.action));
     const lastApprove = [...revs].reverse().find((r) => r.role === st.role && ['approve', 'override'].includes(r.action));
     let state = 'waiting';
@@ -361,9 +388,10 @@ function progress(sub) {
     else if (sub.status === 'returned' && st.role === sub.returned_role) state = 'returned';
     else if (last && (last.action === 'approve' || last.action === 'override')) state = 'done';
     else if (last && last.action === 'skip') state = 'skipped';
-    const people = state === 'current' ? holders(st, sub).filter((u) => self || u.id !== sub.teacher_id) : [];
-    return { ...st, state, review: lastApprove || null, people };
-  });
+    const people = state === 'current' ? (await holders(st, sub)).filter((u) => self || u.id !== sub.teacher_id) : [];
+    out.push({ ...st, state, review: lastApprove || null, people });
+  }
+  return out;
 }
 
 function statusText(sub) {
@@ -376,10 +404,11 @@ function statusText(sub) {
 }
 
 // จำนวนงานที่รอผู้ใช้คนนี้ตรวจ
-function inbox(user) {
+async function inbox(user) {
   if (!user.roles || user.roles.length === 0) return [];
+  await db.ensureRefs();
   const marks = user.roles.map(() => '?').join(',');
-  const rows = q.all(
+  const rows = await q.all(
     `SELECT s.*, u.full_name AS teacher_name, d.name AS dept_name, p.subject_code AS parent_code, p.subject_name AS parent_name
      FROM submissions s
      JOIN users u ON u.id = s.teacher_id
@@ -403,6 +432,7 @@ module.exports = {
   activeSteps,
   stepOf,
   rolesOf,
+  signatureOf,
   holders,
   getSub,
   canReview,

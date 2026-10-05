@@ -62,13 +62,13 @@ test('transaction ผิดกลางทางแล้วย้อนกล�
 test('คำสั่งจากที่อื่นรอ transaction เสร็จก่อน ไม่หลุดเข้าไปปน (PGlite มี session เดียว)', async () => {
   let release;
   const gate = new Promise((r) => (release = r));
-  const t = q.tx(async () => {
+  const t = q.tx(async () => { // ตั้งใจไม่ await รอทีหลัง
     await q.run('INSERT INTO departments (name, sort) VALUES (?, 98)', 'กลุ่มรอ');
     await gate;
     throw new Error('ย้อนกลับ');
   });
   // คำสั่งนอก transaction ถูกส่งระหว่างที่ transaction ยังค้าง ต้องไม่เห็นแถวที่ยังไม่ commit และต้องไม่ถูกย้อนกลับไปด้วย
-  const outside = db.withScope(() => q.get("SELECT COUNT(*) AS n FROM departments WHERE name = 'กลุ่มรอ'"));
+  const outside = db.withScope(() => q.get("SELECT COUNT(*) AS n FROM departments WHERE name = 'กลุ่มรอ'")); // ตั้งใจไม่ await รอทีหลัง
   setTimeout(release, 50);
   await assert.rejects(t, /ย้อนกลับ/);
   assert.equal((await outside).n, 0);

@@ -4,7 +4,7 @@ const path = require('path');
 const crypto = require('crypto');
 const multer = require('multer');
 const config = require('./config');
-const { getSettings } = require('./db');
+const db = require('./db');
 
 const ALLOWED = {
   '.pdf': 'application/pdf',
@@ -54,7 +54,7 @@ function fileFilter(req, file, cb) {
 
 function uploader(fields) {
   return (req, res, next) => {
-    const mb = Number(getSettings().max_upload_mb) || 20;
+    const mb = Number((req.settings || db.refs().settings).max_upload_mb) || 20;
     multer({ storage, fileFilter, limits: { fileSize: mb * 1024 * 1024, files: 20 } }).fields(fields)(req, res, (err) => {
       if (!err) return next();
       if (err.code === 'LIMIT_FILE_SIZE') err.message = `ไฟล์ใหญ่เกิน ${mb} MB`;
