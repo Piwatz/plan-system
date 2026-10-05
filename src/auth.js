@@ -29,7 +29,8 @@ function userKey(username) {
   return `user|${String(username).toLowerCase()}`;
 }
 
-function isLocked(key) {
+// async ไว้ก่อน ตอน 12 ย้ายตัวนับลงฐานข้อมูลโดยไม่ต้องแก้ที่เรียก
+async function isLocked(key) {
   const a = attempts.get(key);
   if (!a) return false;
   if (Date.now() - a.first > WINDOW_MS) {
@@ -39,13 +40,13 @@ function isLocked(key) {
   return a.count >= (key.startsWith('user|') ? MAX_FAILS_PER_USER : MAX_FAILS);
 }
 
-function recordFail(key) {
+async function recordFail(key) {
   const a = attempts.get(key);
   if (!a || Date.now() - a.first > WINDOW_MS) attempts.set(key, { first: Date.now(), count: 1 });
   else a.count += 1;
 }
 
-function clearFails(key) {
+async function clearFails(key) {
   attempts.delete(key);
 }
 

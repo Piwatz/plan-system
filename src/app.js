@@ -27,7 +27,6 @@ function secretKey() {
 }
 
 function createApp() {
-  db.open();
   // เปลี่ยนทุกครั้งที่เปิดระบบใหม่ เบราว์เซอร์จะโหลดไฟล์ CSS/JS รุ่นล่าสุด
   const assetVersion = Date.now().toString(36);
   const app = express();
@@ -89,13 +88,14 @@ function createApp() {
     next();
   });
 
-  app.use((req, res, next) => {
-    req.me = req.session.uid ? auth.loadUser(req.session.uid) : null;
+  // ทุกคำขอ (รวมหน้าเข้าสู่ระบบและหน้าสแกน QR): ผู้ใช้ 2 คำสั่ง · ข้อมูลอ้างอิง (ค่าตั้ง ขั้นตอน แบบประเมิน) · งานรอตรวจ · ตัวเลขบนเมนูรวมเป็นคำสั่งเดียว
+  app.use(async (req, res, next) => {
+    req.me = req.session.uid ? await auth.loadUser(req.session.uid) : null;
     if (req.session.uid && !req.me) req.session = null;
     req.flash = (type, text) => {
       if (req.session) req.session.flash = { type, text };
     };
-    const settings = db.getSettings();
+    const settings = await db.getSettings();
     req.settings = settings;
     const ff = features.flags(settings);
     req.ff = ff;
@@ -123,13 +123,19 @@ function createApp() {
     if (req.session && req.session.flash) req.session.flash = null;
     if (req.me) {
       const b = res.locals.badges;
-      b.inbox = wf.inbox(req.me).length;
-      b.returned = db.q.get("SELECT COUNT(*) AS n FROM submissions WHERE teacher_id = ? AND status = 'returned'", req.me.id).n;
-      b.notes = db.q.get(
-        "SELECT COUNT(*) AS n FROM submissions WHERE teacher_id = ? AND doc_type = 'note' AND status IN ('draft', 'returned')",
+      b.inbox = (await wf.inbox(req.me)).length;
+      const n = await db.q.get(
+        `SELECT
+           COUNT(*) FILTER (WHERE status = 'returned') AS returned,
+           COUNT(*) FILTER (WHERE doc_type = 'note' AND status IN ('draft', 'returned')) AS notes,
+           (SELECT COUNT(*) FROM notifications WHERE user_id = ? AND read_at IS NULL) AS alerts
+         FROM submissions WHERE teacher_id = ?`,
+        req.me.id,
         req.me.id
-      ).n;
-      b.alerts = db.q.get('SELECT COUNT(*) AS n FROM notifications WHERE user_id = ? AND read_at IS NULL', req.me.id).n;
+      );
+      b.returned = n.returned;
+      b.notes = n.notes;
+      b.alerts = n.alerts;
     }
     next();
   });
@@ -150,6 +156,10 @@ function createApp() {
 
   // eslint-disable-next-line no-unused-vars
   app.use((err, req, res, next) => {
+    // id ผิดรูปแบบหรือเกินช่วง (util.idParam) ตอบเหมือนไม่พบหน้า
+    if (err.status === 404) {
+      return res.status(404).render('error', { title: 'ไม่พบหน้านี้', message: 'ไม่พบหน้าที่ต้องการ หรือคุณไม่มีสิทธิ์เปิดดู' });
+    }
     const known = err instanceof wf.WorkflowError || err.userMessage;
     if (!known) console.error(err);
     const message = known ? err.userMessage || err.message : 'เกิดข้อผิดพลาดในระบบ ลองใหม่อีกครั้ง';

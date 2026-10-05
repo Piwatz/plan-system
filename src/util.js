@@ -140,4 +140,23 @@ function initials(name) {
   return (/^[เแโใไ]/.test(s) ? s.slice(0, 2) : s.slice(0, 1)) || 'ค';
 }
 
-module.exports = { ago, daysUntil, SHORT_ROLE, initials, thaiDate, thaiDateTime, STATUS_CLASS, lines, parseJson, toCsv, parsePasted, fileSize, safeUrl, contentDisposition };
+// เลข id จากที่อยู่เว็บหรือฟอร์ม ต้องเป็นจำนวนเต็มในช่วง integer ของ Postgres ไม่อย่างนั้นตอบ 404 ทันที ไม่ส่งเข้าฐาน
+// (SQLite ไม่เจอแถวก็เป็น 404 แต่ Postgres error 22P02 และ 22003 จะกลายเป็น 500)
+// optional: ค่าว่างได้ null แทน 404 ใช้กับตัวกรองที่ไม่บังคับ
+const MAX_INT = 2147483647;
+function idParam(v, { optional = false } = {}) {
+  const s = String(v ?? '').trim();
+  if (optional && s === '') return null;
+  if (/^\d{1,10}$/.test(s) && Number(s) <= MAX_INT) return Number(s);
+  const err = new Error('not found');
+  err.status = 404;
+  throw err;
+}
+
+// ตัวเลขที่ไม่ใช่ id เช่น ปีการศึกษา ภาคเรียน ถ้าไม่ใช่จำนวนเต็มในช่วงให้ใช้ค่าสำรอง
+function intOr(v, fallback) {
+  const s = String(v ?? '').trim();
+  return /^-?\d{1,10}$/.test(s) && Math.abs(Number(s)) <= MAX_INT ? Number(s) : fallback;
+}
+
+module.exports = { idParam, intOr, ago, daysUntil, SHORT_ROLE, initials, thaiDate, thaiDateTime, STATUS_CLASS, lines, parseJson, toCsv, parsePasted, fileSize, safeUrl, contentDisposition };

@@ -19,10 +19,15 @@ function needOn(req, res, next) {
 }
 
 const parseUpload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 10 * 1024 * 1024, files: 1 } }).single('ttfile');
+// callback แบบเก่า Express 5 ไม่จับ error ให้ ต้องห่อ try/catch แล้วส่งต่อเอง
 function upload(req, res, next) {
   parseUpload(req, res, (err) => {
-    if (err) err.userMessage = 'อ่านไฟล์ไม่ได้ หรือไฟล์ใหญ่เกิน 10 MB';
-    next(err);
+    try {
+      if (err) err.userMessage = 'อ่านไฟล์ไม่ได้ หรือไฟล์ใหญ่เกิน 10 MB';
+      next(err);
+    } catch (e) {
+      next(e);
+    }
   });
 }
 
@@ -37,7 +42,7 @@ router.get('/teach-import', needOn, (req, res) => {
   res.render('admin/ttimport', { title: 'นำเข้ารายวิชาจากตารางสอน', data: null });
 });
 
-router.post('/teach-import/preview', needOn, upload, (req, res) => {
+router.post('/teach-import/preview', needOn, upload, async (req, res) => {
   if (!req.file) {
     req.flash('error', 'ยังไม่ได้เลือกไฟล์');
     return res.redirect('/admin/teach-import');
@@ -53,7 +58,7 @@ router.post('/teach-import/preview', needOn, upload, (req, res) => {
     }
     data.teachers = data.teachers.filter((t) => t.subjects.length);
   }
-  const users = teachersList();
+  const users = await teachersList();
   const rows = timetable.match(data.teachers, users);
   // คนที่ยังจับคู่ไม่ได้ขึ้นก่อน ผู้ดูแลจะได้เห็นทันที
   rows.sort((a, b) => Number(Boolean(a.userId)) - Number(Boolean(b.userId)) || a.name.localeCompare(b.name));
@@ -66,17 +71,17 @@ router.post('/teach-import/preview', needOn, upload, (req, res) => {
   });
 });
 
-router.post('/teach-import', needOn, (req, res) => {
+router.post('/teach-import', needOn, async (req, res) => {
   const b = req.body || {};
   const year = parseInt(b.year, 10);
   const sem = parseInt(b.semester, 10);
   if (!(year > 2500 && year < 2700) || ![1, 2, 3].includes(sem)) throw new timetable.TimetableError('ปีการศึกษาหรือภาคเรียนไม่ถูกต้อง');
   const n = Math.min(500, parseInt(b.n, 10) || 0);
-  const active = new Map(teachersList().map((u) => [u.id, u]));
+  const active = new Map((await teachersList()).map((u) => [u.id, u]));
   let people = 0;
   let added = 0;
   let had = 0;
-  q.tx(() => {
+  await q.tx(async () => {
     const touched = new Set();
     for (let i = 0; i < n; i++) {
       const u = active.get(Number(b[`map_${i}`]));
@@ -88,21 +93,21 @@ router.post('/teach-import', needOn, (req, res) => {
         subjects = [];
       }
       const picked = new Set([].concat(b[`pick_${i}`] || []).map(String));
-      const owner = q.get('SELECT * FROM users WHERE id = ?', u.id);
+      const owner = await q.get('SELECT id, department_id, plan_quota FROM users WHERE id = ?', u.id);
       for (const s of Array.isArray(subjects) ? subjects : []) {
         const code = String(s.code || '').trim().slice(0, 30);
         if (!code || !picked.has(code) || teaching.skipActivity(code)) continue;
-        const exists = q.get('SELECT 1 AS x FROM teach_subjects WHERE teacher_id = ? AND academic_year = ? AND semester = ? AND subject_code = ?', u.id, year, sem, code);
-        teaching.ensure(owner, year, sem, { code, name: String(s.name || '').slice(0, 200), grade: String(s.grade || '').slice(0, 30) });
+        const exists = await q.get('SELECT 1 AS x FROM teach_subjects WHERE teacher_id = ? AND academic_year = ? AND semester = ? AND subject_code = ?', u.id, year, sem, code);
+        await teaching.ensure(owner, year, sem, { code, name: String(s.name || '').slice(0, 200), grade: String(s.grade || '').slice(0, 30) });
         // รายวิชาของโรงเรียน ช่วยให้พิมพ์รหัสแล้วชื่อขึ้นเอง
-        q.run('INSERT OR IGNORE INTO subjects (code, name, department_id, grade) VALUES (?, ?, ?, ?)', code, String(s.name || code).slice(0, 200), owner.department_id, String(s.grade || '').slice(0, 30));
+        await q.run('INSERT INTO subjects (code, name, department_id, grade) VALUES (?, ?, ?, ?) ON CONFLICT DO NOTHING', code, String(s.name || code).slice(0, 200), owner.department_id, String(s.grade || '').slice(0, 30));
         if (exists) had += 1;
         else added += 1;
         touched.add(u.id);
       }
     }
     people = touched.size;
-    features.audit(req.me, `นำเข้ารายวิชาที่สอนจากตารางสอน ภาคเรียน ${sem}/${year}`, `ครู ${people} คน เพิ่มใหม่ ${added} วิชา มีอยู่แล้ว ${had} วิชา`);
+    await features.audit(req.me, `นำเข้ารายวิชาที่สอนจากตารางสอน ภาคเรียน ${sem}/${year}`, `ครู ${people} คน เพิ่มใหม่ ${added} วิชา มีอยู่แล้ว ${had} วิชา`);
   });
   req.flash('success', `นำเข้าเรียบร้อย ครู ${people} คน เพิ่มรายวิชาใหม่ ${added} รายการ${had ? ` (มีอยู่แล้ว ${had} รายการ ไม่ซ้ำ)` : ''} ครูเห็นในหน้ารายวิชาที่สอนแล้ว`);
   res.redirect('/admin/teach-import');

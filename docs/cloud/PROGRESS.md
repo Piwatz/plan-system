@@ -78,3 +78,13 @@
 1. แผนสั่งให้ `loadUser` ไม่ดึง `signature` แต่ template ใช้ `me.signature` ทั้งเช็กว่ามีลายเซ็นและแสดงรูป (detail profile home inbox quicksign) และห้ามแก้ template · จึงให้ `me.signature` เป็นที่อยู่ `/media/signature?v=รุ่น` (เส้นทางใหม่ เห็นเฉพาะลายเซ็นของตัวเอง) และให้ workflow อ่านรูปลายเซ็นจริงจากฐานทุกครั้งที่ส่งงานหรือลงนาม (`wf.signatureOf`) มีทดสอบยืนยันว่าเอกสารเก็บรูปจริง ไม่ใช่ที่อยู่
 2. ทดสอบลงนามพร้อมกันบน PGlite ผ่าน แต่ PGlite มี session เดียวจึงยังไม่ใช่การพิสูจน์ล็อกแถวจริง ต้องทดสอบซ้ำบน Postgres จริงในตอน 14 ตามแผน
 3. บน Supabase ฟังก์ชัน pgcrypto อยู่ใน schema `extensions` ต้องเช็ก search_path ในตอน 14
+
+## ตอน 6 · เส้นทางชุดแรก (5 ต.ค. 2569) ผ่าน
+
+- `src/app.js`: middleware ทุกคำขอเป็น async · ตัวนับป้ายเมนู 3 ตัวรวมเป็นคำสั่งเดียว (`COUNT(*) FILTER` + นับแจ้งเตือนในคำสั่งย่อย) · ตัวจัดการ error ตอบหน้าไม่พบเมื่อ `err.status === 404` · `createApp()` ไม่เปิดฐานเองแล้ว (ต้อง `await db.open()` ก่อน แก้ server.js ในตอน 8)
+- `src/util.js`: `idParam(v, { optional })` ไม่ใช่จำนวนเต็มหรือเกิน 2,147,483,647 ตอบ 404 ก่อนเข้าฐาน · `intOr(v, ค่าสำรอง)` สำหรับปีและภาค
+- `src/routes/auth.js`: `hasUsers()` จำผลในข้อมูลอ้างอิงของคำขอ · `/setup` ใช้ `RETURNING id` และอยู่ใน transaction · `string_agg(... ORDER BY w.seq)` · เข้าระบบด้วย `lower(username) = lower(?)` และ `verifyPassword(pw, id)` · ตัวกันเดารหัส `isLocked recordFail clearFails` เป็น async ไว้ก่อน (ตอน 12 ย้ายลงฐาน)
+- `src/routes/verify.js`: `baseUrl()` ใช้ `public_url` ถ้าว่างใช้ `https://` + host ไม่เรียก `os.networkInterfaces()`
+- `pages.js` `extras.js` `teaching.js` `ttimport.js`: async ทั้งหมด · `COUNT(*) FILTER` 2 จุด · `to_int_lenient(plan_no)` 5 จุด · `ILIKE ... ESCAPE ''` · `d.sort NULLS FIRST` · `INSERT ... ON CONFLICT DO NOTHING` ใน ttimport · `idParam` ที่ id ใน params query และฟอร์ม
+- callback ของ multer ใน `src/upload.js` และ `ttimport.js` ห่อ try/catch
+- ผล: `check-await` ไฟล์ของตอนนี้ 0 จุด · `tsc` ไม่มี error เรื่อง Promise ในไฟล์ของตอนนี้ (เหลือ admin.js work.js และชุดทดสอบ) · `node --check` ผ่านทุกไฟล์ใน `src/`

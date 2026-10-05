@@ -55,11 +55,16 @@ function fileFilter(req, file, cb) {
 function uploader(fields) {
   return (req, res, next) => {
     const mb = Number((req.settings || db.refs().settings).max_upload_mb) || 20;
+    // callback แบบเก่า Express 5 ไม่จับ error ให้ ต้องห่อ try/catch แล้วส่งต่อเอง
     multer({ storage, fileFilter, limits: { fileSize: mb * 1024 * 1024, files: 20 } }).fields(fields)(req, res, (err) => {
-      if (!err) return next();
-      if (err.code === 'LIMIT_FILE_SIZE') err.message = `ไฟล์ใหญ่เกิน ${mb} MB`;
-      err.userMessage = err.message;
-      next(err);
+      try {
+        if (!err) return next();
+        if (err.code === 'LIMIT_FILE_SIZE') err.message = `ไฟล์ใหญ่เกิน ${mb} MB`;
+        err.userMessage = err.message;
+        next(err);
+      } catch (e) {
+        next(e);
+      }
     });
   };
 }

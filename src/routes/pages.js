@@ -16,7 +16,7 @@ function currentTerm(settings) {
 
 function term(req) {
   const cur = currentTerm(req.settings);
-  return { year: Number(req.query.year) || cur.year, semester: Number(req.query.semester) || cur.semester };
+  return { year: util.intOr(req.query.year, 0) || cur.year, semester: util.intOr(req.query.semester, 0) || cur.semester };
 }
 
 function withCurrent(list, settings) {
@@ -25,7 +25,7 @@ function withCurrent(list, settings) {
   return list;
 }
 
-function termOptions() {
+async function termOptions() {
   return q.all('SELECT DISTINCT academic_year AS year, semester FROM submissions ORDER BY academic_year DESC, semester DESC');
 }
 
@@ -38,15 +38,15 @@ function registryScope(me) {
   return null;
 }
 
-function setupWarnings() {
+async function setupWarnings() {
   const warn = [];
   for (const st of wf.allSteps()) {
     if (!st.for_plan && !st.for_manual && !st.for_note) continue;
     if (st.scope === 'school') {
-      const n = q.get('SELECT COUNT(*) AS n FROM user_roles r JOIN users u ON u.id = r.user_id WHERE r.role = ? AND u.is_active = 1', st.role).n;
+      const n = (await q.get('SELECT COUNT(*) AS n FROM user_roles r JOIN users u ON u.id = r.user_id WHERE r.role = ? AND u.is_active = 1', st.role)).n;
       if (!n) warn.push(`ยังไม่ได้กำหนดผู้ใดเป็น ${st.label}`);
     } else {
-      const depts = q.all(
+      const depts = await q.all(
         `SELECT d.name FROM departments d
          WHERE EXISTS (SELECT 1 FROM users t WHERE t.department_id = d.id AND t.is_active = 1 AND t.is_teacher = 1)
            AND NOT EXISTS (SELECT 1 FROM users u JOIN user_roles r ON r.user_id = u.id WHERE u.department_id = d.id AND r.role = ? AND u.is_active = 1)`,
@@ -59,8 +59,8 @@ function setupWarnings() {
 }
 
 // รายวิชาของครูในภาคเรียน แต่ละวิชามีคู่มือ แผน และจำนวนบันทึกหลังแผน
-function mySubjects(userId, t) {
-  const works = q.all(
+async function mySubjects(userId, t) {
+  const works = await q.all(
     `SELECT s.*,
        (SELECT COUNT(*) FROM submissions n WHERE n.parent_id = s.id AND n.doc_type = 'note') AS note_total,
        (SELECT COUNT(*) FROM submissions n WHERE n.parent_id = s.id AND n.doc_type = 'note' AND n.status = 'approved') AS note_done,
@@ -97,11 +97,11 @@ function cell(s) {
 
 // แถวรายวิชาของครู: วิชาที่ส่งงานแล้ว รวมกับรายวิชาที่สอน (ถ้าเปิดฟังก์ชัน)
 // needPlan = วิชานี้ต้องส่งแผนไหม (เปิดแผน 1 วิชาหลัก: เฉพาะวิชาหลักหรือวิชาที่มีแผนแล้ว)
-function subjectRows(user, t, ff) {
-  const rows = mySubjects(user.id, t);
+async function subjectRows(user, t, ff) {
+  const rows = await mySubjects(user.id, t);
   if (ff.teachlist) {
     const byCode = new Map(rows.map((r) => [r.code, r]));
-    for (const x of teaching.list(user.id, t.year, t.semester)) {
+    for (const x of await teaching.list(user.id, t.year, t.semester)) {
       const r = byCode.get(x.subject_code);
       if (r) r.main = Boolean(x.is_main);
       else rows.push({ code: x.subject_code, name: x.subject_name, grade: x.grade_level, manual: null, plan: null, main: Boolean(x.is_main) });
@@ -119,8 +119,8 @@ function newHref(type, row) {
 }
 
 // ส่งแผนได้อีกไหม (เปิดแผน 1 วิชาหลัก: ตามจำนวนที่ผู้ดูแลกำหนดให้ครูคนนี้)
-function planLeft(user, t, ff) {
-  return !ff.onemain || teaching.plansOf(user.id, t.year, t.semester).length < teaching.planQuota(user);
+async function planLeft(user, t, ff) {
+  return !ff.onemain || (await teaching.plansOf(user.id, t.year, t.semester)).length < teaching.planQuota(user);
 }
 
 // ปุ่มถัดไปที่ครูควรกดในแต่ละรายวิชา
@@ -149,18 +149,18 @@ function rowCells(r) {
   return [plan, manual, notes];
 }
 
-router.get('/', (req, res) => {
+router.get('/', async (req, res) => {
   const me = req.me;
   const t = currentTerm(req.settings);
-  const subjects = subjectRows(me, t, req.ff).map((r) => ({ ...r, cells: rowCells(r), action: nextAction(r) }));
+  const subjects = (await subjectRows(me, t, req.ff)).map((r) => ({ ...r, cells: rowCells(r), action: nextAction(r) }));
   // เปิดแผน 1 วิชาหลักแล้ว แต่ยังไม่มีวิชาไหนต้องส่งแผน แปลว่ายังไม่ได้เลือกวิชาหลัก
   const mainMissing = Boolean(me.is_teacher && req.ff.onemain && !subjects.some((r) => r.needPlan));
   const mainHref = req.ff.teachlist ? '/teaching' : '/works/new?type=plan';
   const works = subjects.flatMap((r) => [r.manual, r.plan]).filter(Boolean);
   const pendingWorks = works.filter((s) => s.status === 'pending');
   const returnedWorks = works.filter((s) => s.status === 'returned');
-  const notes = q.get(
-    "SELECT COUNT(*) AS n, SUM(status IN ('draft', 'returned')) AS todo FROM submissions WHERE teacher_id = ? AND doc_type = 'note' AND academic_year = ? AND semester = ?",
+  const notes = await q.get(
+    "SELECT COUNT(*) AS n, COUNT(*) FILTER (WHERE status IN ('draft', 'returned')) AS todo FROM submissions WHERE teacher_id = ? AND doc_type = 'note' AND academic_year = ? AND semester = ?",
     me.id,
     t.year,
     t.semester
@@ -177,33 +177,33 @@ router.get('/', (req, res) => {
       else if (s.status === 'draft') todo.push(`${name} ยังเป็นร่าง`);
     }
   }
-  const activity = q.all(
+  const activity = await q.all(
     `SELECT r.*, s.doc_type, s.subject_code, s.subject_name, s.plan_no FROM reviews r
      JOIN submissions s ON s.id = r.submission_id
      WHERE s.teacher_id = ? AND r.action IN ('approve', 'return')
      ORDER BY r.id DESC LIMIT 6`,
     me.id
   );
-  const inbox = wf.inbox(me);
-  const alerts = q.all('SELECT * FROM notifications WHERE user_id = ? AND read_at IS NULL ORDER BY id DESC LIMIT 3', me.id);
+  const inbox = await wf.inbox(me);
+  const alerts = await q.all('SELECT * FROM notifications WHERE user_id = ? AND read_at IS NULL ORDER BY id DESC LIMIT 3', me.id);
   // รายการ "สิ่งที่ต้องทำต่อ" สำหรับหน้าแรกบนมือถือ เรียงจากเรื่องด่วน
   const nextUp = [];
   if (me.is_admin) {
-    for (const w of setupWarnings().slice(0, 3)) nextUp.push({ title: w, sub: 'แตะเพื่อตั้งค่าผู้ตรวจในรายชื่อผู้ใช้', href: '/admin/users', tone: 'wait' });
+    for (const w of (await setupWarnings()).slice(0, 3)) nextUp.push({ title: w, sub: 'แตะเพื่อตั้งค่าผู้ตรวจในรายชื่อผู้ใช้', href: '/admin/users', tone: 'wait' });
   }
   if (inbox.length) nextUp.push({ title: `มีงานรอคุณลงนาม ${inbox.length} รายการ`, sub: 'แตะเพื่อเปิดงานรอตรวจ', href: '/inbox', tone: 'primary' });
-  const lastReturn = (id) => (q.get("SELECT comment FROM reviews WHERE submission_id = ? AND action = 'return' ORDER BY id DESC LIMIT 1", id) || {}).comment || '';
+  const lastReturn = async (id) => ((await q.get("SELECT comment FROM reviews WHERE submission_id = ? AND action = 'return' ORDER BY id DESC LIMIT 1", id)) || {}).comment || '';
   for (const s of returnedWorks) {
-    nextUp.push({ title: `${s.doc_type === 'manual' ? 'คู่มือ' : 'แผน'} ${s.subject_code} ถูกส่งกลับให้แก้ไข`, sub: lastReturn(s.id).slice(0, 90), href: `/s/${s.id}`, tone: 'back' });
+    nextUp.push({ title: `${s.doc_type === 'manual' ? 'คู่มือ' : 'แผน'} ${s.subject_code} ถูกส่งกลับให้แก้ไข`, sub: (await lastReturn(s.id)).slice(0, 90), href: `/s/${s.id}`, tone: 'back' });
   }
-  const noteTodo = q.all(
-    "SELECT id, parent_id, subject_code, plan_no, status FROM submissions WHERE teacher_id = ? AND doc_type = 'note' AND status IN ('draft', 'returned') AND academic_year = ? AND semester = ? ORDER BY CAST(plan_no AS INTEGER)",
+  const noteTodo = await q.all(
+    "SELECT id, parent_id, subject_code, plan_no, status FROM submissions WHERE teacher_id = ? AND doc_type = 'note' AND status IN ('draft', 'returned') AND academic_year = ? AND semester = ? ORDER BY to_int_lenient(plan_no)",
     me.id,
     t.year,
     t.semester
   );
   for (const n of noteTodo.filter((x) => x.status === 'returned')) {
-    nextUp.push({ title: `บันทึกหลังแผน ${n.subject_code} แผนที่ ${n.plan_no} ถูกส่งกลับ`, sub: lastReturn(n.id).slice(0, 90), href: `/s/${n.id}/edit`, tone: 'back' });
+    nextUp.push({ title: `บันทึกหลังแผน ${n.subject_code} แผนที่ ${n.plan_no} ถูกส่งกลับ`, sub: (await lastReturn(n.id)).slice(0, 90), href: `/s/${n.id}/edit`, tone: 'back' });
   }
   const drafts = noteTodo.filter((x) => x.status === 'draft');
   if (drafts.length) {
@@ -241,7 +241,7 @@ router.get('/', (req, res) => {
     todo,
     nextUp,
     mainHref,
-    canPlan: planLeft(me, t, req.ff),
+    canPlan: await planLeft(me, t, req.ff),
     activity,
     alerts,
     inboxPreview: inbox.slice(0, 5),
@@ -249,14 +249,14 @@ router.get('/', (req, res) => {
     inboxNotes: inbox.filter((s) => s.doc_type === 'note').length,
     window: submitWindow(req.settings),
     daysLeft: util.daysUntil(req.settings.submit_end),
-    warnings: me.is_admin ? setupWarnings() : [],
+    warnings: me.is_admin ? await setupWarnings() : [],
   });
 });
 
 // งานของฉัน: จัดกลุ่มตามรายวิชา แต่ละวิชามีคู่มือ แผน และบันทึกหลังแผน
-router.get('/my', (req, res) => {
+router.get('/my', async (req, res) => {
   const t = term(req);
-  const works = q.all(
+  const works = await q.all(
     `SELECT s.*,
        (SELECT COUNT(*) FROM submissions n WHERE n.parent_id = s.id AND n.doc_type = 'note') AS note_total,
        (SELECT COUNT(*) FROM submissions n WHERE n.parent_id = s.id AND n.doc_type = 'note' AND n.status = 'approved') AS note_done,
@@ -279,7 +279,7 @@ router.get('/my', (req, res) => {
     }
     byCode.get(key)[w.doc_type] = w;
   }
-  const myTerms = q.all(
+  const myTerms = await q.all(
     'SELECT DISTINCT academic_year AS year, semester FROM submissions WHERE teacher_id = ? ORDER BY academic_year DESC, semester DESC',
     req.me.id
   );
@@ -288,22 +288,22 @@ router.get('/my', (req, res) => {
     subjects,
     term: t,
     isCurrent: t.year === Number(req.settings.academic_year) && t.semester === Number(req.settings.semester),
-    canPlan: planLeft(req.me, t, req.ff),
+    canPlan: await planLeft(req.me, t, req.ff),
     terms: withCurrent(myTerms, req.settings),
     window: submitWindow(req.settings),
   });
 });
 
-router.get('/inbox', (req, res) => {
+router.get('/inbox', async (req, res) => {
   const type = wf.DOC_TYPES[req.query.type] ? req.query.type : '';
-  const all = wf.inbox(req.me).map((s) => ({ ...s, needsScore: wf.needsScore(s) }));
+  const all = (await wf.inbox(req.me)).map((s) => ({ ...s, needsScore: wf.needsScore(s) }));
   const rows = type ? all.filter((s) => s.doc_type === type) : all;
   const counts = { all: all.length };
   for (const k of Object.keys(wf.DOC_TYPES)) counts[k] = all.filter((s) => s.doc_type === k).length;
   res.render('inbox', { title: 'งานรอตรวจ', rows, type, counts });
 });
 
-function registryRows(req, scope) {
+async function registryRows(req, scope) {
   const t = term(req);
   const type = wf.DOC_TYPES[req.query.type] ? req.query.type : 'plan';
   const where = ['s.academic_year = ?', 's.semester = ?', "s.status != 'draft'", 's.doc_type = ?'];
@@ -311,9 +311,9 @@ function registryRows(req, scope) {
   if (!scope.all) {
     where.push('s.department_id = ?');
     params.push(scope.department_id);
-  } else if (Number(req.query.department)) {
+  } else if (util.idParam(req.query.department, { optional: true })) {
     where.push('s.department_id = ?');
-    params.push(Number(req.query.department));
+    params.push(util.idParam(req.query.department));
   }
   const status = String(req.query.status || '');
   if (['pending', 'returned', 'approved'].includes(status)) {
@@ -325,41 +325,41 @@ function registryRows(req, scope) {
   }
   const kw = String(req.query.q || '').trim();
   if (kw) {
-    where.push('(u.full_name LIKE ? OR s.subject_code LIKE ? OR s.subject_name LIKE ? OR s.topic LIKE ?)');
+    where.push("(u.full_name ILIKE ? ESCAPE '' OR s.subject_code ILIKE ? ESCAPE '' OR s.subject_name ILIKE ? ESCAPE '' OR s.topic ILIKE ? ESCAPE '')");
     params.push(`%${kw}%`, `%${kw}%`, `%${kw}%`, `%${kw}%`);
   }
-  const rows = q.all(
+  const rows = await q.all(
     `SELECT s.*, u.full_name AS teacher_name, d.name AS dept_name
      FROM submissions s JOIN users u ON u.id = s.teacher_id LEFT JOIN departments d ON d.id = s.department_id
      WHERE ${where.join(' AND ')}
-     ORDER BY d.sort, u.full_name, s.subject_code, CAST(s.plan_no AS INTEGER)
+     ORDER BY d.sort NULLS FIRST, u.full_name, s.subject_code, to_int_lenient(s.plan_no)
      LIMIT 3000`,
     ...params
   );
   return { rows, t, type };
 }
 
-router.get('/registry', (req, res) => {
+router.get('/registry', async (req, res) => {
   const scope = registryScope(req.me);
   if (!scope) return res.status(403).render('error', { title: 'ไม่มีสิทธิ์', message: 'หน้านี้สำหรับผู้ตรวจและผู้ดูแลระบบ' });
-  const { rows, t, type } = registryRows(req, scope);
+  const { rows, t, type } = await registryRows(req, scope);
   res.render('registry', {
     title: 'ทะเบียนงาน',
     rows,
     term: t,
     type,
-    terms: withCurrent(termOptions(), req.settings),
-    departments: scope.all ? q.all('SELECT * FROM departments ORDER BY sort, name') : [],
+    terms: withCurrent(await termOptions(), req.settings),
+    departments: scope.all ? await q.all('SELECT * FROM departments ORDER BY sort, name') : [],
     steps: wf.activeSteps(type),
     query: req.query,
     regScope: scope,
   });
 });
 
-router.get('/registry.csv', (req, res) => {
+router.get('/registry.csv', async (req, res) => {
   const scope = registryScope(req.me);
   if (!scope) return res.status(403).end();
-  const { rows, t, type } = registryRows(req, scope);
+  const { rows, t, type } = await registryRows(req, scope);
   let head;
   let body;
   if (type === 'note') {
@@ -378,11 +378,11 @@ router.get('/registry.csv', (req, res) => {
   res.send(util.toCsv([head, ...body]));
 });
 
-router.get('/stats', (req, res) => {
+router.get('/stats', async (req, res) => {
   const t = term(req);
-  const departments = q.all('SELECT * FROM departments ORDER BY sort, name');
-  const teachers = q.all('SELECT id, full_name, department_id, position FROM users WHERE is_active = 1 AND is_teacher = 1 ORDER BY full_name');
-  const subs = q.all(
+  const departments = await q.all('SELECT * FROM departments ORDER BY sort, name');
+  const teachers = await q.all('SELECT id, full_name, department_id, position FROM users WHERE is_active = 1 AND is_teacher = 1 ORDER BY full_name');
+  const subs = await q.all(
     "SELECT id, doc_type, teacher_id, department_id, status, current_role, score_total, score_max, teaching_methods FROM submissions WHERE status != 'draft' AND academic_year = ? AND semester = ?",
     t.year,
     t.semester
@@ -433,7 +433,7 @@ router.get('/stats', (req, res) => {
   res.render('stats', {
     title: 'สถิติ',
     term: t,
-    terms: withCurrent(termOptions(), req.settings),
+    terms: withCurrent(await termOptions(), req.settings),
     totals: {
       teachers: teachers.length,
       sentManual: teachers.filter((x) => sentManual.has(x.id)).length,
@@ -454,17 +454,17 @@ router.get('/profile', (req, res) => {
   res.render('profile', { title: 'ข้อมูลส่วนตัว' });
 });
 
-router.post('/profile', (req, res) => {
+router.post('/profile', async (req, res) => {
   const b = req.body || {};
   const position = String(b.position || '').trim().slice(0, 150);
-  q.run('UPDATE users SET position = ? WHERE id = ?', position, req.me.id);
-  if (b.remove_signature === '1') q.run('UPDATE users SET signature = NULL WHERE id = ?', req.me.id);
+  await q.run('UPDATE users SET position = ? WHERE id = ?', position, req.me.id);
+  if (b.remove_signature === '1') await q.run('UPDATE users SET signature = NULL WHERE id = ?', req.me.id);
   else if (b.signature) {
     if (!/^data:image\/(png|jpeg);base64,[A-Za-z0-9+/=]+$/.test(b.signature) || b.signature.length > 400 * 1024) {
       req.flash('error', 'ไฟล์ลายเซ็นไม่ถูกต้อง หรือใหญ่เกินไป');
       return res.redirect('/profile');
     }
-    q.run('UPDATE users SET signature = ? WHERE id = ?', b.signature, req.me.id);
+    await q.run('UPDATE users SET signature = ? WHERE id = ?', b.signature, req.me.id);
   }
   req.flash('success', 'บันทึกข้อมูลส่วนตัวเรียบร้อย');
   res.redirect('/profile');
