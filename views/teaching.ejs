@@ -1,0 +1,88 @@
+<%- include('partials/top') %>
+<div class="narrow" style="max-width:900px">
+  <div class="page-head">
+    <div>
+      <div class="eyebrow">ภาคเรียนที่ <%= term.semester %>/<%= term.year %></div>
+      <h1>รายวิชาที่สอน<%= forOther ? ' ของ' + who.full_name : '' %></h1>
+      <div class="sub">คู่มือรายวิชาส่งทุกวิชาที่สอน<%= ff.onemain ? ' แผนการจัดการเรียนรู้ส่งเฉพาะวิชาหลัก ' + quota + ' วิชา' : ' แผนการจัดการเรียนรู้ส่งทุกวิชา' %></div>
+    </div>
+    <div class="actions"><a class="btn btn-ghost" href="<%= forOther ? '/admin/users/' + who.id : '/' %>"><%- icon('back', 18) %> กลับ</a></div>
+  </div>
+
+  <% if (forOther) { %>
+    <div class="alert alert-info"><%- icon('shield') %><span>ผู้ดูแลระบบกำลังแก้รายวิชาแทนครู ทุกครั้งที่เพิ่มหรือเปลี่ยนจะบันทึกในประวัติ</span></div>
+  <% } %>
+
+  <section class="card flush">
+    <div class="card-head"><h2>วิชาที่สอน <%= rows.length %> วิชา</h2></div>
+    <% if (ff.onemain && !canSetMain) { %><p class="hint" style="padding:0 20px">ส่งแผนวิชาหลักครบ <%= quota %> วิชาแล้ว ถ้าต้องการเปลี่ยนวิชาหลัก ให้แจ้งผู้ดูแลระบบ</p><% } %>
+    <% if (!rows.length) { %>
+      <div class="empty" style="padding:22px 20px 26px"><p>ยังไม่มีรายวิชา เพิ่มวิชาที่สอนในภาคนี้ให้ครบทุกวิชาที่ช่องด้านล่าง<%= ff.onemain ? ' แล้วเลือกวิชาหลัก 1 วิชาสำหรับส่งแผน' : '' %></p></div>
+    <% } %>
+    <% for (const r of rows) { %>
+      <div class="teach-row">
+        <span class="subj"><b><%= r.subject_code %></b><%= r.subject_name %> <span class="muted"><%= r.grade_level %></span>
+          <% if (ff.onemain && r.is_main) { %><span class="badge badge-blue"><%- icon('star', 14) %> วิชาหลัก</span><% } %>
+        </span>
+        <span class="small">คู่มือ
+          <% if (r.manual) { %><a class="badge <%= r.manualCell.cls %>" href="/s/<%= r.manual.id %>"><%= r.manualCell.text %></a>
+          <% } else if (!forOther) { %><a class="badge badge-gray" href="/works/new?type=manual&code=<%= encodeURIComponent(r.subject_code) %>">ยังไม่ส่ง กดเพื่อส่ง</a>
+          <% } else { %><span class="badge badge-gray">ยังไม่ส่ง</span><% } %>
+        </span>
+        <span class="small">แผน
+          <% if (r.plan) { %><a class="badge <%= r.planCell.cls %>" href="/s/<%= r.plan.id %>"><%= r.planCell.text %></a>
+          <% } else if (!r.needPlan) { %><span class="badge badge-gray">ไม่ต้องส่ง</span>
+          <% } else if (!forOther) { %><a class="badge badge-gray" href="/works/new?type=plan&code=<%= encodeURIComponent(r.subject_code) %>">ยังไม่ส่ง กดเพื่อส่ง</a>
+          <% } else { %><span class="badge badge-gray">ยังไม่ส่ง</span><% } %>
+        </span>
+        <span class="actions">
+          <% if (ff.onemain && !r.is_main && canSetMain) { %>
+            <form method="post" action="/teaching/<%= r.id %>/main" data-confirm="ตั้ง <%= r.subject_code %> <%= r.subject_name %> เป็นวิชาหลักสำหรับส่งแผนการจัดการเรียนรู้<%= quota === 1 ? '\nวิชาหลักเดิมที่ยังไม่ได้ส่งแผนจะถูกยกเลิก' : '' %>" data-ok-label="ตั้งเป็นวิชาหลัก">
+              <input type="hidden" name="u" value="<%= who.id %>"><button class="btn btn-ghost btn-sm" type="submit"><%- icon('star', 16) %> ตั้งเป็นวิชาหลัก</button>
+            </form>
+          <% } else if (ff.onemain && r.is_main && !r.plan) { %>
+            <form method="post" action="/teaching/<%= r.id %>/unmain" data-confirm="ยกเลิกวิชาหลัก <%= r.subject_code %>" data-ok-label="ยกเลิกวิชาหลัก">
+              <input type="hidden" name="u" value="<%= who.id %>"><button class="btn btn-ghost btn-sm" type="submit">ยกเลิกวิชาหลัก</button>
+            </form>
+          <% } %>
+          <% if (!r.manual && !r.plan) { %>
+            <form method="post" action="/teaching/<%= r.id %>/delete" data-confirm="เอาวิชา <%= r.subject_code %> ออกจากรายวิชาที่สอน" data-danger="1" data-ok-label="เอาออก">
+              <input type="hidden" name="u" value="<%= who.id %>"><button class="btn btn-ghost btn-sm" type="submit"><%- icon('trash', 16) %> เอาออก</button>
+            </form>
+          <% } %>
+        </span>
+      </div>
+    <% } %>
+  </section>
+
+  <form class="card" method="post" action="/teaching/add" data-confirm="เพิ่มวิชานี้ในรายวิชาที่สอน" data-ok-label="เพิ่มวิชา" style="margin-top:18px">
+    <input type="hidden" name="u" value="<%= who.id %>">
+    <h2>เพิ่มวิชาที่สอน</h2>
+    <div class="form-grid">
+      <div class="field">
+        <label for="subject_code">รหัสวิชา <span class="req">*</span></label>
+        <input type="text" id="subject_code" name="subject_code" list="subject-list" placeholder="เช่น ว30203" data-subject-code autocomplete="off" required>
+        <datalist id="subject-list">
+          <% for (const x of subjects) { %><option value="<%= x.code %>" data-name="<%= x.name %>" data-grade="<%= x.grade %>"><%= x.name %></option><% } %>
+        </datalist>
+      </div>
+      <div class="field" style="grid-column:span 2">
+        <label for="subject_name">ชื่อวิชา <span class="req">*</span></label>
+        <input type="text" id="subject_name" name="subject_name" placeholder="เช่น ฟิสิกส์เพิ่มเติม 3" required>
+      </div>
+      <div class="field">
+        <label for="grade_level">ระดับชั้น</label>
+        <select id="grade_level" name="grade_level">
+          <option value="">เลือกระดับชั้น</option>
+          <% for (const g of util.lines(settings.grade_levels)) { %><option><%= g %></option><% } %>
+        </select>
+      </div>
+    </div>
+    <% if (ff.onemain && canSetMain) { %>
+      <label class="check"><input type="checkbox" name="is_main" value="1" <%= rows.some((r) => r.is_main) ? '' : 'checked' %>> เป็นวิชาหลัก (วิชาที่ส่งแผนการจัดการเรียนรู้)</label>
+    <% } %>
+    <div class="btn-row" style="margin-top:14px"><button class="btn btn-primary" type="submit"><%- icon('plus', 18) %> เพิ่มวิชา</button></div>
+    <p class="hint">พิมพ์รหัสวิชาแล้วระบบเติมชื่อวิชาให้ ถ้าเป็นวิชาที่มีในรายวิชาของโรงเรียน</p>
+  </form>
+</div>
+<%- include('partials/bottom') %>

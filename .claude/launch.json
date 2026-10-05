@@ -1,0 +1,19 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "plan-demo",
+      "runtimeExecutable": "node",
+      "runtimeArgs": [
+        "--disable-warning=ExperimentalWarning",
+        "server.js",
+        "--data",
+        "data-demo",
+        "--demo",
+        "--port",
+        "3100"
+      ],
+      "port": 3100
+    }
+  ]
+}

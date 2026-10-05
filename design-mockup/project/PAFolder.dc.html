@@ -1,0 +1,169 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<title>แฟ้มผลงานสำหรับ PA</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai+Looped:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+@keyframes paBar{from{width:0}to{width:100%}}
+@keyframes paPop{0%{transform:scale(.7);opacity:0}70%{transform:scale(1.06)}100%{transform:scale(1);opacity:1}}
+</style>
+</helmet>
+<div style="width: 390px; height: 844px; position: relative; overflow: hidden; box-sizing: border-box; background: #EEF2F7; color: #0F1E33; font-family: 'Noto Sans Thai Looped', sans-serif; font-size: 16px; line-height: 1.55">
+  <header style="height: 68px; box-sizing: border-box; padding: 0 12px; display: flex; align-items: center; gap: 8px; background: #1B3762; color: #FFFFFF">
+    <button type="button" aria-label="กลับ" style="width: 44px; height: 44px; flex: none; border-radius: 50%; border: 0; background: rgba(255, 255, 255, .12); color: #FFFFFF; display: flex; align-items: center; justify-content: center; cursor: pointer">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m15 6-6 6 6 6"></path></svg>
+    </button>
+    <span style="display: flex; flex-direction: column; line-height: 1.3">
+      <b style="font-size: 18px">แฟ้มผลงานสำหรับ PA</b>
+      <span style="font-size: 13px; color: #C9D5E6">รวมเอกสารที่ลงนามครบแล้วเป็น PDF ไฟล์เดียว</span>
+    </span>
+  </header>
+
+  <div style="position: absolute; top: 68px; left: 0; right: 0; bottom: 96px; overflow-y: auto; box-sizing: border-box; padding: 14px 14px 20px; display: flex; flex-direction: column; gap: 12px">
+    <div style="display: flex; flex-direction: column; gap: 6px">
+      <span style="font-size: 14px; color: #4E5F78; font-weight: 600">ช่วงเวลา</span>
+      <div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 4px; padding: 4px; border-radius: 14px; background: #DCE4EF">
+        <sc-for list="{{ranges}}" as="g" hint-placeholder-count="3">
+          <button type="button" onClick="{{g.pick}}" style="height: 46px; border: 0; border-radius: 11px; background: {{g.bg}}; color: {{g.fg}}; box-shadow: {{g.shadow}}; font: 700 14px/1.2 'Noto Sans Thai Looped', sans-serif; cursor: pointer">{{g.label}}</button>
+        </sc-for>
+      </div>
+    </div>
+
+    <section style="background: #FFFFFF; border: 1px solid #D6DEE9; border-radius: 16px; padding: 6px 14px; display: flex; flex-direction: column">
+      <b style="padding: 8px 0 4px">เลือกสิ่งที่จะรวมในแฟ้ม</b>
+      <sc-for list="{{items}}" as="it" hint-placeholder-count="7">
+        <label style="display: flex; align-items: center; gap: 12px; min-height: 58px; border-top: 1px solid #E3E9F1; cursor: pointer">
+          <input type="checkbox" checked="{{it.on}}" onChange="{{it.toggle}}" style="width: 22px; height: 22px; flex: none; accent-color: #1D3A66; cursor: pointer">
+          <span style="flex: 1; display: flex; flex-direction: column; line-height: 1.35; padding: 6px 0">
+            <span style="font-weight: 600; font-size: 15px">{{it.label}}</span>
+            <span style="font-size: 13px; color: {{it.noteColor}}">{{it.note}}</span>
+          </span>
+          <span style="font-size: 14px; color: #4E5F78; white-space: nowrap">{{it.pages}} หน้า</span>
+        </label>
+      </sc-for>
+    </section>
+
+    <section style="background: #FFFFFF; border: 1px solid #D6DEE9; border-radius: 16px; padding: 14px; display: flex; flex-direction: column; gap: 10px">
+      <b>ปกแฟ้ม</b>
+      <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px">
+        <sc-for list="{{covers}}" as="c" hint-placeholder-count="2">
+          <button type="button" onClick="{{c.pick}}" style="border: 2px solid {{c.bd}}; border-radius: 14px; background: #FFFFFF; padding: 10px; display: flex; flex-direction: column; align-items: center; gap: 8px; font: inherit; color: inherit; cursor: pointer">
+            <span style="width: 64px; height: 84px; box-sizing: border-box; border-radius: 4px; background: {{c.paper}}; box-shadow: 0 1px 4px rgba(15, 30, 51, .2); padding: 10px 8px; display: flex; flex-direction: column; align-items: center; gap: 5px">
+              <span style="width: 18px; height: 18px; border-radius: 50%; background: {{c.mark}}"></span>
+              <span style="height: 4px; width: 80%; border-radius: 2px; background: {{c.mark}}"></span>
+              <span style="height: 3px; width: 60%; border-radius: 2px; background: #C9D4E3"></span>
+            </span>
+            <span style="font-size: 14px; font-weight: 600">{{c.label}}</span>
+          </button>
+        </sc-for>
+      </div>
+    </section>
+
+    <span style="display: flex; gap: 8px; padding: 10px 12px; border-radius: 12px; background: #E4ECF7; color: #1D3A66; font-size: 14px; line-height: 1.45">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex: none; margin-top: 2px"><path d="M4 4h6v6H4zM14 4h6v6h-6zM4 14h6v6H4zM14 14h2v2h-2zM18 18h2v2h-2z"></path></svg>
+      ทุกหน้ามี QR Code ให้กรรมการสแกนตรวจว่าเป็นเอกสารจริงที่ลงนามในระบบ
+    </span>
+  </div>
+
+  <div style="position: absolute; left: 0; right: 0; bottom: 0; height: 96px; box-sizing: border-box; padding: 10px 14px 18px; background: #FFFFFF; border-top: 1px solid #D6DEE9; display: flex; flex-direction: column; gap: 6px">
+    <span style="font-size: 14px; color: #4E5F78; text-align: center">รวม <b style="color: #0F1E33">{{totalPages}} หน้า</b>  ประมาณ {{sizeMb}} MB</span>
+    <button type="button" onClick="{{make}}" style="flex: 1; border: 0; border-radius: 12px; background: #1D3A66; color: #FFFFFF; font: 700 17px/1 'Noto Sans Thai Looped', sans-serif; cursor: pointer">สร้างแฟ้ม PDF</button>
+  </div>
+
+  <sc-if value="{{making}}" hint-placeholder-val="{{ false }}">
+    <div style="position: absolute; inset: 0; background: rgba(15, 30, 51, .5); display: flex; align-items: center; justify-content: center; padding: 24px">
+      <div style="width: 100%; box-sizing: border-box; border-radius: 20px; background: #FFFFFF; padding: 24px; display: flex; flex-direction: column; gap: 12px; text-align: center">
+        <b style="font-size: 19px">กำลังรวมเอกสาร</b>
+        <span style="color: #4E5F78; font-size: 15px">{{totalPages}} หน้า  เรียงตามรายวิชาและวันที่</span>
+        <span style="height: 10px; border-radius: 5px; background: #E3E9F1; overflow: hidden"><span style="display: block; height: 100%; border-radius: 5px; background: #1D3A66; animation: paBar 2.2s ease-in-out both"></span></span>
+      </div>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{done}}" hint-placeholder-val="{{ false }}">
+    <div style="position: absolute; inset: 0; background: rgba(15, 30, 51, .5); display: flex; align-items: flex-end">
+      <div style="width: 100%; box-sizing: border-box; border-radius: 22px 22px 0 0; background: #FFFFFF; padding: 22px 18px 26px; display: flex; flex-direction: column; gap: 12px">
+        <div style="display: flex; align-items: center; gap: 12px">
+          <span style="width: 54px; height: 54px; flex: none; border-radius: 50%; background: #1B7343; color: #FFFFFF; display: flex; align-items: center; justify-content: center; animation: paPop .4s ease-out both">
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 12 5 5 9-10"></path></svg>
+          </span>
+          <span style="display: flex; flex-direction: column; line-height: 1.4">
+            <b style="font-size: 19px">แฟ้มพร้อมแล้ว</b>
+            <span style="font-size: 14px; color: #4E5F78; overflow-wrap: anywhere">แฟ้มผลงาน_PA_{{fileYear}}.pdf  {{totalPages}} หน้า</span>
+          </span>
+        </div>
+        <button type="button" style="height: 54px; border: 0; border-radius: 12px; background: #1D3A66; color: #FFFFFF; font: 700 16px/1 'Noto Sans Thai Looped', sans-serif; cursor: pointer">ดาวน์โหลด</button>
+        <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px">
+          <button type="button" style="height: 48px; border: 1px solid #C9D4E3; border-radius: 12px; background: #FFFFFF; color: #0F1E33; font: 700 15px/1 'Noto Sans Thai Looped', sans-serif; cursor: pointer">เปิดดูก่อน</button>
+          <button type="button" style="height: 48px; border: 1px solid #C9D4E3; border-radius: 12px; background: #FFFFFF; color: #0F1E33; font: 700 15px/1 'Noto Sans Thai Looped', sans-serif; cursor: pointer">พิมพ์</button>
+        </div>
+        <button type="button" onClick="{{reset}}" style="height: 44px; border: 0; background: none; color: #4E5F78; font: 600 15px/1 'Noto Sans Thai Looped', sans-serif; cursor: pointer">ปิด</button>
+      </div>
+    </div>
+  </sc-if>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+const RANGES = [['year', 'ทั้งปี 2569', 1], ['t2', 'ภาค 2/2569', 0.5], ['t1', 'ภาค 1/2569', 0.5]];
+// [รหัส, ชื่อ, รายละเอียด, หน้าทั้งปี, เลือกไว้ตั้งแต่ต้น]
+const ITEMS = [
+  ['cover', 'ปกและสารบัญ', 'ระบบทำให้อัตโนมัติ', 3, true],
+  ['memo', 'บันทึกข้อความขออนุญาตใช้', '12 ฉบับ ลงนามครบ 5 ระดับ', 12, true],
+  ['eval', 'แบบประเมินคู่มือและแผน', '12 ฉบับ พร้อมคะแนน', 12, true],
+  ['manual', 'คู่มือรายวิชา', '6 เล่ม', 190, true],
+  ['note', 'บันทึกหลังแผนพร้อมลายเซ็น', '96 ฉบับ', 192, true],
+  ['chart', 'กราฟผลการสอนรายแผน', 'สรุปจากบันทึกหลังแผน', 6, true],
+  ['plan', 'แผนการจัดการเรียนรู้ทั้งเล่ม', 'ไฟล์ใหญ่มาก ปกติไม่ต้องใส่', 1280, false],
+];
+const COVERS = [['mine', 'ปกที่ฉันออกแบบ', '#FBEFF1', '#8E1B2C'], ['std', 'ปกมาตรฐาน', '#FFFFFF', '#1D3A66']];
+
+class Component extends DCLogic {
+  renderVals() {
+    const st = this.state || {};
+    const range = st.range || 'year';
+    const factor = RANGES.find((r) => r[0] === range)[2];
+    const on = st.on || Object.fromEntries(ITEMS.map((i) => [i[0], i[4]]));
+    const cover = st.cover || 'std';
+    const pagesOf = (i) => (i[0] === 'cover' ? i[3] : Math.round(i[3] * factor));
+    const totalPages = ITEMS.filter((i) => on[i[0]]).reduce((a, i) => a + pagesOf(i), 0);
+    const phase = st.phase || 'idle';
+    return {
+      ranges: RANGES.map(([k, label]) => ({
+        label,
+        pick: () => this.setState({ range: k }),
+        bg: k === range ? '#FFFFFF' : 'transparent',
+        fg: k === range ? '#1D3A66' : '#4E5F78',
+        shadow: k === range ? '0 1px 3px rgba(15,30,51,.15)' : 'none',
+      })),
+      items: ITEMS.map((i) => ({
+        label: i[1],
+        note: i[2],
+        noteColor: i[0] === 'plan' ? '#9A3412' : '#4E5F78',
+        pages: pagesOf(i),
+        on: Boolean(on[i[0]]),
+        toggle: () => this.setState({ on: Object.assign({}, on, { [i[0]]: !on[i[0]] }) }),
+      })),
+      covers: COVERS.map(([k, label, paper, mark]) => ({ label, paper, mark, pick: () => this.setState({ cover: k }), bd: k === cover ? '#1D3A66' : '#D6DEE9' })),
+      totalPages,
+      sizeMb: Math.max(1, Math.round(totalPages * 0.06)),
+      fileYear: range === 'year' ? '2569' : range === 't2' ? '2-2569' : '1-2569',
+      making: phase === 'making',
+      done: phase === 'done',
+      make: () => {
+        this.setState({ phase: 'making' });
+        setTimeout(() => this.setState({ phase: 'done' }), 2300);
+      },
+      reset: () => this.setState({ phase: 'idle' }),
+    };
+  }
+}
+</script>
+</body>
+</html>

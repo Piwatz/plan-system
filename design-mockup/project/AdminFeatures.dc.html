@@ -1,0 +1,231 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<title>ผู้ดูแลระบบ ฟังก์ชันเสริม</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai+Looped:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<style>body{margin:0}</style>
+</helmet>
+<div style="width: 1440px; height: 900px; display: flex; overflow: hidden; box-sizing: border-box; background: #EEF2F7; color: #0F1E33; font-family: 'Noto Sans Thai Looped', sans-serif; font-size: 16px; line-height: 1.55">
+
+  <aside style="width: 280px; flex: none; box-sizing: border-box; background: #1B3762; color: #FFFFFF; display: flex; flex-direction: column">
+    <div style="display: flex; align-items: center; gap: 12px; padding: 24px 22px 20px; border-bottom: 1px solid rgba(255, 255, 255, .12)">
+      <span style="width: 48px; height: 48px; flex: none; border-radius: 50%; background: #F2C14E; color: #1B3762; display: flex; align-items: center; justify-content: center">
+        <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 5a2 2 0 0 1 2-2h13v16H6a2 2 0 0 0-2 2zM4 19V5M9 7h6"></path></svg>
+      </span>
+      <span style="display: flex; flex-direction: column; line-height: 1.3">
+        <b style="font-size: 19px">ระบบส่งแผนการสอน</b>
+        <span style="font-size: 14px; color: #B9C7DB">โรงเรียนของเรา</span>
+      </span>
+    </div>
+    <nav aria-label="เมนูผู้ดูแลระบบ" style="flex: 1; padding: 18px 14px; display: flex; flex-direction: column; gap: 4px">
+      <span style="padding: 0 10px 6px; font-size: 13px; color: #B9C7DB">ผู้ดูแลระบบ</span>
+      <sc-for list="{{menu}}" as="m" hint-placeholder-count="7">
+        <button type="button" style="height: 48px; padding: 0 14px; border: 0; border-radius: 12px; background: {{m.bg}}; color: {{m.fg}}; display: flex; align-items: center; gap: 12px; font: {{m.weight}} 16px/1 'Noto Sans Thai Looped', sans-serif; text-align: left; cursor: pointer">
+          <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{m.icon}}"></path></svg>
+          {{m.label}}
+        </button>
+      </sc-for>
+    </nav>
+    <div style="padding: 16px 18px 22px; border-top: 1px solid rgba(255, 255, 255, .12); display: flex; flex-direction: column; line-height: 1.35">
+      <b>นายวีระ ส่งเสริม</b>
+      <span style="font-size: 14px; color: #B9C7DB">ผู้ดูแลระบบ  หัวหน้างานแผนการสอน</span>
+    </div>
+  </aside>
+
+  <main style="flex: 1; min-width: 0; overflow-y: auto; box-sizing: border-box; padding: 28px 34px 34px; display: flex; flex-direction: column; gap: 18px">
+    <div style="display: flex; align-items: flex-end; justify-content: space-between; gap: 16px">
+      <div style="display: flex; flex-direction: column">
+        <h1 style="margin: 0; font-size: 30px; font-weight: 700; line-height: 1.3">ฟังก์ชันเสริม</h1>
+        <span style="color: #4E5F78">เปิดหรือปิดความสามารถเพิ่มเติมของระบบ มีผลกับทุกคนทันที</span>
+      </div>
+      <span style="display: inline-flex; align-items: center; gap: 8px; padding: 10px 16px; border-radius: 12px; background: #1B3762; color: #FFFFFF; font-weight: 700; font-size: 15px">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="11" width="14" height="10" rx="2"></rect><path d="M8 11V8a4 4 0 0 1 8 0v3"></path></svg>
+        เปลี่ยนได้เฉพาะผู้ดูแลระบบ
+      </span>
+    </div>
+
+    <div style="display: flex; align-items: center; justify-content: space-between; gap: 14px; padding: 14px 18px; border-radius: 14px; background: #FFF5E1; border: 1px solid #F1D9A4">
+      <span style="color: #5C3E00">ผู้มีสิทธิ์เปิดปิดตอนนี้มี 1 คน คือ <b>นายวีระ ส่งเสริม</b>  ครูและคณะผู้บริหารรวมถึงผู้อำนวยการจะไม่เห็นหน้านี้และเปลี่ยนค่าไม่ได้</span>
+      <button type="button" style="height: 42px; flex: none; padding: 0 16px; border: 1px solid #E1C27C; border-radius: 10px; background: #FFFFFF; color: #5C3E00; font: 700 14px/1 'Noto Sans Thai Looped', sans-serif; cursor: pointer">จัดการผู้ดูแลระบบ</button>
+    </div>
+
+    <div style="display: grid; grid-template-columns: minmax(0, 2fr) minmax(0, 1fr); gap: 18px; align-items: start">
+      <div style="display: flex; flex-direction: column; gap: 10px">
+        <sc-for list="{{features}}" as="f" hint-placeholder-count="8">
+          <section style="background: #FFFFFF; border: 1px solid {{f.border}}; border-radius: 16px; box-shadow: 0 1px 2px rgba(15, 30, 51, .05); overflow: hidden">
+            <div style="display: flex; align-items: center; gap: 14px; padding: 14px 18px">
+              <span style="width: 46px; height: 46px; flex: none; border-radius: 12px; background: {{f.iconBg}}; color: {{f.iconFg}}; display: flex; align-items: center; justify-content: center">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{f.icon}}"></path></svg>
+              </span>
+              <span style="flex: 1; min-width: 0; display: flex; flex-direction: column; line-height: 1.45">
+                <span style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap">
+                  <b style="font-size: 17px">{{f.title}}</b>
+                  <sc-for list="{{f.who}}" as="w" hint-placeholder-count="1">
+                    <span style="padding: 1px 8px; border-radius: 6px; background: #EEF2F7; color: #4E5F78; font-size: 13px; font-weight: 600">{{w}}</span>
+                  </sc-for>
+                </span>
+                <span style="font-size: 14px; color: #4E5F78">{{f.desc}}</span>
+              </span>
+              <span style="font-size: 14px; font-weight: 700; color: {{f.stateFg}}; width: 44px; text-align: right">{{f.stateText}}</span>
+              <button type="button" role="switch" aria-checked="{{f.on}}" aria-label="{{f.aria}}" onClick="{{f.toggle}}" style="position: relative; width: 58px; height: 32px; flex: none; border: 0; border-radius: 16px; background: {{f.track}}; cursor: pointer; transition: background .2s">
+                <span style="position: absolute; top: 3px; left: 3px; width: 26px; height: 26px; border-radius: 50%; background: #FFFFFF; box-shadow: 0 1px 3px rgba(0, 0, 0, .25); transform: translateX({{f.knob}}); transition: transform .2s"></span>
+              </button>
+            </div>
+            <sc-if value="{{f.showLibrary}}" hint-placeholder-val="{{ false }}">
+              <div style="border-top: 1px solid #E3E9F1; background: #F8FAFD; padding: 14px 18px 16px; display: flex; flex-direction: column; gap: 12px">
+                <div style="display: flex; align-items: center; justify-content: space-between; gap: 10px">
+                  <b>คลังประโยคสำเร็จรูป</b>
+                  <div style="display: flex; gap: 4px; padding: 4px; border-radius: 10px; background: #E6ECF4">
+                    <sc-for list="{{libTabs}}" as="t" hint-placeholder-count="5">
+                      <button type="button" onClick="{{t.pick}}" style="height: 34px; padding: 0 12px; border: 0; border-radius: 8px; background: {{t.bg}}; color: {{t.fg}}; font: 700 13px/1 'Noto Sans Thai Looped', sans-serif; cursor: pointer">{{t.label}}</button>
+                    </sc-for>
+                  </div>
+                </div>
+                <sc-for list="{{libItems}}" as="s" hint-placeholder-count="3">
+                  <div style="display: flex; align-items: center; gap: 10px; padding: 8px 10px 8px 14px; border-radius: 10px; background: #FFFFFF; border: 1px solid #D6DEE9">
+                    <span style="flex: 1">{{s.text}}</span>
+                    <button type="button" onClick="{{s.remove}}" aria-label="ลบประโยคนี้" style="width: 36px; height: 36px; border: 0; border-radius: 8px; background: #FDEAE4; color: #B0341F; display: flex; align-items: center; justify-content: center; cursor: pointer">
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"></path></svg>
+                    </button>
+                  </div>
+                </sc-for>
+                <div style="display: flex; gap: 8px">
+                  <label style="flex: 1; display: flex"><span style="position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0)">ประโยคใหม่</span>
+                    <input type="text" value="{{draft}}" onChange="{{typeDraft}}" placeholder="พิมพ์ประโยคใหม่ ใช้ [ ] แทนส่วนที่ครูต้องเติม" style="flex: 1; height: 44px; box-sizing: border-box; padding: 0 14px; border: 1.5px solid #C9D4E3; border-radius: 10px; background: #FFFFFF; color: #0F1E33; font: 400 15px/1 'Noto Sans Thai Looped', sans-serif">
+                  </label>
+                  <button type="button" onClick="{{addDraft}}" style="height: 44px; padding: 0 18px; border: 0; border-radius: 10px; background: #1D3A66; color: #FFFFFF; font: 700 15px/1 'Noto Sans Thai Looped', sans-serif; cursor: pointer">เพิ่มประโยค</button>
+                </div>
+                <div style="display: flex; flex-wrap: wrap; gap: 18px; font-size: 15px">
+                  <label style="display: inline-flex; align-items: center; gap: 8px; cursor: pointer"><input type="checkbox" checked style="width: 20px; height: 20px; accent-color: #1D3A66"> แสดงปุ่มคัดลอกจากแผนก่อนหน้า</label>
+                  <label style="display: inline-flex; align-items: center; gap: 8px; cursor: pointer"><input type="checkbox" style="width: 20px; height: 20px; accent-color: #1D3A66"> ให้ครูเพิ่มประโยคของตัวเองได้</label>
+                </div>
+              </div>
+            </sc-if>
+            <sc-if value="{{f.showOffNote}}" hint-placeholder-val="{{ false }}">
+              <div style="border-top: 1px solid #E3E9F1; background: #F8FAFD; padding: 12px 18px; font-size: 14px; color: #4E5F78">{{f.offNote}}</div>
+            </sc-if>
+          </section>
+        </sc-for>
+      </div>
+
+      <section style="background: #FFFFFF; border: 1px solid #D6DEE9; border-radius: 16px; box-shadow: 0 1px 2px rgba(15, 30, 51, .05); padding: 18px; display: flex; flex-direction: column; gap: 12px">
+        <h2 style="margin: 0; font-size: 19px; font-weight: 700">ประวัติการเปลี่ยนแปลง</h2>
+        <span style="font-size: 14px; color: #4E5F78">ทุกครั้งที่เปิดหรือปิด ระบบจะบันทึกชื่อและเวลาไว้ ลบไม่ได้</span>
+        <sc-for list="{{log}}" as="l" hint-placeholder-count="3">
+          <div style="display: flex; gap: 10px; padding-top: 10px; border-top: 1px solid #E3E9F1">
+            <span style="width: 10px; height: 10px; margin-top: 7px; flex: none; border-radius: 50%; background: {{l.dot}}"></span>
+            <span style="display: flex; flex-direction: column; line-height: 1.45">
+              <b style="font-size: 15px">{{l.text}}</b>
+              <span style="font-size: 13px; color: #4E5F78">{{l.who}}  {{l.when}}</span>
+            </span>
+          </div>
+        </sc-for>
+      </section>
+    </div>
+  </main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":900}}'>
+const ICON = {
+  home: 'M3 10.5 12 3l9 7.5V20a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z',
+  users: 'M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM2 21c1-4 3.5-6 7-6s6 2 7 6M16 3.5a4 4 0 0 1 0 7.5M18 15c2 .7 3.3 2.7 4 6',
+  flow: 'M5 4h4v4H5zM15 16h4v4h-4zM7 8v4a2 2 0 0 0 2 2h8v2',
+  star: 'M12 3l2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.9 1-6.1L3.2 9.5l6.1-.9z',
+  toggle: 'M8 7h8a5 5 0 0 1 0 10H8A5 5 0 0 1 8 7zM16 12h.01',
+  school: 'M3 21h18M5 21V10l7-5 7 5v11M10 21v-5h4v5',
+  backup: 'M12 3v12m0 0-4-4m4 4 4-4M4 17v3h16v-3',
+  chips: 'M4 6h10M4 12h16M4 18h7M18 4v4M16 6h4',
+  file: 'M14 3H6a1 1 0 0 0-1 1v16a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V8zM14 3v5h5M12 11v6M9 14l3-3 3 3',
+  chart: 'M4 20V10M10 20V4M16 20v-7M21 20H3',
+  cards: 'M7 4h12v14H7zM4 7v13h12',
+  mic: 'M12 3a3 3 0 0 0-3 3v6a3 3 0 0 0 6 0V6a3 3 0 0 0-3-3zM5 11a7 7 0 0 0 14 0M12 18v3',
+  check: 'M14 3H6a1 1 0 0 0-1 1v16a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V8zM9 14l2 2 4-4',
+  board: 'M4 4h7v7H4zM13 4h7v7h-7zM4 13h7v7H4zM13 13h7v7h-7z',
+  chat: 'M4 5h16v11H9l-5 4z',
+  folder: 'M3 6a1 1 0 0 1 1-1h5l2 2h9a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1z',
+  qr: 'M4 4h6v6H4zM14 4h6v6h-6zM4 14h6v6H4zM14 14h2v2h-2zM18 18h2v2h-2zM14 18h2',
+};
+const MENU = [['home', 'หน้าหลัก'], ['users', 'ผู้ใช้และสิทธิ์'], ['flow', 'ขั้นตอนการตรวจ'], ['star', 'แบบประเมิน'], ['toggle', 'ฟังก์ชันเสริม'], ['school', 'ตั้งค่าโรงเรียน'], ['backup', 'สำรองข้อมูล']];
+const FEATURES = [
+  { key: 'chips', icon: 'chips', title: 'ประโยคสำเร็จรูปในบันทึกหลังแผน', desc: 'ครูแตะเลือกประโยคที่ใช้บ่อย และคัดลอกจากแผนก่อนหน้ามาแก้', who: ['ครู'], on: true, bg: '#EAF1FB', fg: '#1D4F99', offNote: 'ปิดอยู่ ครูจะไม่เห็นประโยคสำเร็จรูปและปุ่มคัดลอก ต้องพิมพ์เองทั้งหมด' },
+  { key: 'notefile', icon: 'file', title: 'แนบไฟล์บันทึกหลังแผนของตัวเอง', desc: 'ครูเลือกได้ว่าจะพิมพ์ในระบบ หรือแนบไฟล์ Word PDF ที่เขียนแบบของตัวเอง', who: ['ครู'], on: true, bg: '#EAF1FB', fg: '#1D4F99', offNote: 'ปิดอยู่ ครูต้องพิมพ์บันทึกหลังแผนในระบบเท่านั้น' },
+  { key: 'counts', icon: 'chart', title: 'บังคับกรอกจำนวนนักเรียนผ่านจุดประสงค์', desc: 'ถ้าเปิด ครูต้องกรอกจำนวนนักเรียนทั้งห้องและที่ผ่าน ก่อนส่งบันทึกหลังแผน', who: ['ครู'], on: false, bg: '#FFF2DA', fg: '#875700', offNote: 'ปิดอยู่ ช่องจำนวนนักเรียนยังมีให้กรอก แต่ไม่บังคับ' },
+  { key: 'quicksign', icon: 'cards', title: 'ลงนามแบบไล่การ์ด', desc: 'ผู้ตรวจลงนามบันทึกหลังแผนทีละใบอย่างรวดเร็ว', who: ['ผู้ตรวจ'], on: true, bg: '#FDEAE4', fg: '#B0341F' },
+  { key: 'voice', icon: 'mic', title: 'พูดแทนพิมพ์', desc: 'มีปุ่มไมค์ในช่องบันทึก พูดแล้วเป็นตัวหนังสือ', who: ['ครู'], on: false, bg: '#F1ECF8', fg: '#5B3A8C' },
+  { key: 'filecheck', icon: 'check', title: 'ตรวจไฟล์ก่อนส่ง', desc: 'เช็กชนิดไฟล์ จำนวนหน้า และไฟล์เปิดได้ ก่อนส่งให้ผู้ตรวจ', who: ['ครู'], on: true, bg: '#E4F4EA', fg: '#1B7343' },
+  { key: 'board', icon: 'board', title: 'หน้าสถานะกลุ่มสาระและปุ่มส่งเตือน', desc: 'หัวหน้ากลุ่มสาระเห็นสถานะทุกคน กดเตือนคนที่ยังไม่ส่งได้ในครั้งเดียว', who: ['หัวหน้ากลุ่มสาระ'], on: true, bg: '#FFF2DA', fg: '#875700' },
+  { key: 'line', icon: 'chat', title: 'สรุปงานเข้า LINE ทุกเช้า', desc: 'ส่งสรุปงานที่รอลงนามเข้า LINE ของผู้ตรวจทุกเช้า 7 โมง', who: ['ผู้ตรวจ'], on: false, bg: '#E4F4EA', fg: '#1B7343', offNote: 'ต้องเชื่อมต่อ LINE Official Account ของโรงเรียนก่อนจึงจะเปิดได้' },
+  { key: 'pa', icon: 'folder', title: 'แฟ้มผลงานสำหรับ PA', desc: 'ครูกดครั้งเดียว ได้ PDF รวมเอกสารที่ลงนามครบทั้งปี', who: ['ครู'], on: true, bg: '#EAF1FB', fg: '#1D4F99' },
+  { key: 'qr', icon: 'qr', title: 'QR Code บนเอกสารที่พิมพ์', desc: 'สแกนแล้วตรวจได้ว่าเป็นเอกสารจริงที่ลงนามในระบบ', who: ['ทุกคน'], on: true, bg: '#EEF2F7', fg: '#1B3762' },
+];
+const LIB = {
+  k: ['นักเรียนส่วนใหญ่อธิบาย [หัวข้อ] ได้ถูกต้อง', 'นักเรียนร้อยละ [ ] ผ่านจุดประสงค์ด้านความรู้', 'นักเรียนบางส่วนยังสับสนเรื่อง [ ]'],
+  p: ['นักเรียนทำการทดลองเป็นกลุ่มและบันทึกผลได้', 'นักเรียนวิเคราะห์ข้อมูลและสรุปผลได้', 'นักเรียนนำเสนอผลงานหน้าชั้นเรียนได้'],
+  a: ['นักเรียนมีความมุ่งมั่นในการทำงาน', 'นักเรียนทำงานร่วมกับผู้อื่นได้ดี', 'นักเรียนส่งงานตรงเวลา'],
+  prob: ['เวลาไม่เพียงพอ แก้โดยมอบหมายงานต่อที่บ้าน', 'อุปกรณ์มีจำกัด แก้โดยจัดกลุ่มหมุนเวียน'],
+  sugg: ['ควรเพิ่มแบบฝึกหัดเสริม', 'ควรใช้สื่อวิดีโอประกอบการอธิบาย'],
+};
+const TABS = [['k', 'ความรู้ K'], ['p', 'ทักษะ P'], ['a', 'คุณลักษณะ A'], ['prob', 'ปัญหา'], ['sugg', 'ข้อเสนอแนะ']];
+const LOG = [
+  { text: 'เปิด ลงนามแบบไล่การ์ด', who: 'นายวีระ ส่งเสริม', when: '3 ต.ค. 2569 16:05', dot: '#1B7343' },
+  { text: 'ปิด สรุปงานเข้า LINE ทุกเช้า', who: 'นายวีระ ส่งเสริม', when: '2 ต.ค. 2569 09:12', dot: '#B0341F' },
+  { text: 'เปิด ประโยคสำเร็จรูปในบันทึกหลังแผน', who: 'นายวีระ ส่งเสริม', when: '1 ต.ค. 2569 08:30', dot: '#1B7343' },
+];
+
+class Component extends DCLogic {
+  renderVals() {
+    const st = this.state || {};
+    const on = st.on || Object.fromEntries(FEATURES.map((f) => [f.key, f.on]));
+    const lib = st.lib || LIB;
+    const tab = st.tab || 'k';
+    const log = st.log || LOG;
+    const draft = st.draft || '';
+    const features = FEATURES.map((f) => {
+      const isOn = Boolean(on[f.key]);
+      return {
+        title: f.title,
+        desc: f.desc,
+        who: f.who,
+        icon: ICON[f.icon],
+        iconBg: f.bg,
+        iconFg: f.fg,
+        on: isOn,
+        aria: (isOn ? 'ปิด ' : 'เปิด ') + f.title,
+        stateText: isOn ? 'เปิด' : 'ปิด',
+        stateFg: isOn ? '#1B7343' : '#4E5F78',
+        track: isOn ? '#1D3A66' : '#C2CCDA',
+        knob: isOn ? '26px' : '0px',
+        border: isOn ? '#C5D6EE' : '#D6DEE9',
+        showLibrary: f.key === 'chips' && isOn,
+        showOffNote: !isOn && Boolean(f.offNote),
+        offNote: f.offNote || '',
+        toggle: () => this.setState({
+          on: Object.assign({}, on, { [f.key]: !isOn }),
+          log: [{ text: (isOn ? 'ปิด ' : 'เปิด ') + f.title, who: 'นายวีระ ส่งเสริม', when: 'วันนี้ เมื่อสักครู่', dot: isOn ? '#B0341F' : '#1B7343' }].concat(log),
+        }),
+      };
+    });
+    return {
+      menu: MENU.map(([k, label]) => ({ label, icon: ICON[k], bg: k === 'toggle' ? '#FFFFFF' : 'transparent', fg: k === 'toggle' ? '#1B3762' : '#FFFFFF', weight: k === 'toggle' ? '700' : '500' })),
+      features,
+      log,
+      libTabs: TABS.map(([k, label]) => ({ label, pick: () => this.setState({ tab: k }), bg: k === tab ? '#FFFFFF' : 'transparent', fg: k === tab ? '#1B3762' : '#4E5F78' })),
+      libItems: lib[tab].map((text, i) => ({ text, remove: () => this.setState({ lib: Object.assign({}, lib, { [tab]: lib[tab].filter((_, j) => j !== i) }) }) })),
+      draft,
+      typeDraft: (e) => this.setState({ draft: e.target.value }),
+      addDraft: () => {
+        const t = draft.trim();
+        if (t) this.setState({ lib: Object.assign({}, lib, { [tab]: lib[tab].concat([t]) }), draft: '' });
+      },
+    };
+  }
+}
+</script>
+</body>
+</html>

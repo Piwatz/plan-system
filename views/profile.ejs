@@ -1,0 +1,32 @@
+<%- include('partials/top') %>
+<div class="narrow">
+  <div class="page-head"><div><h1>ข้อมูลส่วนตัวและลายเซ็น</h1><div class="sub">ชื่อ ตำแหน่ง และลายเซ็นนี้จะใช้ในบันทึกข้อความและเอกสารที่พิมพ์จากระบบ</div></div></div>
+  <form class="card" method="post" action="/profile">
+    <dl class="info" style="margin-bottom:14px">
+      <div><dt>ชื่อ สกุล</dt><dd><%= me.full_name %></dd></div>
+      <div><dt>ชื่อผู้ใช้</dt><dd><%= me.username %></dd></div>
+      <div><dt>กลุ่มสาระ</dt><dd><%= me.dept_name || '-' %></dd></div>
+      <div><dt>หน้าที่ผู้ตรวจ</dt><dd><%= me.roles.map((r) => (wf.stepOf(r) || {}).label).filter(Boolean).join(' และ ') || '-' %></dd></div>
+    </dl>
+    <p class="muted small">ถ้าชื่อหรือกลุ่มสาระไม่ถูกต้อง แจ้งผู้ดูแลระบบให้แก้ไข</p>
+    <div class="field">
+      <label for="position">ตำแหน่งที่ใช้ในเอกสาร</label>
+      <input type="text" id="position" name="position" value="<%= me.position %>" placeholder="เช่น ครู หรือ ครูผู้ช่วย หรือ ครู วิทยฐานะครูชำนาญการ">
+    </div>
+    <div class="field">
+      <span class="label">ลายเซ็น</span>
+      <% if (me.signature) { %>
+        <div class="btn-row" style="margin-bottom:10px">
+          <span class="sig-box"><img class="sig-preview" src="<%= me.signature %>" alt="ลายเซ็นปัจจุบัน"></span>
+          <label class="check"><input type="checkbox" name="remove_signature" value="1"> ลบลายเซ็นนี้</label>
+        </div>
+        <p class="muted small">ถ้าต้องการเปลี่ยน ให้เซ็นใหม่ในกรอบด้านล่าง</p>
+      <% } %>
+      <%- include('partials/sigpad') %>
+      <div class="hint">เซ็นบนมือถือด้วยนิ้วได้ หรือถ่ายรูปลายเซ็นบนกระดาษขาวแล้วกดใช้รูปจากไฟล์</div>
+    </div>
+    <button class="btn btn-primary" type="submit" data-confirm="บันทึกข้อมูลส่วนตัวและลายเซ็น">บันทึก</button>
+    <a class="btn btn-ghost" href="/password">เปลี่ยนรหัสผ่าน</a>
+  </form>
+</div>
+<%- include('partials/bottom') %>

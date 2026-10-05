@@ -1,0 +1,35 @@
+<%
+  // บันทึกข้อความขออนุญาตใช้แผนหรือคู่มือ จัดหน้าตามไฟล์ Word และ PDF ของโรงเรียน (TH SarabunPSK 16 พอยต์)
+  const T = wf.DOC_TYPES[sub.doc_type];
+  const subj = `${sub.subject_name} (${sub.subject_code})`;
+  const last = steps[steps.length - 1];
+  const middle = steps.slice(0, -1);
+  const term = `ภาคเรียนที่ ${sub.semester} ปีการศึกษา ${sub.academic_year}`;
+%>
+<div class="paper memo">
+  <%- include('qr_corner') %>
+  <div class="memo-title"><% if (settings.memo_logo) { %><img class="garuda" src="<%= settings.memo_logo %>" alt=""><% } %><h1 class="doc">บันทึกข้อความ</h1></div>
+  <div class="mrow"><b>ส่วนราชการ</b> <%= settings.school_name %>  <%= String(settings.school_location || '').trim().split(' ').filter(Boolean).join('  ') %></div>
+  <div class="mrow"><b class="mk">ที่</b><span class="mv1"><%= sub.doc_no %></span><b>วันที่</b>  <%= util.thaiDate(submitDate).replace(' ', '  ') %></div>
+  <div class="mrow subject"><b class="mk">เรื่อง</b><span>ขออนุญาตใช้<%= T.label %></span></div>
+  <div class="mrow to"><b class="mk">เรียน</b><span>ผู้อำนวยการ<%= settings.school_name %></span></div>
+
+  <p class="indent">ตามที่ข้าพเจ้า <%= sub.teacher_name %> ตำแหน่ง <%= sub.teacher_position || 'ครู' %>  ได้จัดทำ<%= sub.doc_type === 'plan' ? 'แผนการจัดการเรียนรู้รายวิชา' : 'คู่มือรายวิชา' %><%= subj %> ระดับชั้น<%= gradeFull %> <%= deptFull %> ประจำ<%= term %> จำนวน 1 เล่ม</p>
+  <% if (sub.doc_type === 'plan') { %>
+    <p class="indent">ข้าพเจ้าได้วิเคราะห์ผลการเรียนรู้ คำอธิบายรายวิชา โครงสร้างรายวิชา เพื่อจัดทำแผนการจัดการเรียนรู้รายหน่วยการเรียนรู้และรายคาบ ข้าพเจ้าจึงขออนุญาตใช้แผนการจัดการเรียนรู้รายวิชา<%= subj %> ตามเอกสารที่แนบมาพร้อมนี้เพื่อจัดการเรียนการสอนใน<%= term %> ต่อไป</p>
+  <% } else { %>
+    <p class="indent">ข้าพเจ้าจึงขออนุญาตใช้คู่มือรายวิชา<%= subj %> ตามเอกสารที่แนบมาพร้อมนี้ เพื่อจัดการเรียนการสอนใน<%= term %> ต่อไป</p>
+  <% } %>
+  <p class="indent">เพื่อโปรดทราบและพิจารณาอนุญาต</p>
+
+  <div class="tsign">
+    <div class="tsig"><% if (sub.teacher_signature) { %><img src="<%= sub.teacher_signature %>" alt="ลายเซ็นผู้สอน"><% } %></div>
+    <div>(<%= sub.teacher_name %>)</div>
+    <div>ตำแหน่ง <%= sub.teacher_position || 'ครู' %></div>
+  </div>
+
+  <div class="boxes">
+    <% middle.forEach((st, i) => { %><%- include('sign_box', { st, side: i % 2 ? 'r' : 'l' }) %><% }) %>
+    <% if (last) { %><%- include('sign_box', { st: last, side: 'full' }) %><% } %>
+  </div>
+</div>

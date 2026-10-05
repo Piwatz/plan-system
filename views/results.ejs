@@ -1,0 +1,75 @@
+<%- include('partials/top') %>
+<div class="page-head">
+  <div>
+    <div class="eyebrow">จากบันทึกหลังแผน ภาคเรียนที่ <%= term.semester %>/<%= term.year %></div>
+    <h1>ผลการสอนของฉัน</h1>
+  </div>
+  <% if (codes.length > 1) { %>
+    <div class="actions"><% for (const c of codes) { %><a class="btn <%= c === code ? 'btn-primary' : 'btn-ghost' %>" href="/results?code=<%= encodeURIComponent(c) %>"><%= c %></a><% } %></div>
+  <% } %>
+</div>
+
+<% if (!rows.length) { %>
+  <div class="card"><div class="empty">
+    <p>ยังไม่มีข้อมูล กราฟจะขึ้นเมื่อบันทึกหลังแผนที่ส่งแล้วมีจำนวนนักเรียนทั้งห้องและจำนวนที่ผ่านจุดประสงค์</p>
+    <a class="btn btn-primary" href="/notes">ไปที่บันทึกหลังแผน</a>
+  </div></div>
+<% } else { %>
+  <div class="grid-4" style="margin-bottom:18px">
+    <div class="stat blue"><span class="label">รายวิชา</span><b class="num" style="font-size:1.5rem"><%= code %></b><span class="sub"><%= subjectName %></span></div>
+    <div class="stat"><span class="label">เฉลี่ยผ่านจุดประสงค์</span><b class="num"><%= avg %>%</b><span class="sub">ทุกแผนที่มีข้อมูล</span></div>
+    <div class="stat"><span class="label">บันทึกแล้ว</span><b class="num"><%= rows.length %> แผน</b><span class="sub">ที่กรอกจำนวนนักเรียน</span></div>
+    <div class="stat <%= lows.length ? 'orange' : 'green' %>"><span class="label">ต่ำกว่าเกณฑ์ 70</span><b class="num"><%= lows.length %> แผน</b><span class="sub"><%= lows.length ? 'ควรสอนซ่อมเสริม' : 'ผ่านเกณฑ์ทุกแผน' %></span></div>
+  </div>
+
+  <div class="grid-3">
+    <section class="card" data-bars="<%= JSON.stringify(rows) %>" data-start="<%= start %>">
+      <h2 style="margin-bottom:2px">ร้อยละนักเรียนที่ผ่านจุดประสงค์ รายแผน</h2>
+      <p class="muted small">แตะแท่งเพื่อดูรายละเอียด เส้นประสีแดงคือเกณฑ์ร้อยละ 70</p>
+      <div class="sel-box" data-bar-sel aria-live="polite"><b></b><br><span class="muted"></span></div>
+      <div class="bars">
+        <div class="bars-axis" aria-hidden="true">
+          <span style="top:-8px">100</span><span style="bottom:calc(70% - 8px);color:var(--back);font-weight:700">70</span><span style="bottom:calc(50% - 8px)">50</span><span style="bottom:-8px">0</span>
+        </div>
+        <div class="bars-plot">
+          <div class="bars-area">
+            <span class="gl" style="top:0"></span><span class="gl" style="bottom:50%"></span><span class="gl" style="bottom:0"></span>
+            <span class="goal" style="bottom:70%"></span>
+            <div class="bars-cols">
+              <% rows.forEach((r, i) => { %>
+                <button type="button" data-bar-i="<%= i %>" aria-label="แผนที่ <%= r.no %> ผ่านร้อยละ <%= r.pct %>">
+                  <span class="flag"><%= r.pct < 70 ? '!' : '' %></span>
+                  <span class="b<%= r.pct < 70 ? ' low' : '' %>" style="height:<%= Math.max(1, r.pct) %>%"></span>
+                </button>
+              <% }) %>
+            </div>
+          </div>
+          <div class="bars-labels" aria-hidden="true"><% rows.forEach((r, i) => { %><span data-bar-l="<%= i %>"><%= r.no %></span><% }) %></div>
+          <span class="center muted small">แผนที่</span>
+        </div>
+      </div>
+      <details style="margin-top:12px">
+        <summary class="muted" style="cursor:pointer">ดูเป็นตาราง</summary>
+        <div class="table-wrap"><table class="table" style="margin-top:8px">
+          <thead><tr><th>แผนที่</th><th>เรื่อง</th><th class="num">ผ่าน</th><th class="num">ร้อยละ</th></tr></thead>
+          <tbody><% for (const r of rows) { %><tr><td><%= r.no %></td><td><a href="/s/<%= r.id %>"><%= r.topic %></a></td><td class="num"><%= r.passed %>/<%= r.total %></td><td class="num"><%= r.pct %></td></tr><% } %></tbody>
+        </table></div>
+      </details>
+    </section>
+    <section class="card">
+      <h2>แผนที่ควรสอนซ่อมเสริม</h2>
+      <% if (!lows.length) { %>
+        <p class="muted">ทุกแผนมีนักเรียนผ่านจุดประสงค์ตั้งแต่ร้อยละ 70 ขึ้นไป</p>
+      <% } else { %>
+        <ul class="feed">
+          <% for (const r of lows) { %>
+            <li><span class="fdot return"></span><span class="fbody"><a href="/s/<%= r.id %>"><b>แผนที่ <%= r.no %> <%= r.topic %></b></a><span>ผ่านร้อยละ <%= r.pct %> ยังไม่ผ่าน <%= r.total - r.passed %> คน</span></span></li>
+          <% } %>
+        </ul>
+        <p class="muted small" style="margin-top:12px">แผนที่ผ่านน้อยที่สุด เหมาะใช้เป็นหัวข้อวิจัยในชั้นเรียน</p>
+      <% } %>
+      <% if (ff.pa) { %><a class="btn btn-primary btn-block" style="margin-top:8px" href="/pa">ใส่ผลการสอนในแฟ้มผลงาน PA</a><% } %>
+    </section>
+  </div>
+<% } %>
+<%- include('partials/bottom') %>

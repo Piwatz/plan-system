@@ -1,0 +1,51 @@
+<%
+  const T = wf.DOC_TYPES[sub.doc_type];
+  const items = scoreDetail.length ? scoreDetail : rubric.map((it) => ({ id: it.id, title: it.title, score: null, max: it.max_score }));
+  const top = items.reduce((m, d) => Math.max(m, d.max), 5);
+  const cols = []; for (let v = top; v >= 1; v--) cols.push(v);
+  const colSum = (v) => items.filter((d) => d.score === v).length * v;
+  const pct = sub.score_max ? sub.score_total / sub.score_max * 100 : null;
+  let scorerPosition = 'หัวหน้ากลุ่มสาระการเรียนรู้' + (sub.dept_name || '');
+  if (scorer && scorer.role !== 'dept_head') { const st = wf.stepOf(scorer.role); if (st) scorerPosition = st.label; }
+%>
+<div class="paper eval">
+  <%- include('qr_corner') %>
+  <h2 class="doc">แบบประเมิน<%= T.label %></h2>
+  <div class="row"><span class="k"><%= T.label %>รายวิชา</span><span class="line"><%= sub.subject_name %></span><span class="k">รหัสวิชา</span><span class="line" style="max-width:35%"><%= sub.subject_code %></span></div>
+  <div class="row"><span class="k">ครูผู้สอน</span><span class="line"><%= sub.teacher_name %></span><span class="k">กลุ่มสาระการเรียนรู้</span><span class="line"><%= sub.dept_name %></span></div>
+  <p style="margin:8px 0 2px"><b>คำชี้แจง</b> โปรดทำเครื่องหมาย ✓ ลงในช่องระดับการประเมินที่ตรงกับความคิดเห็นของท่าน</p>
+  <div class="small" style="display:grid;grid-template-columns:1fr 1fr;gap:0 16px">
+    <div>5 หมายถึง มีความสอดคล้อง/เชื่อมโยง/ครอบคลุม/เหมาะสม มากที่สุด</div>
+    <div>2 หมายถึง มีความสอดคล้อง/เชื่อมโยง/ครอบคลุม/เหมาะสม น้อย</div>
+    <div>4 หมายถึง มีความสอดคล้อง/เชื่อมโยง/ครอบคลุม/เหมาะสม มาก</div>
+    <div>1 หมายถึง มีความสอดคล้อง/เชื่อมโยง/ครอบคลุม/เหมาะสม น้อยที่สุด</div>
+    <div>3 หมายถึง มีความสอดคล้อง/เชื่อมโยง/ครอบคลุม/เหมาะสม ปานกลาง</div>
+  </div>
+  <table class="grid">
+    <thead>
+      <tr><th rowspan="2">รายการประเมิน</th><th colspan="<%= cols.length %>">ระดับการประเมิน</th></tr>
+      <tr><% for (const v of cols) { %><th><%= v %></th><% } %></tr>
+    </thead>
+    <tbody>
+      <% items.forEach((d, i) => { %>
+        <tr><td><%= i + 1 %>. <%= d.title %></td><% for (const v of cols) { %><td class="c"><%= d.score === v ? '✓' : '' %></td><% } %></tr>
+      <% }) %>
+      <tr><th style="text-align:right">รวม</th><% for (const v of cols) { %><td class="c"><%= scoreDetail.length ? colSum(v) || '' : '' %></td><% } %></tr>
+    </tbody>
+  </table>
+  <p><b>รวม/สรุปผล</b> ได้ <b><%= sub.score_max ? sub.score_total : '.........' %></b> คะแนน จาก <%= sub.score_max || items.reduce((a, d) => a + d.max, 0) %> คะแนน
+    ได้ระดับคุณภาพ <b><%= pct == null ? '.....................' : wf.scoreLevel(pct) %></b></p>
+  <div style="display:flex;gap:20px;flex-wrap:wrap;align-items:flex-start">
+    <div class="small" style="flex:1;min-width:220px">
+      <b>เกณฑ์การแปลความหมาย</b><br>
+      90 ถึง 100 ระดับคุณภาพ ดีมาก<br>70 ถึง 89 ระดับคุณภาพ ดี<br>50 ถึง 69 ระดับคุณภาพ ปานกลาง<br>30 ถึง 49 ระดับคุณภาพ พอใช้<br>20 ถึง 29 ระดับคุณภาพ ปรับปรุง
+      <% if (sub.score_max && sub.score_max !== 100) { %><br><span class="muted">(เทียบเป็นร้อยละของคะแนนเต็ม)</span><% } %>
+    </div>
+    <div class="sign" style="flex:1;min-width:240px">
+      <div class="sigline">ลงชื่อ <% if (scorer && scorer.signature) { %><img src="<%= scorer.signature %>" alt="ลายเซ็นผู้ประเมิน"><% } else { %><span>..........................................</span><% } %></div>
+      <div>(<%= scorer ? scorer.user_name : '..........................................' %>)</div>
+      <div><%= scorerPosition %></div>
+      <% if (scorer) { %><div class="small muted sig-date"><%= util.thaiDate(scorer.created_at) %></div><% } %>
+    </div>
+  </div>
+</div>

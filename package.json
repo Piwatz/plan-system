@@ -1,0 +1,37 @@
+{
+  "name": "plan-system",
+  "version": "1.0.0",
+  "private": true,
+  "description": "ระบบส่งแผนการสอนออนไลน์ ตรวจและลงนาม 5 ระดับ",
+  "main": "server.js",
+  "engines": {
+    "node": ">=22.13"
+  },
+  "scripts": {
+    "start": "node --disable-warning=ExperimentalWarning server.js",
+    "demo": "node --disable-warning=ExperimentalWarning scripts/seed-demo.js && node --disable-warning=ExperimentalWarning server.js --data data-demo --demo",
+    "test": "node --disable-warning=ExperimentalWarning --test \"tests/*.test.js\""
+  },
+  "dependencies": {
+    "@fontsource/anuphan": "^5.3.0",
+    "@fontsource/bai-jamjuree": "^5.3.0",
+    "@fontsource/ibm-plex-sans-thai": "^5.3.0",
+    "@fontsource/ibm-plex-sans-thai-looped": "^5.3.0",
+    "@fontsource/kanit": "^5.3.0",
+    "@fontsource/krub": "^5.3.0",
+    "@fontsource/niramit": "^5.3.0",
+    "@fontsource/noto-sans-thai-looped": "^5.3.0",
+    "@fontsource/noto-serif-thai": "^5.3.0",
+    "@fontsource/pridi": "^5.3.0",
+    "@fontsource/sarabun": "^5.3.0",
+    "@fontsource/trirong": "^5.3.0",
+    "chart.js": "^4.5.1",
+    "cookie-session": "^2.1.1",
+    "ejs": "^6.0.1",
+    "express": "^5.2.1",
+    "multer": "^2.4.0",
+    "pdf-lib": "^1.17.1",
+    "pdfjs-dist": "^6.4.299",
+    "qrcode": "^1.5.4"
+  }
+}

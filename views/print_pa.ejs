@@ -1,0 +1,69 @@
+<%- include('partials/print_top') %>
+<%
+  const T = wf.DOC_TYPES;
+  const first = workPages[0] ? workPages[0].sub : notes[0];
+  const position = first ? first.teacher_position || 'ครู' : me.position;
+  const deptName = first ? first.dept_name : me.dept_name;
+%>
+<div class="paper">
+  <div class="cover<%= cover === 'color' ? ' color' : '' %>">
+    <% if (cover === 'color') { %>
+      <div class="band" style="font-size:18pt;font-weight:700;margin-top:-6mm"><%= settings.school_name %></div>
+    <% } %>
+    <img src="<%= settings.school_logo || '/static/img/school-logo.png' %>" alt="ตราโรงเรียน" style="<%= cover === 'color' ? 'background:#fff;border-radius:50%;padding:3mm;width:46mm' : '' %>">
+    <h1>แฟ้มผลงานการจัดการเรียนรู้<br><span style="font-size:18pt">ประกอบการพัฒนางานตามข้อตกลง (PA)</span></h1>
+    <div class="who">
+      <b><%= me.full_name %></b><br>
+      ตำแหน่ง <%= position %><br>
+      <%= deptName ? 'กลุ่มสาระการเรียนรู้' + deptName.replace(/^กลุ่มสาระการเรียนรู้/, '') : '' %>
+    </div>
+    <div class="who" style="font-size:16pt"><%= settings.school_name %> <%= settings.school_location %><br>ปีการศึกษา <%= year %></div>
+  </div>
+</div>
+
+<% if (inc.has('summary')) { %>
+  <div class="paper">
+    <h2 class="doc">สรุปผลงานการจัดการเรียนรู้ ปีการศึกษา <%= year %></h2>
+    <table class="grid">
+      <thead><tr><th>ภาคเรียน</th><th>รหัสวิชา</th><th>รายวิชา</th><th>เอกสาร</th><th>คะแนน</th><th>ระดับคุณภาพ</th><th>ลงนามครบ</th></tr></thead>
+      <tbody>
+        <% for (const w of workPages) { const s = w.sub; %>
+          <tr><td class="c"><%= s.semester %></td><td><%= s.subject_code %></td><td><%= s.subject_name %></td><td><%= T[s.doc_type].label %></td>
+            <td class="c"><%= s.score_max ? s.score_total + '/' + s.score_max : '' %></td><td class="c"><%= s.score_max ? wf.scoreLevel(s.score_total / s.score_max * 100) : '' %></td>
+            <td><%= util.thaiDate(s.completed_at, true) %></td></tr>
+        <% } %>
+        <% if (!workPages.length) { %><tr><td colspan="7" style="text-align:center">ยังไม่มีคู่มือหรือแผนที่ลงนามครบ</td></tr><% } %>
+      </tbody>
+    </table>
+    <p>บันทึกหลังแผนที่ลงนามครบแล้ว <b><%= notes.length %></b> ฉบับ
+      <% const bySubj = {}; for (const n of notes) bySubj[n.subject_code] = (bySubj[n.subject_code] || 0) + 1; %>
+      <% if (notes.length) { %>(<%= Object.entries(bySubj).map(([c, n]) => c + ' ' + n + ' ฉบับ').join(' ') %>)<% } %></p>
+  </div>
+<% } %>
+
+<% if (inc.has('results') && resultRows.length) { %>
+  <div class="paper">
+    <h2 class="doc">ผลการจัดการเรียนรู้รายแผน ปีการศึกษา <%= year %></h2>
+    <p class="small">ร้อยละของนักเรียนที่ผ่านจุดประสงค์การเรียนรู้ จากบันทึกหลังแผนที่ลงนามครบแล้ว เกณฑ์ร้อยละ 70</p>
+    <table class="grid">
+      <thead><tr><th>รหัสวิชา</th><th>แผนที่</th><th>เรื่อง</th><th>นักเรียน</th><th>ผ่าน</th><th>ร้อยละ</th></tr></thead>
+      <tbody>
+        <% for (const r of resultRows) { %>
+          <tr><td><%= r.subject_code %></td><td class="c"><%= r.plan_no %></td><td><%= r.topic %></td><td class="c"><%= r.students_total %></td><td class="c"><%= r.students_passed %></td>
+            <td class="c" style="<%= r.pct < 70 ? 'font-weight:700' : '' %>"><%= r.pct %><%= r.pct < 70 ? ' *' : '' %></td></tr>
+        <% } %>
+      </tbody>
+    </table>
+    <% const avg = Math.round(resultRows.reduce((a, r) => a + r.pct, 0) / resultRows.length); const low = resultRows.filter((r) => r.pct < 70); %>
+    <p>เฉลี่ยร้อยละ <b><%= avg %></b> แผนที่ต่ำกว่าเกณฑ์ <b><%= low.length %></b> แผน<%= low.length ? ' (ทำเครื่องหมาย * ไว้ ใช้วางแผนสอนซ่อมเสริมและวิจัยในชั้นเรียน)' : '' %></p>
+  </div>
+<% } %>
+
+<% for (const w of workPages) { %>
+  <% if (inc.has('memo')) { %><%- include('partials/memo_page', { ...w }) %><% } %>
+  <% if (inc.has('eval') && w.sub.score_max) { %><%- include('partials/eval_page', { ...w, rubric: rubrics[w.sub.doc_type] }) %><% } %>
+<% } %>
+
+<% for (const it of notePages) { %><%- include('partials/note_page', { it }) %><% } %>
+</body>
+</html>

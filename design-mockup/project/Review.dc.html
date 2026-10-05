@@ -1,0 +1,224 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<title>ผู้ตรวจ ดูไฟล์และให้คะแนน</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Anuphan:wght@400;500;600&amp;family=Bai+Jamjuree:wght@400;500;600&amp;family=IBM+Plex+Sans+Thai:wght@400;500;600&amp;family=IBM+Plex+Sans+Thai+Looped:wght@400;500;600&amp;family=Krub:wght@400;500;600&amp;family=Niramit:wght@400;500;600&amp;family=Noto+Sans+Thai+Looped:wght@400;500;600;700&amp;family=Noto+Serif+Thai:wght@500;600;700&amp;family=Pridi:wght@500;600&amp;family=Sarabun:wght@400;700&amp;family=Trirong:wght@500;600&amp;display=swap" rel="stylesheet">
+<style>body{margin:0}</style>
+</helmet>
+<div style="width: 1180px; height: 820px; display: flex; flex-direction: column; overflow: hidden; box-sizing: border-box; background: {{t.bg}}; color: {{t.ink}}; font-family: {{t.body}}; font-size: 16px; line-height: 1.5">
+
+  <header style="height: 76px; flex: none; box-sizing: border-box; display: flex; align-items: center; gap: 16px; padding: 0 20px; background: {{t.surface}}; border-bottom: 1px solid {{t.line}}">
+    <button type="button" style="height: 44px; padding: 0 14px 0 8px; border: 1px solid {{t.line}}; border-radius: {{t.rs}}; background: {{t.surface}}; color: {{t.ink}}; font: 500 15px/1 {{t.body}}; display: flex; align-items: center; gap: 4px; cursor: pointer">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m15 6-6 6 6 6"></path></svg>
+      รอตรวจ
+    </button>
+    <div style="flex: 1; min-width: 0; display: flex; flex-direction: column">
+      <span style="font-size: 14px; color: {{t.muted}}">คู่มือรายวิชา  ส่งเมื่อ 4 ต.ค. 2569  กลุ่มสาระวิทยาศาสตร์และเทคโนโลยี</span>
+      <span style="font-family: {{t.head}}; font-weight: {{t.headWeight}}; font-size: 21px; line-height: 1.35; white-space: nowrap; overflow: hidden; text-overflow: ellipsis">ว30203 ฟิสิกส์เพิ่มเติม 3  นายสมชาย ใจดี</span>
+    </div>
+    <div style="display: flex; align-items: center; gap: 8px">
+      <span style="font-size: 15px; color: {{t.muted}}">งานที่ 1 จาก 12</span>
+      <button type="button" aria-label="งานก่อนหน้า" style="width: 44px; height: 44px; border-radius: 50%; border: 1px solid {{t.line}}; background: {{t.surface}}; color: {{t.muted}}; display: flex; align-items: center; justify-content: center; cursor: pointer">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m15 6-6 6 6 6"></path></svg>
+      </button>
+      <button type="button" aria-label="งานถัดไป" style="width: 44px; height: 44px; border-radius: 50%; border: 1px solid {{t.line}}; background: {{t.surface}}; color: {{t.ink}}; display: flex; align-items: center; justify-content: center; cursor: pointer">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 6 6 6-6 6"></path></svg>
+      </button>
+    </div>
+  </header>
+
+  <div style="flex: 1; min-height: 0; display: flex">
+
+    <section aria-label="ไฟล์คู่มือรายวิชา" style="flex: 1; min-width: 0; display: flex; flex-direction: column; background: {{t.doc}}">
+      <div style="height: 60px; flex: none; box-sizing: border-box; display: flex; align-items: center; gap: 10px; padding: 0 16px; border-bottom: 1px solid {{t.line}}">
+        <span style="display: flex; align-items: center; gap: 8px; min-width: 0; flex: 1; font-size: 15px">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 3H6a1 1 0 0 0-1 1v16a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V8z"></path><path d="M14 3v5h5"></path></svg>
+          <span style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis">คู่มือรายวิชา_ว30203.pdf</span>
+          <span style="color: {{t.muted}}; white-space: nowrap">หน้า 3 จาก 48</span>
+        </span>
+        <button type="button" aria-label="ย่อ" style="width: 44px; height: 44px; border-radius: {{t.rs}}; border: 1px solid {{t.line}}; background: {{t.surface}}; color: {{t.ink}}; font: 500 20px/1 {{t.body}}; cursor: pointer">−</button>
+        <span style="width: 52px; text-align: center; font-size: 15px">100%</span>
+        <button type="button" aria-label="ขยาย" style="width: 44px; height: 44px; border-radius: {{t.rs}}; border: 1px solid {{t.line}}; background: {{t.surface}}; color: {{t.ink}}; font: 500 20px/1 {{t.body}}; cursor: pointer">+</button>
+        <button type="button" style="height: 44px; padding: 0 14px; border-radius: {{t.rs}}; border: 1px solid {{t.line}}; background: {{t.surface}}; color: {{t.ink}}; font: 500 15px/1 {{t.body}}; display: flex; align-items: center; gap: 6px; cursor: pointer">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v11m0 0-4-4m4 4 4-4M5 20h14"></path></svg>
+          ดาวน์โหลด
+        </button>
+      </div>
+      <div style="flex: 1; min-height: 0; overflow-y: auto; padding: 28px 24px; display: flex; flex-direction: column; align-items: center; gap: 24px">
+        <article style="width: 560px; flex: none; box-sizing: border-box; background: #FFFFFF; color: #1A1A1A; box-shadow: 0 2px 12px rgba(0, 0, 0, .12); padding: 52px 56px 40px; font-family: 'Sarabun', sans-serif; font-size: 15px; line-height: 1.6; display: flex; flex-direction: column; gap: 12px">
+          <h3 style="margin: 0; text-align: center; font-size: 19px; font-weight: 700">คำอธิบายรายวิชา</h3>
+          <div style="display: flex; justify-content: space-between; gap: 12px"><span>รหัสวิชา ว30203</span><span>รายวิชา ฟิสิกส์เพิ่มเติม 3</span><span>1.5 หน่วยกิต</span></div>
+          <div style="display: flex; justify-content: space-between; gap: 12px; padding-bottom: 10px; border-bottom: 1px solid #CCCCCC"><span>กลุ่มสาระการเรียนรู้วิทยาศาสตร์และเทคโนโลยี</span><span>ชั้นมัธยมศึกษาปีที่ 5</span></div>
+          <p style="margin: 0; text-indent: 2.5em">ศึกษาการเคลื่อนที่แบบฮาร์มอนิกอย่างง่าย ปริมาณที่เกี่ยวข้องกับการสั่น ธรรมชาติของคลื่น ส่วนประกอบของคลื่น การสะท้อน การหักเห การแทรกสอด และการเลี้ยวเบนของคลื่น การเกิดเสียง ความเข้มเสียง ระดับเสียง และการได้ยิน แสงเชิงคลื่นและแสงเชิงรังสี โดยใช้กระบวนการทางวิทยาศาสตร์ การสืบเสาะหาความรู้ การทดลอง และการแก้ปัญหา</p>
+          <p style="margin: 0; text-indent: 2.5em">เพื่อให้เกิดความรู้ ความเข้าใจ สามารถสื่อสารสิ่งที่เรียนรู้ นำความรู้ไปใช้ในชีวิตประจำวัน มีจิตวิทยาศาสตร์ จริยธรรม คุณธรรม และค่านิยมที่เหมาะสม</p>
+          <b>ผลการเรียนรู้</b>
+          <span>1. ทดลองและอธิบายการเคลื่อนที่แบบฮาร์มอนิกอย่างง่ายของวัตถุติดปลายสปริงและลูกตุ้มอย่างง่าย</span>
+          <span>2. อธิบายความถี่ธรรมชาติของวัตถุและการเกิดการสั่นพ้อง</span>
+          <span>3. อธิบายปรากฏการณ์คลื่น ชนิดของคลื่น ส่วนประกอบของคลื่น และการเคลื่อนที่ของคลื่น</span>
+          <span>4. สังเกตและอธิบายการสะท้อน การหักเห การแทรกสอด และการเลี้ยวเบนของคลื่นผิวน้ำ</span>
+          <span style="color: #666666; text-align: center; padding-top: 18px">3</span>
+        </article>
+        <article style="width: 560px; flex: none; box-sizing: border-box; background: #FFFFFF; color: #1A1A1A; box-shadow: 0 2px 12px rgba(0, 0, 0, .12); padding: 52px 56px 40px; font-family: 'Sarabun', sans-serif; font-size: 15px; line-height: 1.6; display: flex; flex-direction: column; gap: 12px">
+          <h3 style="margin: 0; text-align: center; font-size: 19px; font-weight: 700">โครงสร้างรายวิชา</h3>
+          <div style="display: grid; grid-template-columns: 36px minmax(0, 1fr) 72px 64px; border: 1px solid #999999">
+            <b style="padding: 6px; border-bottom: 1px solid #999999; text-align: center">ที่</b>
+            <b style="padding: 6px; border-bottom: 1px solid #999999">หน่วยการเรียนรู้</b>
+            <b style="padding: 6px; border-bottom: 1px solid #999999; text-align: center">ชั่วโมง</b>
+            <b style="padding: 6px; border-bottom: 1px solid #999999; text-align: center">คะแนน</b>
+            <span style="padding: 6px; text-align: center">1</span><span style="padding: 6px">การเคลื่อนที่แบบฮาร์มอนิกอย่างง่าย</span><span style="padding: 6px; text-align: center">12</span><span style="padding: 6px; text-align: center">20</span>
+            <span style="padding: 6px; text-align: center">2</span><span style="padding: 6px">คลื่น</span><span style="padding: 6px; text-align: center">14</span><span style="padding: 6px; text-align: center">25</span>
+            <span style="padding: 6px; text-align: center">3</span><span style="padding: 6px">เสียง</span><span style="padding: 6px; text-align: center">14</span><span style="padding: 6px; text-align: center">25</span>
+            <span style="padding: 6px; text-align: center">4</span><span style="padding: 6px">แสงเชิงคลื่น</span><span style="padding: 6px; text-align: center">8</span><span style="padding: 6px; text-align: center">10</span>
+            <span style="padding: 6px; text-align: center">5</span><span style="padding: 6px">แสงเชิงรังสี</span><span style="padding: 6px; text-align: center">12</span><span style="padding: 6px; text-align: center">20</span>
+          </div>
+          <span style="color: #666666; text-align: center; padding-top: 18px">4</span>
+        </article>
+      </div>
+    </section>
+
+    <aside aria-label="แบบประเมิน" style="width: 450px; flex: none; display: flex; flex-direction: column; background: {{t.surface}}; border-left: 1px solid {{t.line}}">
+      <div style="flex: none; padding: 16px 20px 14px; display: flex; flex-direction: column; gap: 10px; border-bottom: 1px solid {{t.line}}">
+        <div style="display: flex; align-items: baseline; justify-content: space-between; gap: 8px">
+          <h2 style="margin: 0; font-family: {{t.head}}; font-weight: {{t.headWeight}}; font-size: 20px">แบบประเมินคู่มือรายวิชา</h2>
+          <span style="font-size: 14px; color: {{t.muted}}; white-space: nowrap">ให้แล้ว {{done}} จาก 20 ข้อ</span>
+        </div>
+        <div style="height: 8px; border-radius: 4px; background: {{t.bg}}; overflow: hidden"><div style="height: 100%; width: {{pct}}; background: {{t.primary}}; border-radius: 4px"></div></div>
+        <div style="display: grid; grid-template-columns: minmax(0, 2fr) minmax(0, 1fr) minmax(0, 1fr); gap: 8px">
+          <button type="button" onClick="{{fill5}}" style="height: 52px; border: 0; border-radius: {{t.rs}}; background: {{t.primary}}; color: {{t.primaryInk}}; font: 600 17px/1 {{t.body}}; cursor: pointer">ให้ 5 ทุกข้อ</button>
+          <button type="button" onClick="{{fill4}}" style="height: 52px; border: 1.5px solid {{t.line}}; border-radius: {{t.rs}}; background: {{t.surface}}; color: {{t.ink}}; font: 600 16px/1 {{t.body}}; cursor: pointer">4 ทุกข้อ</button>
+          <button type="button" onClick="{{clear}}" style="height: 52px; border: 1.5px solid {{t.line}}; border-radius: {{t.rs}}; background: {{t.surface}}; color: {{t.muted}}; font: 500 16px/1 {{t.body}}; cursor: pointer">ล้าง</button>
+        </div>
+        <span style="font-size: 13px; color: {{t.muted}}">5 มากที่สุด 4 มาก 3 ปานกลาง 2 น้อย 1 น้อยที่สุด  กดให้ทุกข้อก่อน แล้วค่อยแก้บางข้อได้</span>
+      </div>
+
+      <div style="flex: 1; min-height: 0; overflow-y: auto">
+        <sc-for list="{{items}}" as="it" hint-placeholder-count="4">
+          <div style="padding: 14px 20px; border-bottom: 1px solid {{t.line}}; display: flex; flex-direction: column; gap: 10px">
+            <span style="font-size: 15px; line-height: 1.45"><b style="color: {{t.muted}}; font-weight: 600">{{it.no}}.</b> {{it.title}}</span>
+            <div style="display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 8px">
+              <sc-for list="{{it.chips}}" as="c" hint-placeholder-count="5">
+                <button type="button" onClick="{{c.pick}}" aria-label="{{c.aria}}" style="height: 46px; border-radius: {{t.rs}}; border: 1.5px solid {{c.bd}}; background: {{c.bg}}; color: {{c.fg}}; font: 600 18px/1 {{t.body}}; cursor: pointer">{{c.v}}</button>
+              </sc-for>
+            </div>
+          </div>
+        </sc-for>
+      </div>
+
+      <div style="flex: none; padding: 14px 20px 18px; display: flex; flex-direction: column; gap: 12px; border-top: 1px solid {{t.line}}; background: {{t.surface}}">
+        <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px">
+          <span style="font-size: 16px">รวม <b style="font-family: {{t.head}}; font-size: 28px; line-height: 1">{{total}}</b> จาก 100</span>
+          <span style="padding: 6px 12px; border-radius: 999px; background: {{levelBg}}; color: {{levelFg}}; font-size: 15px; font-weight: 600">{{levelText}}</span>
+        </div>
+        <label style="display: flex; flex-direction: column; gap: 4px; font-size: 14px; color: {{t.muted}}">ความเห็นของหัวหน้ากลุ่มสาระ
+          <input type="text" placeholder="เช่น เห็นควรอนุญาตให้ใช้" style="height: 46px; box-sizing: border-box; padding: 0 14px; border: 1.5px solid {{t.line}}; border-radius: {{t.rs}}; background: {{t.surface}}; color: {{t.ink}}; font: 400 16px/1 {{t.body}}">
+        </label>
+        <div style="display: flex; gap: 10px">
+          <button type="button" style="height: 52px; padding: 0 16px; border: 1.5px solid {{t.line}}; border-radius: {{t.rs}}; background: {{t.surface}}; color: {{t.ink}}; font: 600 16px/1 {{t.body}}; display: flex; align-items: center; gap: 6px; cursor: pointer">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 14 4 9l5-5"></path><path d="M4 9h10a6 6 0 0 1 0 12h-3"></path></svg>
+            ส่งกลับแก้ไข
+          </button>
+          <button type="button" style="flex: 1; height: 52px; border: 0; border-radius: {{t.rs}}; background: {{t.primary}}; color: {{t.primaryInk}}; font: 600 17px/1 {{t.body}}; display: flex; align-items: center; justify-content: center; gap: 8px; cursor: pointer">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20h4L19 9l-4-4L4 16z"></path></svg>
+            ลงนามเห็นชอบ
+          </button>
+        </div>
+      </div>
+    </aside>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"theme":{"editor":"enum","options":["a","b","c","d","e","f","g","h","i","j"],"default":"a"},"$preview":{"width":1180,"height":820}}'>
+const THEMES = {
+  a: { letter: 'A', name: 'ขาวแดงหรู', desc: 'สีแดงเลือดหมูตามสีโรงเรียน พื้นงาช้าง หัวเรื่องตัวมีเชิง ดูเรียบหรู', fonts: 'Noto Serif Thai กับ IBM Plex Sans Thai', bg: '#F7F3EF', surface: '#FFFFFF', ink: '#241517', muted: '#665558', line: '#E7DDD7', primary: '#8E1B2C', primaryInk: '#FFFFFF', soft: '#F5E6E7', accent: '#A6834B', doc: '#ECE5DF', head: "'Noto Serif Thai', serif", body: "'IBM Plex Sans Thai', sans-serif", headWeight: '600', r: '22px', rs: '14px', shadow: '0 1px 2px rgba(36,21,23,.05), 0 10px 30px rgba(36,21,23,.07)', navBg: '#FFFFFF' },
+  b: { letter: 'B', name: 'มินิมอลขาวสะอาด', desc: 'พื้นขาว แดงสดเป็นสีเน้นสีเดียว ทันสมัยแบบแอปโทรศัพท์', fonts: 'Anuphan', bg: '#F4F4F6', surface: '#FFFFFF', ink: '#1C1C1E', muted: '#5C5C63', line: '#E3E3E8', primary: '#C8102E', primaryInk: '#FFFFFF', soft: '#FCEBEE', accent: '#1C1C1E', doc: '#E9E9ED', head: "'Anuphan', sans-serif", body: "'Anuphan', sans-serif", headWeight: '600', r: '18px', rs: '12px', shadow: '0 1px 2px rgba(0,0,0,.04), 0 4px 16px rgba(0,0,0,.05)', navBg: '#FFFFFF' },
+  c: { letter: 'C', name: 'กรมท่าทองทางการ', desc: 'น้ำเงินกรมท่ากับทอง สุขุม แบบหน่วยงานราชการ', fonts: 'IBM Plex Sans Thai', bg: '#EDF0F5', surface: '#FFFFFF', ink: '#101B31', muted: '#4D5A71', line: '#D9DFE9', primary: '#1B2A4A', primaryInk: '#FFFFFF', soft: '#E5EAF3', accent: '#B08A2E', doc: '#E2E7EF', head: "'IBM Plex Sans Thai', sans-serif", body: "'IBM Plex Sans Thai', sans-serif", headWeight: '600', r: '16px', rs: '10px', shadow: '0 1px 2px rgba(16,27,49,.06), 0 6px 20px rgba(16,27,49,.06)', navBg: '#FFFFFF' },
+  d: { letter: 'D', name: 'มรกตทอง', desc: 'เขียวมรกตเข้มกับทองหม่น สงบ คลาสสิก ตัวอักษรมีหัวอ่านง่ายสำหรับผู้ใหญ่', fonts: 'Trirong กับ Noto Sans Thai Looped', bg: '#F2F5F1', surface: '#FFFFFF', ink: '#14231C', muted: '#4F6158', line: '#DCE5DF', primary: '#1F5C46', primaryInk: '#FFFFFF', soft: '#E2EEE7', accent: '#B4924A', doc: '#E3EAE5', head: "'Trirong', serif", body: "'Noto Sans Thai Looped', sans-serif", headWeight: '600', r: '20px', rs: '14px', shadow: '0 1px 2px rgba(20,35,28,.05), 0 10px 28px rgba(20,35,28,.07)', navBg: '#FFFFFF' },
+  e: { letter: 'E', name: 'กลางคืนแดงพรีเมียม', desc: 'พื้นมืดกับแดงสด ดูหรูแบบแอปพรีเมียม ถนอมสายตาตอนกลางคืน', fonts: 'Bai Jamjuree', bg: '#141113', surface: '#1E1A1D', ink: '#F3EEEF', muted: '#B3A9AD', line: '#342D31', primary: '#D42E45', primaryInk: '#FFFFFF', soft: '#3A1D24', link: '#FF7A8C', accent: '#D9B36C', doc: '#0E0C0D', head: "'Bai Jamjuree', sans-serif", body: "'Bai Jamjuree', sans-serif", headWeight: '600', r: '20px', rs: '13px', shadow: '0 1px 0 rgba(255,255,255,.04), 0 12px 30px rgba(0,0,0,.45)', navBg: '#1E1A1D', ok: '#7AD3A6', okBg: '#163A2B', wait: '#F1C46A', waitBg: '#3A2F14', back: '#FF8D8D', backBg: '#431C20' },
+  f: { letter: 'F', name: 'ฟ้าครามสดใส', desc: 'น้ำเงินสดกับส้มเล็กน้อย สดใส เป็นมิตร ดูทันสมัย', fonts: 'Niramit', bg: '#F1F5FD', surface: '#FFFFFF', ink: '#13203B', muted: '#4D5B78', line: '#DCE4F3', primary: '#2453D6', primaryInk: '#FFFFFF', soft: '#E4ECFC', accent: '#F59E2A', doc: '#E2E9F6', head: "'Niramit', sans-serif", body: "'Niramit', sans-serif", headWeight: '600', r: '20px', rs: '14px', shadow: '0 1px 2px rgba(19,32,59,.05), 0 8px 24px rgba(36,83,214,.08)', navBg: '#FFFFFF' },
+  g: { letter: 'G', name: 'ดินเผาอบอุ่น', desc: 'ส้มอิฐกับเขียวมะกอก อบอุ่น เป็นธรรมชาติ แบบกระดาษสมุด', fonts: 'Pridi กับ Krub', bg: '#F8F2EB', surface: '#FFFDFA', ink: '#2B1D16', muted: '#6B584D', line: '#EADDD0', primary: '#A5462A', primaryInk: '#FFFFFF', soft: '#F5E2D8', accent: '#6E7F4E', doc: '#EDE3D8', head: "'Pridi', serif", body: "'Krub', sans-serif", headWeight: '600', r: '18px', rs: '12px', shadow: '0 1px 2px rgba(43,29,22,.05), 0 8px 24px rgba(43,29,22,.07)', navBg: '#FFFDFA' },
+  h: { letter: 'H', name: 'ชมพูแดงพาสเทลนุ่ม', desc: 'สีโรงเรียนแบบนุ่มนวล ขอบโค้งมนมาก ดูอ่อนโยน เป็นกันเอง', fonts: 'IBM Plex Sans Thai Looped', bg: '#FFF6F6', surface: '#FFFFFF', ink: '#2E1A1F', muted: '#6E5560', line: '#F2DEE2', primary: '#C2354F', primaryInk: '#FFFFFF', soft: '#FDE6EA', link: '#A82A43', accent: '#F2A7B5', doc: '#F6E9EC', head: "'IBM Plex Sans Thai Looped', sans-serif", body: "'IBM Plex Sans Thai Looped', sans-serif", headWeight: '600', r: '28px', rs: '18px', shadow: '0 2px 4px rgba(194,53,79,.05), 0 12px 32px rgba(194,53,79,.08)', navBg: '#FFFFFF' },
+  i: { letter: 'I', name: 'กรมท่าสถาบัน', desc: 'แนวเดียวกับระบบวัดผลของโรงเรียน แถบเมนูกรมท่า ตัวอักษรคมชัด กล่องสีแยกสถานะชัดเจน', fonts: 'Noto Sans Thai Looped', bg: '#EEF2F7', surface: '#FFFFFF', ink: '#0F1E33', muted: '#4E5F78', line: '#D6DEE9', primary: '#1D3A66', primaryInk: '#FFFFFF', soft: '#E4ECF7', link: '#1D3A66', accent: '#E3A21A', doc: '#E2E8F1', head: "'Noto Sans Thai Looped', sans-serif", body: "'Noto Sans Thai Looped', sans-serif", headWeight: '700', r: '16px', rs: '10px', shadow: '0 1px 2px rgba(15,30,51,.05), 0 4px 14px rgba(15,30,51,.05)', navBg: '#FFFFFF', ok: '#1B7343', okBg: '#E4F4EA', wait: '#875700', waitBg: '#FFF2DA', back: '#B0341F', backBg: '#FDEAE4' },
+  j: { letter: 'J', name: 'กรมท่ากลางคืน', desc: 'คู่โหมดกลางคืนของธีม I พื้นน้ำเงินเข้ม ถนอมสายตา ตัวอักษรยังคมชัด', fonts: 'Noto Sans Thai Looped', bg: '#0C1626', surface: '#142139', ink: '#E9EFF8', muted: '#A3B3CA', line: '#25344F', primary: '#3D6BC0', primaryInk: '#FFFFFF', soft: '#1B2D4D', link: '#8FB5F6', accent: '#F2B43A', doc: '#08101C', head: "'Noto Sans Thai Looped', sans-serif", body: "'Noto Sans Thai Looped', sans-serif", headWeight: '700', r: '16px', rs: '10px', shadow: '0 1px 0 rgba(255,255,255,.03), 0 10px 26px rgba(0,0,0,.4)', navBg: '#142139', ok: '#7FD4A2', okBg: '#163828', wait: '#F2C46B', waitBg: '#3A2E12', back: '#FF9C88', backBg: '#432019' },
+};
+const STATUS_BASE = { ok: '#1E6E50', okBg: '#E1F2EA', wait: '#7A5200', waitBg: '#FBEFD5', back: '#A61B1B', backBg: '#FCE7E5' };
+function themeOf(key) {
+  const t = Object.assign({}, STATUS_BASE, THEMES[key] || THEMES.a);
+  t.link = t.link || t.primary;
+  return t;
+}
+const ITEMS = [
+  'มีการวิเคราะห์หลักสูตรสถานศึกษา เพื่อจัดทำโครงสร้างรายวิชา',
+  'มีการวิเคราะห์หลักสูตรสถานศึกษา เพื่อจัดทำคำอธิบายรายวิชา',
+  'มีการจัดทำคำอธิบายรายวิชา',
+  'ตัวชี้วัดหรือผลการเรียนรู้ครอบคลุมสาระการเรียนรู้และตรงตามหลักสูตรสถานศึกษา',
+  'ออกแบบหน่วยการเรียนรู้ครบทุกมาตรฐานการเรียนรู้ ตัวชี้วัด/ผลการเรียนรู้ตามหลักสูตรฯ',
+  'บูรณาการจุดเน้นของสถานศึกษาในรายวิชา',
+  'สาระการเรียนรู้เหมาะสมกับเวลา และตัวชี้วัดหรือผลการเรียนรู้',
+  'สื่อการเรียนรู้เหมาะสมกับเวลา และตัวชี้วัดหรือผลการเรียนรู้',
+  'ชิ้นงาน/ภาระงาน มีความเหมาะสม',
+  'กิจกรรมการเรียนรู้สามารถพัฒนาผู้เรียนครอบคลุมด้าน K P A',
+  'การวัดและประเมินผลสอดคล้องกับจุดประสงค์/ตัวชี้วัด/ผลการเรียนรู้ ชัดเจนและเหมาะสม',
+  'วัสดุอุปกรณ์ สื่อ และแหล่งเรียนรู้มีความหลากหลาย เหมาะสม',
+  'กิจกรรมการเรียนรู้ส่งเสริม พัฒนา สมรรถนะสำคัญของผู้เรียน',
+  'กิจกรรมการเรียนรู้ส่งเสริมให้นักเรียนได้ปฏิบัติจริงและสรุปสร้างองค์ความรู้ได้ด้วยตนเอง',
+  'มีกิจกรรมการเรียนรู้ที่ผู้เรียนมีส่วนร่วมในการใช้สื่อและแหล่งเรียนรู้ได้อย่างทั่วถึง',
+  'การวัดและประเมินผลสอดคล้องกับจุดประสงค์/ตัวชี้วัด/ผลการเรียนรู้ ชัดเจนและเหมาะสม',
+  'นักเรียนได้มีส่วนร่วมในการใช้สื่อและแหล่งเรียนรู้ได้อย่างทั่วถึง',
+  'มีเกณฑ์การจบและเกณฑ์การวัดผลการเรียนในรายวิชาอย่างชัดเจน',
+  'กำหนดน้ำหนักคะแนนเหมาะสมกับภาระงาน/ชิ้นงานแต่ละหน่วยการเรียนรู้',
+  'ส่งคู่มือรายวิชาตรงตามเวลาที่กำหนด',
+];
+function level(total) {
+  if (total >= 90) return 'ดีมาก';
+  if (total >= 70) return 'ดี';
+  if (total >= 50) return 'ปานกลาง';
+  if (total >= 30) return 'พอใช้';
+  return 'ปรับปรุง';
+}
+
+class Component extends DCLogic {
+  renderVals() {
+    const t = themeOf(this.props.theme);
+    const st = this.state || {};
+    const scores = st.scores || {};
+    const setOne = (i, v) => this.setState({ scores: Object.assign({}, scores, { [i]: v }) });
+    const fill = (v) => () => {
+      const all = {};
+      ITEMS.forEach((_, i) => { all[i] = v; });
+      this.setState({ scores: all });
+    };
+    const items = ITEMS.map((title, i) => ({
+      no: i + 1,
+      title,
+      chips: [5, 4, 3, 2, 1].map((v) => {
+        const on = scores[i] === v;
+        return { v, aria: 'ข้อ ' + (i + 1) + ' ให้ ' + v + ' คะแนน', pick: () => setOne(i, v), bg: on ? t.primary : t.surface, fg: on ? t.primaryInk : t.ink, bd: on ? t.primary : t.line };
+      }),
+    }));
+    const done = Object.keys(scores).length;
+    const total = Object.keys(scores).reduce((a, k) => a + scores[k], 0);
+    const complete = done === ITEMS.length;
+    return {
+      t,
+      items,
+      done,
+      total,
+      pct: Math.round((done / ITEMS.length) * 100) + '%',
+      levelText: complete ? 'ระดับคุณภาพ ' + level(total) : 'เหลืออีก ' + (ITEMS.length - done) + ' ข้อ',
+      levelBg: complete ? t.okBg : t.bg,
+      levelFg: complete ? t.ok : t.muted,
+      fill5: fill(5),
+      fill4: fill(4),
+      clear: () => this.setState({ scores: {} }),
+    };
+  }
+}
+</script>
+</body>
+</html>

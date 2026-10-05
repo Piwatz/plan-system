@@ -1,0 +1,159 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title><%= title %></title>
+<link rel="stylesheet" href="/vendor/kanit/400.css">
+<script>try{var o=JSON.parse(localStorage.getItem('print-opts')||'{}');document.documentElement.className=(o.noDates?' hide-dates':'')+(o.noQr?' hide-qr':'')}catch(e){}</script>
+<style>
+  /* ฟอนต์ตามแบบฟอร์มของโรงเรียน: TH SarabunPSK เนื้อหา 16 พอยต์ หัว "บันทึกข้อความ" 18 พอยต์ตัวหนา
+     ถ้าเครื่องไม่มี TH SarabunPSK หรือ TH Sarabun New จะใช้ Sarabun ที่มากับระบบ ย่อเหลือ 66% ให้ขนาดตัวอักษรเท่ากัน */
+  @font-face { font-family: 'Memo TH'; font-weight: 400; src: local('TH SarabunPSK'), local('THSarabunPSK'), local('TH Sarabun New'), local('THSarabunNew'); }
+  @font-face { font-family: 'Memo TH'; font-weight: 700; src: local('TH SarabunPSK Bold'), local('THSarabunPSK-Bold'), local('TH Sarabun New Bold'), local('THSarabunNew-Bold'); }
+  @font-face { font-family: 'Memo Web'; font-weight: 400; size-adjust: 66%; src: url(/vendor/sarabun/files/sarabun-thai-400-normal.woff2) format('woff2'); unicode-range: U+02D7, U+0303, U+0331, U+0E01-0E5B, U+200C-200D, U+25CC; }
+  @font-face { font-family: 'Memo Web'; font-weight: 400; size-adjust: 66%; src: url(/vendor/sarabun/files/sarabun-latin-400-normal.woff2) format('woff2'); unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD; }
+  @font-face { font-family: 'Memo Web'; font-weight: 700; size-adjust: 66%; src: url(/vendor/sarabun/files/sarabun-thai-700-normal.woff2) format('woff2'); unicode-range: U+02D7, U+0303, U+0331, U+0E01-0E5B, U+200C-200D, U+25CC; }
+  @font-face { font-family: 'Memo Web'; font-weight: 700; size-adjust: 66%; src: url(/vendor/sarabun/files/sarabun-latin-700-normal.woff2) format('woff2'); unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD; }
+
+  /* ระยะขอบตามไฟล์ Word ของโรงเรียน: บันทึกข้อความ บน 1.25 ขวา 2.3 ล่าง 1.63 ซ้าย 2.54 ซม. แบบประเมิน บน 1.5 ขวา 1 ล่าง 1 ซ้าย 1.5 ซม. */
+  /* ขอบกระดาษหลักของเอกสารฉบับนี้ (Safari บน Mac ไม่รู้จัก @page แบบตั้งชื่อ จึงกำหนดตามชนิดเอกสารที่พิมพ์ด้วย) */
+  @page { size: A4; margin: <%= { memo: '12.5mm 23mm 16.3mm 25.4mm', eval: '15mm 10mm 10mm 15mm' }[locals.paper] || '12.5mm 18mm 12.5mm 22mm' %>; }
+  @page memo { size: A4; margin: 12.5mm 23mm 16.3mm 25.4mm; }
+  @page evalform { size: A4; margin: 15mm 10mm 10mm 15mm; }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: #e9e7ef; color: #000; font-family: 'Memo TH', 'Memo Web', sans-serif; font-size: 16pt; line-height: 1.1; }
+  .toolbar { position: sticky; top: 0; z-index: 5; display: flex; gap: 10px; align-items: center; justify-content: center; flex-wrap: wrap; padding: 10px 16px; background: #1b3762; color: #fff; font-family: 'Kanit', sans-serif; font-size: 15px; line-height: 1.4; }
+  .toolbar button, .toolbar a { font: inherit; border: 0; border-radius: 10px; padding: 7px 16px; cursor: pointer; background: #e3a21a; color: #1b1300; text-decoration: none; }
+  .toolbar a { background: rgba(255,255,255,.18); color: #fff; }
+  .toolbar label { display: inline-flex; align-items: center; gap: 6px; padding: 5px 12px; border-radius: 10px; background: rgba(255,255,255,.12); cursor: pointer; }
+  .toolbar input { width: 18px; height: 18px; accent-color: #e3a21a; }
+  .toolbar .mac-tip { flex-basis: 100%; text-align: center; font-size: 13px; color: #f6d58a; }
+  .toolbar .mac-tip[hidden] { display: none; }
+  .paper { position: relative; width: 210mm; min-height: 297mm; margin: 16px auto; background: #fff; padding: 12.5mm 18mm 12.5mm 22mm; box-shadow: 0 4px 24px rgba(0,0,0,.15); }
+  .paper + .paper { margin-top: 24px; }
+  .hide-qr .qr-corner, .hide-dates .sig-date { display: none !important; }
+  .qr-corner { position: absolute; top: 6mm; right: 8mm; width: 18mm; text-align: center; font-size: 7pt; line-height: 1.1; color: #333; font-family: 'Kanit', sans-serif; }
+  .qr-corner svg { width: 15mm; height: 15mm; display: block; margin: 0 auto 0.5mm; }
+  .cover { display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; min-height: 250mm; gap: 6mm; }
+  .cover img { width: 42mm; }
+  .cover h1 { font-size: 30pt; margin: 0; line-height: 1.2; }
+  .cover .who { font-size: 22pt; line-height: 1.3; }
+  .cover.color { background: linear-gradient(180deg, #1b3762 0 70mm, #fff 70mm); }
+  .cover.color .band { color: #fff; }
+  h1.doc { text-align: center; font-size: 18pt; font-weight: 700; margin: 0; }
+  h2.doc { text-align: center; font-size: 18pt; font-weight: 700; margin: 0 0 6pt; }
+  .row { display: flex; gap: 6px; align-items: baseline; }
+  .row .k { font-weight: 700; white-space: nowrap; }
+  .line { border-bottom: 1px dotted #444; flex: 1; min-height: 1.1em; padding: 0 4px; }
+  .indent { text-indent: 1.27cm; margin: 0; text-align: justify; text-justify: inter-character; }
+  .indent.last { margin-bottom: 6pt; }
+  .sign { text-align: center; margin-top: 4pt; }
+  .sign .sigline { display: flex; align-items: flex-end; justify-content: center; gap: 6px; min-height: 9mm; }
+  .sign img { max-height: 9mm; max-width: 45mm; display: inline-block; }
+  .muted { color: #444; }
+  .small { font-size: 14pt; }
+
+  /* ช่องความเห็นผู้ตรวจ: หัวข้อ เส้นจุด 2 บรรทัด ลงชื่อ (ชื่อ) ตำแหน่ง ลายเซ็นวางทับ ไม่ดันบรรทัด */
+  .box { position: relative; break-inside: avoid; min-width: 0; }
+  .box .t { font-weight: 700; }
+  .box .cl { display: flex; align-items: baseline; }
+  .box .ct { white-space: pre-wrap; padding-right: 2px; }
+  .box .fill { flex: 1 1 0; width: 0; min-width: 6mm; overflow: hidden; white-space: nowrap; }
+  .box .fill::before { content: '....................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................'; }
+  .box .sl { position: relative; padding-left: 6mm; }
+  .box .spot { display: inline-block; position: relative; width: 40mm; height: 0.7em; vertical-align: baseline; }
+  .box .spot img { position: absolute; left: 50%; bottom: -0.8mm; transform: translateX(-50%); height: 9.5mm; max-width: 40mm; }
+  .box .nm, .box .ps { text-align: center; }
+  .box .sig-date { position: absolute; left: 0; right: 0; text-align: center; font-size: 12pt; line-height: 1.2; }
+
+  /* บันทึกข้อความ: วัดตำแหน่งจาก PDF แบบฟอร์มของโรงเรียน ครุฑสูง 1.5 ซม. มุมซ้ายบน ทุกอย่างจบใน 1 หน้า */
+  .paper.memo { page: memo; padding: 12.5mm 23mm 16.3mm 25.4mm; line-height: 1.116; }
+  .memo-title { position: relative; height: 15mm; display: flex; align-items: flex-end; justify-content: center; margin-bottom: 3.5mm; }
+  .memo-title .garuda { position: absolute; left: 0; top: 0; height: 15mm; }
+  .memo-title h1.doc { line-height: 1; position: relative; top: 2mm; }
+  .mrow { white-space: pre-wrap; }
+  .mrow .mk { display: inline-block; width: 12.7mm; }
+  .mrow .mv1 { display: inline-block; width: 50.8mm; }
+  .mrow.subject { border-bottom: 1px solid #000; }
+  .mrow.to { margin: 3mm 0 2.3mm; }
+  .paper.memo .indent { text-indent: 12.7mm; margin: 0.8mm 0 0; }
+  .tsign { width: 90mm; margin-left: auto; text-align: center; }
+  .tsig { height: 11mm; display: flex; align-items: flex-end; justify-content: center; }
+  .tsig img { max-height: 10.5mm; max-width: 50mm; }
+  .boxes { display: grid; grid-template-columns: 73mm 82mm; column-gap: 6.6mm; row-gap: 8mm; margin-top: 6mm; }
+  .paper.memo .boxes { row-gap: 10.5mm; margin-top: 5.5mm; }
+  .box.l .sl { padding-left: 5.7mm; }
+  .box.l .nm, .box.l .ps { padding-right: 10mm; }
+  .box.l .sig-date { right: 10mm; }
+  .box.r .cl, .box.r .nm, .box.r .ps { margin-left: 9mm; }
+  .box.r .sig-date { left: 9mm; }
+  .box.r .sl { padding-left: 17mm; }
+  /* บันทึกหลังแผน: เส้นความเห็นเต็มบรรทัด บรรทัดลงชื่อเว้นลงมาจากเส้นความเห็น ลายเซ็นอยู่บนเส้นจุดครึ่งขวา */
+  .box.note { margin-top: 3pt; }
+  .box.note .sl { margin-top: 3.5mm; }
+  .box.note .sl, .box.note .nm, .box.note .ps { width: 50%; margin-left: auto; padding-left: 0; text-align: center; }
+  .box.note .spot { border-bottom: 1px dotted #444; }
+  .box.note .sig-date { left: 0; right: auto; bottom: 0; width: 50%; text-align: left; }
+  .box.note .sig-date::before { content: 'ลงนามวันที่ '; }
+  .box.full { grid-column: 1 / -1; width: 90.3mm; justify-self: center; margin-top: 0.6mm; }
+  .box.full .t { text-align: center; white-space: nowrap; margin: 0 -20mm; }
+  .box.l .t, .box.r .t { white-space: nowrap; }
+
+  /* แบบประเมิน: หัวเรื่อง 16 หัวตาราง 14 เนื้อหา 12 พอยต์ ตามแบบฟอร์มของโรงเรียน */
+  .paper.eval { page: evalform; padding: 15mm 10mm 10mm 15mm; font-size: 12pt; }
+  .paper.eval h2.doc { font-size: 16pt; }
+  .paper.eval .row { font-size: 14pt; }
+  .paper.eval .small { font-size: 12pt; }
+  .paper.eval table.grid { font-size: 12pt; }
+
+  table.grid { width: 100%; border-collapse: collapse; margin: 6pt 0; font-size: 14pt; }
+  table.grid th, table.grid td { border: 1px solid #000; padding: 1pt 5px; vertical-align: top; }
+  table.grid th { text-align: center; font-weight: 700; }
+  table.grid td.c { text-align: center; width: 9mm; }
+  .sec { font-weight: 700; margin: 4pt 0 0; }
+  .text { white-space: pre-wrap; padding: 0 0 0 1.27cm; min-height: 1.1em; }
+  @media print {
+    body { background: #fff; }
+    .toolbar { display: none; }
+    .paper, .paper.memo, .paper.eval { width: auto; min-height: 0; margin: 0; padding: 0; box-shadow: none; }
+    .paper + .paper { margin-top: 0; break-before: page; }
+    .qr-corner { top: 0; right: 0; }
+    .cover { min-height: 255mm; }
+    .cover.color { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  }
+  @media screen and (max-width: 820px) {
+    .paper, .paper.memo, .paper.eval { width: auto; min-height: 0; margin: 10px; padding: 18px; }
+    .boxes { grid-template-columns: 1fr; }
+    .box.full { width: 100%; }
+  }
+</style>
+</head>
+<body>
+<div class="toolbar">
+  <span>ตัวอย่างก่อนพิมพ์ ขนาด A4</span>
+  <label><input type="checkbox" data-opt="noDates"> ไม่แสดงวันที่ใต้ลายเซ็น</label>
+  <label><input type="checkbox" data-opt="noQr"> ไม่แสดง QR Code</label>
+  <button type="button" onclick="window.print()">พิมพ์ หรือบันทึกเป็น PDF</button>
+  <a href="javascript:window.close()">ปิดหน้านี้</a>
+  <span class="mac-tip" hidden>บน Mac ในหน้าต่างพิมพ์ ให้ตรวจว่าขนาดกระดาษเป็น A4 และมาตราส่วน 100%</span>
+</div>
+<script>
+  // Safari บน Mac เลือกขนาดกระดาษตามหน้าต่างพิมพ์ ไม่ใช้ค่าในหน้าเว็บ จึงเตือนให้ตรวจ A4
+  if (/Mac/.test(navigator.platform || navigator.userAgent)) document.querySelector('.mac-tip').hidden = false;
+  // ตัวเลือกการพิมพ์ จำไว้ในเครื่องนี้ ใช้กับเอกสารทุกฉบับ (เปลี่ยนเฉพาะการแสดงผล ไม่แก้ข้อมูล)
+  (function () {
+    var key = 'print-opts';
+    function read() { try { return JSON.parse(localStorage.getItem(key) || '{}'); } catch (e) { return {}; } }
+    var o = read();
+    document.querySelectorAll('[data-opt]').forEach(function (box) {
+      box.checked = Boolean(o[box.dataset.opt]);
+      box.addEventListener('change', function () {
+        var cur = read();
+        cur[box.dataset.opt] = box.checked;
+        try { localStorage.setItem(key, JSON.stringify(cur)); } catch (e) {}
+        document.documentElement.classList.toggle(box.dataset.opt === 'noQr' ? 'hide-qr' : 'hide-dates', box.checked);
+      });
+    });
+  })();
+</script>

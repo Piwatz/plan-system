@@ -1,0 +1,138 @@
+<%- include('partials/top') %>
+<% const T = wf.DOC_TYPES[sub.doc_type]; const methods = util.parseJson(sub.teaching_methods, []); %>
+<div class="narrow" style="max-width:860px">
+  <div class="page-head">
+    <div>
+      <h1><%= isNew ? 'ส่ง' : 'แก้ไข' %><%= T.label %></h1>
+      <div class="sub">ภาคเรียนที่ <%= sub.semester %>/<%= sub.academic_year %> ส่ง 1 รายวิชาต่อ 1 ครั้ง<%= ff.onemain ? (sub.doc_type === 'plan' ? ' แผนส่งเฉพาะวิชาหลัก' : ' คู่มือส่งทุกวิชาที่สอน') : '' %></div>
+    </div>
+    <% if (!isNew) { %><div class="actions"><a class="btn btn-ghost" href="/s/<%= sub.id %>">ยกเลิก</a></div><% } %>
+  </div>
+
+  <% if (locals.lastReturn && sub.status === 'returned') { %>
+    <div class="alert alert-error"><%- icon('undo') %><div><b><%= lastReturn.user_name %></b> (<%= lastReturn.step_label %>) ส่งกลับให้แก้ไข
+      <div class="pre" style="margin-top:6px;color:var(--ink)"><%= lastReturn.comment %></div></div></div>
+  <% } %>
+  <% if (!window.open && sub.status !== 'returned') { %>
+    <div class="alert alert-warn"><%- icon('clock') %><span><%= window.reason %> ตอนนี้บันทึกร่างไว้ก่อนได้</span></div>
+  <% } %>
+
+  <form class="card js-upload" method="post" action="<%= isNew ? '/works' : '/s/' + sub.id %>" enctype="multipart/form-data">
+    <input type="hidden" name="doc_type" value="<%= sub.doc_type %>">
+    <h2>ข้อมูลรายวิชา</h2>
+    <div class="form-grid">
+      <div class="field">
+        <label for="subject_code">รหัสวิชา <span class="req">*</span></label>
+        <input type="text" id="subject_code" name="subject_code" value="<%= sub.subject_code || '' %>" list="subject-list" placeholder="เช่น ว30203" data-subject-code autocomplete="off">
+        <datalist id="subject-list">
+          <% for (const x of subjects) { %><option value="<%= x.code %>" data-name="<%= x.name %>" data-grade="<%= x.grade %>"><%= x.name %></option><% } %>
+        </datalist>
+      </div>
+      <div class="field" style="grid-column:span 2">
+        <label for="subject_name">ชื่อวิชา <span class="req">*</span></label>
+        <input type="text" id="subject_name" name="subject_name" value="<%= sub.subject_name || '' %>" placeholder="เช่น ฟิสิกส์เพิ่มเติม 3">
+      </div>
+      <div class="field">
+        <label for="grade_level">ระดับชั้น <span class="req">*</span></label>
+        <select id="grade_level" name="grade_level">
+          <option value="">เลือกระดับชั้น</option>
+          <% for (const g of util.lines(settings.grade_levels)) { %><option <%= sub.grade_level === g ? 'selected' : '' %>><%= g %></option><% } %>
+        </select>
+      </div>
+      <div class="field">
+        <label for="doc_no">เลขที่บันทึกข้อความ</label>
+        <input type="text" id="doc_no" name="doc_no" value="<%= sub.doc_no || '' %>" placeholder="ถ้ามี เช่น วก.214/2569">
+        <div class="hint">เว้นว่างได้ ใบที่พิมพ์จะเว้นช่องไว้ให้</div>
+      </div>
+    </div>
+
+    <% if (sub.doc_type === 'plan') { %>
+      <div class="field">
+        <span class="label">รูปแบบหรือแนวทางการจัดการเรียนรู้ที่ใช้ในแผน</span>
+        <div class="checks">
+          <% for (const m of util.lines(settings.teaching_methods)) { %>
+            <label class="check"><input type="checkbox" name="teaching_methods" value="<%= m %>" <%= methods.includes(m) ? 'checked' : '' %>> <%= m %></label>
+          <% } %>
+        </div>
+      </div>
+    <% } %>
+
+    <h2 style="margin-top:18px">ไฟล์<%= T.label %></h2>
+    <% if (ff.pdfonly) { const oldOk = files.length === 1 && files[0].mime === 'application/pdf'; %>
+      <p class="hint" style="margin-top:0">ส่งเป็น <b>PDF ไฟล์เดียว</b> ที่มีทั้งปกและเนื้อหา<%= ff.pdfmerge ? ' ถ้ามีหลายไฟล์ เช่น ปกกับเนื้อหา เลือกพร้อมกันได้เลย เรียงลำดับด้วยปุ่มขึ้นลง ระบบจะรวมเป็นไฟล์เดียวให้' : '' %></p>
+      <% if (files.length) { %>
+        <ul class="file-list" style="margin-bottom:10px">
+          <% for (const f of files) { %>
+            <li><%- icon('file', 20) %><a class="fname" href="/f/<%= f.id %>/view" target="_blank" rel="noopener"><%= f.original_name %></a>
+              <small class="muted"><%= util.fileSize(f.size) %></small></li>
+          <% } %>
+        </ul>
+        <% if (!oldOk) { %>
+          <div class="alert alert-warn"><%- icon('file') %><span>ไฟล์ที่แนบไว้เดิม<%= files.length > 1 ? 'มี ' + files.length + ' ไฟล์' : 'ไม่ใช่ PDF' %> ตอนนี้ระบบรับ PDF ไฟล์เดียว กรุณาแนบ PDF ใหม่ ไฟล์เดิมจะเก็บไว้ในประวัติ</span></div>
+        <% } else { %>
+          <p class="hint">แนบไฟล์ใหม่ด้านล่างเมื่อต้องการเปลี่ยน ไฟล์เดิมจะเก็บไว้ในประวัติ</p>
+        <% } %>
+      <% } %>
+      <% const conv = typeof wordConvert !== 'undefined' && wordConvert; %>
+      <label class="dropzone" data-dropzone data-accept="<%= conv ? 'pdf,doc,docx' : 'pdf' %>" <%= ff.pdfmerge ? 'data-sortable' : 'data-single' %> <%= ff.filecheck ? 'data-filecheck' : '' %> <%- conv ? 'data-convert="/convert/word"' : '' %> data-max-mb="<%= settings.max_upload_mb %>">
+        <span class="dz-icon"><%- icon('send', 34) %></span>
+        <b>ลากไฟล์ <%= conv ? 'PDF หรือ Word' : 'PDF' %> มาวางที่นี่ หรือกดเพื่อเลือกไฟล์</b><br>
+        <small class="muted"><%= conv ? 'PDF หรือ Word ระบบแปลง Word เป็น PDF ให้' : 'เฉพาะ PDF' %> ไม่เกิน <%= settings.max_upload_mb %> MB ต่อไฟล์<%= ff.pdfmerge ? ' เลือกได้หลายไฟล์ ระบบรวมให้' : '' %></small>
+        <input type="file" name="main_files" <%= ff.pdfmerge ? 'multiple' : '' %> accept=".pdf,application/pdf<%= conv ? ',.doc,.docx,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document' : '' %>">
+      </label>
+      <ul class="dz-list" data-dz-list></ul>
+      <p class="hint" data-dz-merge hidden></p>
+      <% if (ff.coverpreview) { %>
+        <div class="cover-preview" data-cover hidden>
+          <div data-cover-img></div>
+          <div><b>หน้าปกที่จะส่ง</b><br><small class="muted" data-cover-info></small><br><small class="muted">ถ้าหน้านี้ไม่ใช่ปก ให้เลื่อนไฟล์ปกขึ้นไว้บนสุด หรือเลือกไฟล์ใหม่</small></div>
+        </div>
+      <% } %>
+      <details class="howto">
+        <summary>มีแต่ไฟล์ Word ทำอย่างไร</summary>
+        <% if (conv) { %>
+          <p style="margin:8px 0 0">เลือกไฟล์ Word ที่ช่องด้านบนได้เลย ระบบจะแปลงเป็น PDF ให้ แล้วกด <b>เปิดดูทั้งไฟล์</b> ตรวจหน้าตาก่อนส่ง ถ้าตัวอักษรหรือการจัดหน้าเพี้ยน ให้บันทึกเป็น PDF จาก Word เองตามวิธีด้านล่าง ซึ่งได้หน้าตาตรงกับต้นฉบับที่สุด</p>
+        <% } %>
+        <ol>
+          <li><b>Word บน Windows</b> เปิดไฟล์ กด ไฟล์ (File) แล้วเลือก บันทึกเป็น (Save As) ช่องชนิดไฟล์เลือก PDF แล้วกดบันทึก</li>
+          <li><b>Word บน Mac</b> เปิดไฟล์ กด File แล้วเลือก Save As ช่อง File Format เลือก PDF แล้วกด Export</li>
+          <li><b>Google Docs</b> เปิดไฟล์ กด ไฟล์ เลือก ดาวน์โหลด แล้วเลือก เอกสาร PDF</li>
+          <li>ถ้าปกกับเนื้อหาอยู่คนละไฟล์ บันทึกเป็น PDF ทั้งสองไฟล์<%= ff.pdfmerge ? ' แล้วเลือกมาพร้อมกันที่ช่องด้านบน ระบบจะรวมให้' : ' แล้วรวมเป็นไฟล์เดียวก่อนแนบ' %></li>
+        </ol>
+      </details>
+    <% } else { %>
+      <% if (files.length) { %>
+        <ul class="file-list" style="margin-bottom:10px">
+          <% for (const f of files) { %>
+            <li><%- icon('file', 20) %><a class="fname" href="/f/<%= f.id %>/view" target="_blank" rel="noopener"><%= f.original_name %></a>
+              <small class="muted"><%= util.fileSize(f.size) %></small>
+              <label class="check"><input type="checkbox" name="remove_files" value="<%= f.id %>"> เอาไฟล์นี้ออก</label></li>
+          <% } %>
+        </ul>
+      <% } %>
+      <label class="dropzone" data-dropzone <%= ff.filecheck ? 'data-filecheck' : '' %> data-max-mb="<%= settings.max_upload_mb %>">
+        <span class="dz-icon"><%- icon('send', 34) %></span>
+        <b>ลากไฟล์มาวางที่นี่ หรือกดเพื่อเลือกไฟล์</b><br>
+        <small class="muted">PDF Word Excel PowerPoint หรือรูปภาพ ไม่เกิน <%= settings.max_upload_mb %> MB ต่อไฟล์ เลือกได้หลายไฟล์</small>
+        <input type="file" name="main_files" multiple accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.jpg,.jpeg,.png">
+      </label>
+      <ul class="dz-list" data-dz-list></ul>
+    <% } %>
+    <% if (ff.filecheck) { %><p class="hint"><%- icon('check', 16) %> ระบบตรวจไฟล์ให้ทันทีที่เลือก ชนิดไฟล์ ขนาด ไฟล์เปิดได้ และจำนวนหน้า PDF</p><% } %>
+
+    <div class="field" style="margin-top:14px">
+      <label for="link_url">ลิงก์เพิ่มเติม</label>
+      <input type="url" id="link_url" name="link_url" value="<%= sub.link_url || '' %>" placeholder="เช่น ลิงก์ Google Drive หรือ Canva ถ้ามี">
+      <div class="hint"><%= ff.pdfonly ? 'ไม่บังคับ ใส่ได้ถ้ามีสื่อหรือไฟล์ประกอบเพิ่มเติม' : 'ต้องมีไฟล์หรือลิงก์อย่างน้อย 1 อย่างจึงจะส่งได้' %></div>
+    </div>
+
+    <hr>
+    <div class="btn-row">
+      <button class="btn btn-ghost btn-lg" type="submit" name="action" value="draft">บันทึกร่าง</button>
+      <button class="btn btn-primary btn-lg" type="submit" name="action" value="submit"
+        data-confirm="ยืนยันส่ง<%= T.label %>ให้ผู้ตรวจ
+หลังส่งแล้วจะแก้ไขได้เมื่อถูกส่งกลับ หรือดึงกลับก่อนมีผู้ลงนาม" data-ok-label="ส่งเลย"><%- icon('send', 20) %> <%= sub.status === 'returned' ? 'ส่งอีกครั้งหลังแก้ไข' : 'ส่งให้ผู้ตรวจ' %></button>
+    </div>
+  </form>
+</div>
+<%- include('partials/bottom') %>

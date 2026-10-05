@@ -1,0 +1,11 @@
+node_modules/
+# ข้อมูลจริงและข้อมูลทดลอง (ฐานข้อมูล ไฟล์ที่ครูส่ง กุญแจเข้ารหัส) ห้ามขึ้น Git
+data/
+data-demo/
+*.db
+*.db-wal
+*.db-shm
+.claude/settings.local.json
+
+# ไฟล์ติดตั้งที่สร้างจาก scripts/make-install-zip.js
+ไฟล์ติดตั้ง/

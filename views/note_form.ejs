@@ -1,0 +1,147 @@
+<%- include('partials/top') %>
+<%
+  const fileMode = ff.notefile && sub.note_mode === 'file';
+  const kpa = [
+    { id: 'result_k', tag: 'K', label: 'ด้านความรู้', ph: 'นักเรียนเข้าใจเนื้อหาเรื่องนี้แค่ไหน' },
+    { id: 'result_p', tag: 'P', label: 'ด้านทักษะ / กระบวนการ', ph: 'นักเรียนทำกิจกรรม ทดลอง หรือฝึกทักษะได้อย่างไร' },
+    { id: 'result_a', tag: 'A', label: 'ด้านคุณลักษณะ', ph: 'ความตั้งใจ ความรับผิดชอบ การทำงานร่วมกัน' },
+    { id: 'problems', tag: 'ปัญหา', label: 'ปัญหา / อุปสรรค / แนวทางแก้ไข', ph: 'ปัญหาที่พบ และวิธีแก้ที่ใช้หรือจะใช้ครั้งต่อไป' },
+    { id: 'suggestions', tag: 'เสนอ', label: 'ข้อเสนอแนะ', ph: 'สิ่งที่ควรปรับในการสอนครั้งต่อไป' },
+  ];
+%>
+<div class="narrow" style="max-width:860px">
+  <div class="page-head">
+    <div>
+      <div class="eyebrow">วิชา <%= plan.subject_code %> <%= plan.subject_name %> <%= plan.grade_level %> ภาคเรียนที่ <%= plan.semester %>/<%= plan.academic_year %></div>
+      <h1><%= isNew ? 'เขียนบันทึกหลังแผน' : 'แก้ไขบันทึกหลังแผน' %></h1>
+    </div>
+    <div class="actions"><a class="btn btn-ghost" href="/s/<%= isNew ? plan.id : sub.id %>">ยกเลิก</a></div>
+  </div>
+
+  <% if (locals.lastReturn && sub.status === 'returned') { %>
+    <div class="alert alert-error"><%- icon('undo') %><div><b><%= lastReturn.user_name %></b> (<%= lastReturn.step_label %>) ส่งกลับให้แก้ไข
+      <div class="pre" style="margin-top:6px;color:var(--ink)"><%= lastReturn.comment %></div></div></div>
+  <% } %>
+
+  <form class="card js-upload" method="post" action="<%= isNew ? '/notes' : '/s/' + sub.id %>" enctype="multipart/form-data">
+    <% if (isNew) { %><input type="hidden" name="plan_id" value="<%= plan.id %>"><% } %>
+
+    <% if (ff.notefile) { %>
+      <div class="field">
+        <span class="label">เลือกวิธีเขียนบันทึก</span>
+        <div class="seg">
+          <label><input type="radio" name="note_mode" value="type" <%= fileMode ? '' : 'checked' %>><span><%- icon('edit', 18) %> พิมพ์ในระบบ</span></label>
+          <label><input type="radio" name="note_mode" value="file" <%= fileMode ? 'checked' : '' %>><span><%- icon('file', 18) %> แนบไฟล์ของฉัน</span></label>
+        </div>
+      </div>
+    <% } %>
+
+    <h2>แผนที่สอน</h2>
+    <div class="form-grid">
+      <div class="field">
+        <label for="plan_no">แผนการจัดการเรียนรู้ที่ <span class="req">*</span></label>
+        <input type="number" min="1" id="plan_no" name="plan_no" value="<%= sub.plan_no || '' %>" inputmode="numeric">
+      </div>
+      <div class="field" style="grid-column:span 2">
+        <label for="topic">เรื่อง</label>
+        <input type="text" id="topic" name="topic" value="<%= sub.topic || '' %>" placeholder="ชื่อเรื่องของแผนนี้">
+      </div>
+      <div class="field">
+        <label for="unit_no">หน่วยการเรียนรู้ที่</label>
+        <input type="text" id="unit_no" name="unit_no" value="<%= sub.unit_no || '' %>">
+      </div>
+      <div class="field" style="grid-column:span 2">
+        <label for="unit_name">ชื่อหน่วยการเรียนรู้</label>
+        <input type="text" id="unit_name" name="unit_name" value="<%= sub.unit_name || '' %>">
+      </div>
+      <div class="field">
+        <label for="hours">จำนวนชั่วโมง</label>
+        <input type="text" id="hours" name="hours" value="<%= sub.hours || '' %>" placeholder="เช่น 2">
+      </div>
+      <div class="field">
+        <label for="class_room">ชั้น หรือห้องที่สอน</label>
+        <input type="text" id="class_room" name="class_room" value="<%= sub.class_room || '' %>" placeholder="เช่น ม.5/1 ม.5/2">
+      </div>
+      <div class="field">
+        <label for="teach_date">วันที่สอน</label>
+        <input type="date" id="teach_date" name="teach_date" value="<%= sub.teach_date || '' %>">
+      </div>
+    </div>
+
+    <% if (ff.notefile) { %>
+      <section data-mode="file" <%= fileMode ? '' : 'hidden' %>>
+        <h2 style="margin-top:12px">ไฟล์บันทึกหลังแผนของฉัน</h2>
+        <p class="muted">เขียนในแบบของตัวเองใน Word หรือ PDF แล้วแนบมา ไม่ต้องพิมพ์ซ้ำในระบบ ระบบจะพิมพ์หน้าความเห็นและลายเซ็นผู้บริหาร 3 ระดับแยกให้ 1 หน้า ใช้แนบท้ายไฟล์ ผู้ตรวจลงนามในระบบได้เหมือนเดิม</p>
+      </section>
+    <% } %>
+
+    <section data-mode="type" <%= fileMode ? 'hidden' : '' %>>
+      <div class="card-head" style="margin:12px 0 8px">
+        <h2>ผลการจัดการเรียนรู้</h2>
+        <% if (prev) { %>
+          <div class="actions"><button type="button" class="btn btn-soft" data-copy-prev="<%= JSON.stringify({ result_k: prev.result_k, result_p: prev.result_p, result_a: prev.result_a, problems: prev.problems, suggestions: prev.suggestions }) %>"><%- icon('copy', 18) %> คัดลอกจากแผนที่ <%= prev.plan_no %> มาแก้</button></div>
+        <% } %>
+      </div>
+      <% for (const f of kpa) { const list = phrases ? phrases[f.id] || [] : []; %>
+        <div class="field">
+          <label for="<%= f.id %>"><span class="kpa-tag"><%= f.tag %></span><%= f.label %></label>
+          <div class="ta-wrap">
+            <textarea id="<%= f.id %>" name="<%= f.id %>" placeholder="<%= f.ph %>" style="<%= f.id === 'suggestions' ? 'min-height:80px' : '' %>"><%= sub[f.id] || '' %></textarea>
+            <% if (ff.voice) { %><button type="button" class="mic" data-mic="<%= f.id %>" aria-label="พูดแทนพิมพ์ ช่อง<%= f.label %>" aria-pressed="false"><%- icon('mic', 20) %></button><% } %>
+          </div>
+          <% if (list.length) { %>
+            <div class="chips"><% for (const c of list) { %><button type="button" class="chip" data-chip="<%= c %>" data-target="<%= f.id %>">+ <%= c %></button><% } %></div>
+          <% } %>
+        </div>
+      <% } %>
+      <% if (phrases) { %><p class="chips-hint">แตะประโยคเพื่อเติมลงในช่อง แล้วแก้คำในวงเล็บ [ ] ได้ทันที</p><% } %>
+    </section>
+
+    <div class="card" style="background:var(--head-bg);box-shadow:none;margin:14px 0">
+      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:8px">
+        <b>จำนวนนักเรียน</b>
+        <span class="badge <%= ff.counts ? 'badge-red' : 'badge-gray' %>"><%= ff.counts ? 'ต้องกรอก' : 'ไม่บังคับ' %></span>
+      </div>
+      <div class="form-grid">
+        <div class="field" style="margin:0">
+          <label for="students_total">ทั้งห้อง (คน)</label>
+          <input type="number" min="0" id="students_total" name="students_total" value="<%= sub.students_total ?? '' %>" inputmode="numeric">
+        </div>
+        <div class="field" style="margin:0">
+          <label for="students_passed">ผ่านจุดประสงค์ (คน)</label>
+          <input type="number" min="0" id="students_passed" name="students_passed" value="<%= sub.students_passed ?? '' %>" inputmode="numeric">
+        </div>
+      </div>
+      <p class="hint" style="margin:8px 0 0">ระบบคิดร้อยละให้เอง ใช้ทำกราฟผลการสอนรายแผนของครู</p>
+    </div>
+
+    <h2 style="margin-top:12px" data-mode="type" <%= fileMode ? 'hidden' : '' %>>รูปภาพหรือไฟล์ประกอบ</h2>
+    <% if (files.length) { %>
+      <ul class="file-list" style="margin-bottom:10px">
+        <% for (const f of files) { %>
+          <li><%- icon('file', 20) %><a class="fname" href="/f/<%= f.id %>/view" target="_blank" rel="noopener"><%= f.original_name %></a>
+            <small class="muted"><%= util.fileSize(f.size) %></small>
+            <label class="check"><input type="checkbox" name="remove_files" value="<%= f.id %>"> เอาไฟล์นี้ออก</label></li>
+        <% } %>
+      </ul>
+    <% } %>
+    <label class="dropzone" data-dropzone <%= ff.filecheck ? 'data-filecheck' : '' %> data-max-mb="<%= settings.max_upload_mb %>" data-accept="pdf,doc,docx,jpg,jpeg,png">
+      <span class="dz-icon"><%- icon('file', 34) %></span>
+      <b data-mode="file" <%= fileMode ? '' : 'hidden' %>>แตะเพื่อเลือกไฟล์บันทึกหลังแผน PDF หรือ Word</b>
+      <b data-mode="type" <%= fileMode ? 'hidden' : '' %>>แนบรูปกิจกรรมหรือไฟล์ประกอบ (ไม่บังคับ)</b><br>
+      <small class="muted">ลากมาวาง หรือกดเพื่อเลือก</small>
+      <input type="file" name="attach_files" multiple accept=".pdf,.doc,.docx,.jpg,.jpeg,.png">
+    </label>
+    <ul class="dz-list" data-dz-list></ul>
+
+    <hr>
+    <div class="btn-row">
+      <button class="btn btn-ghost btn-lg" type="submit" name="action" value="draft">บันทึกร่าง</button>
+      <% if (isNew) { %><button class="btn btn-ghost btn-lg" type="submit" name="action" value="new">บันทึกร่างแล้วเขียนแผนถัดไป</button><% } %>
+      <button class="btn btn-primary btn-lg" type="submit" name="action" value="submit"
+        data-confirm="ยืนยันส่งบันทึกหลังแผนฉบับนี้ให้ผู้ลงความเห็น" data-ok-label="ส่งเลย"><%- icon('send', 20) %> <%= sub.status === 'returned' ? 'ส่งอีกครั้งหลังแก้ไข' : 'ส่งให้ผู้ลงความเห็น' %></button>
+    </div>
+    <p class="muted small" style="margin-top:10px">เขียนหลายฉบับเป็นร่างไว้ก่อน แล้วไปกดส่งพร้อมกันทีเดียวในหน้ารายวิชาได้</p>
+  </form>
+</div>
+<%- include('partials/bottom') %>

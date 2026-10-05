@@ -1,0 +1,33 @@
+<%
+  // ช่องความเห็นและลายเซ็นของผู้ตรวจแต่ละระดับ แบบเดียวกับแบบฟอร์มของโรงเรียน
+  // หัวข้อ เส้นจุด 2 บรรทัด ลงชื่อ (ชื่อ) ตำแหน่ง ลายเซ็นวางทับเหนือบรรทัดลงชื่อ ไม่ดันบรรทัดอื่น
+  // ระดับที่ข้ามเพราะผู้ส่งดำรงตำแหน่งนั้นเอง ใช้ชื่อและลายเซ็นของผู้ส่ง เหมือนที่เซ็นในกระดาษ
+  // ระดับที่ผู้ดูแลระบบดำเนินการแทน: ไม่ใส่ลายเซ็น ชื่อ หรือข้อความใด ๆ เว้นช่องให้ผู้บริหารเซ็นด้วยมือ
+  // (การดำเนินการแทนยังบันทึกในประวัติของงานและประวัติผู้ดูแลระบบ)
+  const by = st.review && st.review.action === 'override' ? st.review : null;
+  const r = by ? null : st.review;
+  const self = !r && !by && st.state === 'skipped';
+  const name = r ? r.user_name : self ? sub.teacher_name : '';
+  const sig = r ? r.signature : self ? sub.teacher_signature : null;
+  const when = r ? r.created_at : self ? submitDate : null;
+  const comment = r ? r.comment || (sub.doc_type === 'note' ? 'รับทราบ' : st.role === 'director' ? 'อนุญาต' : 'เห็นชอบ') : '';
+  // ชื่อตำแหน่งแบบย่อตามแบบฟอร์ม เช่น กลุ่มสาระการเรียนรู้วิทยาศาสตร์ฯ
+  const shortDept = (n) => (/และ/.test(n) ? n.split('และ')[0].trim() + 'ฯ' : n);
+  let title = st.label;
+  let position = st.label;
+  if (st.role === 'director') position = 'ผู้อำนวยการ' + settings.school_name;
+  else if (st.scope === 'department' && sub.dept_name) position = st.label + shortDept(sub.dept_name.replace(/^กลุ่มสาระการเรียนรู้/, ''));
+  if (st.label === 'หัวหน้างานส่งเสริมพัฒนากระบวนการเรียนรู้') {
+    title = 'หัวหน้างานส่งเสริมพัฒนาการเรียนรู้ฯ';
+    position = st.label + 'ฯ';
+  }
+%>
+<div class="box<%= locals.side ? ' ' + side : '' %>">
+  <div class="t">ความเห็นของ<%= title %></div>
+  <div class="cl"><% if (comment) { %><span class="ct"><%= comment %></span><% } %><span class="fill"></span></div>
+  <div class="cl"><span class="fill"></span></div>
+  <div class="sl">ลงชื่อ <span class="spot"><% if (sig) { %><img src="<%= sig %>" alt="ลายเซ็น"><% } %></span></div>
+  <div class="nm">(<%= name || '..........................................' %>)</div>
+  <div class="ps"><%= position %></div>
+  <% if (when) { %><div class="small muted sig-date"><%= util.thaiDate(when) %></div><% } %>
+</div>

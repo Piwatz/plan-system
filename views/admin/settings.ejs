@@ -1,0 +1,95 @@
+<%- include('../partials/top') %>
+<div class="narrow" style="max-width:860px">
+  <div class="page-head">
+    <div><h1>ตั้งค่าโรงเรียน</h1></div>
+    <div class="actions"><a class="btn btn-ghost" href="/admin">กลับ</a></div>
+  </div>
+  <form class="card" method="post" action="/admin/settings" enctype="multipart/form-data">
+    <h3>ข้อมูลโรงเรียน</h3>
+    <div class="form-grid">
+      <div class="field">
+        <label for="school_name">ชื่อโรงเรียน</label>
+        <input type="text" id="school_name" name="school_name" value="<%= settings.school_name %>" placeholder="เช่น โรงเรียนตัวอย่างวิทยา">
+      </div>
+      <div class="field">
+        <label for="school_location">อำเภอ จังหวัด (ใช้ในบรรทัดส่วนราชการ)</label>
+        <input type="text" id="school_location" name="school_location" value="<%= settings.school_location %>" placeholder="เช่น อำเภอเมือง จังหวัดตัวอย่าง">
+      </div>
+    </div>
+    <div class="form-grid">
+      <div class="field">
+        <span class="label">ตราโรงเรียน (แสดงบนเมนูและหน้าเข้าสู่ระบบ)</span>
+        <div class="btn-row">
+          <img src="<%= logoUrl %>" alt="ตราโรงเรียน" style="height:64px">
+          <% if (settings.school_logo) { %><label class="check"><input type="checkbox" name="remove_logo" value="1"> กลับไปใช้ตราที่ติดตั้งมากับระบบ</label><% } %>
+        </div>
+        <input type="file" name="logo" accept="image/png,image/jpeg" style="margin-top:8px">
+        <div class="hint">ไม่ต้องเปลี่ยนก็ได้ ระบบใช้ตราโรงเรียนให้แล้ว รูป PNG หรือ JPG ไม่เกิน 1 MB</div>
+      </div>
+      <div class="field">
+        <span class="label">ตราครุฑ มุมบนซ้ายของบันทึกข้อความ</span>
+        <div class="btn-row">
+          <% if (settings.memo_logo) { %><img src="<%= settings.memo_logo %>" alt="ตราครุฑ" style="height:64px"><label class="check"><input type="checkbox" name="remove_memo_logo" value="1"> ลบ</label><% } else { %><span class="muted">ยังไม่ได้ใส่</span><% } %>
+        </div>
+        <input type="file" name="memo_logo" accept="image/png,image/jpeg" style="margin-top:8px">
+        <div class="hint">ไม่บังคับ ถ้าเว้นไว้ บันทึกข้อความจะไม่มีตราครุฑ</div>
+      </div>
+    </div>
+    <div class="field">
+      <label for="public_url">ที่อยู่เว็บของระบบสำหรับ QR Code (ไม่บังคับ)</label>
+      <input type="url" id="public_url" name="public_url" value="<%= settings.public_url %>" placeholder="เช่น http://192.168.1.10:3000 หรือชื่อเว็บของโรงเรียน">
+      <div class="hint">QR Code บนเอกสารจะชี้มาที่อยู่นี้ ถ้าเว้นว่าง ระบบใช้ที่อยู่ในวง Wi-Fi ของเครื่องที่ติดตั้งระบบ</div>
+    </div>
+
+    <h3 style="margin-top:18px">การจัดวางบนมือถือและไอแพดแนวตั้ง</h3>
+    <div class="seg" style="margin-bottom:6px">
+      <label><input type="radio" name="mobile_layout" value="simple" <%= settings.mobile_layout !== 'classic' ? 'checked' : '' %>><span>แบบเรียบง่าย (แนะนำ)</span></label>
+      <label><input type="radio" name="mobile_layout" value="classic" <%= settings.mobile_layout === 'classic' ? 'checked' : '' %>><span>แบบเต็มเหมือนบนคอม</span></label>
+    </div>
+    <p class="muted small">แบบเรียบง่าย: หน้าแรกบอกสิ่งที่ต้องทำต่อ รายวิชาเป็นช่องสีกดง่าย ปุ่มส่งงานใหญ่ตรงกลางแถบล่าง งานรอตรวจเป็นการ์ด</p>
+
+    <h3 style="margin-top:18px">ธีมสีของระบบ</h3>
+    <p class="muted small">มีผลกับทุกคนทันทีหลังบันทึก ผู้ใช้แต่ละคนยังเลือกโหมดกลางคืนและตัวอักษรใหญ่ของตัวเองได้ที่เมนูด้านซ้าย</p>
+    <div class="theme-grid" style="margin-bottom:8px">
+      <% for (const t of themeList) { const v = themeOf(t.key); %>
+        <label class="theme-card">
+          <input type="radio" name="theme" value="<%= t.key %>" <%= (settings.theme || 'i') === t.key ? 'checked' : '' %>>
+          <span class="tc">
+            <span class="sw"><span style="background:<%= v.side %>"></span><span style="background:<%= v.bg %>"></span><span style="background:<%= v.primary %>"></span><span style="background:<%= v.accent %>"></span></span>
+            <span class="tc-text"><b><%= t.letter %> <%= t.name %><%= t.key === 'i' ? ' (ค่าเริ่มต้น)' : '' %></b><small><%= t.desc %></small><small>ฟอนต์ <%= t.head === t.body ? t.body : t.head + ' กับ ' + t.body %></small></span>
+          </span>
+        </label>
+      <% } %>
+    </div>
+
+    <h3 style="margin-top:18px">ภาคเรียนปัจจุบัน</h3>
+    <div class="form-grid">
+      <div class="field">
+        <label for="academic_year">ปีการศึกษา (พ.ศ.)</label>
+        <input type="number" id="academic_year" name="academic_year" value="<%= settings.academic_year %>" min="2500" max="2700">
+      </div>
+      <div class="field">
+        <label for="semester">ภาคเรียนที่</label>
+        <select id="semester" name="semester"><% for (const s of ['1', '2', '3']) { %><option <%= settings.semester === s ? 'selected' : '' %>><%= s %></option><% } %></select>
+      </div>
+    </div>
+    <p class="muted small">งานใหม่ที่ครูส่งจะอยู่ในภาคเรียนนี้ งานภาคเรียนก่อนยังเปิดดูได้ตามเดิม</p>
+
+    <h3 style="margin-top:18px">การรับส่งแผนและคู่มือ</h3>
+    <label class="check" style="margin-bottom:10px"><input type="checkbox" name="submit_open" value="1" <%= settings.submit_open === '1' ? 'checked' : '' %>> เปิดรับส่งแผนและคู่มือรายวิชา</label>
+    <div class="form-grid">
+      <div class="field"><label for="submit_start">เริ่มรับวันที่ (ไม่บังคับ)</label><input type="date" id="submit_start" name="submit_start" value="<%= settings.submit_start %>"></div>
+      <div class="field"><label for="submit_end">ส่งได้ถึงวันที่ (ไม่บังคับ)</label><input type="date" id="submit_end" name="submit_end" value="<%= settings.submit_end %>"></div>
+      <div class="field"><label for="max_upload_mb">ขนาดไฟล์สูงสุด (MB)</label><input type="number" id="max_upload_mb" name="max_upload_mb" value="<%= settings.max_upload_mb %>" min="1" max="100"></div>
+    </div>
+    <p class="muted small">ปิดรับแล้วครูยังบันทึกร่างได้ งานที่ถูกส่งกลับให้แก้ไขและบันทึกหลังแผนยังส่งได้ตามปกติ</p>
+
+    <h3 style="margin-top:18px">ตัวเลือกในแบบฟอร์ม</h3>
+    <div class="form-grid">
+      <div class="field"><label for="grade_levels">ระดับชั้น หนึ่งบรรทัดต่อหนึ่งชั้น</label><textarea id="grade_levels" name="grade_levels" style="min-height:150px"><%= settings.grade_levels %></textarea></div>
+      <div class="field"><label for="teaching_methods">รูปแบบการจัดการเรียนรู้ หนึ่งบรรทัดต่อหนึ่งรูปแบบ</label><textarea id="teaching_methods" name="teaching_methods" style="min-height:150px"><%= settings.teaching_methods %></textarea></div>
+    </div>
+    <button class="btn btn-primary" type="submit" data-confirm="บันทึกการตั้งค่าโรงเรียน">บันทึก</button>
+  </form>
+</div>
+<%- include('../partials/bottom') %>

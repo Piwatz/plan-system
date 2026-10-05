@@ -1,0 +1,24 @@
+<%- include('partials/top') %>
+<div class="narrow">
+  <div class="page-head"><div><h1>การแจ้งเตือน</h1><div class="sub">ข้อความจากหัวหน้ากลุ่มสาระและผู้ตรวจ</div></div></div>
+  <div class="card">
+    <% if (!rows.length) { %>
+      <div class="empty"><p>ยังไม่มีการแจ้งเตือน</p></div>
+    <% } else { %>
+      <ul class="feed">
+        <% for (const a of rows) { %>
+          <li>
+            <span class="fdot<%= a.read_at ? '' : ' return' %>"></span>
+            <span class="fbody">
+              <b><%= a.from_name || 'ระบบ' %></b>
+              <span><%= util.thaiDateTime(a.created_at) %><%= a.read_at ? '' : '  ใหม่' %></span>
+              <div class="pre" style="margin-top:4px"><%= a.text %></div>
+              <% if (a.link) { %><a class="btn btn-sm btn-ghost" style="margin-top:6px;align-self:flex-start" href="<%= a.link %>">ไปที่งานของฉัน</a><% } %>
+            </span>
+          </li>
+        <% } %>
+      </ul>
+    <% } %>
+  </div>
+</div>
+<%- include('partials/bottom') %>

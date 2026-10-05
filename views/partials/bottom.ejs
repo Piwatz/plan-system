@@ -1,0 +1,57 @@
+<% if (!locals.bare) { %></main><% } %>
+<% if (me && !locals.bare) {
+  const p = currentPath;
+  const isReviewer = me.roles.length > 0;
+  const tabs = [{ href: '/', icon: 'home', label: 'หน้าหลัก', active: p === '/' }];
+  if (me.is_teacher) tabs.push({ href: '/my', icon: 'books', label: 'งานของฉัน', active: p.startsWith('/my') || p.startsWith('/works'), badge: badges.returned });
+  if (isReviewer) tabs.push({ href: '/inbox', icon: 'inbox', label: 'รอตรวจ', active: p.startsWith('/inbox') || p.startsWith('/quicksign'), badge: badges.inbox });
+  if (me.is_teacher) tabs.push({ href: '/notes', icon: 'note', label: 'บันทึก', active: p.startsWith('/notes'), badge: badges.notes });
+  if (tabs.length < 4) tabs.push({ href: '/stats', icon: 'chart', label: 'สถิติ', active: p.startsWith('/stats') });
+  const simple = (settings.mobile_layout || 'simple') === 'simple';
+  if (simple) {
+    // แบบเรียบง่าย: หน้าแรก งาน ปุ่มส่งงานตรงกลาง สถิติ ฉัน
+    tabs.length = 0;
+    tabs.push({ href: '/', icon: 'home', label: 'หน้าแรก', active: p === '/' });
+    const adminTab = { href: '/admin', icon: 'school', label: 'ผู้ดูแล', active: p.startsWith('/admin') };
+    if (isReviewer) tabs.push({ href: '/inbox', icon: 'inbox', label: 'รอตรวจ', active: p.startsWith('/inbox') || p.startsWith('/quicksign'), badge: badges.inbox });
+    else if (me.is_teacher) tabs.push({ href: '/my', icon: 'books', label: 'งานของฉัน', active: p.startsWith('/my'), badge: badges.returned });
+    else if (me.is_admin) tabs.push(adminTab);
+    if (me.is_teacher) tabs.push({ href: '/send', icon: 'plus', label: 'ส่งงาน', active: p.startsWith('/send') || p.startsWith('/works/new') || p.startsWith('/notes/new'), center: true });
+    else if (me.is_admin) tabs.push({ href: '/admin/features', icon: 'toggle', label: 'ฟังก์ชันเสริม', active: p.startsWith('/admin/features') });
+    // แอดมินที่เป็นครูด้วย ช่องที่ 4 เป็นปุ่มผู้ดูแลระบบแทนสถิติ (สถิติยังอยู่ในเมนู ฉัน)
+    if (me.is_admin && me.is_teacher) tabs.push(adminTab);
+    else tabs.push({ href: '/stats', icon: 'chart', label: 'สถิติ', active: p.startsWith('/stats') });
+    if (me.is_admin && !me.is_teacher) adminTab.active = p.startsWith('/admin') && !p.startsWith('/admin/features');
+  }
+%>
+    <footer class="footer"><%= settings.school_name %></footer>
+  </div>
+</div>
+<nav class="bnav" aria-label="เมนูลัด">
+  <% for (const t of tabs.slice(0, 4)) { %>
+    <a class="bnav-item<%= t.active ? ' active' : '' %><%= t.center ? ' bnav-center' : '' %>" href="<%= t.href %>"><% if (t.center) { %><span class="bnav-fab"><%- icon('plus', 28) %></span><% } else { %><%- icon(t.icon, 24) %><% } %><span><%= t.label %></span><% if (t.badge) { %><span class="dot-badge"><%= t.badge %></span><% } %></a>
+  <% } %>
+  <button type="button" class="bnav-item" data-side-open><%- icon(simple ? 'user' : 'menu', 24) %><span><%= simple ? 'ฉัน' : 'เมนู' %></span></button>
+</nav>
+<% } %>
+<dialog id="confirm-dialog" class="modal">
+  <form method="dialog">
+    <div class="modal-icon" data-icon></div>
+    <p class="modal-text" data-text></p>
+    <div class="modal-actions">
+      <button value="cancel" class="btn btn-ghost btn-lg" data-cancel>ยกเลิก</button>
+      <button value="ok" class="btn btn-primary btn-lg" data-ok>ยืนยัน</button>
+    </div>
+  </form>
+</dialog>
+<div class="overlay" id="busy">
+  <div class="overlay-box">
+    <div class="spinner"></div>
+    <b data-title>กำลังบันทึก</b>
+    <div class="progress" data-bar hidden><div></div></div>
+    <small class="muted" data-pct></small>
+  </div>
+</div>
+<script src="/static/js/app.js?v=<%= assetVersion %>"></script>
+</body>
+</html>

@@ -1,0 +1,163 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<title>แนวแอปธนาคาร หน้าแรกครู</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Mitr:wght@400;500;600&amp;family=Noto+Sans+Thai:wght@400;500;600&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+@keyframes hrFill{from{transform:scaleX(0)}to{transform:scaleX(1)}}
+@keyframes hrToast{from{transform:translateY(20px);opacity:0}to{transform:none;opacity:1}}
+</style>
+</helmet>
+<div style="width: 390px; height: 844px; position: relative; overflow: hidden; box-sizing: border-box; background: #F5F5F7; color: #17171C; font-family: 'Noto Sans Thai', sans-serif; font-size: 16px; line-height: 1.5">
+
+  <div style="position: absolute; inset: 0 0 84px 0; overflow-y: auto">
+    <header style="position: relative; overflow: hidden; background: #A8102A; color: #FFFFFF; padding: 26px 20px 70px; display: flex; flex-direction: column; gap: 16px">
+      <svg width="260" height="260" viewBox="0 0 260 260" aria-hidden="true" style="position: absolute; right: -90px; top: -80px"><circle cx="130" cy="130" r="60" fill="none" stroke="rgba(255,255,255,.12)" stroke-width="2"></circle><circle cx="130" cy="130" r="95" fill="none" stroke="rgba(255,255,255,.1)" stroke-width="2"></circle><circle cx="130" cy="130" r="128" fill="none" stroke="rgba(255,255,255,.08)" stroke-width="2"></circle></svg>
+      <div style="position: relative; display: flex; align-items: center; justify-content: space-between">
+        <span style="display: flex; align-items: center; gap: 10px">
+          <span style="width: 44px; height: 44px; border-radius: 50%; background: rgba(255, 255, 255, .18); display: flex; align-items: center; justify-content: center; font: 500 16px/1 'Mitr', sans-serif">สช</span>
+          <span style="display: flex; flex-direction: column; line-height: 1.3">
+            <span style="font-size: 14px; opacity: .85">สวัสดีตอนเช้า</span>
+            <span style="font: 500 18px/1.3 'Mitr', sans-serif">ครูสมชาย ใจดี</span>
+          </span>
+        </span>
+        <button type="button" aria-label="การแจ้งเตือน 2 รายการ" style="position: relative; width: 44px; height: 44px; border-radius: 50%; border: 0; background: rgba(255, 255, 255, .18); color: #FFFFFF; display: flex; align-items: center; justify-content: center; cursor: pointer">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 8a6 6 0 1 1 12 0c0 7 3 8 3 8H3s3-1 3-8"></path><path d="M10 20a2 2 0 0 0 4 0"></path></svg>
+          <span style="position: absolute; top: 8px; right: 9px; width: 9px; height: 9px; border-radius: 50%; background: #FFC53D"></span>
+        </button>
+      </div>
+      <div style="position: relative; display: flex; flex-direction: column; gap: 6px">
+        <span style="font-size: 15px; opacity: .9">ภาคเรียนที่ 2/2569 ส่งงานแล้ว</span>
+        <span style="font: 600 52px/1 'Mitr', sans-serif">67<span style="font-size: 26px">%</span></span>
+        <div aria-label="ส่งแล้ว 4 จาก 6 ชิ้น" style="display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 5px; margin-top: 6px">
+          <sc-for list="{{segments}}" as="g" hint-placeholder-count="6">
+            <span style="height: 8px; border-radius: 4px; background: {{g.bg}}; transform-origin: left; animation: hrFill .5s ease-out both; animation-delay: {{g.delay}}"></span>
+          </sc-for>
+        </div>
+      </div>
+    </header>
+
+    <div style="position: relative; margin: -46px 16px 0; background: #FFFFFF; border-radius: 24px; box-shadow: 0 10px 30px rgba(23, 23, 28, .10); padding: 16px 8px; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr))">
+      <sc-for list="{{quick}}" as="q" hint-placeholder-count="4">
+        <button type="button" onClick="{{q.go}}" style="border: 0; background: none; color: #17171C; padding: 4px; display: flex; flex-direction: column; align-items: center; gap: 8px; font: 500 13px/1.3 'Noto Sans Thai', sans-serif; text-align: center; cursor: pointer">
+          <span style="width: 54px; height: 54px; border-radius: 18px; background: {{q.bg}}; color: {{q.fg}}; display: flex; align-items: center; justify-content: center">
+            <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{q.icon}}"></path></svg>
+          </span>
+          {{q.label}}
+        </button>
+      </sc-for>
+    </div>
+
+    <section style="padding: 22px 16px 0; display: flex; flex-direction: column; gap: 10px">
+      <h2 style="margin: 0; font: 500 19px/1.3 'Mitr', sans-serif">อัปเดตล่าสุด</h2>
+      <div style="background: #FFFFFF; border-radius: 20px; padding: 4px 14px">
+        <sc-for list="{{feed}}" as="f" hint-placeholder-count="3">
+          <div style="display: flex; align-items: center; gap: 12px; padding: 12px 0; border-bottom: 1px solid #EFEFF2">
+            <span style="width: 40px; height: 40px; flex: none; border-radius: 50%; background: {{f.bg}}; color: {{f.fg}}; display: flex; align-items: center; justify-content: center">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{f.icon}}"></path></svg>
+            </span>
+            <span style="flex: 1; min-width: 0; display: flex; flex-direction: column; line-height: 1.4">
+              <span style="font-weight: 600; font-size: 15px">{{f.title}}</span>
+              <span style="font-size: 14px; color: #5F5F6B">{{f.sub}}</span>
+            </span>
+            <span style="font-size: 13px; color: #5F5F6B; white-space: nowrap">{{f.time}}</span>
+          </div>
+        </sc-for>
+      </div>
+    </section>
+
+    <section style="padding: 22px 0 24px; display: flex; flex-direction: column; gap: 10px">
+      <h2 style="margin: 0; padding: 0 16px; font: 500 19px/1.3 'Mitr', sans-serif">รายวิชาของฉัน  <span style="font: 400 14px/1 'Noto Sans Thai', sans-serif; color: #5F5F6B">ปัดดูได้</span></h2>
+      <div style="display: flex; gap: 12px; overflow-x: auto; padding: 4px 16px 8px; scroll-snap-type: x mandatory">
+        <sc-for list="{{subjects}}" as="s" hint-placeholder-count="3">
+          <article style="flex: none; width: 236px; scroll-snap-align: start; background: #FFFFFF; border-radius: 22px; overflow: hidden; box-shadow: 0 2px 8px rgba(23, 23, 28, .05)">
+            <div style="height: 64px; background: {{s.band}}; color: #FFFFFF; padding: 12px 16px; box-sizing: border-box; display: flex; flex-direction: column; justify-content: flex-end">
+              <b style="font: 600 22px/1 'Mitr', sans-serif">{{s.code}}</b>
+            </div>
+            <div style="padding: 12px 16px 16px; display: flex; flex-direction: column; gap: 10px">
+              <span style="font-weight: 600">{{s.name}}</span>
+              <sc-for list="{{s.rows}}" as="r" hint-placeholder-count="3">
+                <span style="display: flex; align-items: center; justify-content: space-between; font-size: 14px">
+                  <span style="color: #5F5F6B">{{r.label}}</span>
+                  <span style="padding: 2px 10px; border-radius: 999px; background: {{r.bg}}; color: {{r.fg}}; font-weight: 600">{{r.value}}</span>
+                </span>
+              </sc-for>
+            </div>
+          </article>
+        </sc-for>
+      </div>
+    </section>
+  </div>
+
+  <sc-if value="{{hasToast}}" hint-placeholder-val="{{ false }}">
+    <div role="status" style="position: absolute; left: 16px; right: 16px; bottom: 100px; padding: 14px 16px; border-radius: 16px; background: #17171C; color: #FFFFFF; display: flex; align-items: center; justify-content: space-between; gap: 10px; animation: hrToast .25s ease-out both">
+      <span>{{toast}}</span>
+      <button type="button" onClick="{{closeToast}}" style="height: 40px; padding: 0 12px; border: 0; border-radius: 10px; background: rgba(255, 255, 255, .14); color: #FFFFFF; font: 600 14px/1 'Noto Sans Thai', sans-serif; cursor: pointer">ตกลง</button>
+    </div>
+  </sc-if>
+
+  <nav aria-label="เมนูหลัก" style="position: absolute; left: 0; right: 0; bottom: 0; height: 84px; box-sizing: border-box; padding: 0 8px 14px; background: #FFFFFF; border-top: 1px solid #EFEFF2; display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); align-items: end">
+    <button type="button" style="height: 56px; border: 0; background: none; color: #A8102A; font: 600 12px/1.2 'Noto Sans Thai', sans-serif; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; cursor: pointer">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 10.5 12 3l9 7.5V20a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"></path></svg>หน้าแรก</button>
+    <button type="button" style="height: 56px; border: 0; background: none; color: #5F5F6B; font: 500 12px/1.2 'Noto Sans Thai', sans-serif; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; cursor: pointer">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 13h5l1.5 3h5L16 13h5"></path><path d="M5 5h14l2 8v6a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1v-6z"></path></svg>รอตรวจ</button>
+    <button type="button" aria-label="ส่งงานใหม่" style="height: 76px; border: 0; background: none; display: flex; align-items: flex-start; justify-content: center; cursor: pointer">
+      <span style="width: 58px; height: 58px; border-radius: 20px; background: #A8102A; color: #FFFFFF; display: flex; align-items: center; justify-content: center; box-shadow: 0 8px 18px rgba(168, 16, 42, .35)">
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"></path></svg>
+      </span>
+    </button>
+    <button type="button" style="height: 56px; border: 0; background: none; color: #5F5F6B; font: 500 12px/1.2 'Noto Sans Thai', sans-serif; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; cursor: pointer">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20V10M10 20V4M16 20v-7M21 20H3"></path></svg>สถิติ</button>
+    <button type="button" style="height: 56px; border: 0; background: none; color: #5F5F6B; font: 500 12px/1.2 'Noto Sans Thai', sans-serif; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; cursor: pointer">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="4"></circle><path d="M4 21c1.5-4 4.5-6 8-6s6.5 2 8 6"></path></svg>ฉัน</button>
+  </nav>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+const ICON = {
+  book: 'M4 5a2 2 0 0 1 2-2h13v16H6a2 2 0 0 0-2 2zM4 19V5M9 7h6',
+  plan: 'M8 3h8l4 4v14H4V3zM8 11h8M8 15h6',
+  note: 'M4 20h4L19 9l-4-4L4 16zM13 7l4 4',
+  star: 'M12 3l2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.9 1-6.1L3.2 9.5l6.1-.9z',
+  check: 'm5 12 5 5 9-10',
+  back: 'M9 14 4 9l5-5M4 9h10a6 6 0 0 1 0 12h-3',
+};
+const QUICK = [
+  ['ส่งคู่มือ', 'book', '#FDE8EB', '#A8102A'],
+  ['ส่งแผน', 'plan', '#E8F0FE', '#1E4FC2'],
+  ['บันทึกหลังแผน', 'note', '#FFF2DC', '#8A5300'],
+  ['ผลประเมิน', 'star', '#E5F5EC', '#1D7A4C'],
+];
+
+class Component extends DCLogic {
+  renderVals() {
+    const st = this.state || {};
+    return {
+      segments: [1, 1, 1, 1, 0, 0].map((on, i) => ({ bg: on ? '#FFFFFF' : 'rgba(255,255,255,.25)', delay: i * 0.08 + 's' })),
+      quick: QUICK.map(([label, icon, bg, fg]) => ({ label, icon: ICON[icon], bg, fg, go: () => this.setState({ toast: 'เปิดหน้า' + label }) })),
+      feed: [
+        { title: 'คู่มือ ว30207 ถูกส่งกลับ', sub: 'นางมาลี ขอให้แก้ตารางคะแนนหน้า 12', time: '2 ชม.', icon: ICON.back, bg: '#FDE8EB', fg: '#A8102A' },
+        { title: 'ผอ. อนุญาตคู่มือ ว30203', sub: 'ได้ 95 คะแนน ระดับดีมาก', time: 'เมื่อวาน', icon: ICON.check, bg: '#E5F5EC', fg: '#1D7A4C' },
+        { title: 'แผน ว30203 ผ่านฝ่ายวิชาการ', sub: 'ตอนนี้อยู่ที่รองผู้อำนวยการ', time: '2 วัน', icon: ICON.check, bg: '#E8F0FE', fg: '#1E4FC2' },
+      ],
+      subjects: [
+        { code: 'ว30203', name: 'ฟิสิกส์เพิ่มเติม 3', band: '#A8102A', rows: [{ label: 'คู่มือ', value: 'ผ่าน', bg: '#E5F5EC', fg: '#1D7A4C' }, { label: 'แผน', value: 'รอ รอง ผอ.', bg: '#FFF2DC', fg: '#8A5300' }, { label: 'บันทึก', value: '5 ฉบับ', bg: '#F1F1F4', fg: '#17171C' }] },
+        { code: 'ว30207', name: 'ฟิสิกส์ 1', band: '#1E4FC2', rows: [{ label: 'คู่มือ', value: 'แก้ไข', bg: '#FDE8EB', fg: '#A8102A' }, { label: 'แผน', value: 'ยังไม่ส่ง', bg: '#F1F1F4', fg: '#5F5F6B' }, { label: 'บันทึก', value: '-', bg: '#F1F1F4', fg: '#5F5F6B' }] },
+        { code: 'ว22201', name: 'โครงงานวิทยาศาสตร์ 1', band: '#1D7A4C', rows: [{ label: 'คู่มือ', value: 'ยังไม่ส่ง', bg: '#F1F1F4', fg: '#5F5F6B' }, { label: 'แผน', value: 'ยังไม่ส่ง', bg: '#F1F1F4', fg: '#5F5F6B' }, { label: 'บันทึก', value: '-', bg: '#F1F1F4', fg: '#5F5F6B' }] },
+      ],
+      hasToast: Boolean(st.toast),
+      toast: st.toast || '',
+      closeToast: () => this.setState({ toast: '' }),
+    };
+  }
+}
+</script>
+</body>
+</html>

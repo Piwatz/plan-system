@@ -1,0 +1,54 @@
+<%- include('partials/top', { bare: true }) %>
+<div class="login-wrap">
+  <div class="login-card">
+    <div class="logo"><img src="<%= logoUrl %>" alt="ตราโรงเรียน"></div>
+    <h1 class="center" style="margin:12px 0 2px;font-size:1.5rem">ระบบส่งแผนการสอนออนไลน์</h1>
+    <p class="center muted"><%= settings.school_name %></p>
+    <% if (flash) { %><div class="alert alert-<%= flash.type === 'error' ? 'error' : 'success' %>"><span><%= flash.text %></span></div><% } %>
+    <% if (error) { %><div class="alert alert-error"><%- icon('shield') %><span><%= error %></span></div><% } %>
+    <form method="post" action="/login" data-login data-busy="กำลังเข้าสู่ระบบ">
+      <% const pick = typeof pickList !== 'undefined' && pickList.length; %>
+      <% if (pick) { %>
+        <div class="field" data-pick-name>
+          <label for="username">เลือกชื่อของคุณ</label>
+          <select id="username" name="username" class="pick-name" required>
+            <option value="">แตะเพื่อเลือกชื่อ</option>
+            <% for (const g of pickList) { %>
+              <optgroup label="<%= g.label %>">
+                <% for (const u of g.users) { %><option value="<%= u.username %>" <%= u.username === username ? 'selected' : '' %>><%= u.full_name %></option><% } %>
+              </optgroup>
+            <% } %>
+          </select>
+          <button type="button" class="btn btn-ghost btn-sm" data-type-name style="margin-top:6px">พิมพ์ชื่อผู้ใช้เอง</button>
+        </div>
+        <div class="field" data-type-field hidden>
+          <label for="username_typed">ชื่อผู้ใช้ หรือรหัสครู</label>
+          <input type="text" id="username_typed" name="username" autocomplete="username" autocapitalize="none" disabled>
+        </div>
+      <% } else { %>
+        <div class="field">
+          <label for="username">ชื่อผู้ใช้ หรือรหัสครู</label>
+          <input type="text" id="username" name="username" value="<%= username %>" autocomplete="username" autocapitalize="none" required autofocus>
+        </div>
+      <% } %>
+      <div class="field">
+        <label for="password">รหัสผ่าน</label>
+        <input type="password" id="password" name="password" autocomplete="current-password" required>
+      </div>
+      <button class="btn btn-primary btn-lg btn-block" type="submit">เข้าสู่ระบบ</button>
+    </form>
+    <p class="center muted small" style="margin-top:12px">ลืมรหัสผ่าน ติดต่อผู้ดูแลระบบให้ตั้งรหัสใหม่</p>
+    <% if (demoAccounts.length) { %>
+      <div class="demo-list">
+        <b>โหมดทดลอง</b> <small class="muted">ข้อมูลทั้งหมดเป็นชื่อสมมติ กดที่ชื่อเพื่อเข้าระบบในบทบาทนั้น</small>
+        <% for (const a of demoAccounts) { %>
+          <button type="button" data-demo-user="<%= a.username %>" data-demo-pass="<%= demoPassword %>">
+            <span class="qs-ini" style="width:38px;height:38px"><%- icon(a.is_admin ? 'toggle' : a.role_labels ? 'edit' : 'user', 18) %></span>
+            <span><b><%= a.full_name %></b><br><small class="muted"><%= a.is_admin ? 'ผู้ดูแลระบบ' : a.role_labels || ('ครู กลุ่มสาระ' + (a.dept_name || '')) %></small></span>
+          </button>
+        <% } %>
+      </div>
+    <% } %>
+  </div>
+</div>
+<%- include('partials/bottom', { bare: true }) %>

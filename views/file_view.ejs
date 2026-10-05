@@ -1,0 +1,10 @@
+<%- include('partials/top') %>
+<div class="page-head">
+  <div style="min-width:0">
+    <div class="eyebrow"><%= wf.DOC_TYPES[sub.doc_type].label %> <%= sub.subject_code %> <%= sub.teacher_name %></div>
+    <h1 style="overflow-wrap:anywhere"><%= file.original_name %></h1>
+  </div>
+  <div class="actions"><a class="btn btn-ghost" href="/s/<%= sub.id %>"><%- icon('back', 18) %> กลับไปที่งาน</a></div>
+</div>
+<%- include('partials/file_viewer', { files: [file], cls: 'inline' }) %>
+<%- include('partials/bottom') %>

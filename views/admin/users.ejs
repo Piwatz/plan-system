@@ -1,0 +1,56 @@
+<%- include('../partials/top') %>
+<% const label = Object.fromEntries(steps.map((s) => [s.role, s.label])); %>
+<div class="page-head">
+  <div><h1>รายชื่อครูและผู้ตรวจ</h1><div class="sub">กำหนดกลุ่มสาระและหน้าที่ผู้ตรวจของแต่ละคน คนเดียวมีได้หลายหน้าที่</div></div>
+  <div class="actions">
+    <a class="btn btn-ghost" href="/admin">กลับ</a>
+    <a class="btn btn-purple" href="/admin/users-import">วางรายชื่อจาก Excel</a>
+    <a class="btn btn-primary" href="/admin/users/new">เพิ่มทีละคน</a>
+  </div>
+</div>
+
+<form method="get" class="card filters" data-autosubmit>
+  <div class="field">
+    <label for="dept">กลุ่มสาระ</label>
+    <select id="dept" name="dept"><option value="">ทุกกลุ่มสาระ</option>
+      <% for (const d of departments) { %><option value="<%= d.id %>" <%= Number(query.dept) === d.id ? 'selected' : '' %>><%= d.name %></option><% } %>
+    </select>
+  </div>
+  <div class="field">
+    <label for="role">หน้าที่ผู้ตรวจ</label>
+    <select id="role" name="role"><option value="">ทุกคน</option>
+      <% for (const s of steps) { %><option value="<%= s.role %>" <%= query.role === s.role ? 'selected' : '' %>><%= s.label %></option><% } %>
+    </select>
+  </div>
+  <div class="field grow">
+    <label for="q">ค้นหา</label>
+    <input type="search" id="q" name="q" value="<%= query.q || '' %>" placeholder="ชื่อ หรือชื่อผู้ใช้">
+  </div>
+  <button class="btn btn-primary" type="submit">ค้นหา</button>
+</form>
+
+<div class="card">
+  <div class="card-head"><h3><%= users.length %> คน</h3></div>
+  <div class="table-wrap"><table class="table">
+    <thead><tr><th>ชื่อ สกุล</th><th>ชื่อผู้ใช้</th><th>กลุ่มสาระ</th><th>หน้าที่</th><th class="hide-sm">เข้าระบบล่าสุด</th><th></th></tr></thead>
+    <tbody>
+    <% for (const u of users) { %>
+      <tr style="<%= u.is_active ? '' : 'opacity:.5' %>">
+        <td><b><%= u.full_name %></b><br><small class="muted"><%= u.position %></small></td>
+        <td><%= u.username %></td>
+        <td><%= u.dept_name || '-' %></td>
+        <td><div class="tags">
+          <% if (u.is_admin) { %><span class="badge badge-blue">ผู้ดูแลระบบ</span><% } %>
+          <% for (const r of u.roles) { %><span class="badge badge-purple"><%= label[r] || r %></span><% } %>
+          <% if (u.is_teacher) { %><span class="badge badge-brand">ครูผู้สอน</span><% } %>
+          <% if (!u.is_active) { %><span class="badge badge-gray">ปิดบัญชี</span><% } %>
+          <% if (u.must_change_password) { %><span class="badge badge-amber">ยังไม่ตั้งรหัสเอง</span><% } %>
+        </div></td>
+        <td class="hide-sm nowrap"><%= util.thaiDateTime(u.last_login_at) || '-' %></td>
+        <td class="right"><a class="btn btn-sm btn-ghost" href="/admin/users/<%= u.id %>">แก้ไข</a></td>
+      </tr>
+    <% } %>
+    </tbody>
+  </table></div>
+</div>
+<%- include('../partials/bottom') %>

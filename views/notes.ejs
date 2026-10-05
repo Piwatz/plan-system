@@ -1,0 +1,48 @@
+<%- include('partials/top') %>
+<div class="page-head">
+  <div>
+    <div class="eyebrow">ภาคเรียนที่ <%= term.semester %>/<%= term.year %></div>
+    <h1>บันทึกหลังแผน</h1>
+    <div class="sub">เขียนทีละแผนหลังสอนเสร็จ บันทึกร่างไว้หลายฉบับแล้วส่งพร้อมกันในหน้ารายวิชาได้</div>
+  </div>
+</div>
+
+<% if (!plans.length) { %>
+  <div class="card"><div class="empty"><p>ยังไม่มีแผนการจัดการเรียนรู้ในภาคเรียนนี้ ส่งแผนก่อน แล้วจึงเขียนบันทึกหลังแผนได้</p><a class="btn btn-primary" href="/works/new?type=plan">ส่งแผนการจัดการเรียนรู้</a></div></div>
+<% } %>
+
+<% for (const r of plans) { const todo = r.notes.filter((n) => n.status === 'draft' || n.status === 'returned').length; %>
+  <section class="card">
+    <div class="card-head">
+      <h2><%= r.code %> <%= r.name %></h2>
+      <span class="badge"><%= r.grade %></span>
+      <div class="actions">
+        <a class="btn btn-ghost" href="/s/<%= r.plan.id %>#notes">ดูทั้งเล่ม<%= todo ? ' และส่งหลายฉบับ' : '' %></a>
+        <% if (r.plan.status !== 'draft') { %><a class="btn btn-primary" href="/notes/new?plan=<%= r.plan.id %>"><%- icon('plus', 18) %> เขียนบันทึก</a><% } %>
+      </div>
+    </div>
+    <% if (r.plan.status === 'draft') { %>
+      <p class="muted">แผนของวิชานี้ยังเป็นฉบับร่าง ส่งแผนก่อนจึงเขียนบันทึกหลังแผนได้ <a href="/s/<%= r.plan.id %>">เปิดแผน</a></p>
+    <% } else if (!r.notes.length) { %>
+      <p class="muted">ยังไม่มีบันทึกหลังแผน</p>
+    <% } else { %>
+      <div class="table-wrap"><table class="table">
+        <thead><tr><th>แผนที่</th><th>เรื่อง</th><th class="hide-sm">วันที่สอน</th><th class="hide-sm">ผ่านเกณฑ์</th><th>สถานะ</th><th></th></tr></thead>
+        <tbody>
+          <% for (const n of r.notes.slice(0, 8)) { %>
+            <tr>
+              <td><b><%= n.plan_no %></b></td>
+              <td><%= n.topic || (n.note_mode === 'file' ? 'แนบไฟล์' : '') %></td>
+              <td class="hide-sm nowrap"><%= util.thaiDate(n.teach_date, true) %></td>
+              <td class="hide-sm nowrap"><%= n.students_total ? Math.round((n.students_passed || 0) / n.students_total * 100) + '%' : '' %></td>
+              <td><%- include('partials/status', { s: n }) %></td>
+              <td class="right"><a class="btn btn-sm <%= n.status === 'returned' ? 'btn-danger' : 'btn-ghost' %>" href="/s/<%= n.id %><%= n.status === 'draft' || n.status === 'returned' ? '/edit' : '' %>"><%= n.status === 'draft' || n.status === 'returned' ? 'แก้ไข' : 'เปิด' %></a></td>
+            </tr>
+          <% } %>
+        </tbody>
+      </table></div>
+      <% if (r.notes.length > 8) { %><p class="muted small" style="margin:8px 0 0">แสดง 8 ฉบับล่าสุด จากทั้งหมด <%= r.notes.length %> ฉบับ</p><% } %>
+    <% } %>
+  </section>
+<% } %>
+<%- include('partials/bottom') %>

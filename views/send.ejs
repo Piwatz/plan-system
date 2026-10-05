@@ -1,0 +1,14 @@
+<%- include('partials/top') %>
+<div class="narrow">
+  <div class="page-head"><div><h1>ส่งงาน</h1><div class="sub">เลือกงานที่จะส่ง</div></div></div>
+  <div class="send-list">
+    <% if (canPlan) { %><a class="card send-item" href="/works/new?type=plan"><span class="f-ic"><%- icon('file', 26) %></span><span><b>ส่งแผนการจัดการเรียนรู้</b><span class="muted"><%= ff.onemain ? 'เฉพาะวิชาหลัก PDF ไฟล์เดียว' : 'รายวิชาละ 1 เล่มต่อภาคเรียน' %></span></span><%- icon('next', 22) %></a><% } %>
+    <a class="card send-item" href="/works/new?type=manual"><span class="f-ic"><%- icon('books', 26) %></span><span><b>ส่งคู่มือรายวิชา</b><span class="muted">ทุกวิชาที่สอน วิชาละ 1 ครั้งต่อภาคเรียน</span></span><%- icon('next', 22) %></a>
+    <% if (ff.teachlist) { %><a class="card send-item" href="/teaching"><span class="f-ic"><%- icon('star', 26) %></span><span><b>รายวิชาที่สอน</b><span class="muted">เพิ่มวิชาที่สอน และเลือกวิชาหลัก</span></span><%- icon('next', 22) %></a><% } %>
+    <% for (const r of plans) { %>
+      <a class="card send-item" href="/notes/new?plan=<%= r.plan.id %>"><span class="f-ic"><%- icon('note', 26) %></span><span><b>เขียนบันทึกหลังแผน <%= r.code %></b><span class="muted"><%= r.name %> มีแล้ว <%= r.plan.note_total %> ฉบับ</span></span><%- icon('next', 22) %></a>
+    <% } %>
+    <% if (!plans.length) { %><p class="muted small">บันทึกหลังแผนเขียนได้หลังส่งแผนการจัดการเรียนรู้ของวิชานั้นแล้ว</p><% } %>
+  </div>
+</div>
+<%- include('partials/bottom') %>

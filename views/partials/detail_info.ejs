@@ -1,0 +1,31 @@
+<%# การ์ดรายละเอียดของงาน (และเนื้อหาบันทึกหลังแผน K P A) ใช้ในหน้างาน และฝั่งซ้ายของหน้าลงนามบันทึกหลังแผน %>
+<div class="card">
+  <h3>รายละเอียด</h3>
+  <dl class="info">
+    <div><dt>รายวิชา</dt><dd><%= sub.subject_code %> <%= sub.subject_name %></dd></div>
+    <div><dt>ระดับชั้น</dt><dd><%= sub.grade_level || '-' %></dd></div>
+    <% if (isNote) { %>
+      <div><dt>หน่วยการเรียนรู้</dt><dd><%= sub.unit_no ? 'ที่ ' + sub.unit_no + ' ' : '' %><%= sub.unit_name || (sub.unit_no ? '' : '-') %></dd></div>
+      <div><dt>จำนวนชั่วโมง</dt><dd><%= sub.hours || '-' %></dd></div>
+      <div><dt>ชั้น หรือห้องที่สอน</dt><dd><%= sub.class_room || '-' %></dd></div>
+      <div><dt>วันที่สอน</dt><dd><%= util.thaiDate(sub.teach_date) || '-' %></dd></div>
+      <% if (sub.students_total != null) { %><div><dt>นักเรียนผ่านเกณฑ์</dt><dd><%= sub.students_passed ?? '-' %> จาก <%= sub.students_total %> คน<%= sub.students_total ? ' (ร้อยละ ' + Math.round((sub.students_passed || 0) / sub.students_total * 100) + ')' : '' %></dd></div><% } %>
+    <% } else { %>
+      <div><dt>เลขที่บันทึกข้อความ</dt><dd><%= sub.doc_no || '-' %></dd></div>
+      <div><dt>วันที่ส่ง</dt><dd><%= util.thaiDateTime(sub.submitted_at) || '-' %></dd></div>
+      <% if (sub.link_url) { %><div><dt>ลิงก์เพิ่มเติม</dt><dd><a href="<%= sub.link_url %>" target="_blank" rel="noopener noreferrer">เปิดลิงก์</a></dd></div><% } %>
+    <% } %>
+  </dl>
+  <% if (methods.length) { %>
+    <div class="section-title">รูปแบบการจัดการเรียนรู้</div>
+    <div class="tags"><% for (const m of methods) { %><span class="badge badge-brand"><%= m %></span><% } %></div>
+  <% } %>
+  <% if (isNote && sub.note_mode === 'file') { %>
+    <div class="alert alert-info" style="margin-top:14px"><%- icon('file') %><span>ครูเขียนบันทึกหลังแผนในแบบของตัวเอง แนบเป็นไฟล์ เปิดอ่านได้ในกรอบแสดงไฟล์ ระบบพิมพ์หน้าความเห็นและลายเซ็นผู้บริหารแยกให้ 1 หน้า ใช้แนบท้ายไฟล์</span></div>
+  <% } else if (isNote) { %>
+    <% for (const [label, key] of [['ด้านความรู้ (K)', 'result_k'], ['ด้านทักษะ / กระบวนการ (P)', 'result_p'], ['ด้านคุณลักษณะ (A)', 'result_a'], ['ปัญหา / อุปสรรค / แนวทางแก้ไข', 'problems'], ['ข้อเสนอแนะ', 'suggestions']]) { %>
+      <div class="section-title"><%= label %></div>
+      <div class="text-block"><%= sub[key] || '-' %></div>
+    <% } %>
+  <% } %>
+</div>

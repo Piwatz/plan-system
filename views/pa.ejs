@@ -1,0 +1,45 @@
+<%- include('partials/top') %>
+<div class="narrow">
+  <div class="page-head">
+    <div>
+      <h1>แฟ้มผลงานสำหรับ PA</h1>
+      <div class="sub">รวมเอกสารที่ลงนามครบแล้วเป็นชุดเดียว เปิดแล้วกดพิมพ์ หรือบันทึกเป็น PDF ได้ทันที</div>
+    </div>
+  </div>
+
+  <form class="card" method="get" action="/pa/print" target="_blank">
+    <div class="field">
+      <span class="label">ปีการศึกษา</span>
+      <div class="btn-row">
+        <% for (const y of years) { %><a class="btn <%= y === year ? 'btn-primary' : 'btn-ghost' %>" href="/pa?year=<%= y %>"><%= y %></a><% } %>
+      </div>
+      <input type="hidden" name="year" value="<%= year %>">
+    </div>
+
+    <% if (!works.length && !notes.length) { %>
+      <div class="alert alert-info"><%- icon('folder') %><span>ปีการศึกษา <%= year %> ยังไม่มีเอกสารที่ลงนามครบทุกระดับ เมื่อคู่มือ แผน หรือบันทึกหลังแผนผ่านครบ จะรวมในแฟ้มได้ทันที</span></div>
+    <% } %>
+
+    <span class="label">เลือกสิ่งที่จะรวมในแฟ้ม</span>
+    <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:16px">
+      <% for (const it of items) { const n = pages[it.key]; %>
+        <label class="check" style="justify-content:flex-start;padding:10px 14px">
+          <input type="checkbox" name="inc" value="<%= it.key %>" <%= n ? 'checked' : 'disabled' %>>
+          <span style="flex:1;display:flex;flex-direction:column;line-height:1.35"><b><%= it.label %></b><small class="muted"><%= it.note %></small></span>
+          <span class="badge"><%= n %> หน้า</span>
+        </label>
+      <% } %>
+    </div>
+
+    <span class="label">ปกแฟ้ม</span>
+    <div class="seg" style="margin-bottom:16px">
+      <label><input type="radio" name="cover" value="formal" checked><span>แบบทางการ พื้นขาว</span></label>
+      <label><input type="radio" name="cover" value="color"><span>แบบมีแถบสีโรงเรียน</span></label>
+    </div>
+
+    <p class="muted small"><%- icon('qr', 16) %> <%= ff.qr ? 'ทุกหน้าที่มาจากระบบมี QR Code ให้กรรมการสแกนตรวจว่าเป็นเอกสารจริงที่ลงนามในระบบ' : 'ผู้ดูแลระบบปิด QR Code บนเอกสารไว้' %></p>
+    <button class="btn btn-primary btn-lg btn-block" type="submit" <%= works.length || notes.length ? '' : 'disabled' %>><%- icon('print', 20) %> สร้างแฟ้มและเปิดหน้าพิมพ์</button>
+    <p class="muted small center" style="margin-top:8px">ในหน้าที่เปิดขึ้น กดปุ่มพิมพ์ แล้วเลือกเครื่องพิมพ์เป็น บันทึกเป็น PDF</p>
+  </form>
+</div>
+<%- include('partials/bottom') %>

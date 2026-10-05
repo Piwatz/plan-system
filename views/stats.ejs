@@ -1,0 +1,130 @@
+<%- include('partials/top') %>
+<%
+  const pct = (a, b) => (b ? Math.round((a / b) * 100) : 0);
+  const chart = {
+    depts: byDept.map((d) => d.name),
+    manual: byDept.map((d) => d.manual.total),
+    plan: byDept.map((d) => d.plan.total),
+    notes: byDept.map((d) => d.notes),
+    status: [totals.manual.approved + totals.plan.approved, totals.manual.pending + totals.plan.pending, totals.manual.returned + totals.plan.returned],
+  };
+%>
+<div class="page-head">
+  <div>
+    <h1>สถิติการส่งงาน</h1>
+    <div class="sub">นับเฉพาะงานที่ส่งแล้ว ไม่รวมฉบับร่าง</div>
+  </div>
+  <div class="actions"><%- include('partials/term_select') %></div>
+</div>
+
+<div class="grid" style="margin-bottom:18px">
+  <div class="stat green">
+    <span class="icon"></span>
+    <span style="flex:1"><span class="num"><%= totals.sentPlan %>/<%= totals.teachers %></span><span class="label"> ครูส่งแผนแล้ว</span>
+      <div class="bar" style="margin-top:6px"><div style="width:<%= pct(totals.sentPlan, totals.teachers) %>%"></div></div></span>
+  </div>
+  <div class="stat purple">
+    <span class="icon"></span>
+    <span style="flex:1"><span class="num"><%= totals.sentManual %>/<%= totals.teachers %></span><span class="label"> ครูส่งคู่มือรายวิชาแล้ว</span>
+      <div class="bar" style="margin-top:6px"><div style="width:<%= pct(totals.sentManual, totals.teachers) %>%"></div></div></span>
+  </div>
+  <div class="stat blue"><span class="icon"></span><span><span class="num"><%= totals.manual.approved + totals.plan.approved %></span><br><span class="label">แผนและคู่มือที่ผ่านครบแล้ว</span></span></div>
+  <div class="stat amber"><span class="icon"></span><span><span class="num"><%= totals.manual.pending + totals.plan.pending %></span><br><span class="label">แผนและคู่มือระหว่างตรวจ</span></span></div>
+  <div class="stat red"><span class="icon"></span><span><span class="num"><%= totals.manual.returned + totals.plan.returned %></span><br><span class="label">ส่งกลับแก้ไข</span></span></div>
+  <div class="stat orange"><span class="icon"></span><span><span class="num"><%= totals.note.total %></span><br><span class="label">บันทึกหลังแผน (ลงนามครบ <%= totals.note.approved %>)</span></span></div>
+</div>
+
+<div class="grid-3">
+  <div class="card"><h3>จำนวนงานที่ส่ง แยกกลุ่มสาระ</h3><div class="chart-box"><canvas id="c-dept"></canvas></div></div>
+  <div class="card"><h3>สถานะแผนและคู่มือ</h3><div class="chart-box"><canvas id="c-status"></canvas></div></div>
+</div>
+
+<div class="card">
+  <h3>งานค้างอยู่ที่ระดับไหน</h3>
+  <div class="table-wrap"><table class="table">
+    <thead><tr><th>ระดับ</th><th class="num">แผน</th><th class="num">คู่มือรายวิชา</th><th class="num">บันทึกหลังแผน</th></tr></thead>
+    <tbody><% for (const s of stepLoad) { %><tr><td><%= s.label %></td><td class="num"><%= s.plan %></td><td class="num"><%= s.manual %></td><td class="num"><%= s.note %></td></tr><% } %></tbody>
+  </table></div>
+</div>
+
+<div class="card">
+  <h3>แยกตามกลุ่มสาระ</h3>
+  <div class="table-wrap"><table class="table">
+    <thead><tr><th>กลุ่มสาระ</th><th class="num">ครู</th><th class="num">ส่งแผน</th><th class="num">ส่งคู่มือ</th><th class="num">ผ่านครบ</th><th class="num">บันทึกหลังแผน</th><th class="num">คะแนนเฉลี่ยแผน</th><th class="num">คะแนนเฉลี่ยคู่มือ</th></tr></thead>
+    <tbody>
+      <% for (const d of byDept) { if (!d.teachers && !d.manual.total && !d.plan.total) continue; %>
+        <tr>
+          <td><%= d.name %></td>
+          <td class="num"><%= d.teachers %></td>
+          <td class="num"><%= d.sentPlan %> คน</td>
+          <td class="num"><%= d.sentManual %> คน</td>
+          <td class="num"><%= d.manual.approved + d.plan.approved %></td>
+          <td class="num"><%= d.notes %></td>
+          <td class="num"><%= d.avgPlan == null ? '-' : d.avgPlan.toFixed(1) %></td>
+          <td class="num"><%= d.avgManual == null ? '-' : d.avgManual.toFixed(1) %></td>
+        </tr>
+      <% } %>
+    </tbody>
+  </table></div>
+  <div class="muted small">คะแนนเฉลี่ยคิดเป็นร้อยละของคะแนนเต็ม</div>
+</div>
+
+<% if (methods.length) { %>
+  <div class="card">
+    <h3>รูปแบบการจัดการเรียนรู้ที่ใช้ในแผน</h3>
+    <% const top = methods[0][1]; for (const [m, n] of methods) { %>
+      <div style="display:flex;gap:10px;align-items:center;margin:6px 0">
+        <span style="width:min(320px,45%)"><%= m %></span>
+        <div class="bar" style="flex:1"><div style="width:<%= pct(n, top) %>%"></div></div>
+        <b style="width:44px;text-align:right"><%= n %></b>
+      </div>
+    <% } %>
+  </div>
+<% } %>
+
+<% if (canSeeNames) { %>
+  <div class="card">
+    <h3>ครูที่ยังส่งไม่ครบ <span class="muted">(<%= missing.length %> คน)</span></h3>
+    <% if (!missing.length) { %>
+      <div class="empty"><span class="big"></span>ครูทุกคนส่งทั้งแผนและคู่มือรายวิชาแล้ว</div>
+    <% } else { %>
+      <div class="table-wrap"><table class="table">
+        <thead><tr><th>ครู</th><th>กลุ่มสาระ</th><th>แผน</th><th>คู่มือรายวิชา</th></tr></thead>
+        <tbody><% for (const t of missing) { %>
+          <tr><td><%= t.full_name %></td><td><%= t.dept_name %></td>
+            <td><%- t.noPlan ? '<span class="badge badge-red">ยังไม่ส่ง</span>' : '<span class="badge badge-green">ส่งแล้ว</span>' %></td>
+            <td><%- t.noManual ? '<span class="badge badge-red">ยังไม่ส่ง</span>' : '<span class="badge badge-green">ส่งแล้ว</span>' %></td></tr>
+        <% } %></tbody>
+      </table></div>
+    <% } %>
+  </div>
+<% } %>
+
+<script src="/vendor/chart.js/chart.umd.min.js"></script>
+<script>
+  (function () {
+    const data = <%- JSON.stringify(chart).replace(/</g, '\\u003c') %>;
+    if (!window.Chart) return;
+    const css = (v) => getComputedStyle(document.documentElement).getPropertyValue(v).trim();
+    Chart.defaults.font.family = css('--font');
+    Chart.defaults.color = css('--muted');
+    new Chart(document.getElementById('c-dept'), {
+      type: 'bar',
+      data: {
+        labels: data.depts,
+        datasets: [
+          { label: 'แผน', data: data.plan, backgroundColor: css('--primary'), borderRadius: 6 },
+          { label: 'คู่มือรายวิชา', data: data.manual, backgroundColor: css('--accent'), borderRadius: 6 },
+          { label: 'บันทึกหลังแผน', data: data.notes, backgroundColor: css('--ok'), borderRadius: 6 },
+        ],
+      },
+      options: { maintainAspectRatio: false, plugins: { legend: { position: 'bottom' } }, scales: { y: { beginAtZero: true, ticks: { precision: 0 } } } },
+    });
+    new Chart(document.getElementById('c-status'), {
+      type: 'doughnut',
+      data: { labels: ['ผ่านครบแล้ว', 'ระหว่างตรวจ', 'ส่งกลับแก้ไข'], datasets: [{ data: data.status, backgroundColor: [css('--ok'), css('--accent'), css('--back')], borderColor: css('--surface'), borderWidth: 2 }] },
+      options: { maintainAspectRatio: false, cutout: '62%', plugins: { legend: { position: 'bottom' } } },
+    });
+  })();
+</script>
+<%- include('partials/bottom') %>

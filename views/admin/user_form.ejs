@@ -1,0 +1,86 @@
+<%- include('../partials/top') %>
+<div class="narrow">
+  <div class="page-head">
+    <div><h1><%= isNew ? 'เพิ่มผู้ใช้' : 'แก้ไขผู้ใช้' %></h1><% if (!isNew) { %><div class="sub">ส่งงานแล้ว <%= subCount %> รายการ</div><% } %></div>
+    <div class="actions"><a class="btn btn-ghost" href="/admin/users">กลับ</a></div>
+  </div>
+  <form class="card" method="post" action="<%= isNew ? '/admin/users' : '/admin/users/' + u.id %>">
+    <div class="form-grid">
+      <div class="field">
+        <label for="full_name">ชื่อ สกุล <span class="req">*</span></label>
+        <input type="text" id="full_name" name="full_name" value="<%= u.full_name || '' %>" placeholder="เช่น นางสาวตัวอย่าง ใจดี" required>
+      </div>
+      <div class="field">
+        <label for="username">ชื่อผู้ใช้ หรือรหัสครู<%- isNew ? '' : ' <span class="req">*</span>' %></label>
+        <input type="text" id="username" name="username" value="<%= u.username || '' %>" autocapitalize="none" <%= isNew ? '' : 'required' %>>
+        <% if (isNew) { %><div class="hint">เว้นว่างได้ ระบบใช้ชื่อตัวโดยตัดคำนำหน้าออก เช่น นายสมชาย ใจดี เป็น สมชาย</div><% } %>
+      </div>
+      <div class="field">
+        <label for="position">ตำแหน่ง</label>
+        <input type="text" id="position" name="position" value="<%= u.position || '' %>" placeholder="เช่น ครู หรือ ครูผู้ช่วย">
+      </div>
+      <div class="field">
+        <label for="department_id">กลุ่มสาระ</label>
+        <select id="department_id" name="department_id">
+          <option value="">ไม่สังกัดกลุ่มสาระ</option>
+          <% for (const d of departments) { %><option value="<%= d.id %>" <%= u.department_id === d.id ? 'selected' : '' %>><%= d.name %></option><% } %>
+        </select>
+      </div>
+    </div>
+    <div class="field">
+      <span class="label">หน้าที่ผู้ตรวจ</span>
+      <div class="checks">
+        <% for (const s of steps) { %>
+          <label class="check"><input type="checkbox" name="roles" value="<%= s.role %>" <%= u.roles.includes(s.role) ? 'checked' : '' %>> ระดับ <%= s.seq %> <%= s.label %></label>
+        <% } %>
+      </div>
+      <div class="hint">หัวหน้ากลุ่มสาระตรวจเฉพาะกลุ่มสาระของตนเอง ระดับอื่นตรวจได้ทั้งโรงเรียน</div>
+    </div>
+    <div class="field">
+      <span class="label">สิทธิ์อื่น</span>
+      <div class="checks">
+        <label class="check"><input type="checkbox" name="is_teacher" value="1" <%= u.is_teacher ? 'checked' : '' %>> เป็นครูผู้สอน (นับในสถิติการส่ง)</label>
+        <label class="check"><input type="checkbox" name="is_admin" value="1" <%= u.is_admin ? 'checked' : '' %>> ผู้ดูแลระบบ</label>
+        <label class="check"><input type="checkbox" name="is_active" value="1" <%= u.is_active ? 'checked' : '' %>> เปิดใช้งานบัญชี</label>
+      </div>
+      <div class="hint">ผู้ดูแลระบบเปิดปิดฟังก์ชันเสริมและแก้ข้อมูลทุกอย่างได้ ควรมีเพียงหัวหน้างานส่งเสริมพัฒนากระบวนการเรียนรู้ ผู้อำนวยการและรองผู้อำนวยการเป็นผู้ดูแลระบบไม่ได้ ทุกครั้งที่ให้หรือถอดสิทธิ์จะถูกบันทึกในประวัติ</div>
+    </div>
+    <% if (isNew) { %>
+      <div class="field">
+        <label for="password">รหัสผ่านเริ่มต้น <span class="req">*</span></label>
+        <input type="text" id="password" name="password" minlength="<%= ff.pin ? 4 : 6 %>" autocomplete="off" required>
+        <div class="hint">ผู้ใช้จะต้องเปลี่ยนเป็นรหัสของตัวเองเมื่อเข้าระบบครั้งแรก</div>
+      </div>
+    <% } %>
+    <button class="btn btn-primary" type="submit" data-confirm="บันทึกข้อมูลผู้ใช้">บันทึก</button>
+  </form>
+
+  <% if (!isNew && u.is_teacher && (ff.onemain || ff.teachlist)) { %>
+    <form class="card" method="post" action="/admin/users/<%= u.id %>/plan-quota">
+      <h3>รายวิชาและการส่งแผน</h3>
+      <% if (ff.onemain) { %>
+        <div class="btn-row">
+          <label for="plan_quota">ส่งแผนการจัดการเรียนรู้ได้</label>
+          <input type="number" id="plan_quota" name="plan_quota" min="1" max="10" value="<%= u.plan_quota || 1 %>" style="max-width:90px">
+          <span>วิชาต่อภาค</span>
+          <button class="btn btn-ghost" type="submit" data-confirm="ตั้งให้ <%= u.full_name %> ส่งแผนได้ตามจำนวนวิชาที่กรอก">บันทึกจำนวน</button>
+        </div>
+        <div class="hint">ปกติครูส่งแผน 1 วิชาหลัก เพิ่มให้เฉพาะครูที่โรงเรียนกำหนดให้ส่งมากกว่า 1 วิชา</div>
+      <% } %>
+      <% if (ff.teachlist) { %><a class="btn btn-ghost" href="/teaching?u=<%= u.id %>" style="margin-top:10px"><%- icon('star', 18) %> ดูและแก้รายวิชาที่สอนของครูคนนี้</a><% } %>
+    </form>
+  <% } %>
+  <% if (!isNew) { %>
+    <form class="card" method="post" action="/admin/users/<%= u.id %>/reset">
+      <h3>ตั้งรหัสผ่านใหม่ให้ผู้ใช้</h3>
+      <p class="muted small">ระบบเก็บรหัสผ่านแบบเข้ารหัสทางเดียว จึงดูรหัสเดิมไม่ได้ แต่ผู้ดูแลระบบตั้งรหัสใหม่ได้ทุกเมื่อ</p>
+      <div class="btn-row">
+        <input type="text" name="password" minlength="<%= ff.pin ? 4 : 6 %>" placeholder="รหัสผ่านใหม่" autocomplete="off" required style="max-width:260px">
+        <button class="btn btn-warn" type="submit" data-confirm="ตั้งรหัสผ่านใหม่ให้ <%= u.full_name %>">ตั้งรหัสใหม่</button>
+      </div>
+      <label class="check" style="margin-top:10px"><input type="checkbox" name="must_change" value="1" checked> ให้ผู้ใช้เปลี่ยนเป็นรหัสของตัวเองเมื่อเข้าระบบครั้งถัดไป</label>
+      <div class="hint">เอาติ๊กออก ถ้าต้องการให้ใช้รหัสนี้ต่อไปเลย (ผู้ดูแลระบบจะรู้รหัสนี้)</div>
+    </form>
+  <% } %>
+</div>
+<%- include('../partials/bottom') %>

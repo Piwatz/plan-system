@@ -1,0 +1,53 @@
+<%- include('../partials/top') %>
+<div class="narrow" style="max-width:900px">
+  <div class="page-head">
+    <div><h1>วางรายชื่อครูจาก Excel</h1><div class="sub">คัดลอกตารางจาก Excel แล้ววางในช่องด้านล่างได้ทันที</div></div>
+    <div class="actions"><a class="btn btn-ghost" href="/admin/users">กลับ</a></div>
+  </div>
+
+  <% if (result) { %>
+    <div class="alert <%= result.errors.length ? 'alert-warn' : 'alert-success' %>">
+      เพิ่มใหม่ <b><%= result.added %></b> คน ปรับปรุงข้อมูลเดิม <b><%= result.updated %></b> คน
+      <% if (result.auto && result.names.length) { %>
+        <div class="table-wrap" style="margin-top:8px"><table class="table">
+          <thead><tr><th>ชื่อ สกุล</th><th>ชื่อผู้ใช้ที่ได้</th></tr></thead>
+          <tbody><% for (const n of result.names) { %><tr><td><%= n.fullName %></td><td><b><%= n.username %></b></td></tr><% } %></tbody>
+        </table></div>
+      <% } %>
+      <% if (result.errors.length) { %><ul><% for (const e of result.errors) { %><li><%= e %></li><% } %></ul><% } %>
+    </div>
+  <% } %>
+
+  <div class="card">
+    <h3>รูปแบบคอลัมน์ (เรียงตามนี้)</h3>
+    <p class="small" style="margin-top:0"><b>ติ๊ก "สร้างชื่อผู้ใช้จากชื่อจริงให้อัตโนมัติ" ไว้</b> ไม่ต้องมีคอลัมน์แรก เริ่มที่ชื่อ สกุลได้เลย ระบบตัดคำนำหน้าและนามสกุลออก เช่น นายสมชาย ใจดี ได้ชื่อผู้ใช้ว่า สมชาย ถ้าชื่อซ้ำกันจะเป็น สมชาย2</p>
+    <div class="table-wrap"><table class="table">
+      <thead><tr><th>ชื่อผู้ใช้ หรือรหัสครู</th><th>ชื่อ สกุล</th><th>ตำแหน่ง</th><th>กลุ่มสาระ</th><th>หน้าที่ผู้ตรวจ (ถ้ามี)</th></tr></thead>
+      <tbody>
+        <tr><td>T001</td><td>นางสาวตัวอย่าง ใจดี</td><td>ครู</td><td>คณิตศาสตร์</td><td></td></tr>
+        <tr><td>T002</td><td>นายสมมติ ตั้งใจ</td><td>ครู</td><td>วิทยาศาสตร์และเทคโนโลยี</td><td>หัวหน้ากลุ่มสาระ</td></tr>
+        <tr><td>T003</td><td>นางทดลอง รักเรียน</td><td>รองผู้อำนวยการ</td><td></td><td>รองผู้อำนวยการ</td></tr>
+      </tbody>
+    </table></div>
+    <p class="muted small">
+      ชื่อกลุ่มสาระพิมพ์สั้นได้ เช่น วิทยาศาสตร์ ภาษาไทย<br>
+      หน้าที่ผู้ตรวจพิมพ์ได้ เช่น หัวหน้ากลุ่มสาระ หัวหน้างาน หัวหน้าวิชาการ รองผู้อำนวยการ ผู้อำนวยการ ผู้ดูแลระบบ (หลายหน้าที่คั่นด้วยเครื่องหมายจุลภาค)<br>
+      ถ้าชื่อผู้ใช้ซ้ำกับที่มีอยู่ ระบบจะปรับปรุงข้อมูลคนเดิม ไม่สร้างซ้ำ และไม่เปลี่ยนรหัสผ่าน
+    </p>
+  </div>
+
+  <form class="card" method="post" action="/admin/users-import">
+    <div class="field">
+      <label for="data">วางรายชื่อที่นี่</label>
+      <label class="check" style="margin-bottom:8px"><input type="checkbox" name="auto_username" value="1" checked> สร้างชื่อผู้ใช้จากชื่อจริงให้อัตโนมัติ (ตารางเริ่มที่ชื่อ สกุล ไม่ต้องมีคอลัมน์ชื่อผู้ใช้)</label>
+      <textarea id="data" name="data" style="min-height:240px;font-family:Consolas,monospace" placeholder="คัดลอกจาก Excel แล้วกด Ctrl+V" required></textarea>
+    </div>
+    <div class="field" style="max-width:320px">
+      <label for="password">รหัสผ่านเริ่มต้นของทุกคนที่เพิ่มใหม่ <span class="req">*</span></label>
+      <input type="text" id="password" name="password" minlength="<%= ff.pin ? 4 : 6 %>" autocomplete="off" required>
+      <div class="hint">ครูต้องเปลี่ยนเป็นรหัสของตัวเองเมื่อเข้าระบบครั้งแรก</div>
+    </div>
+    <button class="btn btn-primary" type="submit" data-confirm="นำเข้ารายชื่อทั้งหมดที่วางไว้">นำเข้ารายชื่อ</button>
+  </form>
+</div>
+<%- include('../partials/bottom') %>

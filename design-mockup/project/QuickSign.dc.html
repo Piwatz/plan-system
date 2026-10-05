@@ -1,0 +1,125 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<title>ลงนามแบบไล่การ์ด</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Anuphan:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+@keyframes qsIn{from{transform:translateY(40px) scale(.94);opacity:0}to{transform:none;opacity:1}}
+@keyframes qsCheck{from{stroke-dashoffset:60}to{stroke-dashoffset:0}}
+@keyframes qsRing{from{transform:scale(.6);opacity:0}to{transform:scale(1);opacity:1}}
+</style>
+</helmet>
+<div style="width: 390px; height: 844px; position: relative; overflow: hidden; box-sizing: border-box; background: #131315; color: #F4F4F6; font-family: 'Anuphan', sans-serif; font-size: 16px; line-height: 1.5; display: flex; flex-direction: column">
+
+  <header style="flex: none; padding: 20px 16px 10px; display: flex; flex-direction: column; gap: 12px">
+    <div style="display: flex; align-items: center; gap: 10px">
+      <button type="button" aria-label="กลับ" style="width: 44px; height: 44px; flex: none; border-radius: 50%; border: 0; background: #232327; color: #F4F4F6; display: flex; align-items: center; justify-content: center; cursor: pointer">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m15 6-6 6 6 6"></path></svg>
+      </button>
+      <span style="flex: 1; display: flex; flex-direction: column; line-height: 1.3">
+        <b style="font-size: 18px">ลงนามบันทึกหลังแผน</b>
+        <span style="font-size: 14px; color: #A9A9B3">กลุ่มสาระวิทยาศาสตร์และเทคโนโลยี</span>
+      </span>
+      <span style="padding: 6px 12px; border-radius: 999px; background: #232327; font-size: 14px; font-weight: 600; white-space: nowrap">เหลือ {{left}}</span>
+    </div>
+    <div style="height: 6px; border-radius: 3px; background: #2A2A2F; overflow: hidden"><div style="height: 100%; width: {{pct}}; background: #E0303F; border-radius: 3px; transition: width .3s"></div></div>
+  </header>
+
+  <sc-if value="{{working}}" hint-placeholder-val="{{ true }}">
+    <div style="flex: 1; min-height: 0; position: relative; padding: 10px 16px 0">
+      <span style="position: absolute; left: 36px; right: 36px; top: 26px; bottom: 0; border-radius: 26px; background: #1F1F23"></span>
+      <span style="position: absolute; left: 26px; right: 26px; top: 18px; bottom: 6px; border-radius: 26px; background: #29292E"></span>
+      <sc-if value="{{even}}" hint-placeholder-val="{{ true }}">
+        <dc-import name="QuickSignCard" card="{{card}}" hint-size="358px,520px"></dc-import>
+      </sc-if>
+      <sc-if value="{{odd}}" hint-placeholder-val="{{ false }}">
+        <dc-import name="QuickSignCard" card="{{card}}" hint-size="358px,520px"></dc-import>
+      </sc-if>
+    </div>
+
+    <div style="flex: none; padding: 14px 16px 22px; display: flex; flex-direction: column; gap: 12px">
+      <div style="display: flex; gap: 8px; overflow-x: auto; padding-bottom: 2px">
+        <sc-for list="{{chips}}" as="c" hint-placeholder-count="4">
+          <button type="button" onClick="{{c.pick}}" style="flex: none; height: 40px; padding: 0 14px; border-radius: 999px; border: 1.5px solid {{c.bd}}; background: {{c.bg}}; color: {{c.fg}}; font: 600 14px/1 'Anuphan', sans-serif; cursor: pointer">{{c.label}}</button>
+        </sc-for>
+      </div>
+      <div style="display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 2fr); gap: 10px">
+        <button type="button" onClick="{{sendBack}}" style="height: 60px; border: 1.5px solid #3A3A40; border-radius: 18px; background: transparent; color: #F4F4F6; font: 600 16px/1 'Anuphan', sans-serif; display: flex; align-items: center; justify-content: center; gap: 6px; cursor: pointer">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 14 4 9l5-5"></path><path d="M4 9h10a6 6 0 0 1 0 12h-3"></path></svg>
+          ส่งกลับ
+        </button>
+        <button type="button" onClick="{{sign}}" style="height: 60px; border: 0; border-radius: 18px; background: #E0303F; color: #FFFFFF; font: 700 18px/1 'Anuphan', sans-serif; display: flex; align-items: center; justify-content: center; gap: 8px; cursor: pointer; box-shadow: 0 10px 24px rgba(224, 48, 63, .35)">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20h4L19 9l-4-4L4 16z"></path></svg>
+          ลงนาม
+        </button>
+      </div>
+      <button type="button" onClick="{{signAll}}" style="height: 44px; border: 0; background: none; color: #A9A9B3; font: 500 15px/1 'Anuphan', sans-serif; cursor: pointer">ลงนามทั้งหมดที่เหลือด้วยความเห็นนี้</button>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{finished}}" hint-placeholder-val="{{ false }}">
+    <div style="flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 18px; padding: 0 28px 40px; text-align: center">
+      <span style="width: 132px; height: 132px; border-radius: 50%; background: #E0303F; display: flex; align-items: center; justify-content: center; animation: qsRing .45s cubic-bezier(.2,1.4,.4,1) both; box-shadow: 0 0 0 14px rgba(224, 48, 63, .16), 0 0 0 30px rgba(224, 48, 63, .07)">
+        <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 12 5 5 9-10" stroke-dasharray="60" style="animation: qsCheck .5s .3s ease-out both"></path></svg>
+      </span>
+      <h2 style="margin: 0; font-size: 28px; font-weight: 700; line-height: 1.3">ลงนามครบแล้ว</h2>
+      <span style="font-size: 17px; color: #C9C9D1">ลงนาม {{signedCount}} ฉบับ  ส่งกลับ {{returnedCount}} ฉบับ<br>เฉลี่ยฉบับละ 8 วินาที</span>
+      <button type="button" onClick="{{restart}}" style="height: 54px; padding: 0 28px; border: 0; border-radius: 18px; background: #F4F4F6; color: #131315; font: 700 17px/1 'Anuphan', sans-serif; cursor: pointer">ดูอีกครั้ง</button>
+    </div>
+  </sc-if>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+const NOTES = [
+  { ini: 'สช', teacher: 'นายสมชาย ใจดี', subject: 'ว30203 ฟิสิกส์เพิ่มเติม 3', plan: 'แผนที่ 3 การสั่นพ้อง', meta: 'ม.5/1  สอน 10 พ.ย. 2569', k: 'อธิบายการเกิดการสั่นพ้องและยกตัวอย่างในชีวิตประจำวันได้', p: 'สาธิตการสั่นพ้องด้วยลูกตุ้มคู่ได้', a: 'กล้าแสดงความคิดเห็น ทำงานกลุ่มดี', pass: 34, total: 38, files: 2 },
+  { ini: 'พจ', teacher: 'นางสาวพิมพ์ใจ รักเรียน', subject: 'ว21101 วิทยาศาสตร์ 1', plan: 'แผนที่ 5 สารบริสุทธิ์', meta: 'ม.1/3  สอน 11 พ.ย. 2569', k: 'จำแนกสารบริสุทธิ์และสารผสมได้', p: 'ทดลองแยกสารด้วยการกรองได้', a: 'ส่งงานตรงเวลา', pass: 40, total: 42, files: 1 },
+  { ini: 'สช', teacher: 'นายสมชาย ใจดี', subject: 'ว30203 ฟิสิกส์เพิ่มเติม 3', plan: 'แผนที่ 4 คลื่นกล', meta: 'ม.5/2  สอน 12 พ.ย. 2569', k: 'จำแนกคลื่นตามขวางและคลื่นตามยาวได้', p: 'ใช้สปริงสาธิตคลื่นได้', a: 'ตั้งใจเรียน', pass: 30, total: 37, files: 0 },
+  { ini: 'วร', teacher: 'นายวีระ ส่งเสริม', subject: 'ว22201 โครงงานวิทยาศาสตร์ 1', plan: 'แผนที่ 2 การตั้งคำถาม', meta: 'ม.2/1  สอน 12 พ.ย. 2569', k: 'ตั้งคำถามที่ทดสอบได้', p: 'ออกแบบการทดลองเบื้องต้นได้', a: 'มีความอยากรู้อยากเห็น', pass: 36, total: 40, files: 3 },
+  { ini: 'พจ', teacher: 'นางสาวพิมพ์ใจ รักเรียน', subject: 'ว21101 วิทยาศาสตร์ 1', plan: 'แผนที่ 6 การแยกสาร', meta: 'ม.1/3  สอน 13 พ.ย. 2569', k: 'อธิบายวิธีแยกสารได้หลายวิธี', p: 'ทดลองกลั่นอย่างง่ายได้', a: 'รับผิดชอบงาน', pass: 39, total: 42, files: 2 },
+  { ini: 'สช', teacher: 'นายสมชาย ใจดี', subject: 'ว30203 ฟิสิกส์เพิ่มเติม 3', plan: 'แผนที่ 5 ส่วนประกอบของคลื่น', meta: 'ม.5/1  สอน 14 พ.ย. 2569', k: 'ระบุส่วนประกอบของคลื่นได้', p: 'วาดภาพคลื่นได้', a: 'ตั้งใจเรียน', pass: 35, total: 38, files: 1 },
+];
+const CHIPS = ['รับทราบ', 'ดีมาก', 'ควรเพิ่มกิจกรรมเสริม', 'ขอรูปกิจกรรมเพิ่ม'];
+
+class Component extends DCLogic {
+  renderVals() {
+    const st = this.state || {};
+    const i = st.i || 0;
+    const signed = st.signed || 0;
+    const returned = st.returned || 0;
+    const chip = st.chip || 'รับทราบ';
+    const n = NOTES[Math.min(i, NOTES.length - 1)];
+    const next = (field) => () => this.setState({ i: i + 1, [field]: (st[field] || 0) + 1 });
+    return {
+      working: i < NOTES.length,
+      finished: i >= NOTES.length,
+      even: i % 2 === 0,
+      odd: i % 2 === 1,
+      card: Object.assign({}, n, { no: i + 1, of: NOTES.length, passPct: Math.round((n.pass / n.total) * 100) + '%' }),
+      left: Math.max(0, NOTES.length - i) + ' ฉบับ',
+      pct: Math.round((i / NOTES.length) * 100) + '%',
+      chips: CHIPS.map((label) => ({
+        label,
+        pick: () => this.setState({ chip: label }),
+        bg: label === chip ? '#F4F4F6' : 'transparent',
+        fg: label === chip ? '#131315' : '#D6D6DC',
+        bd: label === chip ? '#F4F4F6' : '#3A3A40',
+      })),
+      sign: next('signed'),
+      sendBack: next('returned'),
+      signAll: () => this.setState({ i: NOTES.length, signed: signed + (NOTES.length - i) }),
+      signedCount: signed,
+      returnedCount: returned,
+      restart: () => this.setState({ i: 0, signed: 0, returned: 0 }),
+    };
+  }
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,188 @@
+<%- include('partials/top') %>
+<%
+  const T = wf.DOC_TYPES;
+  const first = me.full_name.replace(/^(นาย|นางสาว|นาง)\s*/, '').split(/\s+/)[0];
+%>
+<div class="hello">
+  <div>
+    <div class="muted">ภาคเรียนที่ <%= term.semester %>/<%= term.year %></div>
+    <h1>สวัสดี <%= me.is_teacher ? 'ครู' : 'คุณ' %><%= first %></h1>
+  </div>
+  <% if (window.open && settings.submit_end && daysLeft != null && daysLeft >= 0) { %>
+    <span class="pill-note<%= daysLeft > 14 ? ' ok' : '' %>"><%= daysLeft === 0 ? 'วันนี้วันสุดท้าย' : 'เหลืออีก ' + daysLeft + ' วัน' %> ถึงกำหนดส่งแผนและคู่มือ (<%= util.thaiDate(settings.submit_end, true) %>)</span>
+  <% } else if (window.open) { %>
+    <span class="pill-note ok">เปิดรับส่งแผนและคู่มือ</span>
+  <% } else { %>
+    <span class="pill-note back"><%= window.reason %></span>
+  <% } %>
+</div>
+
+<% if (warnings.length) { %>
+  <div class="alert alert-warn"><%- icon('toggle') %>
+    <div><b>สิ่งที่ผู้ดูแลระบบควรตั้งค่าให้ครบ</b>
+      <ul><% for (const w of warnings.slice(0, 6)) { %><li><%= w %></li><% } %></ul>
+      <% if (warnings.length > 6) { %><div>และอีก <%= warnings.length - 6 %> รายการ</div><% } %>
+      <a class="btn btn-sm btn-ghost" href="/admin/users" style="margin-top:8px">ไปที่รายชื่อผู้ใช้</a>
+    </div>
+  </div>
+<% } %>
+
+<% for (const a of alerts) { %>
+  <div class="alert alert-warn"><%- icon('bell') %>
+    <div><b><%= a.from_name || 'ระบบ' %></b> <span class="muted small"><%= util.ago(a.created_at) %></span><div class="pre"><%= a.text %></div></div>
+    <a class="btn btn-sm btn-ghost" href="/alerts">ดูทั้งหมด</a>
+  </div>
+<% } %>
+
+<% if (!me.signature) { %>
+  <div class="alert alert-info"><%- icon('edit') %><span>คุณยังไม่ได้บันทึกลายเซ็น ลายเซ็นจะปรากฏในบันทึกข้อความและเอกสารที่พิมพ์ <a href="/profile"><b>เซ็นชื่อเลย</b></a></span></div>
+<% } %>
+
+<div class="m-only">
+  <section class="card m-next">
+    <h2>สิ่งที่ต้องทำต่อ</h2>
+    <% if (!nextUp.length) { %><p class="muted" style="margin:0">ไม่มีงานค้าง เรียบร้อยดีแล้ว</p><% } %>
+    <% for (const n of nextUp.slice(0, 6)) { %>
+      <a class="m-next-row" href="<%= n.href %>"><span class="m-dot <%= n.tone %>"></span><span class="m-next-text"><b><%= n.title %></b><% if (n.sub) { %><span><%= n.sub %></span><% } %></span><%- icon('next', 20) %></a>
+    <% } %>
+  </section>
+  <% if (me.is_admin) { %>
+    <div class="m-head"><h2>ผู้ดูแลระบบ</h2><span class="muted small">เฉพาะผู้ดูแลระบบเห็นส่วนนี้</span></div>
+    <section class="card m-subj">
+      <div class="m-tiles m-tiles-2">
+        <% for (const [href, ic, label] of [['/admin/settings', 'school', 'ตั้งค่าโรงเรียนและธีม'], ['/admin/users', 'users', 'รายชื่อครูและผู้ตรวจ'], ['/admin/features', 'toggle', 'ฟังก์ชันเสริม'], ['/admin', 'flow', 'เมนูผู้ดูแลทั้งหมด']]) { %>
+          <a class="m-tile m-tile-ic" href="<%= href %>"><%- icon(ic, 26) %><b><%= label %></b></a>
+        <% } %>
+      </div>
+    </section>
+  <% } %>
+  <% if (me.is_teacher && ff.teachlist) { %>
+    <div class="m-head"><h2>รายวิชาของฉัน</h2><a class="small" href="/teaching"><%= subjects.length ? 'แก้รายวิชาที่สอน' : 'เลือกรายวิชาที่สอน' %></a></div>
+  <% } else if (me.is_teacher && subjects.length) { %>
+    <div class="m-head"><h2>รายวิชาของฉัน</h2><span class="muted small">แตะช่องเพื่อส่งหรือดูงาน</span></div>
+  <% } %>
+  <% if (me.is_teacher && subjects.length) { %>
+    <% for (const r of subjects) { %>
+      <section class="card m-subj">
+        <b class="m-subj-title"><%= r.code %> <%= r.name %><%= ff.onemain && r.needPlan ? ' (วิชาหลัก)' : '' %></b>
+        <span class="muted small"><%= r.grade %></span>
+        <div class="m-tiles">
+          <% r.cells.forEach((c, i) => { %>
+            <% if (c.href) { %><a class="m-tile <%= c.cls.replace('badge-', 'tile-') %>" href="<%= c.href %>"><% } else { %><span class="m-tile <%= c.cls.replace('badge-', 'tile-') %>"><% } %>
+              <span><%= ['แผนการสอน', 'คู่มือรายวิชา', 'บันทึกหลังแผน'][i] %></span><b><%= c.text %></b>
+            <%- c.href ? '</a>' : '</span>' %>
+          <% }) %>
+        </div>
+      </section>
+    <% } %>
+  <% } %>
+</div>
+<div class="d-only">
+<% if (inboxCount) { %>
+  <div class="card review-panel">
+    <div class="card-head">
+      <h2>มีงานรอคุณลงนาม <%= inboxCount %> รายการ</h2>
+      <div class="actions">
+        <% if (inboxNotes && ff.quicksign) { %><a class="btn btn-ghost" href="/quicksign"><%- icon('cards', 18) %> ลงนามบันทึกหลังแผนแบบไล่การ์ด (<%= inboxNotes %>)</a><% } %>
+        <a class="btn btn-primary" href="/inbox"><%- icon('inbox', 18) %> เปิดงานรอตรวจ</a>
+      </div>
+    </div>
+    <div class="mini-list">
+      <% for (const s of inboxPreview) { %>
+        <a class="mini-row" href="/s/<%= s.id %>">
+          <span class="mr-main"><span class="badge badge-blue"><%= T[s.doc_type].label %></span><b><%= s.subject_code %> <%= s.subject_name %><%= s.doc_type === 'note' ? ' แผนที่ ' + s.plan_no : '' %></b><span><%= s.teacher_name %></span></span>
+          <span class="btn btn-sm btn-primary">ตรวจ</span>
+        </a>
+      <% } %>
+    </div>
+  </div>
+<% } %>
+
+<% if (me.is_teacher) { %>
+  <div class="grid-4" style="margin-bottom:18px">
+    <a class="stat green" href="/my"><span class="label">ส่งแล้ว</span><b class="num"><%= stats.sent %> / <%= stats.target || 0 %></b><span class="sub">ผ่านครบทุกระดับ <%= stats.approved %> ชิ้น</span></a>
+    <a class="stat blue" href="/my"><span class="label">รอผู้ตรวจ</span><b class="num"><%= stats.pending %></b><span class="sub"><%= stats.pending ? 'อยู่ที่ ' + stats.pendingAt : 'ไม่มีงานค้างที่ผู้ตรวจ' %></span></a>
+    <a class="stat <%= stats.returned ? 'orange' : '' %>" href="/my"><span class="label">ต้องแก้ไข</span><b class="num"><%= stats.returned %></b><span class="sub"><%= stats.returned ? stats.returnedName : 'ไม่มีงานที่ต้องแก้' %></span></a>
+    <a class="stat" href="/notes"><span class="label">บันทึกหลังแผน</span><b class="num"><%= stats.notes %></b><span class="sub"><%= stats.notesTodo ? 'ยังไม่ส่ง ' + stats.notesTodo + ' ฉบับ' : 'ส่งครบทุกฉบับ' %></span></a>
+  </div>
+
+  <div class="grid-3">
+    <section class="card flush">
+      <div class="card-head">
+        <h2>รายวิชาของฉัน</h2>
+        <div class="actions"><a class="btn btn-ghost" href="<%= ff.teachlist ? '/teaching' : '/works/new?type=' + (canPlan ? 'plan' : 'manual') %>"><%- icon(ff.teachlist ? 'edit' : 'plus', 18) %> <%= ff.teachlist ? 'แก้รายวิชาที่สอน' : 'เพิ่มรายวิชา' %></a></div>
+      </div>
+      <% if (!subjects.length) { %>
+        <div class="empty" style="padding:28px 20px 34px">
+          <% if (ff.teachlist) { %>
+          <p>ยังไม่มีรายวิชาในภาคเรียนนี้ เริ่มจากเลือกวิชาที่สอนทุกวิชา<%= ff.onemain ? ' และวิชาหลักสำหรับส่งแผน' : '' %></p>
+          <div class="btn-row" style="justify-content:center">
+            <a class="btn btn-primary btn-lg" href="/teaching">เลือกรายวิชาที่สอน</a>
+          </div>
+          <% } else { %>
+          <p>ยังไม่มีรายวิชาในภาคเรียนนี้ เริ่มจากส่งคู่มือรายวิชา หรือแผนการจัดการเรียนรู้</p>
+          <div class="btn-row" style="justify-content:center">
+            <a class="btn btn-primary btn-lg" href="/works/new?type=plan">ส่งแผนการจัดการเรียนรู้</a>
+            <a class="btn btn-ghost btn-lg" href="/works/new?type=manual">ส่งคู่มือรายวิชา</a>
+          </div>
+          <% } %>
+        </div>
+      <% } else { %>
+        <div class="rows-head" style="margin-top:12px"><span>รายวิชา</span><span>แผนการสอน</span><span>คู่มือรายวิชา</span><span>บันทึกหลังแผน</span><span></span></div>
+        <% for (const r of subjects) { %>
+          <div class="rows-item">
+            <span class="subj"><b><%= r.code %><% if (ff.onemain && r.needPlan) { %> <span class="badge badge-blue" title="วิชาหลัก"><%- icon('star', 12) %> วิชาหลัก</span><% } %></b><span><%= r.name %> <%= r.grade %></span></span>
+            <% r.cells.forEach((c, i) => { %>
+              <span><span class="cell-label"><%= ['แผนการสอน', 'คู่มือรายวิชา', 'บันทึกหลังแผน'][i] %></span>
+                <% if (c.href) { %><a class="badge <%= c.cls %>" href="<%= c.href %>"><%= c.text %></a><% } else { %><span class="badge <%= c.cls %>"><%= c.text %></span><% } %>
+              </span>
+            <% }) %>
+            <a class="btn btn-sm go <%= r.action.primary ? 'btn-primary' : 'btn-ghost' %>" href="<%= r.action.href %>"><%= r.action.label %></a>
+          </div>
+        <% } %>
+      <% } %>
+    </section>
+
+    <section class="card">
+      <h2>ความเคลื่อนไหวล่าสุด</h2>
+      <% if (!activity.length) { %>
+        <p class="muted">ยังไม่มีผู้ตรวจลงนามในงานของคุณ</p>
+      <% } else { %>
+        <ul class="feed">
+          <% for (const a of activity) { %>
+            <li>
+              <span class="fdot <%= a.action %>"></span>
+              <span class="fbody">
+                <a href="/s/<%= a.submission_id %>"><b><%= T[a.doc_type].label %> <%= a.subject_code %><%= a.doc_type === 'note' ? ' แผนที่ ' + a.plan_no : '' %> <%= a.action === 'return' ? 'ถูกส่งกลับ' : 'ผ่าน ' + (util.SHORT_ROLE[a.role] || a.step_label) %></b></a>
+                <span><%= a.user_name %> <%= a.score_max ? ' ได้ ' + a.score_total + ' คะแนน ระดับ' + wf.scoreLevel(a.score_total / a.score_max * 100) : '' %> <%= util.ago(a.created_at) %></span>
+              </span>
+            </li>
+          <% } %>
+        </ul>
+      <% } %>
+    </section>
+  </div>
+
+  <div class="card todo-bar">
+    <div class="what">
+      <% if (todo.length) { %>
+        <b>ยังส่งไม่ครบ <%= todo.length %> รายการ</b>
+        <span><%= todo.slice(0, 4).join('  ') %><%= todo.length > 4 ? ' และอีก ' + (todo.length - 4) + ' รายการ' : '' %></span>
+      <% } else if (subjects.length) { %>
+        <b style="color:var(--ok)">ส่งครบทุกรายวิชาแล้ว</b>
+        <span>อย่าลืมเขียนบันทึกหลังแผนหลังสอนแต่ละแผน</span>
+      <% } else { %>
+        <b>เริ่มต้นใช้งาน</b>
+        <span>ส่งแผนการจัดการเรียนรู้และคู่มือรายวิชา รายวิชาละ 1 ชุดต่อภาคเรียน</span>
+      <% } %>
+    </div>
+    <div class="btn-row">
+      <a class="btn btn-primary btn-lg" href="<%= todo.length && locals.mainHref && todo[0].startsWith('แผนวิชาหลัก') ? mainHref : '/works/new?type=' + (canPlan ? 'plan' : 'manual') %>">ส่งงานใหม่</a>
+      <a class="btn btn-ghost btn-lg" href="/my">ดูงานทั้งหมด</a>
+    </div>
+  </div>
+<% } else if (!inboxCount) { %>
+  <div class="card"><div class="empty"><p>ขณะนี้ไม่มีงานรอคุณลงนาม</p><a class="btn btn-ghost" href="/stats">ดูสถิติโรงเรียน</a></div></div>
+<% } %>
+</div>
+<%- include('partials/bottom') %>

@@ -1,0 +1,45 @@
+<%- include('../partials/top') %>
+<div class="page-head">
+  <div><h1>ขั้นตอนการตรวจ</h1><div class="sub">ชื่อตำแหน่งจะใช้ในบันทึกข้อความ ติ๊กเลือกว่างานแต่ละชนิดต้องผ่านระดับใดบ้าง</div></div>
+  <div class="actions"><a class="btn btn-ghost" href="/admin">กลับ</a></div>
+</div>
+<form class="card" method="post" action="/admin/workflow">
+  <div class="table-wrap"><table class="table">
+    <thead><tr><th>ระดับ</th><th>ชื่อตำแหน่ง</th><th class="center">แผน</th><th class="center">คู่มือ</th><th class="center">บันทึกหลังแผน</th><th>ผู้ดำรงตำแหน่งในระบบ</th></tr></thead>
+    <tbody>
+    <% for (const s of steps) { %>
+      <tr>
+        <td class="nowrap"><b><%= s.seq %></b><br><small class="muted"><%= s.scope === 'department' ? 'ในกลุ่มสาระ' : 'ทั้งโรงเรียน' %></small></td>
+        <td style="min-width:240px"><input type="text" name="label[<%= s.role %>]" value="<%= s.label %>" aria-label="ชื่อตำแหน่งระดับ <%= s.seq %>"></td>
+        <td class="center"><input type="checkbox" name="for_plan" value="<%= s.role %>" <%= s.for_plan ? 'checked' : '' %> aria-label="ใช้กับแผน"></td>
+        <td class="center"><input type="checkbox" name="for_manual" value="<%= s.role %>" <%= s.for_manual ? 'checked' : '' %> aria-label="ใช้กับคู่มือ"></td>
+        <td class="center"><input type="checkbox" name="for_note" value="<%= s.role %>" <%= s.for_note ? 'checked' : '' %> aria-label="ใช้กับบันทึกหลังแผน"></td>
+        <td>
+          <% if (!s.people.length) { %><span class="badge badge-red">ยังไม่มี</span>
+          <% } else { %><small><%= s.people.map((p) => p.full_name + (s.scope === 'department' && p.dept_name ? ' (' + p.dept_name + ')' : '')).join(', ') %></small><% } %>
+        </td>
+      </tr>
+    <% } %>
+    </tbody>
+  </table></div>
+  <p class="muted small">กำหนดว่าใครอยู่ระดับไหน ทำที่หน้า <a href="/admin/users">รายชื่อครูและผู้ตรวจ</a></p>
+
+  <div class="form-grid" style="margin-top:12px">
+    <div class="field">
+      <label for="score_role">ระดับที่ให้คะแนนตามแบบประเมิน</label>
+      <select id="score_role" name="score_role">
+        <option value="">ไม่ให้คะแนน</option>
+        <% for (const s of steps) { %><option value="<%= s.role %>" <%= settings.score_role === s.role ? 'selected' : '' %>><%= s.label %></option><% } %>
+      </select>
+      <div class="hint">ถ้าผู้ส่งเป็นหัวหน้ากลุ่มสาระเอง ระดับถัดไปจะเป็นผู้ให้คะแนนแทน</div>
+    </div>
+    <div class="field">
+      <span class="label">เมื่อครูแก้ไขแล้วส่งใหม่</span>
+      <label class="check" style="margin-bottom:6px"><input type="radio" name="resubmit_mode" value="resume" <%= settings.resubmit_mode !== 'restart' ? 'checked' : '' %>> กลับไปที่ผู้ที่ส่งคืนโดยตรง (แนะนำ)</label>
+      <label class="check"><input type="radio" name="resubmit_mode" value="restart" <%= settings.resubmit_mode === 'restart' ? 'checked' : '' %>> เริ่มตรวจใหม่ตั้งแต่ระดับแรก</label>
+    </div>
+  </div>
+  <button class="btn btn-primary" type="submit" data-confirm="บันทึกขั้นตอนการตรวจ
+งานที่กำลังรอตรวจอยู่จะเดินตามขั้นตอนใหม่ตั้งแต่ระดับถัดไป">บันทึก</button>
+</form>
+<%- include('../partials/bottom') %>

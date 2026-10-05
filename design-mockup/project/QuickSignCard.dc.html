@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<title>การ์ดบันทึกหลังแผน</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Anuphan:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<style>body{margin:0}</style>
+</helmet>
+<article style="position: relative; width: 358px; height: 520px; box-sizing: border-box; border-radius: 26px; background: #FFFFFF; color: #17171C; font-family: 'Anuphan', sans-serif; font-size: 15px; line-height: 1.5; padding: 20px; display: flex; flex-direction: column; gap: 14px; box-shadow: 0 18px 40px rgba(0, 0, 0, .35); animation: qsIn .35s ease-out both">
+  <div style="display: flex; align-items: center; gap: 10px">
+    <span style="width: 44px; height: 44px; flex: none; border-radius: 50%; background: #F1F1F4; display: flex; align-items: center; justify-content: center; font-weight: 700">{{c.ini}}</span>
+    <span style="flex: 1; min-width: 0; display: flex; flex-direction: column; line-height: 1.35">
+      <b style="font-size: 16px">{{c.teacher}}</b>
+      <span style="font-size: 13px; color: #5F5F6B; white-space: nowrap; overflow: hidden; text-overflow: ellipsis">{{c.subject}}</span>
+    </span>
+    <span style="padding: 4px 10px; border-radius: 999px; background: #F1F1F4; font-size: 13px; font-weight: 600">{{c.no}}/{{c.of}}</span>
+  </div>
+  <div style="display: flex; flex-direction: column">
+    <b style="font-size: 21px; line-height: 1.35">{{c.plan}}</b>
+    <span style="font-size: 14px; color: #5F5F6B">{{c.meta}}</span>
+  </div>
+  <div style="display: flex; flex-direction: column; gap: 10px">
+    <div style="display: flex; gap: 10px"><span style="width: 26px; height: 26px; flex: none; border-radius: 8px; background: #FDE8EB; color: #B3122B; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 14px">K</span><span>{{c.k}}</span></div>
+    <div style="display: flex; gap: 10px"><span style="width: 26px; height: 26px; flex: none; border-radius: 8px; background: #E8F0FE; color: #1E4FC2; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 14px">P</span><span>{{c.p}}</span></div>
+    <div style="display: flex; gap: 10px"><span style="width: 26px; height: 26px; flex: none; border-radius: 8px; background: #E5F5EC; color: #1D7A4C; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 14px">A</span><span>{{c.a}}</span></div>
+  </div>
+  <div style="margin-top: auto; display: flex; flex-direction: column; gap: 6px">
+    <span style="display: flex; justify-content: space-between; font-size: 14px"><span style="color: #5F5F6B">นักเรียนผ่านเกณฑ์</span><b>{{c.pass}} จาก {{c.total}} คน</b></span>
+    <span style="height: 10px; border-radius: 5px; background: #F1F1F4; overflow: hidden"><span style="display: block; height: 100%; width: {{c.passPct}}; border-radius: 5px; background: #17171C"></span></span>
+  </div>
+  <button type="button" style="height: 46px; border: 1.5px solid #E4E4E9; border-radius: 14px; background: #FFFFFF; color: #17171C; font: 600 15px/1 'Anuphan', sans-serif; display: flex; align-items: center; justify-content: center; gap: 8px; cursor: pointer">
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"></rect><circle cx="9" cy="10" r="1.8"></circle><path d="m21 16-5-5-8 8"></path></svg>
+    {{filesLabel}}
+  </button>
+</article>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"card":{"editor":null},"$preview":{"width":358,"height":520}}'>
+const SAMPLE = { ini: 'สช', teacher: 'นายสมชาย ใจดี', subject: 'ว30203 ฟิสิกส์เพิ่มเติม 3', plan: 'แผนที่ 3 การสั่นพ้อง', meta: 'ม.5/1  สอน 10 พ.ย. 2569', k: 'อธิบายการเกิดการสั่นพ้องและยกตัวอย่างในชีวิตประจำวันได้', p: 'สาธิตการสั่นพ้องด้วยลูกตุ้มคู่ได้', a: 'กล้าแสดงความคิดเห็น ทำงานกลุ่มดี', pass: 34, total: 38, files: 2, no: 1, of: 6, passPct: '89%' };
+
+class Component extends DCLogic {
+  renderVals() {
+    const c = this.props.card || SAMPLE;
+    return { c, filesLabel: c.files ? 'ดูรูปกิจกรรม ' + c.files + ' รูป' : 'ไม่มีไฟล์แนบ' };
+  }
+}
+</script>
+</body>
+</html>

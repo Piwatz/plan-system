@@ -1,0 +1,170 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<title>แนวติดตามงาน หน้าแรกครู</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+@keyframes jnPulse{0%{box-shadow:0 0 0 0 rgba(200,30,58,.45)}70%{box-shadow:0 0 0 10px rgba(200,30,58,0)}100%{box-shadow:0 0 0 0 rgba(200,30,58,0)}}
+@keyframes jnOpen{from{opacity:0;transform:translateY(-6px)}to{opacity:1;transform:none}}
+</style>
+</helmet>
+<div style="width: 390px; height: 844px; position: relative; overflow: hidden; box-sizing: border-box; background: #F6F7F9; color: #16181D; font-family: 'Noto Sans Thai', sans-serif; font-size: 16px; line-height: 1.5">
+
+  <div style="position: absolute; inset: 0 0 80px 0; overflow-y: auto; box-sizing: border-box; padding: 24px 16px 28px; display: flex; flex-direction: column; gap: 16px">
+    <div style="display: flex; flex-direction: column; gap: 2px">
+      <span style="font-size: 14px; color: #5E6470">สวัสดี ครูสมชาย  ภาคเรียนที่ 2/2569</span>
+      <h1 style="margin: 0; font-size: 28px; font-weight: 700; line-height: 1.3">งานของฉันอยู่ที่ไหนแล้ว</h1>
+    </div>
+
+    <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); padding: 4px; border-radius: 14px; background: #E9EBEF">
+      <sc-for list="{{tabs}}" as="tb" hint-placeholder-count="2">
+        <button type="button" onClick="{{tb.pick}}" style="height: 44px; border: 0; border-radius: 11px; background: {{tb.bg}}; color: {{tb.fg}}; box-shadow: {{tb.shadow}}; font: 600 15px/1 'Noto Sans Thai', sans-serif; cursor: pointer">{{tb.label}}</button>
+      </sc-for>
+    </div>
+
+    <sc-for list="{{docs}}" as="d" hint-placeholder-count="3">
+      <article style="background: #FFFFFF; border-radius: 20px; box-shadow: 0 1px 2px rgba(22, 24, 29, .04), 0 6px 18px rgba(22, 24, 29, .06); overflow: hidden">
+        <button type="button" onClick="{{d.toggle}}" aria-expanded="{{d.expanded}}" style="width: 100%; border: 0; background: none; color: inherit; font: inherit; text-align: left; padding: 16px 16px 18px; display: flex; flex-direction: column; gap: 14px; cursor: pointer">
+          <span style="display: flex; align-items: center; gap: 8px">
+            <span style="padding: 3px 10px; border-radius: 999px; background: #F1F2F5; font-size: 13px; font-weight: 600; color: #3D424C">{{d.type}}</span>
+            <span style="flex: 1; min-width: 0; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis">{{d.title}}</span>
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#5E6470" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="transform: rotate({{d.turn}}); transition: transform .2s"><path d="m6 9 6 6 6-6"></path></svg>
+          </span>
+          <span style="display: flex; align-items: baseline; justify-content: space-between; gap: 8px">
+            <span style="font-size: 19px; font-weight: 700; color: {{d.statusColor}}">{{d.status}}</span>
+            <span style="font-size: 14px; color: #5E6470; white-space: nowrap">{{d.when}}</span>
+          </span>
+          <span style="position: relative; display: flex; justify-content: space-between; align-items: center">
+            <span style="position: absolute; left: 18px; right: 18px; top: 50%; height: 3px; margin-top: -1.5px; border-radius: 2px; background: #E6E8EC"></span>
+            <span style="position: absolute; left: 18px; top: 50%; height: 3px; margin-top: -1.5px; border-radius: 2px; width: {{d.progress}}; background: {{d.barColor}}"></span>
+            <sc-for list="{{d.people}}" as="p" hint-placeholder-count="6">
+              <span style="position: relative; width: 36px; height: 36px; border-radius: 50%; background: {{p.bg}}; color: {{p.fg}}; border: 2px solid {{p.bd}}; box-sizing: border-box; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700; animation: {{p.anim}}">
+                {{p.ini}}
+                <sc-if value="{{p.check}}" hint-placeholder-val="{{ false }}">
+                  <span style="position: absolute; right: -4px; bottom: -4px; width: 16px; height: 16px; border-radius: 50%; background: #1F8A5B; border: 2px solid #FFFFFF; display: flex; align-items: center; justify-content: center">
+                    <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 12 5 5 9-10"></path></svg>
+                  </span>
+                </sc-if>
+              </span>
+            </sc-for>
+          </span>
+        </button>
+        <sc-if value="{{d.expanded}}" hint-placeholder-val="{{ false }}">
+          <ol style="list-style: none; margin: 0; padding: 4px 16px 16px; display: flex; flex-direction: column; gap: 12px; border-top: 1px solid #ECEEF2; animation: jnOpen .25s ease-out both">
+            <sc-for list="{{d.people}}" as="p" hint-placeholder-count="6">
+              <li style="display: flex; gap: 12px; padding-top: 10px">
+                <span style="width: 10px; height: 10px; margin-top: 7px; flex: none; border-radius: 50%; background: {{p.dot}}"></span>
+                <span style="flex: 1; display: flex; flex-direction: column">
+                  <span style="font-weight: 600">{{p.name}}</span>
+                  <span style="font-size: 14px; color: #5E6470">{{p.role}}  {{p.date}}</span>
+                  <sc-if value="{{p.hasNote}}" hint-placeholder-val="{{ false }}">
+                    <span style="margin-top: 6px; padding: 8px 12px; border-radius: 4px 14px 14px 14px; background: {{p.noteBg}}; color: {{p.noteFg}}; font-size: 15px">{{p.note}}</span>
+                  </sc-if>
+                </span>
+              </li>
+            </sc-for>
+          </ol>
+        </sc-if>
+      </article>
+    </sc-for>
+  </div>
+
+  <nav aria-label="เมนูหลัก" style="position: absolute; left: 0; right: 0; bottom: 0; height: 80px; box-sizing: border-box; padding: 0 8px 12px; background: #FFFFFF; border-top: 1px solid #ECEEF2; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); align-items: center">
+    <button type="button" style="height: 58px; border: 0; background: none; color: #C81E3A; font: 700 13px/1.2 'Noto Sans Thai', sans-serif; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; cursor: pointer">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="6" cy="18" r="2.5"></circle><circle cx="18" cy="6" r="2.5"></circle><path d="M8.5 18H15a3 3 0 0 0 0-6H9a3 3 0 0 1 0-6h6.5"></path></svg>
+      ติดตามงาน
+    </button>
+    <button type="button" style="height: 58px; border: 0; background: none; color: #5E6470; font: 500 13px/1.2 'Noto Sans Thai', sans-serif; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; cursor: pointer">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"></path></svg>
+      ส่งงาน
+    </button>
+    <button type="button" style="height: 58px; border: 0; background: none; color: #5E6470; font: 500 13px/1.2 'Noto Sans Thai', sans-serif; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; cursor: pointer">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 13h5l1.5 3h5L16 13h5"></path><path d="M5 5h14l2 8v6a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1v-6z"></path></svg>
+      รอตรวจ
+    </button>
+    <button type="button" style="height: 58px; border: 0; background: none; color: #5E6470; font: 500 13px/1.2 'Noto Sans Thai', sans-serif; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; cursor: pointer">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="4"></circle><path d="M4 21c1.5-4 4.5-6 8-6s6.5 2 8 6"></path></svg>
+      ฉัน
+    </button>
+  </nav>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+const PEOPLE = [
+  ['สช', 'นายสมชาย ใจดี', 'ครูผู้สอน'],
+  ['วด', 'นางวันดี ศรีวิทย์', 'หัวหน้ากลุ่มสาระ'],
+  ['วร', 'นายวีระ ส่งเสริม', 'หัวหน้างาน'],
+  ['มล', 'นางมาลี วิชาการ', 'หัวหน้ากลุ่มบริหารวิชาการ'],
+  ['รต', 'นางสาวรัตนา บริหารดี', 'รองผู้อำนวยการ'],
+  ['มค', 'นายมงคล นำพา', 'ผู้อำนวยการ'],
+];
+const RED = '#C81E3A';
+// สถานะต่อคน: done เซ็นแล้ว, now กำลังพิจารณา, back ส่งกลับ, wait รอถึงคิว
+const DOCS = [
+  { id: 1, tab: 'active', type: 'แผน', title: 'ว30203 ฟิสิกส์เพิ่มเติม 3', status: 'อยู่ที่ รองผู้อำนวยการ', when: 'รอมา 2 วัน', color: '#16181D',
+    states: ['done', 'done', 'done', 'done', 'now', 'wait'], dates: ['1 ต.ค.', '1 ต.ค.', '2 ต.ค.', '2 ต.ค.', '', ''], notes: ['', 'กิจกรรมหลากหลาย ให้ 84 คะแนน', '', '', '', ''] },
+  { id: 2, tab: 'active', type: 'คู่มือ', title: 'ว30207 ฟิสิกส์ 1', status: 'ส่งกลับให้แก้ไข', when: 'เมื่อวานนี้', color: RED,
+    states: ['done', 'done', 'done', 'back', 'wait', 'wait'], dates: ['30 ก.ย.', '1 ต.ค.', '1 ต.ค.', '3 ต.ค.', '', ''], notes: ['', '', '', 'ตารางกำหนดน้ำหนักคะแนนรวมไม่ครบ 100 กรุณาแก้หน้า 12', '', ''] },
+  { id: 3, tab: 'active', type: 'บันทึกหลังแผน', title: 'ว30203 แผนที่ 2', status: 'อยู่ที่ รองผู้อำนวยการ', when: 'รอมา 1 วัน', color: '#16181D', short: true,
+    states: ['done', 'done', 'now', 'wait'], dates: ['3 ต.ค.', '3 ต.ค.', '', ''], notes: ['', 'รับทราบ', '', ''] },
+  { id: 4, tab: 'done', type: 'คู่มือ', title: 'ว30203 ฟิสิกส์เพิ่มเติม 3', status: 'อนุญาตแล้ว', when: '3 ต.ค. 2569', color: '#1F8A5B',
+    states: ['done', 'done', 'done', 'done', 'done', 'done'], dates: ['28 ก.ย.', '29 ก.ย.', '30 ก.ย.', '1 ต.ค.', '2 ต.ค.', '3 ต.ค.'], notes: ['', 'คู่มือครบถ้วน 95 คะแนน', '', '', '', 'อนุญาต'] },
+];
+const NOTE_PEOPLE = [0, 1, 4, 5];
+
+class Component extends DCLogic {
+  renderVals() {
+    const st = this.state || {};
+    const tab = st.tab || 'active';
+    const open = st.open === undefined ? 2 : st.open;
+    const look = {
+      done: { bg: '#16181D', fg: '#FFFFFF', bd: '#16181D', dot: '#1F8A5B', check: true, anim: 'none', label: 'ลงนามแล้ว' },
+      now: { bg: '#FFFFFF', fg: RED, bd: RED, dot: RED, check: false, anim: 'jnPulse 1.6s infinite', label: 'กำลังพิจารณา' },
+      back: { bg: RED, fg: '#FFFFFF', bd: RED, dot: RED, check: false, anim: 'none', label: 'ส่งกลับ' },
+      wait: { bg: '#F1F2F5', fg: '#8A909C', bd: '#F1F2F5', dot: '#C9CDD4', check: false, anim: 'none', label: 'รอถึงคิว' },
+    };
+    const docs = DOCS.filter((d) => d.tab === tab).map((d) => {
+      const idx = d.short ? NOTE_PEOPLE : PEOPLE.map((_, i) => i);
+      const people = d.states.map((s, i) => {
+        const p = PEOPLE[idx[i]];
+        const lk = look[s];
+        const note = d.notes[i];
+        return {
+          ini: p[0], name: p[1], role: p[2], bg: lk.bg, fg: lk.fg, bd: lk.bd, dot: lk.dot, check: lk.check && i > 0, anim: lk.anim,
+          date: d.dates[i] ? lk.label + ' ' + d.dates[i] : lk.label,
+          hasNote: Boolean(note), note, noteBg: s === 'back' ? '#FDECEF' : '#F1F2F5', noteFg: s === 'back' ? '#9E1630' : '#16181D',
+        };
+      });
+      const reached = d.states.filter((s) => s === 'done').length;
+      const lastIdx = Math.max(0, d.states.findIndex((s) => s !== 'done') === -1 ? d.states.length - 1 : d.states.findIndex((s) => s !== 'done'));
+      return {
+        type: d.type, title: d.title, status: d.status, when: d.when, statusColor: d.color, people,
+        progress: 'calc((100% - 36px) * ' + (lastIdx / (d.states.length - 1)).toFixed(3) + ')',
+        barColor: d.states.includes('back') ? RED : '#16181D',
+        expanded: open === d.id,
+        turn: open === d.id ? '180deg' : '0deg',
+        toggle: () => this.setState({ open: open === d.id ? 0 : d.id }),
+        reached,
+      };
+    });
+    const count = (k) => DOCS.filter((d) => d.tab === k).length;
+    const tabs = [['active', 'กำลังดำเนินการ ' + count('active')], ['done', 'เสร็จแล้ว ' + count('done')]].map(([k, label]) => ({
+      label,
+      pick: () => this.setState({ tab: k }),
+      bg: k === tab ? '#FFFFFF' : 'transparent',
+      fg: k === tab ? '#16181D' : '#5E6470',
+      shadow: k === tab ? '0 1px 3px rgba(22,24,29,.12)' : 'none',
+    }));
+    return { docs, tabs };
+  }
+}
+</script>
+</body>
+</html>

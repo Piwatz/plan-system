@@ -1,0 +1,40 @@
+<%
+  // บันทึกหลังแผน 1 ฉบับ ใช้ตอนพิมพ์ทีละฉบับ พิมพ์ทั้งเล่ม และในแฟ้ม PA
+  const sub = it.sub;
+  const isFile = sub.note_mode === 'file';
+%>
+<div class="paper">
+  <%- include('qr_corner', { qr: it.qr }) %>
+  <h2 class="doc">บันทึกหลังแผนการจัดการเรียนรู้</h2>
+  <div class="row"><span class="k">แผนการจัดการเรียนรู้ที่</span><span class="line" style="max-width:14%"><%= sub.plan_no %></span><span class="k">เรื่อง</span><span class="line"><%= sub.topic %></span></div>
+  <div class="row"><span class="k">กลุ่มสาระการเรียนรู้</span><span class="line"><%= sub.dept_name %></span><span class="k">ชั้น</span><span class="line" style="max-width:30%"><%= it.gradeFull %><%= sub.class_room ? ' (' + sub.class_room + ')' : '' %></span></div>
+  <div class="row"><span class="k">รายวิชา</span><span class="line"><%= sub.subject_name %></span><span class="k">รหัสวิชา</span><span class="line" style="max-width:25%"><%= sub.subject_code %></span></div>
+  <div class="row"><span class="k">หน่วยการเรียนรู้ที่</span><span class="line" style="max-width:12%"><%= sub.unit_no %></span><span class="k">เรื่อง</span><span class="line"><%= sub.unit_name %></span><span class="k">จำนวน</span><span class="line" style="max-width:10%"><%= sub.hours %></span><span>ชั่วโมง</span></div>
+  <div class="row"><span class="k">ครูผู้สอน</span><span class="line"><%= sub.teacher_name %></span><span class="k">วันที่สอน</span><span class="line" style="max-width:30%"><%= util.thaiDate(sub.teach_date) %></span></div>
+
+  <% if (isFile) { %>
+    <div class="sec">บันทึกหลังแผน</div>
+    <div class="text">ครูผู้สอนเขียนบันทึกหลังแผนในรูปแบบของตนเอง แนบเป็นไฟล์ในระบบ<% for (const f of (it.files || [])) { %>
+      <br>ไฟล์ <%= f.original_name %><% } %>
+    <br>หน้านี้เป็นหน้าความเห็นและลายเซ็นของผู้บริหาร ใช้แนบท้ายไฟล์บันทึกของครู</div>
+  <% } else { %>
+    <% for (const [label, key] of [['ด้านความรู้ (K)', 'result_k'], ['ด้านทักษะ / กระบวนการ (P)', 'result_p'], ['ด้านคุณลักษณะ (A)', 'result_a']]) { %>
+      <div class="sec"><%= label %></div><div class="text"><%= sub[key] || '-' %></div>
+    <% } %>
+  <% } %>
+  <% if (sub.students_total != null) { %>
+    <div class="text" style="margin-top:4px">นักเรียนทั้งหมด <%= sub.students_total %> คน ผ่านเกณฑ์ <%= sub.students_passed ?? '-' %> คน<%= sub.students_total ? ' คิดเป็นร้อยละ ' + ((sub.students_passed || 0) / sub.students_total * 100).toFixed(2) : '' %></div>
+  <% } %>
+  <% if (!isFile) { %>
+    <div class="sec">ปัญหา / อุปสรรค / แนวทางแก้ไข</div><div class="text"><%= sub.problems || '-' %></div>
+    <div class="sec">ข้อเสนอแนะ</div><div class="text"><%= sub.suggestions || '-' %></div>
+  <% } %>
+
+  <div class="sign" style="width:50%;margin-left:auto">
+    <div class="sigline">ลงชื่อ <% if (sub.teacher_signature) { %><img src="<%= sub.teacher_signature %>" alt="ลายเซ็นผู้สอน"><% } else { %><span>..........................................</span><% } %> ครูผู้สอน</div>
+    <div>(<%= sub.teacher_name %>)</div>
+  </div>
+
+  <%# ช่องความเห็นเรียงทีละระดับ เส้นความเห็นเต็มบรรทัด ลงชื่อ ลายเซ็น ชื่อ ตำแหน่ง อยู่ครึ่งขวาแบบเดียวกับลายเซ็นครู %>
+  <% for (const st of it.steps) { %><%- include('sign_box', { st, sub, submitDate: it.submitDate, side: 'note' }) %><% } %>
+</div>

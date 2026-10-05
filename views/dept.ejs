@@ -1,0 +1,66 @@
+<%- include('partials/top') %>
+<div class="page-head">
+  <div>
+    <div class="eyebrow">ภาคเรียนที่ <%= term.semester %>/<%= term.year %></div>
+    <h1>สถานะกลุ่มสาระ<%= dept.name %></h1>
+  </div>
+  <div class="actions">
+    <% if (departments.length > 1) { %>
+      <form method="get" data-autosubmit class="inline-form">
+        <select name="dept" aria-label="เลือกกลุ่มสาระ" style="width:auto"><% for (const d of departments) { %><option value="<%= d.id %>" <%= d.id === dept.id ? 'selected' : '' %>><%= d.name %></option><% } %></select>
+      </form>
+    <% } %>
+    <% if (settings.submit_end && daysLeft != null) { %><span class="pill-note<%= daysLeft < 0 ? ' back' : '' %>">กำหนดส่ง <%= util.thaiDate(settings.submit_end, true) %><%= daysLeft >= 0 ? ' เหลือ ' + daysLeft + ' วัน' : ' เลยกำหนดแล้ว' %></span><% } %>
+  </div>
+</div>
+
+<div class="grid-4" style="margin-bottom:18px">
+  <div class="stat"><span class="label">ครูในกลุ่มสาระ</span><b class="num"><%= allCount %> คน</b></div>
+  <div class="stat green"><span class="label">ส่งแผนและคู่มือครบ</span><b class="num"><%= doneCount %> คน</b></div>
+  <div class="stat <%= allCount - doneCount ? 'orange' : '' %>"><span class="label">ยังส่งไม่ครบ</span><b class="num"><%= allCount - doneCount %> คน</b></div>
+  <a class="stat amber row" href="/inbox"><span style="flex:1"><span class="label">รอคุณลงนาม</span><br><b class="num"><%= inboxCount %></b></span><span class="btn btn-primary">ไปลงนาม</span></a>
+</div>
+
+<form class="card flush" method="post" action="/dept/remind" data-confirm="ส่งข้อความเตือนในระบบถึงครูที่เลือก ครูจะเห็นที่หน้าหลักเมื่อเข้าระบบ" data-ok-label="ส่งเตือนเลย" data-busy="กำลังส่งเตือน">
+  <input type="hidden" name="dept" value="<%= dept.id %>">
+  <div class="card-head">
+    <h2>ครูในกลุ่มสาระ</h2>
+    <div class="actions">
+      <% for (const [k, label] of [['all', 'ทั้งหมด'], ['todo', 'ยังไม่ครบ'], ['done', 'ครบแล้ว']]) { %>
+        <a class="btn btn-sm <%= filter === k ? 'btn-primary' : 'btn-ghost' %>" href="/dept?dept=<%= dept.id %>&show=<%= k %>"><%= label %></a>
+      <% } %>
+    </div>
+  </div>
+  <div class="table-wrap" style="margin-top:12px"><table class="table">
+    <thead><tr>
+      <th style="width:44px"><input type="checkbox" data-check-all="ids" aria-label="เลือกทั้งหมด"></th>
+      <th>ครู</th><th>แผนการสอน</th><th>คู่มือรายวิชา</th><th class="hide-sm">บันทึกหลังแผน</th><th class="hide-sm">เตือนล่าสุด</th>
+    </tr></thead>
+    <tbody>
+      <% if (!rows.length) { %><tr><td colspan="6" class="center muted">ไม่มีรายชื่อในกลุ่มนี้</td></tr><% } %>
+      <% for (const r of rows) { %>
+        <tr>
+          <td><% if (!r.done) { %><input type="checkbox" name="ids" value="<%= r.id %>" data-todo aria-label="เลือก <%= r.full_name %>"><% } %></td>
+          <td><b><%= r.full_name %></b><br><small class="muted"><%= r.subjects || 'ยังไม่มีรายวิชาในระบบ' %></small></td>
+          <td><span class="badge <%= r.plan.cls %>"><%= r.plan.text %></span></td>
+          <td><span class="badge <%= r.manual.cls %>"><%= r.manual.text %></span></td>
+          <td class="hide-sm"><b><%= r.notes %></b> ฉบับ<%= r.notesTodo ? ' ร่าง ' + r.notesTodo : '' %></td>
+          <td class="hide-sm muted small"><%= r.reminded || 'ยังไม่เคยเตือน' %></td>
+        </tr>
+      <% } %>
+    </tbody>
+  </table></div>
+  <div style="padding:16px 20px;border-top:1px solid var(--line)">
+    <div class="field">
+      <label for="remind-msg">ข้อความเพิ่มเติม (ไม่บังคับ)</label>
+      <input type="text" id="remind-msg" name="message" maxlength="300" placeholder="เช่น ส่งได้ที่ห้องกลุ่มสาระ หรือสอบถามได้ตลอด">
+      <div class="hint">ระบบใส่ชื่อครูและงานที่ค้างของแต่ละคนให้เอง ตัวอย่าง: เรียน คุณครู[ชื่อ] ยังไม่ได้ส่ง [งานที่ค้าง] ของภาคเรียนที่ <%= term.semester %>/<%= term.year %></div>
+    </div>
+    <div class="btn-row">
+      <button type="button" class="btn btn-ghost" data-select-todo>เลือกทุกคนที่ยังไม่ครบ</button>
+      <button type="submit" class="btn btn-primary" data-need-checked="ids"><%- icon('bell', 18) %> ส่งเตือนคนที่เลือก (<span data-checked-count="ids">0</span>)</button>
+      <small class="muted"><%= ff.line ? 'ส่งเข้า LINE กลุ่มผู้ตรวจด้วยทุกเช้า' : 'แจ้งในระบบ (LINE ยังไม่เปิดใช้)' %></small>
+    </div>
+  </div>
+</form>
+<%- include('partials/bottom') %>

@@ -1,0 +1,76 @@
+<%- include('partials/top') %>
+<% const T = wf.DOC_TYPES; const bulkable = rows.filter((s) => !s.needsScore).length; %>
+<div class="page-head">
+  <div>
+    <h1>งานรอตรวจ</h1>
+    <div class="sub">งานที่อยู่ในระดับของคุณตอนนี้ เรียงจากที่รอนานที่สุด</div>
+  </div>
+</div>
+
+<div class="tabs-inner" style="padding:0;margin-bottom:12px;background:#fff;border-radius:12px;box-shadow:var(--shadow)">
+  <a class="tab<%= !type ? ' active' : '' %>" href="/inbox">ทั้งหมด <span class="count amber"><%= counts.all %></span></a>
+  <% for (const k of Object.keys(T)) { %>
+    <a class="tab<%= type === k ? ' active' : '' %>" href="/inbox?type=<%= k %>"><%= T[k].label %><% if (counts[k]) { %> <span class="count amber"><%= counts[k] %></span><% } %></a>
+  <% } %>
+</div>
+
+<% if (!rows.length) { %>
+  <div class="card"><div class="empty"><span class="big"></span>ไม่มีงานค้าง ตรวจครบแล้ว</div></div>
+<% } else { %>
+  <div class="m-only">
+    <% if (counts.note && ff.quicksign) { %><a class="btn btn-primary btn-lg btn-block" style="margin-bottom:12px" href="/quicksign"><%- icon('cards', 20) %> ลงนามบันทึกหลังแผนแบบไล่การ์ด (<%= counts.note %>)</a><% } %>
+    <% for (const s of rows) { %>
+      <a class="card m-inbox" href="/s/<%= s.id %>">
+        <span class="qs-ini"><%= util.initials(s.teacher_name) %></span>
+        <span class="m-inbox-text">
+          <span class="tags"><span class="badge badge-blue"><%= T[s.doc_type].label %></span><% if (s.needsScore) { %><span class="badge badge-amber">ต้องให้คะแนน</span><% } %></span>
+          <b><%= s.subject_code %> <%= s.subject_name %><%= s.doc_type === 'note' ? ' แผนที่ ' + s.plan_no : '' %></b>
+          <span class="muted small"><%= s.teacher_name %>  <%= util.ago(s.updated_at) %></span>
+        </span>
+        <%- icon('next', 22) %>
+      </a>
+    <% } %>
+  </div>
+  <form method="post" action="/inbox/approve-many" class="card d-only" data-busy="กำลังลงนาม">
+    <% if (bulkable) { %>
+      <div class="alert alert-info" style="margin-bottom:12px">
+        ลงนามทีละหลายรายการได้ ติ๊กเลือกแล้วกดปุ่มด้านล่าง ใช้ความเห็นเดียวกันทุกรายการ
+        งานที่ต้องให้คะแนนต้องเปิดตรวจทีละงาน
+      </div>
+    <% } %>
+    <div class="table-wrap"><table class="table">
+      <thead><tr>
+        <th><% if (bulkable) { %><input type="checkbox" data-check-all="ids" aria-label="เลือกทั้งหมด"><% } %></th>
+        <th>ชนิด</th><th>ครูผู้สอน</th><th>รายวิชา</th><th class="hide-sm">กลุ่มสาระ</th><th class="hide-sm">ส่งเมื่อ</th><th></th>
+      </tr></thead>
+      <tbody>
+      <% for (const s of rows) { %>
+        <tr>
+          <td><% if (!s.needsScore) { %><input type="checkbox" name="ids" value="<%= s.id %>" aria-label="เลือก"><% } else { %><span title="ต้องให้คะแนน"></span><% } %></td>
+          <td class="nowrap"><%= T[s.doc_type].label %></td>
+          <td><%= s.teacher_name %></td>
+          <td><b><%= s.subject_code %></b> <%= s.subject_name %><%= s.doc_type === 'note' ? ' แผนที่ ' + s.plan_no + (s.topic ? ' ' + s.topic : '') : '' %>
+            <% if (s.needsScore) { %><br><span class="badge badge-amber">ต้องให้คะแนน</span><% } %></td>
+          <td class="hide-sm"><%= s.dept_name %></td>
+          <td class="hide-sm nowrap"><%= util.thaiDate(s.updated_at, true) %></td>
+          <td class="right"><a class="btn btn-sm btn-primary" href="/s/<%= s.id %>"><%= s.needsScore ? 'ให้คะแนน' : 'เปิดตรวจ' %></a></td>
+        </tr>
+      <% } %>
+      </tbody>
+    </table></div>
+    <% if (bulkable) { %>
+      <hr>
+      <div class="field">
+        <label for="bulk-comment">ความเห็น (ใช้กับทุกรายการที่เลือก)</label>
+        <input type="text" id="bulk-comment" name="comment" placeholder="เช่น เห็นชอบ หรือ รับทราบ">
+      </div>
+      <% if (!me.signature) { %>
+        <div class="field"><span class="label">ลายเซ็น</span><%- include('partials/sigpad') %></div>
+      <% } %>
+      <button class="btn btn-success btn-lg" type="submit" data-need-checked="ids"
+        <% if (!me.signature) { %>data-require-field="signature" data-require-message="กรุณาเซ็นชื่อในกรอบก่อน"<% } %>
+        data-confirm="ยืนยันลงนามเห็นชอบรายการที่เลือกทั้งหมด" data-ok-label="ลงนาม">ลงนามรายการที่เลือก (<span data-checked-count="ids">0</span>)</button>
+    <% } %>
+  </form>
+<% } %>
+<%- include('partials/bottom') %>

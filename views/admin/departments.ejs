@@ -1,0 +1,39 @@
+<%- include('../partials/top') %>
+<div class="narrow" style="max-width:900px">
+  <div class="page-head">
+    <div><h1>กลุ่มสาระการเรียนรู้</h1><div class="sub">ตัวเลขลำดับใช้เรียงในรายงาน</div></div>
+    <div class="actions"><a class="btn btn-ghost" href="/admin">กลับ</a></div>
+  </div>
+  <div class="card">
+    <div class="table-wrap"><table class="table">
+      <thead><tr><th style="width:80px">ลำดับ</th><th>ชื่อกลุ่มสาระ</th><th class="hide-sm">หัวหน้ากลุ่มสาระ</th><th class="num">ครู</th><th></th></tr></thead>
+      <tbody>
+      <% for (const d of rows) { %>
+        <tr>
+          <td colspan="2">
+            <form method="post" action="/admin/departments/<%= d.id %>" class="btn-row" style="flex-wrap:nowrap">
+              <input type="number" name="sort" value="<%= d.sort %>" style="width:70px" aria-label="ลำดับ">
+              <input type="text" name="name" value="<%= d.name %>" aria-label="ชื่อกลุ่มสาระ">
+              <button class="btn btn-sm btn-ghost" type="submit" data-confirm="บันทึกชื่อกลุ่มสาระ"></button>
+            </form>
+          </td>
+          <td class="hide-sm"><%= d.heads || '-' %></td>
+          <td class="num"><%= d.users %></td>
+          <td class="right">
+            <% if (!d.users && !d.subs) { %>
+              <form method="post" action="/admin/departments/<%= d.id %>/delete" class="inline-form">
+                <button class="btn btn-sm btn-ghost" type="submit" data-danger="1" data-confirm="ลบกลุ่มสาระ <%= d.name %>" data-ok-label="ลบ"></button>
+              </form>
+            <% } %>
+          </td>
+        </tr>
+      <% } %>
+      </tbody>
+    </table></div>
+  </div>
+  <form class="card btn-row" method="post" action="/admin/departments">
+    <input type="text" name="name" placeholder="ชื่อกลุ่มสาระใหม่" required style="max-width:360px">
+    <button class="btn btn-primary" type="submit" data-confirm="เพิ่มกลุ่มสาระใหม่">เพิ่ม</button>
+  </form>
+</div>
+<%- include('../partials/bottom') %>

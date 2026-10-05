@@ -1,0 +1,33 @@
+<%- include('partials/top', { bare: true }) %>
+<div class="verify-wrap">
+  <div class="card verify-card">
+    <div class="verify-head">
+      <img src="<%= logoUrl %>" alt="ตราโรงเรียน">
+      <div><b style="font-size:1.15rem">ตรวจสอบเอกสารจากระบบส่งแผนการสอน</b><br><span class="muted"><%= settings.school_name %></span></div>
+    </div>
+    <% if (!sub) { %>
+      <div class="alert alert-error"><%- icon('shield') %><span>ไม่พบเอกสารนี้ในระบบ QR Code อาจไม่ถูกต้อง หรือเอกสารถูกลบไปแล้ว</span></div>
+    <% } else { const T = wf.DOC_TYPES[sub.doc_type]; %>
+      <div class="verify-ok<%= sub.status === 'approved' ? '' : ' wait' %>"><%- icon(sub.status === 'approved' ? 'ok' : 'clock', 28) %>
+        <span><%= sub.status === 'approved' ? 'เป็นเอกสารจริง ลงนามครบทุกระดับแล้ว' : 'เป็นเอกสารจริงในระบบ ' + wf.statusText(sub) %></span></div>
+      <% if (steps.some((st) => st.review && st.review.action === 'override')) { %><p class="muted small" style="margin:8px 0 0">มีบางระดับที่ผู้ดูแลระบบดำเนินการแทนในระบบ ลายเซ็นของระดับนั้นอยู่บนเอกสารกระดาษ</p><% } %>
+      <dl class="info" style="margin-top:16px">
+        <div><dt>ชนิดเอกสาร</dt><dd><%= T.label %><%= sub.doc_type === 'note' ? ' แผนที่ ' + sub.plan_no : '' %></dd></div>
+        <div><dt>รายวิชา</dt><dd><%= sub.subject_code %> <%= sub.subject_name %></dd></div>
+        <div><dt>ครูผู้สอน</dt><dd><%= sub.teacher_name %></dd></div>
+        <div><dt>ภาคเรียน</dt><dd><%= sub.semester %>/<%= sub.academic_year %></dd></div>
+        <% if (sub.score_max) { %><div><dt>ผลการประเมิน</dt><dd><%= sub.score_total %> จาก <%= sub.score_max %> ระดับ<%= wf.scoreLevel(sub.score_total / sub.score_max * 100) %></dd></div><% } %>
+        <% if (sub.completed_at) { %><div><dt>ลงนามครบเมื่อ</dt><dd><%= util.thaiDateTime(sub.completed_at) %></dd></div><% } %>
+      </dl>
+      <h3 style="margin-top:18px">การลงนาม</h3>
+      <ul class="feed">
+        <% for (const st of steps) { %>
+          <li><span class="fdot <%= st.state === 'done' ? 'approve' : st.state === 'returned' ? 'return' : '' %>"></span>
+            <span class="fbody"><b><%= st.label %></b>
+              <span><%= st.review ? (st.review.action === 'override' ? 'ผู้ดูแลระบบดำเนินการแทน ' : st.review.user_name + ' ') + util.thaiDateTime(st.review.created_at) : st.state === 'skipped' ? 'ข้ามระดับนี้' : st.state === 'current' ? 'กำลังรอลงนาม' : 'ยังไม่ถึงระดับนี้' %></span></span></li>
+        <% } %>
+      </ul>
+    <% } %>
+  </div>
+</div>
+<%- include('partials/bottom', { bare: true }) %>

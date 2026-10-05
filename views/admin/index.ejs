@@ -1,0 +1,34 @@
+<%- include('../partials/top') %>
+<div class="page-head"><div><h1>ผู้ดูแลระบบ</h1><div class="sub">ตั้งค่าระบบให้ตรงกับโรงเรียน ทำตามลำดับ 1 ถึง 5 ครั้งแรกที่ติดตั้ง</div></div></div>
+
+<% if (warnings.length) { %>
+  <div class="alert alert-warn"><b>สิ่งที่ยังต้องตั้งค่า</b><ul><% for (const w of warnings) { %><li><%= w %></li><% } %></ul></div>
+<% } else { %>
+  <div class="alert alert-success">กำหนดผู้ตรวจครบทุกระดับแล้ว</div>
+<% } %>
+
+<div class="grid admin-menu">
+  <a class="stat" href="/admin/settings"><span class="icon"><%- icon('school', 24) %></span><span><b>1. ตั้งค่าโรงเรียน</b><br><span class="label">ชื่อโรงเรียน ตราโรงเรียน ภาคเรียน ช่วงเวลาเปิดรับส่ง</span></span></a>
+  <a class="stat purple" href="/admin/departments"><span class="icon"><%- icon('board', 24) %></span><span><b>2. กลุ่มสาระ</b><br><span class="label"><%= counts.departments %> กลุ่มสาระ</span></span></a>
+  <a class="stat green" href="/admin/users"><span class="icon"><%- icon('users', 24) %></span><span><b>3. รายชื่อครูและผู้ตรวจ</b><br><span class="label">ใช้งาน <%= counts.users %> คน เป็นครูผู้สอน <%= counts.teachers %> คน</span></span></a>
+  <a class="stat amber" href="/admin/workflow"><span class="icon"><%- icon('flow', 24) %></span><span><b>4. ขั้นตอนการตรวจ</b><br><span class="label">ชื่อตำแหน่ง ระดับที่ใช้กับงานแต่ละชนิด ผู้ให้คะแนน</span></span></a>
+  <a class="stat blue" href="/admin/rubric?type=plan"><span class="icon"><%- icon('star', 24) %></span><span><b>5. แบบประเมิน</b><br><span class="label">แผน <%= counts.rubricPlan %> ข้อ คู่มือรายวิชา <%= counts.rubricManual %> ข้อ</span></span></a>
+  <a class="stat blue" href="/admin/features"><span class="icon"><%- icon('toggle', 24) %></span><span><b>ฟังก์ชันเสริม</b><br><span class="label">เปิดปิดฟังก์ชันใหม่ ประโยคสำเร็จรูป LINE และดูประวัติการเปิดปิด</span></span></a>
+  <% if (ff.ttimport) { %><a class="stat green" href="/admin/teach-import"><span class="icon"><%- icon('download', 24) %></span><span><b>นำเข้ารายวิชาจากตารางสอน</b><br><span class="label">ดึงว่าครูแต่ละคนสอนวิชาอะไร จากโปรแกรมจัดตารางสอน</span></span></a><% } %>
+  <a class="stat orange" href="/admin/subjects"><span class="icon"><%- icon('books', 24) %></span><span><b>รายวิชา (ไม่บังคับ)</b><br><span class="label"><%= counts.subjects %> วิชา ช่วยให้ครูพิมพ์รหัสวิชาแล้วชื่อขึ้นเอง</span></span></a>
+</div>
+
+<div class="grid-2" style="margin-top:18px">
+  <div class="card">
+    <h3>ที่อยู่สำหรับให้ครูเข้าใช้</h3>
+    <p class="muted small">ครูที่ต่อ Wi-Fi เดียวกับเครื่องนี้ เปิดเบราว์เซอร์แล้วพิมพ์ที่อยู่ด้านล่าง</p>
+    <% if (addresses.length) { for (const a of addresses) { %><div style="font-size:1.15rem"><b>http://<%= a %>:<%= port %></b></div><% } } else { %><div class="muted">ไม่พบการเชื่อมต่อเครือข่าย</div><% } %>
+  </div>
+  <div class="card">
+    <h3>สำรองข้อมูล</h3>
+    <p class="muted small">ข้อมูลทั้งหมดอยู่ในโฟลเดอร์<br><code style="overflow-wrap:anywhere"><%= dataDir %></code><br>ควรคัดลอกทั้งโฟลเดอร์ไปเก็บในแฟลชไดรฟ์อย่างน้อยสัปดาห์ละครั้ง (ไฟล์ที่ครูส่งอยู่ในโฟลเดอร์ uploads)</p>
+    <a class="btn btn-primary" href="/admin/backup">ดาวน์โหลดสำรองฐานข้อมูล</a>
+    <div class="muted small" style="margin-top:6px">งานที่ส่งแล้วทั้งหมด <%= counts.submissions %> รายการ</div>
+  </div>
+</div>
+<%- include('../partials/bottom') %>

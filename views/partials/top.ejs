@@ -1,0 +1,94 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title><%= title ? title + ' | ' : '' %>ระบบส่งแผนการสอน</title>
+<% if (ff.prefs) { %><script>try{var p=JSON.parse(localStorage.getItem('plan-prefs')||'{}');if(p.dark)document.documentElement.classList.add('dark');if(p.big)document.documentElement.classList.add('big')}catch(e){}</script><% } %>
+<% for (const f of fontFiles) { %><link rel="stylesheet" href="<%= f %>">
+<% } %><style><%- themeCss %></style>
+<link rel="stylesheet" href="/static/css/app.css?v=<%= assetVersion %>">
+<link rel="icon" href="<%= logoUrl %>">
+</head>
+<body class="theme-<%= theme.key %> ml-<%= settings.mobile_layout === 'classic' ? 'classic' : 'simple' %>">
+<% if (me && !locals.bare) {
+  const p = currentPath;
+  const steps = me.roles.map((r) => wf.stepOf(r)).filter(Boolean);
+  const isReviewer = steps.length > 0;
+  const reviewsNotes = steps.some((s) => s.for_note);
+  const schoolScope = steps.some((s) => s.scope === 'school');
+  const canBoard = ff.board && (me.roles.includes('dept_head') || schoolScope || me.is_admin);
+  const groups = [];
+  const mine = [{ href: '/', icon: 'home', label: 'หน้าหลัก', active: p === '/' }];
+  if (me.is_teacher) {
+    if (ff.teachlist) mine.push({ href: '/teaching', icon: 'star', label: 'รายวิชาที่สอน', active: p.startsWith('/teaching') });
+    mine.push({ href: '/my', icon: 'books', label: 'แผนและคู่มือของฉัน', active: p.startsWith('/my') || p.startsWith('/works'), badge: badges.returned, warn: true });
+    mine.push({ href: '/notes', icon: 'note', label: 'บันทึกหลังแผน', active: p.startsWith('/notes'), badge: badges.notes });
+    if (ff.results) mine.push({ href: '/results', icon: 'chart', label: 'ผลการสอนของฉัน', active: p.startsWith('/results') });
+    if (ff.pa) mine.push({ href: '/pa', icon: 'folder', label: 'แฟ้มผลงาน PA', active: p.startsWith('/pa') });
+  }
+  mine.push({ href: '/alerts', icon: 'bell', label: 'การแจ้งเตือน', active: p.startsWith('/alerts'), badge: badges.alerts, warn: true });
+  groups.push({ label: 'ของฉัน', items: mine });
+  if (isReviewer || me.is_admin) {
+    const rv = [];
+    if (isReviewer) rv.push({ href: '/inbox', icon: 'inbox', label: 'งานรอตรวจ', active: p.startsWith('/inbox'), badge: badges.inbox });
+    if (isReviewer && reviewsNotes && ff.quicksign) rv.push({ href: '/quicksign', icon: 'cards', label: 'ลงนามแบบไล่การ์ด', active: p.startsWith('/quicksign') });
+    if (canBoard) rv.push({ href: '/dept', icon: 'board', label: 'สถานะกลุ่มสาระ', active: p.startsWith('/dept') });
+    rv.push({ href: '/registry', icon: 'search', label: 'ทะเบียนงาน', active: p.startsWith('/registry') });
+    groups.push({ label: 'งานตรวจ', items: rv });
+  }
+  const more = [{ href: '/stats', icon: 'chart', label: 'สถิติโรงเรียน', active: p.startsWith('/stats') }];
+  if (me.is_admin) {
+    more.push({ href: '/admin', icon: 'school', label: 'ผู้ดูแลระบบ', active: p.startsWith('/admin') && !p.startsWith('/admin/features') });
+    more.push({ href: '/admin/features', icon: 'toggle', label: 'ฟังก์ชันเสริม', active: p.startsWith('/admin/features') });
+  }
+  groups.push({ label: 'ภาพรวม', items: more });
+%>
+<div class="shell">
+  <aside class="side" id="side" aria-label="เมนู">
+    <a class="side-brand" href="/">
+      <img class="side-logo" src="<%= logoUrl %>" alt="ตราโรงเรียน">
+      <span class="side-brand-text">
+        <b>ระบบส่งแผนการสอน</b>
+        <span><%= settings.school_name %></span>
+      </span>
+    </a>
+    <button type="button" class="side-close" data-side-close aria-label="ปิดเมนู"><%- icon('close', 22) %></button>
+    <nav class="side-nav" aria-label="เมนูหลัก">
+      <% for (const g of groups) { %>
+        <span class="side-label"><%= g.label %></span>
+        <% for (const t of g.items) { %>
+          <a class="side-item<%= t.active ? ' active' : '' %>" href="<%= t.href %>"<%- t.active ? ' aria-current="page"' : '' %>>
+            <%- icon(t.icon, 22) %><span class="side-text"><%= t.label %></span>
+            <% if (t.badge) { %><span class="side-badge<%= t.warn ? ' warn' : '' %>"><%= t.badge %></span><% } %>
+          </a>
+        <% } %>
+      <% } %>
+    </nav>
+    <div class="side-foot">
+      <a class="side-user" href="/profile">
+        <b><%= me.full_name %></b>
+        <span><%= me.position || 'ผู้ใช้งาน' %><%= me.dept_name ? ' กลุ่มสาระ' + me.dept_name : '' %></span>
+      </a>
+      <% if (ff.prefs) { %>
+        <div class="side-prefs">
+          <button type="button" class="side-btn" data-pref="dark" aria-pressed="false"><%- icon('moon', 18) %><span data-on="โหมดกลางวัน" data-off="โหมดกลางคืน">โหมดกลางคืน</span></button>
+          <button type="button" class="side-btn" data-pref="big" aria-pressed="false"><span class="aa"><small>ก</small>ก</span><span data-on="ตัวปกติ" data-off="ตัวใหญ่">ตัวใหญ่</span></button>
+        </div>
+      <% } %>
+      <form method="post" action="/logout" data-nobusy><button type="submit" class="side-btn side-logout"><%- icon('logout', 18) %> ออกจากระบบ</button></form>
+    </div>
+  </aside>
+  <div class="side-scrim" data-side-close></div>
+  <div class="main">
+    <header class="mtop">
+      <button type="button" class="mtop-btn" data-side-open aria-label="เปิดเมนู"><%- icon('menu', 24) %></button>
+      <a class="mtop-brand" href="/"><img src="<%= logoUrl %>" alt=""><span><b>ระบบส่งแผนการสอน</b><small>ภาคเรียนที่ <%= settings.semester %>/<%= settings.academic_year %><%= demo ? ' โหมดทดลอง' : '' %></small></span></a>
+      <a class="mtop-btn" href="/alerts" aria-label="การแจ้งเตือน"><%- icon('bell', 24) %><% if (badges.alerts) { %><span class="dot-badge"><%= badges.alerts %></span><% } %></a>
+    </header>
+    <% if (demo) { %><div class="demo-strip">โหมดทดลอง ข้อมูลทั้งหมดเป็นชื่อสมมติ</div><% } %>
+<% } %>
+<% if (!locals.bare) { %><main class="container" id="content"><% } %>
+<% if (flash && !locals.bare) { %>
+  <div class="alert alert-<%= flash.type === 'error' ? 'error' : 'success' %>" role="status"><%- icon(flash.type === 'error' ? 'shield' : 'ok', 20) %> <span><%= flash.text %></span></div>
+<% } %>

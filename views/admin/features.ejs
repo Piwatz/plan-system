@@ -1,0 +1,172 @@
+<%- include('../partials/top') %>
+<%
+  const ICON = { mobilesheet: 'eye', chips: 'chips', notefile: 'file', counts: 'chart', quicksign: 'cards', voice: 'mic', filecheck: 'check', board: 'board', results: 'chart', pa: 'folder', qr: 'qr', prefs: 'moon', line: 'chat', wordconvert: 'file', drivecopy: 'folder', teachlist: 'books', onemain: 'star', pdfonly: 'file', pdfmerge: 'copy', selfsign: 'edit', noactivity: 'close', ttimport: 'download', coverpreview: 'eye', namepick: 'users', pin: 'shield' };
+%>
+<div class="page-head">
+  <div>
+    <h1>ฟังก์ชันเสริม</h1>
+    <div class="sub">เปิดหรือปิดได้ทีละอย่าง มีผลกับทุกคนทันที เฉพาะผู้ดูแลระบบเห็นหน้านี้ ทุกครั้งที่เปิดปิดจะถูกบันทึกไว้และลบไม่ได้</div>
+  </div>
+</div>
+
+<div class="grid-3">
+  <div style="display:flex;flex-direction:column;gap:12px">
+    <% for (const f of list) { const blocked = f.needs && !ready[f.needs] && !f.on; %>
+      <form class="feature<%= f.on ? ' on' : '' %>" method="post" action="/admin/features/<%= f.key %>"
+        data-confirm="<%= f.on ? 'ปิด' : 'เปิด' %> <%= f.title %>
+มีผลกับผู้ใช้ทุกคนทันที" data-ok-label="<%= f.on ? 'ปิด' : 'เปิด' %>" <%- f.on ? 'data-danger="1"' : '' %>>
+        <input type="hidden" name="on" value="<%= f.on ? '0' : '1' %>">
+        <span class="f-ic"><%- icon(ICON[f.key] || 'toggle', 24) %></span>
+        <span class="f-body">
+          <b><%= f.title %></b>
+          <span class="muted"><%= f.desc %></span>
+          <span class="tags"><span class="badge">ใช้โดย <%= f.who %></span></span>
+          <% if (!f.on && f.offNote) { %><span class="f-off"><%= f.offNote %></span><% } %>
+          <% if (f.on && f.needs === 'soffice' && !ready.soffice) { %><span class="f-off">เปิดอยู่ แต่ยังไม่พบ LibreOffice ในเครื่องที่เปิดระบบ ครูจึงยังเลือกไฟล์ Word ไม่ได้ ดูวิธีติดตั้งในกล่อง ตัวแปลง Word เป็น PDF</span><% } %>
+        </span>
+        <button type="submit" class="switch" role="switch" aria-checked="<%= f.on %>" aria-label="<%= f.on ? 'ปิด' : 'เปิด' %> <%= f.title %>" <%= blocked ? 'disabled' : '' %>>
+          <span class="track"></span><span><%= f.on ? 'เปิด' : 'ปิด' %></span>
+        </button>
+      </form>
+    <% } %>
+  </div>
+
+  <div>
+    <section class="card" id="phrases">
+      <h2>ประโยคสำเร็จรูป</h2>
+      <p class="muted small">ครูแตะเลือกในหน้าเขียนบันทึกหลังแผน ใส่ [ ] ตรงคำที่ครูต้องแก้เอง เช่น ตัวเลข หรือชื่อเรื่อง</p>
+      <div class="btn-row" style="margin-bottom:10px">
+        <% for (const g of groups) { %><a class="btn btn-sm <%= g.key === tab ? 'btn-primary' : 'btn-ghost' %>" href="/admin/features?tab=<%= g.key %>#phrases"><%= g.label %></a><% } %>
+      </div>
+      <form method="post" action="/admin/phrases" data-confirm="บันทึกประโยคสำเร็จรูปหมวดนี้">
+        <input type="hidden" name="group" value="<%= tab %>">
+        <div class="field">
+          <label for="items">หนึ่งบรรทัดต่อหนึ่งประโยค</label>
+          <textarea id="items" name="items" style="min-height:170px"><%= phrases.join('\n') %></textarea>
+        </div>
+        <button class="btn btn-primary" type="submit">บันทึกประโยค</button>
+      </form>
+    </section>
+
+    <section class="card" id="convert">
+      <h2>ตัวแปลง Word เป็น PDF</h2>
+      <p class="muted small">ใช้โปรแกรมฟรี LibreOffice ติดตั้งเฉพาะเครื่องที่เปิดระบบเครื่องเดียว เครื่องของครูไม่ต้องติดตั้งอะไร</p>
+      <% if (convertInfo.exe) { %>
+        <div class="alert alert-success"><%- icon('ok') %><span>พบ LibreOffice แล้ว<br><small><%= convertInfo.exe %></small></span></div>
+      <% } else { %>
+        <div class="alert alert-warn"><%- icon('file') %><span>ยังไม่พบ LibreOffice ในเครื่องนี้ ติดตั้งตามนี้
+          <ol style="margin:6px 0 0;padding-left:20px">
+            <li>เปิดเว็บ libreoffice.org กด ดาวน์โหลด แล้วเลือกรุ่นสำหรับ Windows หรือ macOS ตามเครื่องที่เปิดระบบ</li>
+            <li>ติดตั้งตามขั้นตอน กด ถัดไป จนเสร็จ ไม่ต้องเปลี่ยนค่าอะไร</li>
+            <li>กลับมาหน้านี้แล้วกดรีเฟรช ระบบจะหาโปรแกรมเจอเอง ไม่ต้องปิดระบบ</li>
+          </ol></span></div>
+      <% } %>
+      <% if (convertInfo.fonts.psk) { %>
+        <div class="alert alert-success"><%- icon('ok') %><span>พบฟอนต์ TH SarabunPSK ในเครื่องนี้</span></div>
+      <% } else { %>
+        <div class="alert alert-warn"><%- icon('text') %><span>ยังไม่พบฟอนต์ TH SarabunPSK ในเครื่องนี้ ไฟล์ Word ของโรงเรียนส่วนใหญ่ใช้ฟอนต์นี้ ถ้าไม่ติดตั้ง ตัวอักษรใน PDF ที่แปลงจะเพี้ยน ติดตั้งให้ครบทั้งตัวปกติ ตัวหนา ตัวเอียง<%= convertInfo.fonts.all.length ? ' (ตอนนี้มี ' + convertInfo.fonts.all.join(' ') + ')' : '' %></span></div>
+      <% } %>
+      <details class="howto">
+        <summary>ติดตั้งไว้ที่อื่น ระบบหาไม่เจอ</summary>
+        <form method="post" action="/admin/convert" data-confirm="บันทึกที่อยู่โปรแกรม LibreOffice" style="padding:0 14px 12px">
+          <div class="field">
+            <label for="soffice_path">ที่อยู่โปรแกรม หรือโฟลเดอร์ที่ติดตั้ง LibreOffice</label>
+            <input type="text" id="soffice_path" name="soffice_path" value="<%= convertInfo.custom %>" placeholder="เว้นว่างไว้ให้ระบบหาเอง">
+          </div>
+          <div class="btn-row">
+            <button class="btn btn-primary btn-sm" type="submit">บันทึก</button>
+            <% if (convertInfo.custom) { %><button class="btn btn-ghost btn-sm" type="submit" name="clear" value="1" data-confirm="ล้างที่อยู่ที่ตั้งไว้ ให้ระบบหาโปรแกรมเอง">ให้ระบบหาเอง</button><% } %>
+          </div>
+        </form>
+      </details>
+    </section>
+
+    <section class="card" id="drive">
+      <h2>คัดลอกไป Google Drive</h2>
+      <p class="muted small">ติดตั้งโปรแกรม Google Drive สำหรับคอมพิวเตอร์ (Google Drive for desktop) ในเครื่องที่เปิดระบบ แล้วเข้าสู่ระบบด้วยบัญชี Google ของโรงเรียน เครื่องจะมีโฟลเดอร์ Google Drive ขึ้นมา ระบบคัดลอกไฟล์ลงโฟลเดอร์นั้น แล้วโปรแกรมของ Google อัปโหลดขึ้น Drive ให้เอง ระบบไม่ต้องรู้รหัสผ่านบัญชี Google</p>
+      <p class="muted small">แยกโฟลเดอร์ให้เอง เช่น ภาคเรียน 2-2569 / วิทยาศาสตร์และเทคโนโลยี / ชื่อครู / แผนการจัดการเรียนรู้ / ว31101 ฟิสิกส์ 1.pdf</p>
+      <% if (driveInfo.dir) { %>
+        <% if (driveInfo.exists) { %>
+          <div class="alert alert-success"><%- icon('folder') %><span>คัดลอกไปที่ <%= driveInfo.dir %><br><small>มีสำเนาแล้ว <%= driveInfo.stats.works %> งาน<%= settings.drive_last_ok ? ' คัดลอกล่าสุด ' + util.thaiDateTime(settings.drive_last_ok) : '' %></small></span></div>
+        <% } else { %>
+          <div class="alert alert-warn"><%- icon('folder') %><span>ไม่พบโฟลเดอร์ <%= driveInfo.dir %> โปรแกรม Google Drive อาจยังไม่เปิด หรือออกจากระบบไปแล้ว</span></div>
+        <% } %>
+        <% if (settings.drive_last_error) { %>
+          <div class="alert alert-error"><%- icon('close') %><span>คัดลอกไม่สำเร็จครั้งล่าสุด <%= settings.drive_last_error %><br><small>แก้แล้วกดปุ่ม คัดลอกทั้งหมดตอนนี้</small></span></div>
+        <% } %>
+      <% } %>
+      <form method="post" action="/admin/drive" data-confirm="บันทึกการตั้งค่าคัดลอกไป Google Drive">
+        <div class="field">
+          <label for="drive_dir">โฟลเดอร์ปลายทางในเครื่องนี้</label>
+          <input type="text" id="drive_dir" name="drive_dir" value="<%= driveInfo.dir %>" placeholder="<%= process.platform === 'win32' ? 'เช่น G:\\My Drive\\ระบบส่งแผน' : 'เช่น /Users/ชื่อ/Library/CloudStorage/GoogleDrive-ชื่อบัญชี/My Drive/ระบบส่งแผน' %>">
+          <div class="hint">ถ้าโฟลเดอร์สุดท้ายยังไม่มี ระบบสร้างให้</div>
+        </div>
+        <% if (driveInfo.found) { %>
+          <% if (driveInfo.found.length) { %>
+            <p class="small" style="margin:0 0 6px">พบโฟลเดอร์ Google Drive ในเครื่องนี้ กดเพื่อใช้</p>
+            <div class="btn-row" style="margin-bottom:12px">
+              <% for (const d of driveInfo.found) { const target = d + (process.platform === 'win32' ? '\\' : '/') + 'ระบบส่งแผน'; %>
+                <button type="button" class="btn btn-ghost btn-sm" data-fill="drive_dir" data-value="<%= target %>"><%= target %></button>
+              <% } %>
+            </div>
+          <% } else { %>
+            <div class="alert alert-warn"><%- icon('search') %><span>ยังไม่พบโฟลเดอร์ Google Drive ในเครื่องนี้ ติดตั้งโปรแกรม Google Drive for desktop และเข้าสู่ระบบก่อน</span></div>
+          <% } %>
+        <% } %>
+        <div class="field">
+          <label for="drive_when">คัดลอกเมื่อไร</label>
+          <select id="drive_when" name="drive_when">
+            <% for (const [k, label] of Object.entries(driveInfo.when)) { %><option value="<%= k %>" <%= (settings.drive_when || 'submit') === k ? 'selected' : '' %>><%= label %></option><% } %>
+          </select>
+        </div>
+        <div class="btn-row">
+          <button class="btn btn-primary" type="submit">บันทึก</button>
+          <a class="btn btn-ghost" href="/admin/features?finddrive=1#drive"><%- icon('search', 18) %> หาโฟลเดอร์ Google Drive</a>
+          <% if (driveInfo.dir) { %>
+            <% if (ff.drivecopy) { %><button class="btn btn-ghost" type="submit" formaction="/admin/drive/sync" data-confirm="คัดลอกทุกงานที่ส่งแล้วไป Google Drive ตอนนี้ งานที่มีสำเนาล่าสุดแล้วจะข้ามไป" data-ok-label="คัดลอก">คัดลอกทั้งหมดตอนนี้</button><% } %>
+            <button class="btn btn-ghost" type="submit" name="clear" value="1" data-confirm="เลิกคัดลอกไป Google Drive สำเนาที่คัดลอกไว้แล้วยังอยู่ใน Drive" data-danger="1" data-ok-label="เลิกคัดลอก">เลิกคัดลอก</button>
+          <% } %>
+        </div>
+      </form>
+    </section>
+
+    <section class="card" id="line">
+      <h2>เชื่อมต่อ LINE</h2>
+      <p class="muted small">ใช้ LINE Official Account ของโรงเรียน (Messaging API) สร้างที่ developers.line.biz แล้วเชิญบัญชีเข้ากลุ่ม LINE ของผู้ตรวจ ระบบจะส่งสรุปงานที่รอลงนามเข้ากลุ่มทุกเช้า เครื่องที่ติดตั้งระบบต้องต่ออินเทอร์เน็ต</p>
+      <form method="post" action="/admin/line" data-confirm="บันทึกการตั้งค่า LINE">
+        <div class="field">
+          <label for="line_token">Channel access token</label>
+          <input type="password" id="line_token" name="line_token" autocomplete="off" placeholder="<%= settings.line_token ? 'บันทึกไว้แล้ว เว้นว่างไว้ถ้าไม่เปลี่ยน' : 'วางรหัสจาก LINE Developers' %>">
+        </div>
+        <div class="field">
+          <label for="line_to">รหัสกลุ่ม LINE ที่จะส่งเข้า (Group ID)</label>
+          <input type="text" id="line_to" name="line_to" value="<%= settings.line_to %>" placeholder="ขึ้นต้นด้วยตัว C">
+        </div>
+        <div class="field">
+          <label for="line_time">เวลาส่งทุกวัน</label>
+          <input type="time" id="line_time" name="line_time" value="<%= settings.line_time || '07:00' %>" style="max-width:160px">
+        </div>
+        <div class="btn-row">
+          <button class="btn btn-primary" type="submit">บันทึก</button>
+          <% if (lineReady) { %>
+            <button class="btn btn-ghost" type="submit" formaction="/admin/line/test" data-confirm="ส่งข้อความทดลองเข้ากลุ่ม LINE ตอนนี้" data-ok-label="ส่งทดลอง">ส่งทดลอง</button>
+            <button class="btn btn-ghost" type="submit" name="clear" value="1" data-confirm="ลบการเชื่อมต่อ LINE และปิดการส่งสรุปทุกเช้า" data-danger="1" data-ok-label="ลบ">ลบการเชื่อมต่อ</button>
+          <% } %>
+        </div>
+      </form>
+    </section>
+
+    <section class="card">
+      <h2>ประวัติการเปิดปิด</h2>
+      <% if (!log.length) { %><p class="muted">ยังไม่มีการเปลี่ยนแปลง</p><% } %>
+      <ul class="feed">
+        <% for (const l of log) { %>
+          <li><span class="fdot <%= /^(ปิด|ถอด|ลบ)/.test(l.action) ? 'return' : 'approve' %>"></span>
+            <span class="fbody"><b><%= l.action %></b><span><%= l.user_name %>  <%= util.thaiDateTime(l.at) %></span></span></li>
+        <% } %>
+      </ul>
+      <p class="muted small" style="margin-top:12px"><%- icon('shield', 16) %> ประวัตินี้แก้ไขหรือลบไม่ได้ แม้แต่ผู้ดูแลระบบ</p>
+    </section>
+  </div>
+</div>
+<%- include('../partials/bottom') %>

@@ -1,0 +1,26 @@
+<%- include('../partials/top') %>
+<% const T = wf.DOC_TYPES; %>
+<div class="narrow" style="max-width:900px">
+  <div class="page-head">
+    <div><h1>แบบประเมิน</h1><div class="sub">แยกแบบประเมินคู่มือรายวิชากับแผนการจัดการเรียนรู้</div></div>
+    <div class="actions"><a class="btn btn-ghost" href="/admin">กลับ</a></div>
+  </div>
+  <div class="tabs-inner" style="padding:0;margin-bottom:12px;background:#fff;border-radius:12px;box-shadow:var(--shadow)">
+    <% for (const k of ['plan', 'manual']) { %><a class="tab<%= type === k ? ' active' : '' %>" href="/admin/rubric?type=<%= k %>">แบบประเมิน<%= T[k].label %></a><% } %>
+  </div>
+  <form class="card" method="post" action="/admin/rubric">
+    <input type="hidden" name="type" value="<%= type %>">
+    <div class="field">
+      <label for="items">รายการประเมิน หนึ่งบรรทัดต่อหนึ่งข้อ</label>
+      <textarea id="items" name="items" style="min-height:420px"><%= items.map((it) => it.title).join('\n') %></textarea>
+      <div class="hint">ไม่ต้องพิมพ์เลขข้อ ระบบใส่ให้เอง</div>
+    </div>
+    <div class="field" style="max-width:240px">
+      <label for="max_score">คะแนนเต็มข้อละ</label>
+      <select id="max_score" name="max_score"><% for (const v of [5, 4, 3, 10]) { %><option value="<%= v %>" <%= maxScore === v ? 'selected' : '' %>><%= v %> คะแนน</option><% } %></select>
+    </div>
+    <p class="muted small">ระดับคุณภาพคิดจากร้อยละของคะแนนเต็ม: 90 ขึ้นไป ดีมาก 70 ถึง 89 ดี 50 ถึง 69 ปานกลาง 30 ถึง 49 พอใช้ ต่ำกว่า 30 ปรับปรุง<br>งานที่ให้คะแนนไปแล้วยังเก็บคะแนนตามแบบเดิมไว้</p>
+    <button class="btn btn-primary" type="submit" data-confirm="บันทึกแบบประเมิน<%= T[type].label %>">บันทึก</button>
+  </form>
+</div>
+<%- include('../partials/bottom') %>

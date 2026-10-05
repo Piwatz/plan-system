@@ -1,0 +1,201 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<title>ธีม I หน้าหลักครูบนคอม</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai+Looped:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<style>body{margin:0}</style>
+</helmet>
+<div style="width: 1440px; height: 900px; display: flex; overflow: hidden; box-sizing: border-box; background: {{p.bg}}; color: {{p.ink}}; font-family: 'Noto Sans Thai Looped', sans-serif; font-size: 16px; line-height: 1.55">
+
+  <aside style="width: 280px; flex: none; box-sizing: border-box; background: {{p.side}}; color: #FFFFFF; display: flex; flex-direction: column">
+    <div style="display: flex; align-items: center; gap: 12px; padding: 24px 22px 20px; border-bottom: 1px solid {{p.sideLine}}">
+      <span style="width: 48px; height: 48px; flex: none; border-radius: 50%; background: #F2C14E; color: {{p.side}}; display: flex; align-items: center; justify-content: center">
+        <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 5a2 2 0 0 1 2-2h13v16H6a2 2 0 0 0-2 2zM4 19V5M9 7h6"></path></svg>
+      </span>
+      <span style="display: flex; flex-direction: column; line-height: 1.3">
+        <b style="font-size: 19px; font-weight: 700">ระบบส่งแผนการสอน</b>
+        <span style="font-size: 14px; color: {{p.sideMuted}}">โรงเรียนของเรา</span>
+      </span>
+    </div>
+    <nav aria-label="เมนูหลัก" style="flex: 1; padding: 18px 14px; display: flex; flex-direction: column; gap: 4px">
+      <span style="padding: 0 10px 6px; font-size: 13px; color: {{p.sideMuted}}">ของฉัน</span>
+      <sc-for list="{{menu}}" as="m" hint-placeholder-count="6">
+        <button type="button" onClick="{{m.pick}}" style="height: 50px; padding: 0 14px; border: 0; border-radius: 12px; background: {{m.bg}}; color: {{m.fg}}; display: flex; align-items: center; gap: 12px; font: {{m.weight}} 16px/1 'Noto Sans Thai Looped', sans-serif; text-align: left; cursor: pointer">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{m.icon}}"></path></svg>
+          <span style="flex: 1">{{m.label}}</span>
+          <sc-if value="{{m.hasBadge}}" hint-placeholder-val="{{ false }}">
+            <span style="min-width: 26px; height: 24px; padding: 0 7px; box-sizing: border-box; border-radius: 12px; background: #F2C14E; color: #1B2A44; font: 700 13px/24px 'Noto Sans Thai Looped', sans-serif; text-align: center">{{m.badge}}</span>
+          </sc-if>
+        </button>
+      </sc-for>
+    </nav>
+    <div style="padding: 16px 16px 20px; border-top: 1px solid {{p.sideLine}}; display: flex; flex-direction: column; gap: 10px">
+      <span style="display: flex; flex-direction: column; padding: 0 4px 4px; line-height: 1.35">
+        <b style="font-size: 16px">นายสมชาย ใจดี</b>
+        <span style="font-size: 14px; color: {{p.sideMuted}}">ครูผู้สอน กลุ่มสาระวิทยาศาสตร์</span>
+      </span>
+      <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px">
+        <button type="button" onClick="{{toggleDark}}" aria-pressed="{{dark}}" style="height: 46px; border: 0; border-radius: 10px; background: {{p.sideBtn}}; color: #FFFFFF; display: flex; align-items: center; justify-content: center; gap: 6px; font: 600 14px/1 'Noto Sans Thai Looped', sans-serif; cursor: pointer">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 14.5A8 8 0 0 1 9.5 4 8 8 0 1 0 20 14.5z"></path></svg>
+          {{darkLabel}}
+        </button>
+        <button type="button" onClick="{{toggleBig}}" aria-pressed="{{big}}" style="height: 46px; border: 0; border-radius: 10px; background: {{p.sideBtn}}; color: #FFFFFF; display: flex; align-items: center; justify-content: center; gap: 4px; font: 600 14px/1 'Noto Sans Thai Looped', sans-serif; cursor: pointer">
+          <span style="font-size: 13px">ก</span><span style="font-size: 19px">ก</span> {{bigLabel}}
+        </button>
+      </div>
+      <button type="button" style="height: 46px; border: 0; border-radius: 10px; background: {{p.sideBtn}}; color: #FFFFFF; font: 600 15px/1 'Noto Sans Thai Looped', sans-serif; cursor: pointer">ออกจากระบบ</button>
+    </div>
+  </aside>
+
+  <main style="flex: 1; min-width: 0; overflow-y: auto">
+    <div style="zoom: {{zoom}}; padding: 30px 36px 36px; display: flex; flex-direction: column; gap: 22px">
+      <div style="display: flex; align-items: flex-end; justify-content: space-between; gap: 16px">
+        <div style="display: flex; flex-direction: column">
+          <span style="font-size: 15px; color: {{p.muted}}">ภาคเรียนที่ 2/2569</span>
+          <h1 style="margin: 0; font-size: 30px; font-weight: 700; line-height: 1.3">สวัสดี ครูสมชาย</h1>
+        </div>
+        <span style="padding: 10px 16px; border-radius: 12px; background: {{p.amberBg}}; border: 1px solid {{p.amberLine}}; color: {{p.amber}}; font-size: 15px; font-weight: 600">เหลืออีก 12 วัน ถึงกำหนดส่งคู่มือและแผน (30 ธ.ค.)</span>
+      </div>
+
+      <div style="display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 14px">
+        <sc-for list="{{stats}}" as="s" hint-placeholder-count="4">
+          <div style="border-radius: 16px; background: {{s.bg}}; border: 1px solid {{s.line}}; padding: 16px 18px; display: flex; flex-direction: column; gap: 4px">
+            <span style="font-size: 15px; font-weight: 600; color: {{s.fg}}">{{s.label}}</span>
+            <b style="font-size: 36px; line-height: 1.15; font-weight: 700; color: {{p.ink}}">{{s.value}}</b>
+            <span style="font-size: 14px; color: {{p.muted}}; padding-top: 6px; border-top: 1px dashed {{s.line}}">{{s.sub}}</span>
+          </div>
+        </sc-for>
+      </div>
+
+      <div style="display: grid; grid-template-columns: minmax(0, 2fr) minmax(0, 1fr); gap: 18px; align-items: start">
+        <section style="background: {{p.surface}}; border: 1px solid {{p.line}}; border-radius: 18px; box-shadow: {{p.shadow}}; overflow: hidden">
+          <div style="display: flex; align-items: center; justify-content: space-between; padding: 18px 20px">
+            <h2 style="margin: 0; font-size: 20px; font-weight: 700">รายวิชาของฉัน</h2>
+            <button type="button" style="height: 44px; padding: 0 16px; border: 1px solid {{p.line}}; border-radius: 10px; background: {{p.surface}}; color: {{p.ink}}; font: 600 15px/1 'Noto Sans Thai Looped', sans-serif; cursor: pointer">+ เพิ่มรายวิชา</button>
+          </div>
+          <div style="display: grid; grid-template-columns: minmax(0, 1.6fr) repeat(3, minmax(0, 1fr)) 112px; gap: 0; background: {{p.head}}; padding: 12px 20px; font-size: 14px; font-weight: 700; color: {{p.muted}}">
+            <span>รายวิชา</span><span>คู่มือรายวิชา</span><span>แผนการสอน</span><span>บันทึกหลังแผน</span><span></span>
+          </div>
+          <sc-for list="{{rows}}" as="r" hint-placeholder-count="3">
+            <div style="display: grid; grid-template-columns: minmax(0, 1.6fr) repeat(3, minmax(0, 1fr)) 112px; align-items: center; padding: 14px 20px; border-top: 1px solid {{p.line}}">
+              <span style="display: flex; flex-direction: column; line-height: 1.35">
+                <b style="font-size: 16px">{{r.code}}</b>
+                <span style="font-size: 14px; color: {{p.muted}}">{{r.name}}</span>
+              </span>
+              <sc-for list="{{r.cells}}" as="c" hint-placeholder-count="3">
+                <span><span style="display: inline-flex; padding: 4px 10px; border-radius: 8px; background: {{c.bg}}; color: {{c.fg}}; font-size: 14px; font-weight: 600">{{c.text}}</span></span>
+              </sc-for>
+              <button type="button" style="height: 40px; border: 0; border-radius: 10px; background: {{r.btnBg}}; color: {{r.btnFg}}; font: 600 14px/1 'Noto Sans Thai Looped', sans-serif; cursor: pointer">{{r.action}}</button>
+            </div>
+          </sc-for>
+        </section>
+
+        <section style="background: {{p.surface}}; border: 1px solid {{p.line}}; border-radius: 18px; box-shadow: {{p.shadow}}; padding: 18px 20px; display: flex; flex-direction: column; gap: 12px">
+          <h2 style="margin: 0; font-size: 20px; font-weight: 700">ความเคลื่อนไหวล่าสุด</h2>
+          <sc-for list="{{feed}}" as="f" hint-placeholder-count="3">
+            <div style="display: flex; gap: 12px">
+              <span style="width: 12px; height: 12px; margin-top: 6px; flex: none; border-radius: 50%; background: {{f.dot}}"></span>
+              <span style="display: flex; flex-direction: column; line-height: 1.45">
+                <span style="font-weight: 600">{{f.title}}</span>
+                <span style="font-size: 14px; color: {{p.muted}}">{{f.sub}}</span>
+              </span>
+            </div>
+          </sc-for>
+        </section>
+      </div>
+
+      <div style="background: {{p.surface}}; border: 1px solid {{p.line}}; border-radius: 18px; box-shadow: {{p.shadow}}; padding: 16px 20px; display: flex; align-items: center; justify-content: space-between; gap: 16px">
+        <div style="display: flex; flex-direction: column; line-height: 1.5">
+          <b style="color: {{p.amber}}">ยังส่งไม่ครบ 3 รายการ</b>
+          <span style="font-size: 15px; color: {{p.ink}}">คู่มือ ว30207 รอแก้ไข  แผน ว30207 และคู่มือ ว22201 ยังไม่ส่ง</span>
+        </div>
+        <div style="display: flex; gap: 10px">
+          <button type="button" style="height: 50px; padding: 0 22px; border: 0; border-radius: 12px; background: {{p.primary}}; color: #FFFFFF; font: 700 16px/1 'Noto Sans Thai Looped', sans-serif; cursor: pointer">ส่งงานใหม่</button>
+          <button type="button" style="height: 50px; padding: 0 22px; border: 1px solid {{p.line}}; border-radius: 12px; background: {{p.surface}}; color: {{p.ink}}; font: 600 16px/1 'Noto Sans Thai Looped', sans-serif; cursor: pointer">วิธีใช้งาน</button>
+        </div>
+      </div>
+    </div>
+  </main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":900}}'>
+const LIGHT = {
+  bg: '#EEF2F7', surface: '#FFFFFF', ink: '#0F1E33', muted: '#4E5F78', line: '#D6DEE9', head: '#F4F7FB', primary: '#1D3A66',
+  shadow: '0 1px 2px rgba(15,30,51,.05), 0 4px 14px rgba(15,30,51,.05)',
+  side: '#1B3762', sideLine: 'rgba(255,255,255,.12)', sideMuted: '#B9C7DB', sideBtn: '#152E55', sideActiveBg: '#FFFFFF', sideActiveFg: '#1B3762',
+  amber: '#8A5A00', amberBg: '#FFF5E1', amberLine: '#F1D9A4',
+  green: ['#E7F6EC', '#BFE3C9', '#1B7343'], blue: ['#EAF1FB', '#C5D6EE', '#1D4F99'], orange: ['#FFF0E8', '#F5CDB4', '#B0341F'], gray: ['#F4F6F9', '#D6DEE9', '#4E5F78'],
+};
+const DARK = {
+  bg: '#0C1626', surface: '#142139', ink: '#E9EFF8', muted: '#A3B3CA', line: '#25344F', head: '#18274A', primary: '#3D6BC0',
+  shadow: '0 1px 0 rgba(255,255,255,.03), 0 10px 26px rgba(0,0,0,.35)',
+  side: '#08111F', sideLine: 'rgba(255,255,255,.08)', sideMuted: '#9AABC4', sideBtn: '#13203A', sideActiveBg: '#1F3966', sideActiveFg: '#FFFFFF',
+  amber: '#F2C46B', amberBg: '#33280F', amberLine: '#5E4A1A',
+  green: ['#13301F', '#245238', '#86D9A8'], blue: ['#152846', '#284A7A', '#9CC0F7'], orange: ['#3A2016', '#6B3A26', '#FFA48F'], gray: ['#172440', '#2A3A58', '#B3C1D6'],
+};
+const ICON = {
+  home: 'M3 10.5 12 3l9 7.5V20a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z',
+  send: 'M12 16V4m0 0-4 4m4-4 4 4M4 15v4a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-4',
+  inbox: 'M3 13h5l1.5 3h5L16 13h5M5 5h14l2 8v6a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1v-6z',
+  note: 'M4 20h4L19 9l-4-4L4 16zM13 7l4 4',
+  chart: 'M4 20V10M10 20V4M16 20v-7M21 20H3',
+  user: 'M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM4 21c1.5-4 4.5-6 8-6s6.5 2 8 6',
+};
+const MENU = [['home', 'หน้าหลัก', ''], ['send', 'ส่งคู่มือและแผน', ''], ['inbox', 'รอตรวจ', '12'], ['note', 'บันทึกหลังแผน', '2'], ['chart', 'สถิติ', ''], ['user', 'ข้อมูลส่วนตัว', '']];
+
+class Component extends DCLogic {
+  renderVals() {
+    const st = this.state || {};
+    const dark = Boolean(st.dark);
+    const big = Boolean(st.big);
+    const p = dark ? DARK : LIGHT;
+    const active = st.menu || 'home';
+    const tone = (k) => ({ bg: p[k][0], line: p[k][1], fg: p[k][2] });
+    const pill = (k, text) => ({ text, bg: p[k][0], fg: p[k][2] });
+    return {
+      p,
+      dark,
+      big,
+      zoom: big ? 1.12 : 1,
+      darkLabel: dark ? 'โหมดกลางวัน' : 'โหมดกลางคืน',
+      bigLabel: big ? 'ตัวปกติ' : 'ตัวใหญ่',
+      toggleDark: () => this.setState({ dark: !dark }),
+      toggleBig: () => this.setState({ big: !big }),
+      menu: MENU.map(([k, label, badge]) => ({
+        label,
+        icon: ICON[k],
+        badge,
+        hasBadge: Boolean(badge),
+        pick: () => this.setState({ menu: k }),
+        bg: k === active ? p.sideActiveBg : 'transparent',
+        fg: k === active ? p.sideActiveFg : '#FFFFFF',
+        weight: k === active ? '700' : '500',
+      })),
+      stats: [
+        Object.assign({ label: 'ส่งแล้ว', value: '4 / 6', sub: 'คู่มือ 2 แผน 2 ชิ้น' }, tone('green')),
+        Object.assign({ label: 'รอผู้ตรวจ', value: '2', sub: 'อยู่ที่ รองผู้อำนวยการ' }, tone('blue')),
+        Object.assign({ label: 'ต้องแก้ไข', value: '1', sub: 'คู่มือ ว30207' }, tone('orange')),
+        Object.assign({ label: 'บันทึกหลังแผน', value: '5', sub: 'ยังไม่ส่ง 2 ฉบับ' }, tone('gray')),
+      ],
+      rows: [
+        { code: 'ว30203', name: 'ฟิสิกส์เพิ่มเติม 3  ม.5', cells: [pill('green', 'ผ่านแล้ว 95'), pill('blue', 'รอ รอง ผอ.'), pill('gray', '5 ฉบับ')], action: 'เขียนบันทึก', btnBg: p.head, btnFg: p.ink },
+        { code: 'ว30207', name: 'ฟิสิกส์ 1  ม.4', cells: [pill('orange', 'ส่งกลับแก้ไข'), pill('gray', 'ยังไม่ส่ง'), pill('gray', 'ยังไม่มี')], action: 'แก้ไข', btnBg: p.primary, btnFg: '#FFFFFF' },
+        { code: 'ว22201', name: 'โครงงานวิทยาศาสตร์ 1  ม.2', cells: [pill('gray', 'ยังไม่ส่ง'), pill('gray', 'ยังไม่ส่ง'), pill('gray', 'ยังไม่มี')], action: 'ส่งงาน', btnBg: p.primary, btnFg: '#FFFFFF' },
+      ],
+      feed: [
+        { title: 'คู่มือ ว30207 ถูกส่งกลับ', sub: 'หัวหน้ากลุ่มบริหารวิชาการ  2 ชั่วโมงก่อน', dot: p.orange[2] },
+        { title: 'ผอ. อนุญาตคู่มือ ว30203', sub: 'ได้ 95 คะแนน ระดับดีมาก  เมื่อวาน', dot: p.green[2] },
+        { title: 'แผน ว30203 ผ่านฝ่ายวิชาการ', sub: 'ส่งต่อให้รองผู้อำนวยการ  2 วันก่อน', dot: p.blue[2] },
+      ],
+    };
+  }
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,20 @@
+<div class="stepper">
+  <div class="step teacher">
+    <div class="dot"><%- icon('user', 18) %></div>
+    <div class="name">ครูผู้สอน</div>
+    <div class="meta"><%= sub.submitted_at ? 'ส่ง ' + util.thaiDate(sub.submitted_at, true) : 'ยังไม่ได้ส่ง' %></div>
+  </div>
+  <% steps.forEach((st, i) => { %>
+    <div class="step <%= st.state %>">
+      <div class="dot"><%= st.state === 'done' ? '✓' : st.state === 'returned' ? '!' : st.state === 'skipped' ? '›' : i + 1 %></div>
+      <div class="name"><%= st.label %></div>
+      <div class="meta">
+        <% if (st.state === 'done' && st.review) { %><%= st.review.action === 'override' ? 'ผู้ดูแลระบบดำเนินการแทน' : st.review.user_name %><br><%= util.thaiDate(st.review.created_at, true) %>
+        <% } else if (st.state === 'current') { %><b class="wait">กำลังรอ</b><% if (st.people.length) { %><br><%= st.people.map((u) => u.full_name).join(' หรือ ') %><% } else { %><br><span class="back">ยังไม่มีผู้รับผิดชอบ</span><% } %>
+        <% } else if (st.state === 'returned') { %><span class="back">ส่งกลับให้แก้ไข</span>
+        <% } else if (st.state === 'skipped') { %>ข้ามระดับนี้
+        <% } else { %>รอถึงคิว<% } %>
+      </div>
+    </div>
+  <% }) %>
+</div>

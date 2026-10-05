@@ -1,0 +1,85 @@
+<%- include('partials/top') %>
+<% const T = wf.DOC_TYPES; const qs = new URLSearchParams({ ...query, type, year: term.year, semester: term.semester }).toString(); %>
+<div class="page-head">
+  <div>
+    <h1>ทะเบียนงาน</h1>
+    <div class="sub"><%= regScope.all ? 'งานที่ส่งแล้วทั้งโรงเรียน' : 'งานที่ส่งแล้วในกลุ่มสาระของคุณ' %> ไม่รวมฉบับร่าง</div>
+  </div>
+  <div class="actions"><a class="btn btn-ghost" href="/registry.csv?<%= qs %>">ส่งออกเป็นไฟล์ Excel (CSV)</a></div>
+</div>
+
+<div class="tabs-inner" style="padding:0;margin-bottom:12px;background:#fff;border-radius:12px;box-shadow:var(--shadow)">
+  <% for (const k of Object.keys(T)) { %>
+    <a class="tab<%= type === k ? ' active' : '' %>" href="/registry?type=<%= k %>&year=<%= term.year %>&semester=<%= term.semester %>"><%= T[k].label %></a>
+  <% } %>
+</div>
+
+<form method="get" class="card filters" data-autosubmit>
+  <input type="hidden" name="type" value="<%= type %>">
+  <div class="field">
+    <label for="term-sel">ภาคเรียน</label>
+    <select id="term-sel" name="term" data-term>
+      <% for (const t of terms) { %><option value="<%= t.year %>-<%= t.semester %>" <%= t.year === term.year && t.semester === term.semester ? 'selected' : '' %>>ภาคเรียนที่ <%= t.semester %>/<%= t.year %></option><% } %>
+    </select>
+    <input type="hidden" name="year" value="<%= term.year %>"><input type="hidden" name="semester" value="<%= term.semester %>">
+  </div>
+  <% if (departments.length) { %>
+    <div class="field">
+      <label for="dept">กลุ่มสาระ</label>
+      <select id="dept" name="department">
+        <option value="">ทุกกลุ่มสาระ</option>
+        <% for (const d of departments) { %><option value="<%= d.id %>" <%= Number(query.department) === d.id ? 'selected' : '' %>><%= d.name %></option><% } %>
+      </select>
+    </div>
+  <% } %>
+  <div class="field">
+    <label for="status">สถานะ</label>
+    <select id="status" name="status">
+      <option value="">ทุกสถานะ</option>
+      <option value="pending" <%= query.status === 'pending' ? 'selected' : '' %>>รอตรวจ (ทุกระดับ)</option>
+      <% for (const st of steps) { %><option value="step:<%= st.role %>" <%= query.status === 'step:' + st.role ? 'selected' : '' %>>รอ<%= st.label %></option><% } %>
+      <option value="returned" <%= query.status === 'returned' ? 'selected' : '' %>>ส่งกลับแก้ไข</option>
+      <option value="approved" <%= query.status === 'approved' ? 'selected' : '' %>>ผ่านครบแล้ว</option>
+    </select>
+  </div>
+  <div class="field grow">
+    <label for="q">ค้นหา</label>
+    <input type="search" id="q" name="q" value="<%= query.q || '' %>" placeholder="ชื่อครู รหัสวิชา ชื่อวิชา">
+  </div>
+  <button class="btn btn-primary" type="submit">ค้นหา</button>
+</form>
+
+<div class="card">
+  <div class="card-head"><h3>พบ <%= rows.length %> รายการ</h3></div>
+  <% if (!rows.length) { %>
+    <div class="empty"><span class="big"></span>ไม่พบงานตามเงื่อนไขนี้</div>
+  <% } else { %>
+    <div class="table-wrap"><table class="table">
+      <thead><tr>
+        <th>#</th><th>ครูผู้สอน</th><th class="hide-sm">กลุ่มสาระ</th><th>รายวิชา</th>
+        <% if (type === 'note') { %><th>แผนที่</th><th class="hide-sm">วันที่สอน</th><% } else { %><th class="hide-sm">ชั้น</th><th>คะแนน</th><% } %>
+        <th>สถานะ</th><th></th>
+      </tr></thead>
+      <tbody>
+      <% rows.forEach((s, i) => { %>
+        <tr>
+          <td class="muted"><%= i + 1 %></td>
+          <td><%= s.teacher_name %></td>
+          <td class="hide-sm"><%= s.dept_name %></td>
+          <td><b><%= s.subject_code %></b> <%= s.subject_name %></td>
+          <% if (type === 'note') { %>
+            <td><%= s.plan_no %><%= s.topic ? ' ' + s.topic : '' %></td>
+            <td class="hide-sm nowrap"><%= util.thaiDate(s.teach_date, true) %></td>
+          <% } else { %>
+            <td class="hide-sm"><%= s.grade_level %></td>
+            <td class="nowrap"><%= s.score_max ? s.score_total + '/' + s.score_max + ' ' + wf.scoreLevel(s.score_total / s.score_max * 100) : '-' %></td>
+          <% } %>
+          <td><%- include('partials/status', { s }) %></td>
+          <td class="right"><a class="btn btn-sm btn-ghost" href="/s/<%= s.id %>">เปิด</a></td>
+        </tr>
+      <% }) %>
+      </tbody>
+    </table></div>
+  <% } %>
+</div>
+<%- include('partials/bottom') %>

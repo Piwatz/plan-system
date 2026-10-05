@@ -1,0 +1,35 @@
+<%- include('partials/top', { bare: true }) %>
+<div class="login-wrap">
+  <div class="login-card" style="width:min(520px,100%)">
+    <div class="logo"></div>
+    <h1 class="center" style="margin:10px 0 2px">ตั้งค่าครั้งแรก</h1>
+    <p class="center muted">สร้างบัญชีผู้ดูแลระบบ จากนั้นจึงเพิ่มรายชื่อครูและผู้ตรวจ</p>
+    <% if (error) { %><div class="alert alert-error"><%= error %></div><% } %>
+    <form method="post" action="/setup">
+      <div class="field">
+        <label for="school_name">ชื่อโรงเรียน <span class="req">*</span></label>
+        <input type="text" id="school_name" name="school_name" value="<%= form.school_name || '' %>" placeholder="เช่น โรงเรียนตัวอย่างวิทยา" required>
+      </div>
+      <div class="field">
+        <label for="full_name">ชื่อ สกุล ของผู้ดูแลระบบ <span class="req">*</span></label>
+        <input type="text" id="full_name" name="full_name" value="<%= form.full_name || '' %>" required>
+      </div>
+      <div class="field">
+        <label for="username">ชื่อผู้ใช้สำหรับเข้าระบบ <span class="req">*</span></label>
+        <input type="text" id="username" name="username" value="<%= form.username || '' %>" autocomplete="username" autocapitalize="none" required>
+      </div>
+      <div class="form-grid">
+        <div class="field">
+          <label for="password">รหัสผ่าน <span class="req">*</span></label>
+          <input type="password" id="password" name="password" autocomplete="new-password" minlength="6" required>
+        </div>
+        <div class="field">
+          <label for="password2">ยืนยันรหัสผ่าน <span class="req">*</span></label>
+          <input type="password" id="password2" name="password2" autocomplete="new-password" minlength="6" required>
+        </div>
+      </div>
+      <button class="btn btn-primary btn-lg btn-block" type="submit">เริ่มใช้งาน</button>
+    </form>
+  </div>
+</div>
+<%- include('partials/bottom', { bare: true }) %>

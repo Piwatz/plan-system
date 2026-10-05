@@ -1,0 +1,10 @@
+<form method="get" class="inline-form" data-autosubmit>
+  <% for (const [k, v] of Object.entries(locals.keep || {})) { if (v) { %><input type="hidden" name="<%= k %>" value="<%= v %>"><% } } %>
+  <select name="term" aria-label="ภาคเรียน" style="width:auto" data-term>
+    <% for (const t of terms) { %>
+      <option value="<%= t.year %>-<%= t.semester %>" <%= t.year === term.year && t.semester === term.semester ? 'selected' : '' %>>ภาคเรียนที่ <%= t.semester %>/<%= t.year %></option>
+    <% } %>
+  </select>
+  <input type="hidden" name="year" value="<%= term.year %>">
+  <input type="hidden" name="semester" value="<%= term.semester %>">
+</form>

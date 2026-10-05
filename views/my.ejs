@@ -1,0 +1,68 @@
+<%- include('partials/top') %>
+<% const T = wf.DOC_TYPES; %>
+<div class="page-head">
+  <div>
+    <h1>งานของฉัน</h1>
+    <div class="sub">แต่ละรายวิชาส่งแผนการจัดการเรียนรู้และคู่มือรายวิชาแยกกัน แล้วเขียนบันทึกหลังแผนทีละแผน</div>
+  </div>
+  <div class="actions">
+    <%- include('partials/term_select') %>
+    <% if (isCurrent) { %>
+      <% if (canPlan) { %><a class="btn btn-primary" href="/works/new?type=plan">ส่งแผน</a><% } %>
+      <a class="btn btn-ghost" href="/works/new?type=manual">ส่งคู่มือรายวิชา</a>
+    <% } %>
+  </div>
+</div>
+
+<% if (isCurrent && !window.open) { %>
+  <div class="alert alert-warn"><%= window.reason %> ยังบันทึกร่างไว้ก่อนได้ งานที่ถูกส่งกลับให้แก้ไขยังส่งใหม่ได้ตามปกติ</div>
+<% } %>
+
+<% if (!subjects.length) { %>
+  <div class="card"><div class="empty"><span class="big"></span>ยังไม่มีงานในภาคเรียนนี้<br>เริ่มจากกด <b>ส่งคู่มือรายวิชา</b> หรือ <b>ส่งแผน</b> ของแต่ละรายวิชา</div></div>
+<% } %>
+
+<% for (const s of subjects) { %>
+  <div class="card">
+    <div class="card-head">
+      <h2><%= s.code %> <%= s.name %></h2>
+      <% if (s.grade) { %><span class="badge badge-brand"><%= s.grade %></span><% } %>
+    </div>
+    <div class="table-wrap"><table class="table">
+      <tbody>
+        <% for (const type of ['plan', 'manual']) { const w = s[type]; %>
+          <tr>
+            <td style="width:34%"><b><%= T[type].label %></b></td>
+            <% if (w) { %>
+              <td><%- include('partials/status', { s: w }) %>
+                <% if (w.score_max) { %> <span class="badge badge-blue">คะแนน <%= w.score_total %>/<%= w.score_max %> <%= wf.scoreLevel(w.score_total / w.score_max * 100) %></span><% } %>
+              </td>
+              <td class="right nowrap">
+                <a class="btn btn-sm <%= w.status === 'returned' ? 'btn-danger' : 'btn-ghost' %>" href="/s/<%= w.id %>"><%= w.status === 'returned' ? 'แก้ไข' : w.status === 'draft' ? 'เปิดร่าง' : 'ดูรายละเอียด' %></a>
+              </td>
+            <% } else { %>
+              <td><span class="muted"><%= type === 'plan' && !canPlan ? 'ไม่ต้องส่ง ส่งแผนเฉพาะวิชาหลัก' : 'ยังไม่ได้ส่ง' %></span></td>
+              <td class="right nowrap"><% if (isCurrent && (type !== 'plan' || canPlan)) { const other = s.manual || s.plan; %><a class="btn btn-sm btn-primary" href="/works/new?type=<%= type %><%= other ? '&from=' + other.id : '' %>">ส่ง<%= T[type].label %></a><% } %></td>
+            <% } %>
+          </tr>
+        <% } %>
+        <tr>
+          <td><b>บันทึกหลังแผน</b></td>
+          <% if (s.plan && s.plan.status !== 'draft') { %>
+            <td>
+              <%= s.plan.note_total %> ฉบับ <span class="muted">ลงนามครบ <%= s.plan.note_done %></span>
+              <% if (s.plan.note_todo) { %> <span class="badge badge-gray">ร่างหรือรอแก้ <%= s.plan.note_todo %></span><% } %>
+            </td>
+            <td class="right nowrap">
+              <a class="btn btn-sm btn-ghost" href="/s/<%= s.plan.id %>#notes">ดูทั้งหมด</a>
+              <a class="btn btn-sm btn-warn" href="/notes/new?plan=<%= s.plan.id %>">เขียนบันทึก</a>
+            </td>
+          <% } else { %>
+            <td colspan="2"><span class="muted">เขียนได้หลังจากส่งแผนการจัดการเรียนรู้ของวิชานี้แล้ว</span></td>
+          <% } %>
+        </tr>
+      </tbody>
+    </table></div>
+  </div>
+<% } %>
+<%- include('partials/bottom') %>

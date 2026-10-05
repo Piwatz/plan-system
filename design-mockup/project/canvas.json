@@ -1,0 +1,596 @@
+{
+  "v": 3,
+  "attachments": {},
+  "boards": {
+    "AdminFeatures.dc.html": {
+      "h": 900,
+      "is_interactive": true,
+      "radius": 20,
+      "title": "ผู้ดูแลระบบ ฟังก์ชันเสริม (กดสวิตช์ และแก้คลังประโยค)",
+      "w": 1440,
+      "x": 4000,
+      "y": 3760
+    },
+    "BentoHome.dc.html": {
+      "h": 844,
+      "is_interactive": true,
+      "radius": 40,
+      "title": "แนว 1 Bento ขาวดำแดง (กดปุ่ม + แดง)",
+      "w": 390,
+      "x": 4000,
+      "y": 320
+    },
+    "HeroHome.dc.html": {
+      "h": 844,
+      "is_interactive": true,
+      "radius": 40,
+      "title": "แนว 4 แอปธนาคาร (ปัดรายวิชา)",
+      "w": 390,
+      "x": 5410,
+      "y": 320
+    },
+    "HomeB.dc.html": {
+      "h": 844,
+      "is_interactive": true,
+      "radius": 40,
+      "title": "ธีม B ครู หน้าแรก (มือถือ)",
+      "w": 390,
+      "x": 0,
+      "y": 1564
+    },
+    "HomeC.dc.html": {
+      "h": 844,
+      "is_interactive": true,
+      "radius": 40,
+      "title": "ธีม C ครู หน้าแรก (มือถือ)",
+      "w": 390,
+      "x": 0,
+      "y": 2808
+    },
+    "HomeD.dc.html": {
+      "h": 844,
+      "is_interactive": true,
+      "radius": 40,
+      "title": "ธีม D ครู หน้าแรก (มือถือ)",
+      "w": 390,
+      "x": 0,
+      "y": 4052
+    },
+    "HomeE.dc.html": {
+      "h": 844,
+      "is_interactive": true,
+      "radius": 40,
+      "title": "ธีม E ครู หน้าแรก (มือถือ)",
+      "w": 390,
+      "x": 0,
+      "y": 5296
+    },
+    "HomeF.dc.html": {
+      "h": 844,
+      "is_interactive": true,
+      "radius": 40,
+      "title": "ธีม F ครู หน้าแรก (มือถือ)",
+      "w": 390,
+      "x": 0,
+      "y": 6540
+    },
+    "HomeG.dc.html": {
+      "h": 844,
+      "is_interactive": true,
+      "radius": 40,
+      "title": "ธีม G ครู หน้าแรก (มือถือ)",
+      "w": 390,
+      "x": 0,
+      "y": 7784
+    },
+    "HomeH.dc.html": {
+      "h": 844,
+      "is_interactive": true,
+      "radius": 40,
+      "title": "ธีม H ครู หน้าแรก (มือถือ)",
+      "w": 390,
+      "x": 0,
+      "y": 9028
+    },
+    "HomeI.dc.html": {
+      "h": 844,
+      "is_interactive": true,
+      "radius": 40,
+      "title": "ธีม I ครู หน้าแรก (มือถือ)",
+      "w": 390,
+      "x": 5520,
+      "y": 1520
+    },
+    "HomeJ.dc.html": {
+      "h": 844,
+      "is_interactive": true,
+      "radius": 40,
+      "title": "ธีม J ครู หน้าแรก (กลางคืน)",
+      "w": 390,
+      "x": 5260,
+      "y": 2520
+    },
+    "JourneyHome.dc.html": {
+      "h": 844,
+      "is_interactive": true,
+      "radius": 40,
+      "title": "แนว 3 ติดตามงานแบบพัสดุ (แตะการ์ด)",
+      "w": 390,
+      "x": 4940,
+      "y": 320
+    },
+    "Main.dc.html": {
+      "h": 844,
+      "is_interactive": true,
+      "radius": 40,
+      "title": "ธีม A ครู หน้าแรก (มือถือ)",
+      "w": 390,
+      "x": 0,
+      "y": 320
+    },
+    "NavyDesk.dc.html": {
+      "h": 900,
+      "is_interactive": true,
+      "radius": 20,
+      "title": "ธีม I บนคอม แถบเมนูข้าง (กด โหมดกลางคืน และ ตัวใหญ่)",
+      "w": 1440,
+      "x": 4000,
+      "y": 1520
+    },
+    "NoteHowTo.dc.html": {
+      "h": 960,
+      "radius": 20,
+      "title": "ประโยคสำเร็จรูป ใช้อย่างไร ทีละขั้น",
+      "w": 1780,
+      "x": 4000,
+      "y": 5040
+    },
+    "NoteWrite.dc.html": {
+      "h": 844,
+      "is_interactive": true,
+      "radius": 40,
+      "title": "ครูเขียนบันทึกหลังแผน พิมพ์ในระบบ (สลับวิธีเขียนด้านบนได้)",
+      "w": 390,
+      "x": 5520,
+      "y": 3760
+    },
+    "NoteWriteFile.dc.html": {
+      "h": 844,
+      "is_interactive": true,
+      "radius": 40,
+      "title": "ครูแนบไฟล์บันทึกหลังแผนของตัวเอง (แตะ เปลี่ยน)",
+      "w": 390,
+      "x": 6460,
+      "y": 3760
+    },
+    "NoteWriteOff.dc.html": {
+      "h": 844,
+      "is_interactive": true,
+      "radius": 40,
+      "title": "ตอนแอดมินปิดประโยคสำเร็จรูปและการแนบไฟล์",
+      "w": 390,
+      "x": 5990,
+      "y": 3760
+    },
+    "QuickSign.dc.html": {
+      "h": 844,
+      "is_interactive": true,
+      "radius": 40,
+      "title": "ผู้ตรวจ ลงนามแบบไล่การ์ด (กด ลงนาม)",
+      "w": 390,
+      "x": 5880,
+      "y": 320
+    },
+    "QuickSignCard.dc.html": {
+      "h": 520,
+      "radius": 26,
+      "title": "ชิ้นส่วนการ์ดที่ใช้ในหน้าลงนาม",
+      "w": 358,
+      "x": 6350,
+      "y": 320
+    },
+    "Review.dc.html": {
+      "h": 820,
+      "is_interactive": true,
+      "radius": 24,
+      "title": "ธีม A ผู้ตรวจ ดูไฟล์และให้คะแนน (ไอแพด คอม)",
+      "w": 1180,
+      "x": 470,
+      "y": 320
+    },
+    "ReviewB.dc.html": {
+      "h": 820,
+      "is_interactive": true,
+      "radius": 24,
+      "title": "ธีม B ผู้ตรวจ ดูไฟล์และให้คะแนน (ไอแพด คอม)",
+      "w": 1180,
+      "x": 470,
+      "y": 1564
+    },
+    "ReviewC.dc.html": {
+      "h": 820,
+      "is_interactive": true,
+      "radius": 24,
+      "title": "ธีม C ผู้ตรวจ ดูไฟล์และให้คะแนน (ไอแพด คอม)",
+      "w": 1180,
+      "x": 470,
+      "y": 2808
+    },
+    "ReviewD.dc.html": {
+      "h": 820,
+      "is_interactive": true,
+      "radius": 24,
+      "title": "ธีม D ผู้ตรวจ ดูไฟล์และให้คะแนน (ไอแพด คอม)",
+      "w": 1180,
+      "x": 470,
+      "y": 4052
+    },
+    "ReviewE.dc.html": {
+      "h": 820,
+      "is_interactive": true,
+      "radius": 24,
+      "title": "ธีม E ผู้ตรวจ ดูไฟล์และให้คะแนน (ไอแพด คอม)",
+      "w": 1180,
+      "x": 470,
+      "y": 5296
+    },
+    "ReviewF.dc.html": {
+      "h": 820,
+      "is_interactive": true,
+      "radius": 24,
+      "title": "ธีม F ผู้ตรวจ ดูไฟล์และให้คะแนน (ไอแพด คอม)",
+      "w": 1180,
+      "x": 470,
+      "y": 6540
+    },
+    "ReviewG.dc.html": {
+      "h": 820,
+      "is_interactive": true,
+      "radius": 24,
+      "title": "ธีม G ผู้ตรวจ ดูไฟล์และให้คะแนน (ไอแพด คอม)",
+      "w": 1180,
+      "x": 470,
+      "y": 7784
+    },
+    "ReviewH.dc.html": {
+      "h": 820,
+      "is_interactive": true,
+      "radius": 24,
+      "title": "ธีม H ผู้ตรวจ ดูไฟล์และให้คะแนน (ไอแพด คอม)",
+      "w": 1180,
+      "x": 470,
+      "y": 9028
+    },
+    "ReviewI.dc.html": {
+      "h": 820,
+      "is_interactive": true,
+      "radius": 24,
+      "title": "ธีม I ผู้ตรวจ ดูไฟล์และให้คะแนน",
+      "w": 1180,
+      "x": 4000,
+      "y": 2520
+    },
+    "ReviewJ.dc.html": {
+      "h": 820,
+      "is_interactive": true,
+      "radius": 24,
+      "title": "ธีม J ผู้ตรวจ ดูไฟล์และให้คะแนน (กลางคืน)",
+      "w": 1180,
+      "x": 6200,
+      "y": 2520
+    },
+    "ReviewPhone.dc.html": {
+      "h": 844,
+      "is_interactive": true,
+      "radius": 40,
+      "title": "ธีม A ผู้ตรวจ บนมือถือ",
+      "w": 390,
+      "x": 1730,
+      "y": 320
+    },
+    "ReviewPhoneB.dc.html": {
+      "h": 844,
+      "is_interactive": true,
+      "radius": 40,
+      "title": "ธีม B ผู้ตรวจ บนมือถือ",
+      "w": 390,
+      "x": 1730,
+      "y": 1564
+    },
+    "ReviewPhoneC.dc.html": {
+      "h": 844,
+      "is_interactive": true,
+      "radius": 40,
+      "title": "ธีม C ผู้ตรวจ บนมือถือ",
+      "w": 390,
+      "x": 1730,
+      "y": 2808
+    },
+    "ReviewPhoneD.dc.html": {
+      "h": 844,
+      "is_interactive": true,
+      "radius": 40,
+      "title": "ธีม D ผู้ตรวจ บนมือถือ",
+      "w": 390,
+      "x": 1730,
+      "y": 4052
+    },
+    "ReviewPhoneE.dc.html": {
+      "h": 844,
+      "is_interactive": true,
+      "radius": 40,
+      "title": "ธีม E ผู้ตรวจ บนมือถือ",
+      "w": 390,
+      "x": 1730,
+      "y": 5296
+    },
+    "ReviewPhoneF.dc.html": {
+      "h": 844,
+      "is_interactive": true,
+      "radius": 40,
+      "title": "ธีม F ผู้ตรวจ บนมือถือ",
+      "w": 390,
+      "x": 1730,
+      "y": 6540
+    },
+    "ReviewPhoneG.dc.html": {
+      "h": 844,
+      "is_interactive": true,
+      "radius": 40,
+      "title": "ธีม G ผู้ตรวจ บนมือถือ",
+      "w": 390,
+      "x": 1730,
+      "y": 7784
+    },
+    "ReviewPhoneH.dc.html": {
+      "h": 844,
+      "is_interactive": true,
+      "radius": 40,
+      "title": "ธีม H ผู้ตรวจ บนมือถือ",
+      "w": 390,
+      "x": 1730,
+      "y": 9028
+    },
+    "ReviewPhoneI.dc.html": {
+      "h": 844,
+      "is_interactive": true,
+      "radius": 40,
+      "title": "ธีม I ผู้ตรวจ บนมือถือ",
+      "w": 390,
+      "x": 5990,
+      "y": 1520
+    },
+    "ReviewPhoneJ.dc.html": {
+      "h": 844,
+      "is_interactive": true,
+      "radius": 40,
+      "title": "ธีม J ผู้ตรวจ บนมือถือ (กลางคืน)",
+      "w": 390,
+      "x": 5730,
+      "y": 2520
+    },
+    "StampHome.dc.html": {
+      "h": 844,
+      "is_interactive": true,
+      "radius": 40,
+      "title": "แนว 2 สมุดและตรายาง (กด ส่งเลย)",
+      "w": 390,
+      "x": 4470,
+      "y": 320
+    },
+    "Themes.dc.html": {
+      "h": 1740,
+      "radius": 24,
+      "title": "รายการธีมสีทั้งหมด",
+      "w": 1440,
+      "x": 2280,
+      "y": 320
+    },
+    "TeacherResults.dc.html": {
+      "x": 4000,
+      "y": 6360,
+      "w": 390,
+      "h": 844,
+      "title": "ครู กราฟผลการสอนรายแผน (แตะแท่งกราฟ สลับวิชา)",
+      "is_interactive": true,
+      "radius": 40
+    },
+    "PAFolder.dc.html": {
+      "x": 4470,
+      "y": 6360,
+      "w": 390,
+      "h": 844,
+      "title": "ครู แฟ้มผลงาน PA (ติ๊กเลือก แล้วกด สร้างแฟ้ม PDF)",
+      "is_interactive": true,
+      "radius": 40
+    },
+    "DeptBoard.dc.html": {
+      "x": 4940,
+      "y": 6360,
+      "w": 1440,
+      "h": 900,
+      "title": "หัวหน้ากลุ่มสาระ สถานะครูในกลุ่มและส่งเตือน (ติ๊กเลือก แล้วกด ส่งเตือน)",
+      "is_interactive": true,
+      "radius": 20
+    }
+  },
+  "createdOnFiles": {
+    "at": "2026-10-04T13:30:00+07:00",
+    "v": 1
+  },
+  "designSystems": [],
+  "launch": {
+    "view": "canvas"
+  },
+  "notes": {
+    "conceptsTitle": {
+      "kind": "title1",
+      "maxW": 2708,
+      "text": "แนวใหม่ มีลูกเล่น  ต่างกันทั้งรูปแบบ ไม่ใช่แค่สี",
+      "w": 240,
+      "x": 4000,
+      "y": 0
+    },
+    "featuresTitle": {
+      "kind": "title1",
+      "maxW": 2850,
+      "text": "ฟังก์ชันเสริม เปิดปิดได้เฉพาะผู้ดูแลระบบ  และหน้าครูเขียนบันทึกหลังแผน",
+      "w": 240,
+      "x": 4000,
+      "y": 3500
+    },
+    "howto": {
+      "fill": "orange",
+      "size": 40,
+      "text": "วิธีลอง\n\nกดปุ่ม Play ที่มุมของแต่ละจอ แล้วลองกดได้จริง\n\nหน้าแรกครู: กดปุ่ม + ตรงกลางด้านล่าง เพื่อดูการส่งงานในหน้าเดียว\n\nหน้าผู้ตรวจ: กดปุ่ม ให้ 5 ทุกข้อ หรือกดคะแนนรายข้อ ไฟล์ยังเปิดอ่านอยู่ข้าง ๆ\n\nมือถือผู้ตรวจ: กดแถบคะแนนด้านล่างเพื่อขยายหรือย่อ",
+      "w": 420,
+      "x": 2280,
+      "y": 2140
+    },
+    "howtoTitle": {
+      "kind": "title1",
+      "maxW": 1780,
+      "text": "ภาพอธิบายทีละขั้น ประโยคสำเร็จรูปและปุ่มคัดลอก",
+      "w": 240,
+      "x": 4000,
+      "y": 4780
+    },
+    "navyTitle": {
+      "kind": "title1",
+      "maxW": 3380,
+      "text": "ธีม I กรมท่าสถาบัน แนวระบบวัดผล  และธีม J โหมดกลางคืน",
+      "w": 240,
+      "x": 4000,
+      "y": 1260
+    },
+    "rowA": {
+      "kind": "title1",
+      "maxW": 2120,
+      "text": "ธีม A  ขาวแดงหรู  สีประจำโรงเรียน หัวเรื่องตัวมีเชิง",
+      "w": 240,
+      "x": 0,
+      "y": 0
+    },
+    "rowB": {
+      "kind": "title1",
+      "maxW": 2120,
+      "text": "ธีม B  มินิมอลขาวสะอาด  แดงเป็นสีเน้นสีเดียว",
+      "w": 240,
+      "x": 0,
+      "y": 1244
+    },
+    "rowC": {
+      "kind": "title1",
+      "maxW": 2120,
+      "text": "ธีม C  กรมท่าทองทางการ  แบบหน่วยงานราชการ",
+      "w": 240,
+      "x": 0,
+      "y": 2488
+    },
+    "rowD": {
+      "kind": "title1",
+      "maxW": 2120,
+      "text": "ธีม D  มรกตทอง  สงบ คลาสสิก อ่านง่าย",
+      "w": 240,
+      "x": 0,
+      "y": 3732
+    },
+    "rowE": {
+      "kind": "title1",
+      "maxW": 2120,
+      "text": "ธีม E  กลางคืนแดงพรีเมียม  โหมดมืด",
+      "w": 240,
+      "x": 0,
+      "y": 4976
+    },
+    "rowF": {
+      "kind": "title1",
+      "maxW": 2120,
+      "text": "ธีม F  ฟ้าครามสดใส  เป็นมิตร ทันสมัย",
+      "w": 240,
+      "x": 0,
+      "y": 6220
+    },
+    "rowG": {
+      "kind": "title1",
+      "maxW": 2120,
+      "text": "ธีม G  ดินเผาอบอุ่น  แบบกระดาษสมุด",
+      "w": 240,
+      "x": 0,
+      "y": 7464
+    },
+    "rowH": {
+      "kind": "title1",
+      "maxW": 2120,
+      "text": "ธีม H  ชมพูแดงพาสเทลนุ่ม  โค้งมน อ่อนโยน",
+      "w": 240,
+      "x": 0,
+      "y": 8708
+    },
+    "themesTitle": {
+      "kind": "title1",
+      "maxW": 1440,
+      "text": "รายการธีมทั้งหมด A ถึง J",
+      "w": 240,
+      "x": 2280,
+      "y": 0
+    },
+    "moreTitle": {
+      "x": 4000,
+      "y": 6100,
+      "text": "หน้าตัวอย่างเพิ่ม  กราฟผลการสอน  แฟ้ม PA  สถานะกลุ่มสาระ",
+      "kind": "title1",
+      "maxW": 2380
+    }
+  },
+  "order": [
+    "Main.dc.html",
+    "Review.dc.html",
+    "ReviewPhone.dc.html",
+    "Themes.dc.html",
+    "BentoHome.dc.html",
+    "StampHome.dc.html",
+    "JourneyHome.dc.html",
+    "HeroHome.dc.html",
+    "QuickSign.dc.html",
+    "QuickSignCard.dc.html",
+    "HomeB.dc.html",
+    "ReviewB.dc.html",
+    "ReviewPhoneB.dc.html",
+    "HomeC.dc.html",
+    "ReviewC.dc.html",
+    "ReviewPhoneC.dc.html",
+    "HomeD.dc.html",
+    "ReviewD.dc.html",
+    "ReviewPhoneD.dc.html",
+    "HomeE.dc.html",
+    "ReviewE.dc.html",
+    "ReviewPhoneE.dc.html",
+    "HomeF.dc.html",
+    "ReviewF.dc.html",
+    "ReviewPhoneF.dc.html",
+    "HomeG.dc.html",
+    "ReviewG.dc.html",
+    "ReviewPhoneG.dc.html",
+    "HomeH.dc.html",
+    "ReviewH.dc.html",
+    "ReviewPhoneH.dc.html",
+    "NavyDesk.dc.html",
+    "HomeI.dc.html",
+    "ReviewPhoneI.dc.html",
+    "ReviewI.dc.html",
+    "HomeJ.dc.html",
+    "ReviewPhoneJ.dc.html",
+    "ReviewJ.dc.html",
+    "AdminFeatures.dc.html",
+    "NoteWrite.dc.html",
+    "NoteWriteOff.dc.html",
+    "NoteHowTo.dc.html",
+    "NoteWriteFile.dc.html",
+    "TeacherResults.dc.html",
+    "PAFolder.dc.html",
+    "DeptBoard.dc.html"
+  ],
+  "pages": [],
+  "title": "หน้าตาระบบส่งแผนการสอน"
+}

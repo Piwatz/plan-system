@@ -1,0 +1,8 @@
+# ไฟล์เปิดระบบบน Mac ต้องขึ้นบรรทัดแบบ LF ไฟล์ .bat ของ Windows ต้องเป็น CRLF
+* text=auto
+*.command text eol=lf
+*.sh text eol=lf
+*.bat text eol=crlf
+*.png binary
+*.jpg binary
+*.pdf binary

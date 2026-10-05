@@ -1,0 +1,82 @@
+<%- include('partials/top') %>
+<div class="qs">
+  <div class="page-head" style="margin-bottom:6px">
+    <div>
+      <h1>ลงนามบันทึกหลังแผน</h1>
+      <div class="sub">อ่านทีละใบ กดลงนาม แล้วใบถัดไปจะขึ้นมาเอง</div>
+    </div>
+    <div class="actions"><span class="badge badge-blue" style="font-size:1rem">เหลือ <%= left %></span></div>
+  </div>
+  <div class="qs-progress" aria-hidden="true"><div style="width:<%= total ? Math.round((signed + back) / total * 100) : 100 %>%"></div></div>
+
+  <% if (!me.signature && card) { %>
+    <div class="alert alert-warn"><%- icon('edit') %><span>ต้องบันทึกลายเซ็นก่อน จึงจะลงนามแบบไล่การ์ดได้ <a href="/profile"><b>เซ็นชื่อเลย</b></a></span></div>
+  <% } %>
+
+  <% if (!card) { %>
+    <div class="card qs-done">
+      <div class="ring"><%- icon('ok', 44) %></div>
+      <h2><%= signed + back ? 'ลงนามครบแล้ว' : 'ไม่มีบันทึกหลังแผนรอคุณลงนาม' %></h2>
+      <% if (signed + back) { %><p class="muted">ลงนาม <%= signed %> ฉบับ ส่งกลับ <%= back %> ฉบับ</p><% } %>
+      <div class="btn-row" style="justify-content:center"><a class="btn btn-ghost" href="/inbox">ไปที่งานรอตรวจ</a><a class="btn btn-primary" href="/">กลับหน้าหลัก</a></div>
+    </div>
+  <% } else { const c = card; const pct = c.students_total ? Math.round(Math.min(c.students_passed || 0, c.students_total) / c.students_total * 100) : null; %>
+    <form method="post" action="/quicksign/<%= c.id %>/approve" data-busy="กำลังลงนาม">
+      <input type="hidden" name="signed" value="<%= signed %>">
+      <input type="hidden" name="back" value="<%= back %>">
+      <article class="qs-card">
+        <div class="qs-who">
+          <span class="qs-ini"><%= util.initials(c.teacher_name) %></span>
+          <span style="flex:1;display:flex;flex-direction:column;line-height:1.35"><b><%= c.teacher_name %></b><span class="muted small"><%= c.subject_code %> <%= c.subject_name %></span></span>
+          <span class="muted small"><%= signed + back + 1 %>/<%= total %></span>
+        </div>
+        <div>
+          <b style="font-size:1.15rem">แผนที่ <%= c.plan_no %> <%= c.topic %></b><br>
+          <span class="muted small"><%= [c.class_room, util.thaiDate(c.teach_date, true), c.hours ? c.hours + ' ชั่วโมง' : ''].filter(Boolean).join('  ') %></span>
+        </div>
+        <% if (c.note_mode === 'file') { %>
+          <div class="alert alert-info" style="margin:0"><%- icon('file') %><span>ครูแนบไฟล์บันทึกหลังแผนของตัวเอง เปิดอ่านไฟล์ได้จากปุ่มด้านล่าง</span></div>
+        <% } else { %>
+          <div class="qs-kpa">
+            <div><span class="kpa-tag">K</span><span><%= c.result_k || '-' %></span></div>
+            <div><span class="kpa-tag">P</span><span><%= c.result_p || '-' %></span></div>
+            <div><span class="kpa-tag">A</span><span><%= c.result_a || '-' %></span></div>
+            <% if (c.problems) { %><div><span class="kpa-tag" style="background:var(--wait-bg);color:var(--wait)">ปัญหา</span><span><%= c.problems %></span></div><% } %>
+          </div>
+        <% } %>
+        <% if (pct != null) { %>
+          <div>
+            <div style="display:flex;justify-content:space-between;font-size:.92rem"><span class="muted">นักเรียนผ่านเกณฑ์</span><b><%= c.students_passed %> จาก <%= c.students_total %> คน (<%= pct %>%)</b></div>
+            <div class="bar <%= pct < 70 ? 'warn' : 'ok' %>" style="margin-top:4px"><div style="width:<%= pct %>%"></div></div>
+          </div>
+        <% } %>
+        <div class="btn-row">
+          <% for (const f of files) { %><a class="btn btn-sm btn-ghost" href="/f/<%= f.id %>/view" target="_blank" rel="noopener"><%- icon('file', 16) %> <%= f.original_name %></a><% } %>
+          <a class="btn btn-sm btn-ghost" href="/s/<%= c.id %>" target="_blank" rel="noopener"><%- icon('eye', 16) %> เปิดฉบับเต็ม</a>
+        </div>
+        <div class="field" style="margin:0">
+          <label for="qs-comment">ความเห็น</label>
+          <input type="text" id="qs-comment" name="comment" value="รับทราบ" maxlength="500">
+          <div class="chips">
+            <% for (const say of ['รับทราบ', 'ดีมาก เป็นแบบอย่างได้', 'ควรสอนซ่อมเสริมนักเรียนที่ยังไม่ผ่าน', 'ควรใช้สื่อและกิจกรรมที่หลากหลายขึ้น']) { %>
+              <button type="button" class="chip<%= say === 'รับทราบ' ? ' on' : '' %>" data-say="<%= say %>" data-target="qs-comment"><%= say %></button>
+            <% } %>
+          </div>
+        </div>
+        <div class="qs-actions">
+          <button class="btn btn-ghost" type="submit" formaction="/quicksign/<%= c.id %>/return" data-require-field="comment" data-require-message="กรุณาเขียนสิ่งที่ครูต้องแก้ไขในช่องความเห็นก่อนส่งกลับ" data-confirm="ส่งบันทึกฉบับนี้กลับให้ครูแก้ไข" data-danger="1" data-ok-label="ส่งกลับ"><%- icon('undo', 20) %> ส่งกลับ</button>
+          <button class="btn btn-success" type="submit" data-confirm="ลงนามรับทราบบันทึกหลังแผนฉบับนี้" data-ok-label="ลงนาม" <%= me.signature ? '' : 'disabled' %>><%- icon('ok', 22) %> ลงนาม</button>
+        </div>
+      </article>
+    </form>
+    <% if (left > 1 && me.signature) { %>
+      <form method="post" action="/quicksign/approve-rest" style="margin-top:12px" data-busy="กำลังลงนามทั้งหมด">
+        <input type="hidden" name="signed" value="<%= signed %>">
+        <input type="hidden" name="back" value="<%= back %>">
+        <input type="hidden" name="comment" value="รับทราบ">
+        <button class="btn btn-ghost btn-block" type="submit" data-confirm="ลงนามรับทราบบันทึกที่เหลือทั้งหมด <%= left %> ฉบับ ด้วยความเห็น รับทราบ" data-ok-label="ลงนามทั้งหมด">ลงนามทั้งหมดที่เหลือ <%= left %> ฉบับ ด้วยความเห็น รับทราบ</button>
+      </form>
+    <% } %>
+  <% } %>
+</div>
+<%- include('partials/bottom') %>

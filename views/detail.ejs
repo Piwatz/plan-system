@@ -1,0 +1,315 @@
+<%- include('partials/top') %>
+<%
+  const T = wf.DOC_TYPES[sub.doc_type];
+  const isNote = sub.doc_type === 'note';
+  const methods = util.parseJson(sub.teaching_methods, []);
+  const scoreDetail = util.parseJson(sub.score_detail, []);
+  const current = files.filter((f) => f.is_current);
+  const old = files.filter((f) => !f.is_current);
+  const curStep = wf.stepOf(sub.current_role);
+  const viewable = current.filter((f) => /^(application\/pdf|image\/)/.test(f.mime));
+  // ผู้ลงนามบันทึกหลังแผน: อ่านเนื้อหาทางซ้าย ลงความเห็นทางขวา (มือถืออยู่ล่าง)
+  const noteReview = canReview && isNote;
+  const split = canReview && viewable.length > 0 && !noteReview;
+%>
+<div class="page-head">
+  <div style="min-width:0">
+    <div class="tags">
+      <span class="badge badge-blue"><%= T.label %></span>
+      <%- include('partials/status', { s: sub }) %>
+      <span class="badge">ภาคเรียนที่ <%= sub.semester %>/<%= sub.academic_year %></span>
+    </div>
+    <h1 style="margin-top:8px">
+      <%= isNote ? 'แผนการจัดการเรียนรู้ที่ ' + (sub.plan_no || '') + (sub.topic ? ' เรื่อง ' + sub.topic : '') : sub.subject_code + ' ' + sub.subject_name %>
+    </h1>
+    <div class="sub">
+      <%= sub.teacher_name %> กลุ่มสาระ<%= sub.dept_name %>
+      <% if (isNote && parent) { %> วิชา <a href="/s/<%= parent.id %>#notes"><%= parent.subject_code %> <%= parent.subject_name %></a><% } %>
+    </div>
+  </div>
+  <div class="actions">
+    <% if (isNote) { %>
+      <a class="btn btn-ghost" href="/s/<%= sub.id %>/print" target="_blank" rel="noopener"><%- icon('print', 18) %> พิมพ์บันทึก</a>
+    <% } else { %>
+      <a class="btn btn-ghost" href="/s/<%= sub.id %>/print" target="_blank" rel="noopener"><%- icon('print', 18) %> บันทึกข้อความ</a>
+      <% if (sub.score_max) { %><a class="btn btn-ghost" href="/s/<%= sub.id %>/print?doc=eval" target="_blank" rel="noopener"><%- icon('print', 18) %> แบบประเมิน</a><% } %>
+    <% } %>
+    <% if (canEdit) { %>
+      <a class="btn btn-ghost" href="/s/<%= sub.id %>/edit"><%- icon('edit', 18) %> แก้ไข</a>
+      <form method="post" action="/s/<%= sub.id %>/submit" class="inline-form" data-busy="กำลังส่งงาน">
+        <button class="btn btn-primary" type="submit" data-confirm="<%= isOwner ? 'ยืนยันส่ง' + T.label + 'ให้ผู้ตรวจ' : 'ส่งงานนี้แทน ' + sub.teacher_name + ' ระบบจะบันทึกว่าผู้ดูแลระบบส่งแทน' %>" data-ok-label="ส่งเลย"><%- icon('send', 18) %> <%= !isOwner ? 'ส่งแทนครู' : sub.status === 'returned' ? 'ส่งอีกครั้ง' : 'ส่งให้ผู้ตรวจ' %></button>
+      </form>
+    <% } %>
+    <% if (canWithdraw) { %>
+      <form method="post" action="/s/<%= sub.id %>/withdraw" class="inline-form">
+        <button class="btn btn-warn" type="submit" data-confirm="ดึงงานกลับมาแก้ไข
+ผู้ตรวจจะไม่เห็นงานนี้จนกว่าคุณจะส่งอีกครั้ง"><%- icon('undo', 18) %> ดึงกลับมาแก้ไข</button>
+      </form>
+    <% } %>
+    <% if (canDelete) { %>
+      <form method="post" action="/s/<%= sub.id %>/delete" class="inline-form">
+        <button class="btn btn-ghost" type="submit" data-danger="1" data-confirm="ลบงานนี้ถาวร<%= sub.doc_type === 'plan' ? ' รวมถึงบันทึกหลังแผนทั้งหมดของเล่มนี้' : '' %>
+ลบแล้วกู้คืนไม่ได้" data-ok-label="ลบ"><%- icon('trash', 18) %> ลบ</button>
+      </form>
+    <% } %>
+  </div>
+</div>
+
+<% if (sub.status === 'returned' && lastReturn) { %>
+  <div class="alert alert-error"><%- icon('undo') %>
+    <div><b><%= lastReturn.user_name %></b> (<%= lastReturn.step_label %>) ส่งกลับให้แก้ไข เมื่อ <%= util.thaiDateTime(lastReturn.created_at) %>
+      <div class="pre" style="margin-top:6px;color:var(--ink)"><%= lastReturn.comment %></div>
+      <% if (isOwner) { %><div style="margin-top:8px">กด <b>แก้ไข</b> ปรับตามความเห็น แล้วกดส่งอีกครั้ง งานจะกลับไปที่ผู้ส่งคืนโดยตรง</div><% } %>
+    </div>
+  </div>
+<% } else if (sub.status === 'draft' && isOwner) { %>
+  <div class="alert alert-info"><%- icon('note') %><span>งานนี้ยังเป็นฉบับร่าง ผู้ตรวจจะยังไม่เห็นจนกว่าคุณจะกด <b>ส่งให้ผู้ตรวจ</b></span></div>
+<% } else if (sub.status === 'approved') { %>
+  <div class="alert alert-success"><%- icon('ok') %><span><%= isNote ? 'ลงความเห็นครบทุกระดับแล้ว' : 'ผ่านการพิจารณาครบทุกระดับแล้ว' %> เมื่อ <%= util.thaiDateTime(sub.completed_at) %></span></div>
+<% } %>
+
+<div class="card">
+  <h3>เส้นทางการตรวจ</h3>
+  <%- include('partials/stepper') %>
+</div>
+
+<% if (canReview) {
+  const maxTotal = rubric.reduce((a, it) => a + it.max_score, 0);
+  const prev = Object.fromEntries(scoreDetail.map((d) => [d.id, d.score]));
+  const sayList = isNote ? ['รับทราบ', 'ดีมาก เป็นแบบอย่างได้', 'ควรสอนซ่อมเสริมนักเรียนที่ยังไม่ผ่าน'] : ['เห็นควรอนุญาตให้ใช้', 'เห็นชอบ', 'ควรปรับแก้ตามข้อเสนอแนะ'];
+%>
+  <div class="<%= split ? 'review-split' : noteReview ? 'review-split note-review' : '' %>">
+    <% if (split) { %>
+      <%- include('partials/file_viewer', { files: viewable }) %>
+    <% } else if (noteReview) { %>
+      <div class="note-read">
+        <%- include('partials/detail_info', { sub, isNote, methods }) %>
+        <% if (viewable.length) { %><%- include('partials/file_viewer', { files: viewable, cls: 'inline' }) %><% } %>
+      </div>
+    <% } %>
+
+    <form class="card review-panel score-panel" id="review-form" method="post" action="/s/<%= sub.id %>/approve" data-busy="กำลังลงนาม">
+      <h2>ลงความเห็นในฐานะ<%= curStep.label %></h2>
+      <% if (isOwner) { %><p class="hint" style="margin-top:0">งานของคุณเอง ระบบเปิดให้ลงนาม<%= needsScore ? 'และให้คะแนน' : '' %>ในฐานะ<%= curStep.label %>ได้</p><% } %>
+      <% if (needsScore) { %>
+        <div data-rubric data-max="<%= maxTotal %>" data-count="<%= rubric.length %>">
+          <div class="sp-head">
+            <div style="display:flex;justify-content:space-between;align-items:baseline;gap:10px;flex-wrap:wrap">
+              <b>แบบประเมิน<%= T.label %></b>
+              <span class="muted small">ให้แล้ว <span data-done>0</span> จาก <%= rubric.length %> ข้อ</span>
+            </div>
+            <div class="score-meter" style="margin-top:6px"><div data-meter></div></div>
+            <div class="fill-row">
+              <button type="button" class="btn btn-primary" data-fill-btn="5">ให้ 5 ทุกข้อ</button>
+              <button type="button" class="btn btn-soft" data-fill-btn="4">4 ทุกข้อ</button>
+              <button type="button" class="btn btn-ghost" data-fill-btn="0">ล้าง</button>
+            </div>
+            <span class="muted small">5 มากที่สุด 4 มาก 3 ปานกลาง 2 น้อย 1 น้อยที่สุด กดให้ทุกข้อก่อน แล้วค่อยแก้บางข้อได้</span>
+          </div>
+          <div class="rubric-list" id="rubric-list">
+            <% rubric.forEach((it, i) => { %>
+              <div class="rubric-item">
+                <span><b><%= i + 1 %>.</b> <%= it.title %></span>
+                <div class="score-pick" role="radiogroup" aria-label="คะแนนข้อ <%= i + 1 %>">
+                  <% for (let v = it.max_score; v >= 1; v--) { %>
+                    <label><input type="radio" name="score_<%= it.id %>" value="<%= v %>" <%= prev[it.id] === v ? 'checked' : '' %> required aria-label="ข้อ <%= i + 1 %> ให้ <%= v %>"><span><%= v %></span></label>
+                  <% } %>
+                </div>
+              </div>
+            <% }) %>
+          </div>
+          <div class="score-total">รวม <b data-total>0</b> จาก <%= maxTotal %> <span class="badge badge-blue" data-level></span></div>
+        </div>
+      <% } %>
+      <div class="field" style="margin-top:12px">
+        <label for="comment">ความเห็นของ<%= curStep.label %></label>
+        <textarea id="comment" name="comment" style="min-height:80px" placeholder="<%= isNote ? 'เช่น รับทราบ ควรเพิ่มกิจกรรมเสริมสำหรับนักเรียนที่ยังไม่ผ่านเกณฑ์' : 'เช่น เห็นควรอนุญาตให้ใช้ หรือสิ่งที่ต้องปรับแก้' %>"></textarea>
+        <div class="chips"><% for (const say of sayList) { %><button type="button" class="chip" data-say="<%= say %>" data-target="comment"><%= say %></button><% } %></div>
+      </div>
+      <div class="field">
+        <span class="label">ลายเซ็น</span>
+        <% if (me.signature) { %>
+          <div class="btn-row"><span class="sig-box"><img class="sig-preview" src="<%= me.signature %>" alt="ลายเซ็นของคุณ"></span> <small class="muted">ใช้ลายเซ็นที่บันทึกไว้ <a href="/profile">เปลี่ยนลายเซ็น</a></small></div>
+        <% } else { %>
+          <%- include('partials/sigpad') %>
+          <div class="hint">ระบบจะจำลายเซ็นนี้ไว้ ครั้งต่อไปไม่ต้องเซ็นใหม่</div>
+        <% } %>
+      </div>
+      <div class="qs-actions">
+        <button class="btn btn-ghost btn-lg" type="submit" formaction="/s/<%= sub.id %>/return" formnovalidate
+          data-require-field="comment" data-require-message="กรุณาเขียนสิ่งที่ครูต้องแก้ไขในช่องความเห็นก่อนส่งกลับ"
+          data-confirm="ยืนยันส่งกลับให้ครูแก้ไข" data-danger="1" data-ok-label="ส่งกลับ"><%- icon('undo', 20) %> ส่งกลับแก้ไข</button>
+        <button class="btn btn-success btn-lg" type="submit"
+          <% if (!me.signature) { %>data-require-field="signature" data-require-message="กรุณาเซ็นชื่อในกรอบก่อน"<% } %>
+          data-confirm="ยืนยัน<%= approveLabel %><%= needsScore ? ' พร้อมคะแนนที่ให้' : '' %>" data-ok-label="<%= approveLabel %>"><%- icon('ok', 20) %> <%= approveLabel %></button>
+      </div>
+    </form>
+  </div>
+  <% if (needsScore) { %>
+    <div class="sheet-bar<%= ff.mobilesheet ? ' mini' : '' %>" data-sheet>
+      <% if (ff.mobilesheet) { %>
+        <div class="sb-mini">
+          <span class="sb-total"><b>ให้แล้ว <span data-done>0</span>/<%= rubric.length %> ข้อ</b><br><small class="muted">รวม <span data-total>0</span> จาก <%= maxTotal %></small></span>
+          <button type="button" class="btn btn-primary" data-sheet-open>ให้คะแนนและลงนาม</button>
+        </div>
+        <div class="sb-full">
+        <div class="sb-head"><b>ให้คะแนนและลงนาม</b><button type="button" class="btn btn-sm btn-ghost" data-sheet-close>ปิด</button></div>
+      <% } %>
+      <div class="sb-top">
+        <span class="sb-total"><b>แบบประเมิน ให้แล้ว <span data-done>0</span> จาก <%= rubric.length %> ข้อ</b><br><small class="muted">รวม <span data-total>0</span> จาก <%= maxTotal %></small></span>
+        <button type="button" class="sb-link" data-goto="rubric-list">ขยายดูรายข้อ</button>
+      </div>
+      <div class="sb-btns">
+        <button type="button" class="btn btn-soft btn-lg" data-fill-btn="5">ให้ 5 ทุกข้อ</button>
+        <button type="button" class="btn btn-ghost btn-lg" data-goto="rubric-list">ปรับรายข้อ</button>
+      </div>
+      <button class="btn btn-primary btn-lg btn-block" type="submit" form="review-form"
+        <% if (!me.signature) { %>data-require-field="signature" data-require-message="กรุณาเซ็นชื่อในกรอบก่อน"<% } %>
+        data-confirm="ยืนยัน<%= approveLabel %> พร้อมคะแนนที่ให้" data-ok-label="<%= approveLabel %>"><%- icon('edit', 20) %> <%= approveLabel %></button>
+      <button type="button" class="sb-link sb-back" data-goto="comment">ส่งกลับให้ครูแก้ไข</button>
+      <% if (ff.mobilesheet) { %></div><% } %>
+    </div>
+    <% if (ff.mobilesheet) { %><div class="sheet-scrim" data-sheet-close></div><% } %>
+  <% } else if (noteReview && ff.mobilesheet) { %>
+    <%# บันทึกหลังแผนบนมือถือ: แถบเล็กบรรทัดเดียว แตะแล้วเลื่อนไปช่องความเห็นและปุ่มลงนาม %>
+    <div class="sheet-bar mini" data-sheet>
+      <div class="sb-mini">
+        <span class="sb-total"><b>อ่านจบแล้ว</b><br><small class="muted">เลื่อนไปลงความเห็น</small></span>
+        <button type="button" class="btn btn-primary" data-goto="review-form">ลงความเห็นและลงนาม</button>
+      </div>
+    </div>
+  <% } %>
+<% } %>
+
+<% if (me.is_admin && !isOwner && sub.status !== 'approved') { %>
+  <form class="card admin-tools" method="post" action="/s/<%= sub.id %>/admin-finish" data-busy="กำลังดำเนินการแทน">
+    <div class="card-head"><h3><%- icon('shield', 20) %> เครื่องมือผู้ดูแลระบบ</h3><span class="badge badge-amber">เฉพาะผู้ดูแลระบบเห็น</span></div>
+    <p class="muted small">ใช้เมื่องานค้างนาน ระบบไม่ส่งข้อความแจ้งใคร แต่บันทึกในประวัติว่าผู้ดูแลระบบดำเนินการแทน ไม่ใส่ลายเซ็นของผู้อื่น ช่องลายเซ็นในเอกสารเว้นไว้ให้เซ็นด้วยมือ</p>
+    <div class="field"><label for="admin-note">หมายเหตุ (ไม่บังคับ)</label><input type="text" id="admin-note" name="comment" maxlength="300" placeholder="เช่น ครูส่งเอกสารกระดาษแล้ว ผู้บริหารลงนามในกระดาษ"></div>
+    <div class="btn-row">
+      <% if (canEdit) { %><a class="btn btn-ghost" href="/s/<%= sub.id %>/edit"><%- icon('edit', 18) %> แก้ไขแทนครู</a><% } %>
+      <% if (sub.status === 'pending' && curStep) { %>
+        <button class="btn btn-warn" type="submit" formaction="/s/<%= sub.id %>/admin-advance" data-confirm="ดำเนินการแทน<%= curStep.label %>
+งานจะไปต่อระดับถัดไป" data-ok-label="ดำเนินการแทน"><%- icon('next', 18) %> ดำเนินการแทน<%= curStep.label %></button>
+      <% } %>
+      <button class="btn btn-primary" type="submit" data-confirm="ให้งานนี้ผ่านครบทุกระดับทันที
+ระบบบันทึกว่าผู้ดูแลระบบดำเนินการแทน" data-ok-label="ให้ผ่านทั้งหมด"><%- icon('ok', 18) %> ให้ผ่านครบทุกระดับทันที</button>
+    </div>
+  </form>
+<% } %>
+
+<%# แสดงไฟล์ที่ครูส่งให้อ่านในหน้านี้เลย เลื่อนดูได้ทุกหน้า (ผู้ตรวจที่กำลังให้คะแนนเห็นแบบแบ่งจอด้านบนอยู่แล้ว) %>
+<% if (!split && !noteReview && viewable.length) { %><%- include('partials/file_viewer', { files: viewable, cls: 'inline' }) %><% } %>
+
+<div class="grid-3">
+  <div>
+    <% if (!noteReview) { %><%- include('partials/detail_info', { sub, isNote, methods }) %><% } %>
+
+    <% if (sub.score_max) { const pct = sub.score_total / sub.score_max * 100; %>
+      <div class="card">
+        <div class="card-head"><h3>ผลการประเมิน</h3>
+          <div class="actions"><span class="badge badge-green" style="font-size:.95rem"><%= sub.score_total %> / <%= sub.score_max %> ระดับ<%= wf.scoreLevel(pct) %></span></div></div>
+        <details>
+          <summary class="muted" style="cursor:pointer">ดูคะแนนรายข้อ</summary>
+          <div class="table-wrap"><table class="table" style="margin-top:8px">
+            <% scoreDetail.forEach((d, i) => { %><tr><td><%= i + 1 %>. <%= d.title %></td><td class="num"><%= d.score %>/<%= d.max %></td></tr><% }) %>
+          </table></div>
+        </details>
+      </div>
+    <% } %>
+
+    <% if (sub.doc_type === 'plan') { const todo = notes.filter((n) => n.status === 'draft' || n.status === 'returned'); %>
+      <div class="card" id="notes">
+        <div class="card-head">
+          <h3>บันทึกหลังแผน <span class="muted">(<%= notes.length %> ฉบับ)</span></h3>
+          <div class="actions">
+            <% if (notes.some((n) => n.status !== 'draft')) { %><a class="btn btn-ghost btn-sm" href="/s/<%= sub.id %>/print-notes" target="_blank" rel="noopener"><%- icon('print', 16) %> พิมพ์ทั้งเล่ม</a><% } %>
+            <% if (isOwner && sub.status !== 'draft') { %><a class="btn btn-primary btn-sm" href="/notes/new?plan=<%= sub.id %>"><%- icon('plus', 16) %> เขียนบันทึกหลังแผน</a><% } %>
+          </div>
+        </div>
+        <% if (!notes.length) { %>
+          <div class="empty"><%= sub.status === 'draft' ? 'ส่งแผนเล่มนี้ก่อน แล้วจึงเขียนบันทึกหลังแผนได้' : 'ยังไม่มีบันทึกหลังแผน' %></div>
+        <% } else { %>
+          <form method="post" action="/notes/submit-many" data-busy="กำลังส่งบันทึก">
+            <input type="hidden" name="back" value="/s/<%= sub.id %>#notes">
+            <div class="table-wrap"><table class="table">
+              <thead><tr>
+                <% if (isOwner && todo.length) { %><th><input type="checkbox" data-check-all="ids" aria-label="เลือกทั้งหมด"></th><% } %>
+                <th>แผนที่</th><th>เรื่อง</th><th class="hide-sm">วันที่สอน</th><th>สถานะ</th><th></th>
+              </tr></thead>
+              <tbody>
+              <% for (const n of notes) { const can = isOwner && (n.status === 'draft' || n.status === 'returned'); %>
+                <tr>
+                  <% if (isOwner && todo.length) { %><td><% if (can) { %><input type="checkbox" name="ids" value="<%= n.id %>" aria-label="เลือกแผนที่ <%= n.plan_no %>"><% } %></td><% } %>
+                  <td class="nowrap"><b><%= n.plan_no %></b></td>
+                  <td><%= n.topic || (n.note_mode === 'file' ? 'แนบไฟล์' : '-') %></td>
+                  <td class="hide-sm nowrap"><%= util.thaiDate(n.teach_date, true) %></td>
+                  <td><%- include('partials/status', { s: n }) %></td>
+                  <td class="right"><a class="btn btn-sm btn-ghost" href="/s/<%= n.id %>">เปิด</a></td>
+                </tr>
+              <% } %>
+              </tbody>
+            </table></div>
+            <% if (isOwner && todo.length) { %>
+              <div class="btn-row" style="margin-top:10px">
+                <button class="btn btn-primary" type="submit" data-need-checked="ids" data-confirm="ส่งบันทึกหลังแผนที่เลือกทั้งหมดให้ผู้ลงความเห็น" data-ok-label="ส่งทั้งหมด"><%- icon('send', 18) %> ส่งบันทึกที่เลือก (<span data-checked-count="ids">0</span>)</button>
+                <small class="muted">ร่างหรือรอแก้ไข <%= todo.length %> ฉบับ</small>
+              </div>
+            <% } %>
+          </form>
+        <% } %>
+      </div>
+    <% } %>
+  </div>
+
+  <div>
+    <% if (!isNote || current.length) { %>
+      <div class="card">
+        <h3><%= isNote ? 'ไฟล์บันทึกหรือไฟล์ประกอบ' : 'ไฟล์ที่ส่ง' %></h3>
+        <% if (!current.length && !sub.link_url) { %><div class="muted">ยังไม่มีไฟล์</div><% } %>
+        <ul class="file-list">
+          <% for (const f of current) { %>
+            <li>
+              <%- icon('file', 20) %>
+              <span class="fname"><%= f.original_name %><br><small class="muted"><%= util.fileSize(f.size) %></small></span>
+              <% if (/^(application\/pdf|image\/)/.test(f.mime)) { %><button type="button" class="btn btn-sm btn-primary" data-view-file="/f/<%= f.id %>" data-type="<%= /pdf/.test(f.mime) ? 'pdf' : 'image' %>" data-name="<%= f.original_name %>">เปิดดู</button><% } %>
+              <a class="btn btn-sm btn-ghost" href="/f/<%= f.id %>?dl=1">ดาวน์โหลด</a>
+            </li>
+          <% } %>
+        </ul>
+        <% if (old.length) { %>
+          <details style="margin-top:8px"><summary class="muted small" style="cursor:pointer">ไฟล์รุ่นก่อนแก้ไข <%= old.length %> ไฟล์</summary>
+            <ul class="file-list"><% for (const f of old) { %><li class="old"><span class="fname"><%= f.original_name %> <small class="muted"><%= util.thaiDate(f.uploaded_at, true) %></small></span><a class="btn btn-sm btn-ghost" href="/f/<%= f.id %>?dl=1">ดาวน์โหลด</a></li><% } %></ul>
+          </details>
+        <% } %>
+      </div>
+    <% } %>
+    <% if (!isNote) { %>
+      <div class="card">
+        <h3><%= sub.doc_type === 'plan' ? 'คู่มือรายวิชานี้' : 'แผนของวิชานี้' %></h3>
+        <% if (sibling) { %>
+          <%- include('partials/status', { s: sibling }) %> <a class="btn btn-sm btn-ghost" href="/s/<%= sibling.id %>">เปิดดู</a>
+        <% } else { %>
+          <span class="muted">ยังไม่ได้ส่ง</span>
+          <% if (isOwner && (sub.doc_type === 'plan' || canPlan)) { %><a class="btn btn-sm btn-primary" href="/works/new?type=<%= sub.doc_type === 'plan' ? 'manual' : 'plan' %>&from=<%= sub.id %>">ส่งเลย</a><% } else if (isOwner) { %><div class="hint">ส่งแผนเฉพาะวิชาหลัก วิชานี้ส่งเฉพาะคู่มือ</div><% } %>
+        <% } %>
+      </div>
+    <% } %>
+
+    <div class="card">
+      <h3>ประวัติ</h3>
+      <% if (!reviews.length) { %><div class="muted">ยังไม่มีความเคลื่อนไหว</div><% } %>
+      <ul class="timeline">
+        <% for (const r of [...reviews].reverse()) { %>
+          <li class="<%= r.action %>">
+            <div><b><%= r.user_name || 'ระบบ' %></b> <span class="muted"><%= r.step_label %></span></div>
+            <div><%= wf.ACTION_LABELS[r.action] %><%= r.score_max ? ' คะแนน ' + r.score_total + '/' + r.score_max : '' %></div>
+            <div class="when"><%= util.thaiDateTime(r.created_at) %></div>
+            <% if (r.comment) { %><div class="comment"><%= r.comment %></div><% } %>
+          </li>
+        <% } %>
+      </ul>
+    </div>
+  </div>
+</div>
+<%- include('partials/bottom') %>

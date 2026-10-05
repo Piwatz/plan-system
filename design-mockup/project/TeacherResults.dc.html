@@ -1,0 +1,155 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<title>ผลการสอนของฉัน</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai+Looped:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+@keyframes trGrow{from{transform:scaleY(0)}to{transform:scaleY(1)}}
+</style>
+</helmet>
+<div style="width: 390px; height: 844px; position: relative; overflow: hidden; box-sizing: border-box; background: #EEF2F7; color: #0F1E33; font-family: 'Noto Sans Thai Looped', sans-serif; font-size: 16px; line-height: 1.55">
+  <header style="height: 68px; box-sizing: border-box; padding: 0 12px; display: flex; align-items: center; gap: 8px; background: #1B3762; color: #FFFFFF">
+    <button type="button" aria-label="กลับ" style="width: 44px; height: 44px; flex: none; border-radius: 50%; border: 0; background: rgba(255, 255, 255, .12); color: #FFFFFF; display: flex; align-items: center; justify-content: center; cursor: pointer">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m15 6-6 6 6 6"></path></svg>
+    </button>
+    <span style="display: flex; flex-direction: column; line-height: 1.3">
+      <b style="font-size: 18px">ผลการสอนของฉัน</b>
+      <span style="font-size: 13px; color: #C9D5E6">จากบันทึกหลังแผน ภาคเรียนที่ 2/2569</span>
+    </span>
+  </header>
+
+  <div style="position: absolute; top: 68px; left: 0; right: 0; bottom: 0; overflow-y: auto; box-sizing: border-box; padding: 14px 14px 28px; display: flex; flex-direction: column; gap: 12px">
+    <div style="display: flex; gap: 8px">
+      <sc-for list="{{subjects}}" as="s" hint-placeholder-count="2">
+        <button type="button" onClick="{{s.pick}}" style="height: 44px; padding: 0 14px; border-radius: 22px; border: 1.5px solid {{s.bd}}; background: {{s.bg}}; color: {{s.fg}}; font: 700 15px/1 'Noto Sans Thai Looped', sans-serif; cursor: pointer">{{s.label}}</button>
+      </sc-for>
+    </div>
+
+    <div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px">
+      <div style="background: #FFFFFF; border: 1px solid #D6DEE9; border-radius: 14px; padding: 10px 12px; display: flex; flex-direction: column">
+        <span style="font-size: 13px; color: #4E5F78">เฉลี่ย</span>
+        <b style="font-size: 26px; line-height: 1.2">{{avg}}%</b>
+      </div>
+      <div style="background: #FFFFFF; border: 1px solid #D6DEE9; border-radius: 14px; padding: 10px 12px; display: flex; flex-direction: column">
+        <span style="font-size: 13px; color: #4E5F78">บันทึกแล้ว</span>
+        <b style="font-size: 26px; line-height: 1.2">{{count}} แผน</b>
+      </div>
+      <div style="background: #FFF0E8; border: 1px solid #F5CDB4; border-radius: 14px; padding: 10px 12px; display: flex; flex-direction: column">
+        <span style="font-size: 13px; color: #9A3412; font-weight: 600">ต่ำกว่าเกณฑ์</span>
+        <b style="font-size: 26px; line-height: 1.2">{{lowCount}} แผน</b>
+      </div>
+    </div>
+
+    <section style="background: #FFFFFF; border: 1px solid #D6DEE9; border-radius: 16px; padding: 14px 14px 10px; display: flex; flex-direction: column; gap: 10px">
+      <div style="display: flex; flex-direction: column">
+        <b>ร้อยละนักเรียนที่ผ่านจุดประสงค์ รายแผน</b>
+        <span style="font-size: 13px; color: #4E5F78">แตะแท่งเพื่อดูรายละเอียด  เส้นประคือเกณฑ์ 70</span>
+      </div>
+      <div style="min-height: 52px; padding: 8px 12px; border-radius: 10px; background: #F4F7FB; font-size: 14px; line-height: 1.45">
+        <b>แผนที่ {{sel.no}} {{sel.topic}}</b><br>
+        <span style="color: #4E5F78">ผ่าน {{sel.passed}} จาก {{sel.total}} คน  คิดเป็น </span><b style="color: {{sel.textColor}}">ร้อยละ {{sel.pct}}</b>
+      </div>
+      <div style="display: flex; gap: 6px">
+        <div aria-hidden="true" style="width: 26px; flex: none; position: relative; height: 190px; font-size: 11px; color: #4E5F78">
+          <span style="position: absolute; right: 0; top: -8px">100</span>
+          <span style="position: absolute; right: 0; bottom: calc(70% - 8px); color: #9A3412; font-weight: 700">70</span>
+          <span style="position: absolute; right: 0; bottom: -8px">0</span>
+        </div>
+        <div style="flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 4px">
+          <div style="position: relative; height: 190px">
+            <span style="position: absolute; left: 0; right: 0; top: 0; border-top: 1px solid #E8EDF4"></span>
+            <span style="position: absolute; left: 0; right: 0; bottom: 50%; border-top: 1px solid #E8EDF4"></span>
+            <span style="position: absolute; left: 0; right: 0; bottom: 0; border-top: 1px solid #B9C4D3"></span>
+            <span style="position: absolute; left: 0; right: 0; bottom: 70%; border-top: 2px dashed #C2410C; z-index: 1"></span>
+            <div style="position: absolute; inset: 0; display: flex; align-items: flex-end; gap: 2px">
+              <sc-for list="{{bars}}" as="b" hint-placeholder-count="12">
+                <button type="button" onClick="{{b.pick}}" aria-label="{{b.aria}}" style="flex: 1; min-width: 0; height: 100%; border: 0; padding: 0 1px; background: {{b.hit}}; border-radius: 6px 6px 0 0; display: flex; flex-direction: column; justify-content: flex-end; align-items: center; cursor: pointer">
+                  <span style="font-size: 11px; font-weight: 700; color: #9A3412; line-height: 1.2">{{b.flag}}</span>
+                  <span style="display: block; width: 100%; max-width: 16px; height: {{b.h}}; border-radius: 4px 4px 0 0; background: {{b.color}}; transform-origin: bottom; animation: trGrow .5s ease-out both"></span>
+                </button>
+              </sc-for>
+            </div>
+          </div>
+          <div style="display: flex; gap: 2px" aria-hidden="true">
+            <sc-for list="{{bars}}" as="b" hint-placeholder-count="12">
+              <span style="flex: 1; min-width: 0; text-align: center; font-size: 11px; color: {{b.labelColor}}; font-weight: {{b.labelWeight}}">{{b.no}}</span>
+            </sc-for>
+          </div>
+          <span style="text-align: center; font-size: 12px; color: #4E5F78">แผนที่</span>
+        </div>
+      </div>
+    </section>
+
+    <section style="background: #FFFFFF; border: 1px solid #D6DEE9; border-radius: 16px; padding: 14px; display: flex; flex-direction: column; gap: 10px">
+      <b>แผนที่ควรสอนซ่อมเสริม</b>
+      <sc-for list="{{lows}}" as="l" hint-placeholder-count="2">
+        <div style="display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-radius: 12px; background: #FFF0E8">
+          <span style="width: 24px; height: 24px; flex: none; border-radius: 50%; background: #C2410C; color: #FFFFFF; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 14px">!</span>
+          <span style="flex: 1; display: flex; flex-direction: column; line-height: 1.35">
+            <b style="font-size: 15px">แผนที่ {{l.no}} {{l.topic}}</b>
+            <span style="font-size: 13px; color: #4E5F78">ผ่านร้อยละ {{l.pct}}  ยังไม่ผ่าน {{l.fail}} คน</span>
+          </span>
+        </div>
+      </sc-for>
+      <span style="font-size: 13px; color: #4E5F78">แผนที่ผ่านน้อยที่สุด เหมาะใช้เป็นหัวข้อวิจัยในชั้นเรียน</span>
+    </section>
+
+    <button type="button" style="min-height: 52px; border: 0; border-radius: 12px; background: #1D3A66; color: #FFFFFF; font: 700 16px/1.3 'Noto Sans Thai Looped', sans-serif; cursor: pointer">ใส่กราฟนี้ในแฟ้มผลงาน PA</button>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+const DATA = {
+  'ว30203': { total: 38, plans: [['ลักษณะการเคลื่อนที่แบบฮาร์มอนิก', 34], ['คาบและความถี่', 35], ['การสั่นพ้อง', 32], ['คลื่นกล', 23], ['ส่วนประกอบของคลื่น', 30], ['การสะท้อนของคลื่น', 34], ['การหักเหของคลื่น', 32], ['การแทรกสอด', 31], ['การเลี้ยวเบน', 26], ['คลื่นนิ่ง', 33], ['การเกิดเสียง', 35], ['ระดับเสียง', 33]] },
+  'ว30207': { total: 41, plans: [['ธรรมชาติของฟิสิกส์', 35], ['การวัดและความคลาดเคลื่อน', 31], ['ปริมาณเวกเตอร์', 29], ['การเคลื่อนที่แนวตรง', 34], ['ความเร่ง', 26], ['กราฟการเคลื่อนที่', 32], ['การตกแบบเสรี', 33], ['กฎการเคลื่อนที่ของนิวตัน', 30]] },
+};
+const NAVY = '#1D3A66';
+const WARN = '#C2410C';
+
+class Component extends DCLogic {
+  renderVals() {
+    const st = this.state || {};
+    const code = st.code || 'ว30203';
+    const d = DATA[code];
+    const rows = d.plans.map(([topic, passed], i) => ({ no: i + 1, topic, passed, total: d.total, pct: Math.round((passed / d.total) * 100) }));
+    const lowest = rows.reduce((m, r) => (r.pct < m.pct ? r : m), rows[0]);
+    const selNo = st.sel && st.sel <= rows.length ? st.sel : lowest.no;
+    const sel = rows[selNo - 1];
+    const lows = rows.filter((r) => r.pct < 70);
+    return {
+      subjects: Object.keys(DATA).map((k) => ({
+        label: k,
+        pick: () => this.setState({ code: k, sel: 0 }),
+        bg: k === code ? '#1D3A66' : '#FFFFFF',
+        fg: k === code ? '#FFFFFF' : '#0F1E33',
+        bd: k === code ? '#1D3A66' : '#C9D4E3',
+      })),
+      avg: Math.round(rows.reduce((a, r) => a + r.pct, 0) / rows.length),
+      count: rows.length,
+      lowCount: lows.length,
+      sel: Object.assign({}, sel, { textColor: sel.pct < 70 ? WARN : '#0F1E33' }),
+      bars: rows.map((r) => ({
+        no: r.no,
+        h: r.pct + '%',
+        color: r.pct < 70 ? WARN : NAVY,
+        flag: r.pct < 70 ? '!' : '',
+        hit: r.no === selNo ? '#EAF1FB' : 'transparent',
+        labelColor: r.no === selNo ? '#0F1E33' : '#4E5F78',
+        labelWeight: r.no === selNo ? '700' : '400',
+        aria: 'แผนที่ ' + r.no + ' ผ่านร้อยละ ' + r.pct,
+        pick: () => this.setState({ sel: r.no }),
+      })),
+      lows: lows.map((r) => ({ no: r.no, topic: r.topic, pct: r.pct, fail: r.total - r.passed })),
+    };
+  }
+}
+</script>
+</body>
+</html>

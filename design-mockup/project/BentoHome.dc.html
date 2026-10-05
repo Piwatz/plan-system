@@ -1,0 +1,170 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<title>แนว Bento หน้าแรกครู</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Anuphan:wght@400;500;600;700&amp;family=Bai+Jamjuree:wght@500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+@keyframes bnRise{from{transform:translateY(14px);opacity:0}to{transform:none;opacity:1}}
+@keyframes bnRing{from{stroke-dashoffset:276}to{stroke-dashoffset:0}}
+</style>
+</helmet>
+<div style="width: 390px; height: 844px; position: relative; overflow: hidden; box-sizing: border-box; background: #EFEDE8; color: #111111; font-family: 'Anuphan', sans-serif; font-size: 16px; line-height: 1.5">
+
+  <div style="position: absolute; inset: 0; overflow-y: auto; box-sizing: border-box; padding: 22px 18px 120px; display: flex; flex-direction: column; gap: 18px">
+    <div style="display: flex; align-items: center; justify-content: space-between">
+      <span style="padding: 8px 14px; border-radius: 999px; background: #FFFFFF; font-size: 14px; font-weight: 500">ภาคเรียนที่ 2/2569</span>
+      <button type="button" aria-label="ข้อมูลของฉัน" style="width: 46px; height: 46px; border-radius: 50%; border: 0; background: #141414; color: #FFFFFF; font: 600 16px/1 'Bai Jamjuree', sans-serif; cursor: pointer">สช</button>
+    </div>
+
+    <h1 style="margin: 0; font-family: 'Bai Jamjuree', sans-serif; font-weight: 700; font-size: 38px; line-height: 1.12; letter-spacing: -.01em">สวัสดี<br>ครูสมชาย<span style="color: #D3202F">.</span></h1>
+
+    <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); grid-template-rows: 132px 132px auto; gap: 10px">
+      <div style="grid-row: span 2; background: #141414; color: #FFFFFF; border-radius: 28px; padding: 18px; display: flex; flex-direction: column; justify-content: space-between">
+        <span style="font-size: 14px; color: #CFCFCF">ส่งงานภาคเรียนนี้</span>
+        <div style="position: relative; width: 112px; height: 112px; align-self: center">
+          <svg width="112" height="112" viewBox="0 0 112 112" aria-hidden="true">
+            <circle cx="56" cy="56" r="44" fill="none" stroke="#2E2E2E" stroke-width="12"></circle>
+            <circle cx="56" cy="56" r="44" fill="none" stroke="#D3202F" stroke-width="12" stroke-linecap="round" stroke-dasharray="184 276" transform="rotate(-90 56 56)" style="animation: bnRing 1.2s ease-out both"></circle>
+          </svg>
+          <span style="position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; font-family: 'Bai Jamjuree', sans-serif">
+            <b style="font-size: 30px; line-height: 1">4/6</b>
+            <span style="font-size: 12px; color: #CFCFCF">ชิ้นงาน</span>
+          </span>
+        </div>
+        <span style="font-size: 14px">เหลือคู่มือ 1 แผน 1</span>
+      </div>
+      <button type="button" style="background: #D3202F; color: #FFFFFF; border: 0; border-radius: 28px; padding: 16px; display: flex; flex-direction: column; justify-content: space-between; text-align: left; font: inherit; cursor: pointer">
+        <span style="font-size: 14px">ต้องแก้ไข</span>
+        <b style="font-family: 'Bai Jamjuree', sans-serif; font-size: 44px; line-height: 1">1</b>
+        <span style="font-size: 13px">คู่มือ ว30207</span>
+      </button>
+      <button type="button" style="background: #FFFFFF; color: #111111; border: 0; border-radius: 28px; padding: 16px; display: flex; flex-direction: column; justify-content: space-between; text-align: left; font: inherit; cursor: pointer">
+        <span style="font-size: 14px; color: #5D5A55">รอผู้ตรวจ</span>
+        <b style="font-family: 'Bai Jamjuree', sans-serif; font-size: 44px; line-height: 1">2</b>
+        <span style="font-size: 13px; color: #5D5A55">อยู่ที่ รอง ผอ.</span>
+      </button>
+      <div style="grid-column: span 2; background: #FFFFFF; border-radius: 28px; padding: 16px 18px; display: flex; align-items: flex-end; justify-content: space-between; gap: 12px">
+        <div style="display: flex; flex-direction: column">
+          <span style="font-size: 14px; color: #5D5A55">บันทึกหลังแผน</span>
+          <b style="font-family: 'Bai Jamjuree', sans-serif; font-size: 30px; line-height: 1.1">5 ฉบับ</b>
+          <span style="font-size: 13px; color: #D3202F; font-weight: 600">ยังไม่ส่ง 2</span>
+        </div>
+        <div aria-label="จำนวนบันทึกรายสัปดาห์" style="display: flex; align-items: flex-end; gap: 6px; height: 56px">
+          <sc-for list="{{bars}}" as="b" hint-placeholder-count="7">
+            <span style="width: 12px; height: {{b.h}}; border-radius: 6px; background: {{b.c}}"></span>
+          </sc-for>
+        </div>
+      </div>
+    </div>
+
+    <div style="display: flex; align-items: center; justify-content: space-between; margin-top: 4px">
+      <h2 style="margin: 0; font-family: 'Bai Jamjuree', sans-serif; font-size: 22px; font-weight: 700">รายวิชา</h2>
+      <div style="display: flex; gap: 4px; padding: 4px; border-radius: 999px; background: #FFFFFF">
+        <sc-for list="{{filters}}" as="f" hint-placeholder-count="3">
+          <button type="button" onClick="{{f.pick}}" style="height: 36px; padding: 0 12px; border: 0; border-radius: 999px; background: {{f.bg}}; color: {{f.fg}}; font: 600 13px/1 'Anuphan', sans-serif; cursor: pointer">{{f.label}}</button>
+        </sc-for>
+      </div>
+    </div>
+
+    <sc-for list="{{subjects}}" as="s" hint-placeholder-count="3">
+      <article style="background: #FFFFFF; border-radius: 26px; padding: 16px 18px; display: flex; flex-direction: column; gap: 12px; animation: bnRise .35s ease-out both">
+        <div style="display: flex; align-items: baseline; gap: 10px">
+          <b style="font-family: 'Bai Jamjuree', sans-serif; font-size: 26px; line-height: 1">{{s.code}}</b>
+          <span style="font-size: 15px; color: #5D5A55; white-space: nowrap; overflow: hidden; text-overflow: ellipsis">{{s.name}}</span>
+        </div>
+        <div style="display: flex; flex-wrap: wrap; gap: 6px">
+          <sc-for list="{{s.steps}}" as="p" hint-placeholder-count="3">
+            <span style="height: 34px; padding: 0 12px; border-radius: 999px; border: 1.5px {{p.line}} {{p.bd}}; background: {{p.bg}}; color: {{p.fg}}; display: inline-flex; align-items: center; font-size: 14px; font-weight: 600">{{p.text}}</span>
+          </sc-for>
+        </div>
+      </article>
+    </sc-for>
+  </div>
+
+  <sc-if value="{{dialOpen}}" hint-placeholder-val="{{ false }}">
+    <div style="position: absolute; inset: 0; background: rgba(239, 237, 232, .82); display: flex; flex-direction: column; align-items: flex-end; justify-content: flex-end; gap: 10px; padding: 0 18px 116px; box-sizing: border-box">
+      <sc-for list="{{actions}}" as="a" hint-placeholder-count="3">
+        <button type="button" onClick="{{closeDial}}" style="height: 54px; padding: 0 20px 0 14px; border: 0; border-radius: 999px; background: #141414; color: #FFFFFF; display: flex; align-items: center; gap: 10px; font: 600 16px/1 'Anuphan', sans-serif; cursor: pointer; box-shadow: 0 8px 20px rgba(0, 0, 0, .18); animation: bnRise .25s ease-out both; animation-delay: {{a.delay}}">
+          <span style="width: 32px; height: 32px; border-radius: 50%; background: #D3202F; display: flex; align-items: center; justify-content: center; font: 700 14px/1 'Bai Jamjuree', sans-serif">{{a.tag}}</span>
+          {{a.label}}
+        </button>
+      </sc-for>
+    </div>
+  </sc-if>
+
+  <nav aria-label="เมนูหลัก" style="position: absolute; left: 18px; bottom: 22px; height: 64px; width: 262px; box-sizing: border-box; padding: 0 8px; border-radius: 999px; background: #141414; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); align-items: center">
+    <button type="button" aria-label="หน้าแรก" style="height: 48px; border: 0; border-radius: 999px; background: #FFFFFF; color: #141414; display: flex; align-items: center; justify-content: center; cursor: pointer">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 10.5 12 3l9 7.5V20a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"></path></svg>
+    </button>
+    <button type="button" aria-label="รอตรวจ 3 งาน" style="position: relative; height: 48px; border: 0; background: none; color: #FFFFFF; display: flex; align-items: center; justify-content: center; cursor: pointer">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 13h5l1.5 3h5L16 13h5"></path><path d="M5 5h14l2 8v6a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1v-6z"></path></svg>
+      <span style="position: absolute; top: 6px; right: 10px; width: 9px; height: 9px; border-radius: 50%; background: #D3202F"></span>
+    </button>
+    <button type="button" aria-label="สถิติ" style="height: 48px; border: 0; background: none; color: #FFFFFF; display: flex; align-items: center; justify-content: center; cursor: pointer">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20V10M10 20V4M16 20v-7M21 20H3"></path></svg>
+    </button>
+    <button type="button" aria-label="ฉัน" style="height: 48px; border: 0; background: none; color: #FFFFFF; display: flex; align-items: center; justify-content: center; cursor: pointer">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="4"></circle><path d="M4 21c1.5-4 4.5-6 8-6s6.5 2 8 6"></path></svg>
+    </button>
+  </nav>
+  <button type="button" onClick="{{toggleDial}}" aria-label="{{dialAria}}" style="position: absolute; right: 18px; bottom: 18px; width: 72px; height: 72px; border-radius: 50%; border: 0; background: #D3202F; color: #FFFFFF; display: flex; align-items: center; justify-content: center; box-shadow: 0 10px 24px rgba(211, 32, 47, .35); cursor: pointer">
+    <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true" style="transform: rotate({{plusTurn}}); transition: transform .25s"><path d="M12 5v14M5 12h14"></path></svg>
+  </button>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+const SUBJECTS = [
+  { code: 'ว30203', name: 'ฟิสิกส์เพิ่มเติม 3', group: 'wait', steps: [['คู่มือ ผ่าน', 'done'], ['แผน รอ รอง ผอ.', 'wait'], ['บันทึก 5', 'wait']] },
+  { code: 'ว30207', name: 'ฟิสิกส์ 1', group: 'todo', steps: [['คู่มือ แก้ไข', 'fix'], ['แผน ยังไม่ส่ง', 'none']] },
+  { code: 'ว22201', name: 'โครงงานวิทยาศาสตร์ 1', group: 'todo', steps: [['คู่มือ ยังไม่ส่ง', 'none'], ['แผน ยังไม่ส่ง', 'none']] },
+];
+const PILL = {
+  done: { bg: '#141414', fg: '#FFFFFF', bd: '#141414', line: 'solid' },
+  wait: { bg: '#FFFFFF', fg: '#111111', bd: '#141414', line: 'solid' },
+  fix: { bg: '#D3202F', fg: '#FFFFFF', bd: '#D3202F', line: 'solid' },
+  none: { bg: '#FFFFFF', fg: '#5D5A55', bd: '#B9B5AE', line: 'dashed' },
+};
+const FILTERS = [['all', 'ทั้งหมด'], ['todo', 'ต้องทำ'], ['wait', 'รอตรวจ']];
+
+class Component extends DCLogic {
+  renderVals() {
+    const st = this.state || {};
+    const filter = st.filter || 'all';
+    const open = Boolean(st.dial);
+    const subjects = SUBJECTS.filter((s) => filter === 'all' || s.group === filter).map((s) => ({
+      code: s.code,
+      name: s.name,
+      steps: s.steps.map(([text, kind]) => Object.assign({ text }, PILL[kind])),
+    }));
+    return {
+      subjects,
+      filters: FILTERS.map(([k, label]) => ({
+        label,
+        pick: () => this.setState({ filter: k }),
+        bg: k === filter ? '#141414' : 'transparent',
+        fg: k === filter ? '#FFFFFF' : '#111111',
+      })),
+      bars: [18, 30, 22, 44, 36, 56, 26].map((h, i) => ({ h: h + 'px', c: i === 5 ? '#D3202F' : '#141414' })),
+      dialOpen: open,
+      dialAria: open ? 'ปิดเมนูส่งงาน' : 'ส่งงานใหม่',
+      plusTurn: open ? '45deg' : '0deg',
+      toggleDial: () => this.setState({ dial: !open }),
+      closeDial: () => this.setState({ dial: false }),
+      actions: [
+        { tag: 'บ', label: 'เขียนบันทึกหลังแผน', delay: '.10s' },
+        { tag: 'ผ', label: 'ส่งแผนการสอน', delay: '.05s' },
+        { tag: 'ค', label: 'ส่งคู่มือรายวิชา', delay: '0s' },
+      ],
+    };
+  }
+}
+</script>
+</body>
+</html>

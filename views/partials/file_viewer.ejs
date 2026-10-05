@@ -1,0 +1,20 @@
+<%
+  // กรอบแสดงไฟล์ที่ส่ง (PDF ทุกหน้า หรือรูปภาพ) ใช้ในหน้างาน หน้าตรวจ และหน้าเปิดดูไฟล์
+  const kind = (f) => (/pdf/.test(f.mime) ? 'pdf' : 'image');
+  const f0 = files[0];
+%>
+<section class="card flush viewer <%= locals.cls || '' %>" data-pdfbox aria-label="ไฟล์ที่ส่ง">
+  <div class="viewer-bar">
+    <span class="fname" data-viewer-name><%= f0.original_name %></span>
+    <span class="muted small nowrap" data-pdf-info></span>
+    <button type="button" class="btn btn-sm btn-ghost" data-pdf-zoom="out">ย่อ</button>
+    <button type="button" class="btn btn-sm btn-ghost" data-pdf-zoom="in">ขยาย</button>
+    <% if (ff.mobilesheet) { %><button type="button" class="btn btn-sm btn-ghost" data-pdf-full>เต็มจอ</button><% } %>
+    <a class="btn btn-sm btn-ghost" href="/f/<%= f0.id %>?dl=1" data-viewer-dl><%- icon('download', 16) %> ดาวน์โหลด</a>
+  </div>
+  <% if (files.length > 1) { %>
+    <div class="viewer-tabs"><% files.forEach((f, i) => { %><button type="button" class="btn btn-sm <%= i === 0 ? 'btn-primary' : 'btn-ghost' %>" data-view-file="/f/<%= f.id %>" data-type="<%= kind(f) %>" data-name="<%= f.original_name %>">ไฟล์ <%= i + 1 %></button><% }) %></div>
+  <% } %>
+  <div class="pdf-pages" data-pdf-pages data-src="/f/<%= f0.id %>" data-type="<%= kind(f0) %>"></div>
+</section>
+<script type="module" src="/static/js/pdfview.js?v=<%= assetVersion %>"></script>
