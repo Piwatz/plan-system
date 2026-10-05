@@ -10,7 +10,8 @@
   "scripts": {
     "start": "node --disable-warning=ExperimentalWarning server.js",
     "demo": "node --disable-warning=ExperimentalWarning scripts/seed-demo.js && node --disable-warning=ExperimentalWarning server.js --data data-demo --demo",
-    "test": "node --disable-warning=ExperimentalWarning --test \"tests/*.test.js\""
+    "test": "node scripts/build-views.js && node --disable-warning=ExperimentalWarning --require ./tests/verify-views.js --test \"tests/*.test.js\"",
+    "build": "node scripts/build-views.js"
   },
   "dependencies": {
     "@fontsource/anuphan": "^5.3.0",
@@ -25,9 +26,11 @@
     "@fontsource/pridi": "^5.3.0",
     "@fontsource/sarabun": "^5.3.0",
     "@fontsource/trirong": "^5.3.0",
+    "acorn": "^8.18.0",
     "chart.js": "^4.5.1",
     "cookie-session": "^2.1.1",
     "ejs": "^6.0.1",
+    "eslint-scope": "^9.1.2",
     "express": "^5.2.1",
     "multer": "^2.4.0",
     "pdf-lib": "^1.17.1",

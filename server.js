@@ -1,6 +1,8 @@
 // จุดเริ่มต้นของโปรแกรม: npm start  หรือดับเบิลคลิกไฟล์ .bat
 const os = require('os');
 const config = require('./src/config');
+// แปลงหน้าเว็บเป็น dist/views.js ทุกครั้งที่เปิดระบบ (ไฟล์ .bat และ npm start ไม่ต้องสั่ง build เอง)
+require('./scripts/build-views').build({ quiet: true });
 const { createApp } = require('./src/app');
 
 function lanAddresses() {

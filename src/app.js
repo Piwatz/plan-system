@@ -12,6 +12,7 @@ const util = require('./util');
 const features = require('./features');
 const themes = require('./themes');
 const icons = require('./icons');
+const { CompiledView } = require('./view');
 
 function secretKey() {
   const f = path.join(config.DATA_DIR, 'secret.key');
@@ -30,8 +31,8 @@ function createApp() {
   // เปลี่ยนทุกครั้งที่เปิดระบบใหม่ เบราว์เซอร์จะโหลดไฟล์ CSS/JS รุ่นล่าสุด
   const assetVersion = Date.now().toString(36);
   const app = express();
-  app.set('view engine', 'ejs');
-  app.set('views', path.join(config.ROOT, 'views'));
+  // หน้าเว็บ compile ไว้ล่วงหน้าใน dist/views.js (npm run build) ไม่ใช้ EJS ตอนรัน
+  app.set('view', CompiledView);
   app.set('trust proxy', 'loopback');
   app.disable('x-powered-by');
 

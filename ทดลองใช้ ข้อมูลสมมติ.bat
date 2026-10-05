@@ -3,7 +3,7 @@ title Lesson Plan System - DEMO with sample data
 cd /d "%~dp0"
 where node >nul 2>nul
 if errorlevel 1 goto :nonode
-if not exist "node_modules\pdf-lib" if exist "node_modules\express" (
+if not exist "node_modules\eslint-scope" if exist "node_modules\express" (
   echo New version: downloading the new required files. This needs internet.
   call npm install
   if errorlevel 1 goto :fail

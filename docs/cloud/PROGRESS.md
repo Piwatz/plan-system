@@ -38,3 +38,16 @@
 - ค้น `convert` `soffice` `wordconvert` `drivecopy` `drive.` ใน src views public/js tests ไม่เหลือ (ยกเว้น drivepath.js)
 - `npm run demo` (preview plan-demo): หน้าฟังก์ชันเสริมไม่มี 2 สวิตช์และ 2 กล่อง · หน้าส่งคู่มือรับ `.pdf` อย่างเดียว เลือก 2 ไฟล์ ตรวจไฟล์ผ่าน เรียงลำดับได้ ดูปกได้ · กดบันทึกร่างได้ "บันทึกร่างเรียบร้อย รวม 2 ไฟล์เป็นไฟล์เดียวแล้ว 2 หน้า" · console มี error เดียวคือ 400 จากหน้าส่งแผนที่ครูทดลองมีแผนครบโควตาแล้ว (ข้อความเตือนปกติ ไม่ใช่บั๊ก)
 - หมายเหตุ: เครื่องมือ Bash ในเครื่องนี้กิน `\` ใน heredoc บางกรณี (น่าจะเป็นที่มาของบั๊ก drivepath) แก้โค้ดที่มี `\` ด้วย Edit/Write เท่านั้น
+
+## ตอน 3 · compile หน้าเว็บล่วงหน้า (5 ต.ค. 2569) ผ่าน
+
+- `scripts/build-views.js` (`npm run build`): compile 52 ไฟล์ใน `views/` เป็น `dist/views.js` (276 KB) ด้วย `ejs.Template` + `strict` + `destructuredLocals` จากการวิเคราะห์ขอบเขตตัวแปรจริง (acorn + eslint-scope เพิ่มเป็น dependencies) · ไม่มี `with` · พบตัวแปรจาก locals 135 ตัว · **ไม่มีจุดที่ template กำหนดค่าให้ตัวแปรอิสระ** (สคริปต์จะหยุด build ถ้ามี)
+- `src/view.js`: `CompiledView` สำหรับ Express 5 (`app.set('view', CompiledView)`) · escape และ shallowCopy ก๊อปจาก ejs 6.0.1 · include เทียบ path กับไฟล์ที่เรียก · ไม่ require ejs และไม่อ่านดิสก์ · `src/` ไม่มี `require('ejs')` แล้ว
+- `tests/verify-views.js` โหลดด้วย `--require` ก่อนชุดทดสอบทุกไฟล์: render ซ้ำด้วย EJS ปกติในการเรียกเดียวกันแล้วเทียบทุกไบต์ · ผล: **38 หน้า (ครบทุกหน้าที่ไม่ใช่ partial) รวม 307 ครั้ง ไม่ตรง 0 ครั้ง** (partial 14 ไฟล์ถูกเทียบไปในหน้าที่ include)
+- `npm test` = build + ทดสอบ: tests 44 · pass 44 · fail 0
+- `server.js` build ทุกครั้งที่เปิดระบบ (.bat .command และ `npm start` `npm run demo` ไม่ต้องสั่งเอง) · `dist/` ไม่เก็บใน git
+- `npm run demo`: ไล่เปิดทุกลิงก์ด้วยบัญชีทดลอง 4 บทบาท (ผู้ดูแลระบบ 62 หน้า ครู 53 หัวหน้ากลุ่มสาระ 31 ผู้อำนวยการ 23) ไม่มีรหัส 4xx 5xx ไม่มีหน้า "เกิดข้อผิดพลาด" · log ของ server ไม่มี error
+
+**สิ่งที่ตัดสินใจเองระหว่างทาง (แจ้งผู้ใช้แล้ว):**
+1. `URLSearchParams` (ใช้ใน `views/registry.ejs`) ไม่ใช่ built-in ของ ECMAScript ตามรายการในแผน แต่เป็นมาตรฐาน WHATWG ที่มีทั้งบน Node และ Workers จึงนับเป็น global ไม่ดึงจาก locals (ถ้าดึงจาก locals จะได้ undefined และหน้าทะเบียนพัง)
+2. ไฟล์ .bat 2 ไฟล์ และ .command 2 ไฟล์ เปลี่ยนตัวเช็กว่าต้อง `npm install` ใหม่จาก `node_modules\pdf-lib` เป็น `node_modules\eslint-scope` เพราะเครื่องที่ติดตั้งรุ่นก่อนไม่มีแพ็กเกจใหม่ (บรรทัดคงแบบ CRLF และ LF ตามเดิม)

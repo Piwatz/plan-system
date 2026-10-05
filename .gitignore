@@ -15,3 +15,6 @@ spike/dist/
 spike/.wrangler/
 spike/*.log
 !spike/wrangler-dirname-fail.log
+
+# หน้าเว็บที่ compile แล้ว สร้างใหม่ด้วย npm run build
+dist/

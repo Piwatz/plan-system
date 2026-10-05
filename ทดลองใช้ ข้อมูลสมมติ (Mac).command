@@ -7,7 +7,7 @@ if ! command -v node >/dev/null 2>&1; then
   read -r -p "Press Enter to close"
   exit 1
 fi
-if [ ! -d "node_modules/express" ] || [ ! -d "node_modules/pdf-lib" ]; then
+if [ ! -d "node_modules/express" ] || [ ! -d "node_modules/eslint-scope" ]; then
   echo "First run: downloading the required files. This needs internet and takes about 1 minute."
   if ! npm install; then
     echo "Could not download the required files. Check the internet connection and try again."

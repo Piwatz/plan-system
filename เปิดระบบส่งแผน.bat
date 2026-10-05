@@ -4,7 +4,7 @@ cd /d "%~dp0"
 where node >nul 2>nul
 if errorlevel 1 goto :nonode
 if not exist "node_modules\express" goto :install
-if not exist "node_modules\pdf-lib" goto :install
+if not exist "node_modules\eslint-scope" goto :install
 :run
 echo Starting the lesson plan system...
 echo Keep this window open. Close it to stop the system.
