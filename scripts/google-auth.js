@@ -12,9 +12,14 @@ const vars = require('./devvars');
 
 const SCOPE = 'https://www.googleapis.com/auth/drive.file';
 
-async function ask(rl, label) {
+// hidden = ไม่แสดงตัวอักษรที่วางบนจอ (รหัสลับ)
+async function ask(rl, label, hidden) {
   for (;;) {
+    const write = rl._writeToOutput;
+    if (hidden) rl._writeToOutput = (s) => (s.startsWith(label) ? write.call(rl, label) : s.includes('\n') ? write.call(rl, '\n') : undefined);
     const v = (await rl.question(label)).trim();
+    rl._writeToOutput = write;
+    if (hidden && v) console.log('  (ได้รับแล้ว ' + v.length + ' ตัวอักษร)');
     if (v) return v;
   }
 }
@@ -37,7 +42,8 @@ async function main() {
   if (!process.env.GDRIVE_CLIENT_ID || !process.env.GDRIVE_CLIENT_SECRET) {
     console.log('  คัดลอกค่าจากหน้า Google Cloud Console (Clients) มาวางทีละช่อง');
     vars.set('GDRIVE_CLIENT_ID', await ask(rl, '  Client ID: '));
-    vars.set('GDRIVE_CLIENT_SECRET', await ask(rl, '  Client secret: '));
+    console.log('  (ช่อง Client secret วางแล้วจะไม่เห็นตัวอักษรบนจอ เป็นเรื่องปกติ กด Enter ได้เลย)');
+    vars.set('GDRIVE_CLIENT_SECRET', await ask(rl, '  Client secret: ', true));
     console.log('  บันทึกลงไฟล์ .dev.vars แล้ว');
   }
   rl.close();
