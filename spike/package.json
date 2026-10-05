@@ -1,0 +1,18 @@
+{
+  "name": "plan-spike",
+  "private": true,
+  "type": "module",
+  "description": "ตอน 1 ทดลองนำร่องบน Cloudflare Workers ลบในตอน 15",
+  "dependencies": {
+    "@electric-sql/pglite": "^0.5.8",
+    "@electric-sql/pglite-socket": "^0.2.11",
+    "acorn": "^8.18.0",
+    "cookie-session": "^2.1.1",
+    "ejs": "^6.0.1",
+    "eslint-scope": "^9.1.2",
+    "express": "^5.2.1",
+    "pg": "^8.23.1",
+    "qrcode": "^1.5.4",
+    "wrangler": "^4.147.0"
+  }
+}

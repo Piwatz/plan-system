@@ -9,3 +9,9 @@ data-demo/
 
 # ไฟล์ติดตั้งที่สร้างจาก scripts/make-install-zip.js
 ไฟล์ติดตั้ง/
+
+# ตอน 1 ทดลองนำร่อง (ลบในตอน 15)
+spike/dist/
+spike/.wrangler/
+spike/*.log
+!spike/wrangler-dirname-fail.log

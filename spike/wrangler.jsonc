@@ -1,0 +1,18 @@
+// ตอน 1 ทดลองนำร่อง รันในเครื่องด้วย npx wrangler dev ไม่ต้อง login
+{
+  "name": "plan-spike",
+  "main": "worker.mjs",
+  "compatibility_date": "2026-10-05",
+  "compatibility_flags": ["nodejs_compat"],
+  "assets": { "directory": "./assets" },
+  "hyperdrive": [
+    {
+      "binding": "HYPERDRIVE",
+      "id": "00000000000000000000000000000000",
+      "localConnectionString": "postgres://postgres:postgres@localhost:5433/postgres"
+    }
+  ],
+  // ข้อ 2: __dirname ไม่มีบน Workers ลองแทนค่าตอน build
+  "define": { "__dirname": "\"/bundle/src\"" },
+  "vars": { "SINK_URL": "http://127.0.0.1:8788/" }
+}

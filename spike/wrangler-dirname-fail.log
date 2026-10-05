@@ -1,0 +1,42 @@
+
+ ⛅️ wrangler 4.147.0
+────────────────────
+Your Worker has access to the following bindings:
+Binding                                                Resource                  Mode
+env.HYPERDRIVE (00000000000000000000000000000000)      Hyperdrive Config         local
+env.SINK_URL ("http://127.0.0.1:8788/")                Environment Variable      local
+
+Wrangler detected this dev session is running in an AI agent.
+The Local Explorer API is available at https://127.0.0.1:8787/cdn-cgi/local/explorer/api
+Useful routes:
+  GET https://127.0.0.1:8787/cdn-cgi/local/explorer/api/local/workers - local Workers and bindings
+  POST https://127.0.0.1:8787/cdn-cgi/local/explorer/api/local/scheduled?worker=<name> - invoke a Worker's scheduled handler; cron is required (see the OpenAPI schema for the full request)
+  GET https://127.0.0.1:8787/cdn-cgi/local/explorer/api/storage/kv/namespaces - KV namespaces
+  GET https://127.0.0.1:8787/cdn-cgi/local/explorer/api/d1/database - D1 databases
+  GET https://127.0.0.1:8787/cdn-cgi/local/explorer/api/r2/buckets - R2 buckets
+  GET https://127.0.0.1:8787/cdn-cgi/local/explorer/api/workers/durable_objects/namespaces - Durable Object namespaces
+  GET https://127.0.0.1:8787/cdn-cgi/local/explorer/api/workflows - Workflows
+  POST https://127.0.0.1:8787/cdn-cgi/local/explorer/api/local/observability/query - run a read-only SQL query (SELECT/WITH only) over captured request traces and console logs. Tables: spans, logs (read attributes via json(attributes)). Example:
+    curl -X POST https://127.0.0.1:8787/cdn-cgi/local/explorer/api/local/observability/query -H 'Content-Type: application/json' -d '{"sql":"SELECT service, name, outcome, duration_ms FROM spans WHERE parent_id IS NULL LIMIT 20"}'
+  POST https://127.0.0.1:8787/cdn-cgi/local/explorer/api/local/observability/clear - clear all captured traces and logs
+If the routes above don't cover what you need, fetch the full OpenAPI schema (large - use only as a last resort):
+  GET https://127.0.0.1:8787/cdn-cgi/local/explorer/api - OpenAPI schema
+⎔ Starting local server...
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mservice core:user:plan-spike: Uncaught ReferenceError: __dirname is not defined[0m
+
+    at null.<anonymous> (worker.js:32830:29) in ../src/config.js
+    at null.<anonymous> (worker.js:24:52) in __require2
+    at null.<anonymous> (worker.js:33035:29)
+
+
+
+Cloudflare collects anonymous telemetry about your usage of Wrangler. Learn more at https://github.com/cloudflare/workers-sdk/tree/main/packages/wrangler/telemetry.md
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mThe Workers runtime failed to start. There was likely a problem with the workerd binary or your configuration.[0m
+
+  Runtime stderr:
+  {"timestamp":"1791201556504","level":"error","source":"src/workerd/server/json-logger.c++:127","message":"service core:user:plan-spike: Uncaught ReferenceError: __dirname is not defined\n  at worker.js:32830:29 in ../src/config.js\n  at worker.js:24:52 in __require2\n  at worker.js:33035:29","context_depth":0}
+
+
+[32mIf you think this is a bug then please create an issue at https://github.com/cloudflare/workers-sdk/issues/new/choose[0m
+🪵  Logs were written to "C:\Users\Skywalker Computer\AppData\Roaming\xdg.config\.wrangler\logs\wrangler-2026-10-05_11-59-13_676.log"
