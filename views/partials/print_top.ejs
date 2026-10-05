@@ -181,7 +181,10 @@
     document.body.appendChild(probe);
     var mm = probe.getBoundingClientRect().height / 100;
     document.body.removeChild(probe);
-    var limit = 270 * mm;
+    // Safari ตอนพิมพ์จริงสูงกว่าที่วัดบนจอราว 5% (ผู้ใช้ลองบน Mac แล้ว) จึงเผื่อมากกว่าเบราว์เซอร์อื่น
+    var ua = navigator.userAgent;
+    var safari = /Safari/.test(ua) && !/Chrome|Chromium|CriOS|Edg|FxiOS|Firefox/.test(ua);
+    var limit = (safari ? 255 : 270) * mm;
     var MIN = 0.85;
     function height(p) {
       var top = p.getBoundingClientRect().top + parseFloat(getComputedStyle(p).paddingTop);
