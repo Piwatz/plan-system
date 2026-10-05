@@ -147,10 +147,17 @@ const MAX_INT = 2147483647;
 function idParam(v, { optional = false } = {}) {
   const s = String(v ?? '').trim();
   if (optional && s === '') return null;
-  if (/^\d{1,10}$/.test(s) && Number(s) <= MAX_INT) return Number(s);
+  const id = idOrNull(s);
+  if (id !== null) return id;
   const err = new Error('not found');
   err.status = 404;
   throw err;
+}
+
+// แบบไม่โยน error: id ใช้ไม่ได้ได้ null ให้หน้านั้นตอบ "ไม่พบ" ด้วยข้อความของตัวเองเหมือนเดิม
+function idOrNull(v) {
+  const s = String(v ?? '').trim();
+  return /^\d{1,10}$/.test(s) && Number(s) <= MAX_INT ? Number(s) : null;
 }
 
 // ตัวเลขที่ไม่ใช่ id เช่น ปีการศึกษา ภาคเรียน ถ้าไม่ใช่จำนวนเต็มในช่วงให้ใช้ค่าสำรอง
@@ -159,4 +166,4 @@ function intOr(v, fallback) {
   return /^-?\d{1,10}$/.test(s) && Math.abs(Number(s)) <= MAX_INT ? Number(s) : fallback;
 }
 
-module.exports = { idParam, intOr, ago, daysUntil, SHORT_ROLE, initials, thaiDate, thaiDateTime, STATUS_CLASS, lines, parseJson, toCsv, parsePasted, fileSize, safeUrl, contentDisposition };
+module.exports = { idParam, idOrNull, intOr, ago, daysUntil, SHORT_ROLE, initials, thaiDate, thaiDateTime, STATUS_CLASS, lines, parseJson, toCsv, parsePasted, fileSize, safeUrl, contentDisposition };

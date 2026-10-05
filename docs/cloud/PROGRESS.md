@@ -88,3 +88,14 @@
 - `pages.js` `extras.js` `teaching.js` `ttimport.js`: async ทั้งหมด · `COUNT(*) FILTER` 2 จุด · `to_int_lenient(plan_no)` 5 จุด · `ILIKE ... ESCAPE ''` · `d.sort NULLS FIRST` · `INSERT ... ON CONFLICT DO NOTHING` ใน ttimport · `idParam` ที่ id ใน params query และฟอร์ม
 - callback ของ multer ใน `src/upload.js` และ `ttimport.js` ห่อ try/catch
 - ผล: `check-await` ไฟล์ของตอนนี้ 0 จุด · `tsc` ไม่มี error เรื่อง Promise ในไฟล์ของตอนนี้ (เหลือ admin.js work.js และชุดทดสอบ) · `node --check` ผ่านทุกไฟล์ใน `src/`
+
+## ตอน 7 · เส้นทางชุดใหญ่ work.js admin.js (5 ต.ค. 2569) ผ่าน
+
+- `src/routes/work.js` async ทั้งไฟล์: `RETURNING id` 2 จุด · `to_int_lenient` 4 จุด (รวมใน `MAX`) · `loadSub` `loadFile` `parentPlanFor` ใช้ `util.idOrNull` (id เสียตอบ "ไม่พบงานนี้" ด้วยข้อความเดิมของแต่ละหน้า) · ส่วนบันทึกการแก้ไขแยกเป็น `saveEdit()` · callback ของตัวรับไฟล์ใน `POST /s/:id` ห่อ try/catch ทุกทาง
+- **กันส่งงานซ้ำ:** ตรวจงานซ้ำและโควตาแผนย้ายเข้า transaction คำสั่งแรกคือ `SELECT pg_advisory_xact_lock(<teacher_id>)` (`lockTeacher`) ทั้งตอนส่งใหม่และตอนแก้รหัสวิชา
+- `src/routes/admin.js` async ทั้งไฟล์: `RETURNING id` 2 จุด · `string_agg(... ORDER BY u.id)` · `ILIKE ... ESCAPE ''` · `NULLS FIRST` 2 จุด · ชื่อผู้ใช้ซ้ำเช็กด้วย `lower(username)` (`usernameTaken`) · หน้ารายชื่อผู้ใช้ไม่ดึงรหัสผ่านและลายเซ็น และอ่านบทบาททุกคนในคำสั่งเดียว · หน้าแรกผู้ดูแลนับ 7 ตัวในคำสั่งเดียว · `forEach` ใน transaction เปลี่ยนเป็น `for` · หลังแก้ขั้นตอนตรวจและแบบประเมินเรียก `db.clearRefs()` · หน้าตั้งค่าแยก `saveSettings()` เขียนรูปโลโก้เฉพาะเมื่อแนบใหม่หรือติ๊กลบ (ไม่เขียนที่อยู่ `/media/...` ทับรูปจริง)
+- `GET /admin/backup` ตอบหน้าแจ้ง (503) "ระบบสำรองข้อมูลกำลังปรับปรุง ยังใช้ไม่ได้ชั่วคราว" ไปก่อน แก้จริงในตอน 10
+- error ที่จับด้วยข้อความของ SQLite: ค้นแล้วไม่มีใน `src/` ไม่ต้องแก้ · ข้อความใน `src/pdf.js` คงไว้ตามแผน (ตัดในตอน 10)
+- ผล: `check-await` ทั้ง `src/` 26 ไฟล์ 0 จุด · `tsc` ไม่มี error เรื่อง Promise ใน `src/` · `node --check` ผ่านทุกไฟล์
+
+**ข้อความบนจอที่เพิ่มใหม่ (รอผู้ใช้เห็นชอบ):** หน้าสำรองข้อมูลชั่วคราวตามข้อบน

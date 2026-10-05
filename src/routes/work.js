@@ -103,11 +103,11 @@ async function preparePdf(req, docType, code) {
   return ` รวม ${list.length} ไฟล์เป็นไฟล์เดียวแล้ว ${merged.pages} หน้า`;
 }
 
-function saveFiles(subId, req, field, kind) {
+async function saveFiles(subId, req, field, kind) {
   const now = nowStr();
   for (const f of (req.files && req.files[field]) || []) {
     const ext = path.extname(f.originalname).toLowerCase();
-    q.run(
+    await q.run(
       'INSERT INTO files (submission_id, kind, original_name, stored_name, mime, size, uploaded_at) VALUES (?, ?, ?, ?, ?, ?, ?)',
       subId,
       kind,
@@ -124,7 +124,10 @@ function currentFiles(subId) {
   return q.all('SELECT * FROM files WHERE submission_id = ? AND is_current = 1 ORDER BY id', subId);
 }
 
-function loadSub(id) {
+// id ใช้ไม่ได้ (ไม่ใช่เลข หรือเกินช่วง) ถือว่าไม่พบ แต่ละหน้าตอบ "ไม่พบ" ด้วยข้อความของตัวเองเหมือนเดิม
+async function loadSub(id) {
+  const n = util.idOrNull(id);
+  if (n === null) return undefined;
   return q.get(
     `SELECT s.*, u.full_name AS teacher_name, u.position AS teacher_position, d.name AS dept_name,
        p.status AS parent_status
@@ -133,14 +136,20 @@ function loadSub(id) {
      LEFT JOIN departments d ON d.id = s.department_id
      LEFT JOIN submissions p ON p.id = s.parent_id
      WHERE s.id = ?`,
-    Number(id)
+    n
   );
 }
 
-function viewable(req, id) {
-  const sub = loadSub(id);
-  if (!sub || !wf.canView(req.me, sub)) return null;
+async function viewable(req, id) {
+  const sub = await loadSub(id);
+  if (!sub || !(await wf.canView(req.me, sub))) return null;
   return sub;
+}
+
+async function loadFile(id) {
+  const n = util.idOrNull(id);
+  if (n === null) return undefined;
+  return q.get('SELECT * FROM files WHERE id = ?', n);
 }
 
 // แก้ไขได้: เจ้าของงาน หรือผู้ดูแลระบบ (แก้แทนครู) เมื่อเป็นฉบับร่างหรือถูกส่งกลับ
@@ -207,12 +216,12 @@ function noteFields(b, ff) {
 }
 
 // ตรวจความครบถ้วนก่อนส่งให้ผู้ตรวจ (ตอนบันทึกร่างไม่ต้องครบ)
-function missingForSubmit(sub, ff) {
+async function missingForSubmit(sub, ff) {
   const miss = [];
   if (sub.doc_type === 'note') {
     if (!sub.plan_no && !sub.topic) miss.push('แผนที่ หรือ เรื่อง');
     if (sub.note_mode === 'file') {
-      if (currentFiles(sub.id).length === 0) miss.push('ไฟล์บันทึกหลังแผนของคุณ');
+      if ((await currentFiles(sub.id)).length === 0) miss.push('ไฟล์บันทึกหลังแผนของคุณ');
     } else if (!sub.result_k && !sub.result_p && !sub.result_a) miss.push('ผลการจัดการเรียนรู้อย่างน้อย 1 ด้าน');
     if (ff.counts && (sub.students_total == null || sub.students_passed == null)) miss.push('จำนวนนักเรียนทั้งหมดและจำนวนที่ผ่านจุดประสงค์');
     if (sub.students_total != null && sub.students_passed != null && sub.students_passed > sub.students_total) {
@@ -222,7 +231,7 @@ function missingForSubmit(sub, ff) {
     if (!sub.subject_code) miss.push('รหัสวิชา');
     if (!sub.subject_name) miss.push('ชื่อวิชา');
     if (!sub.grade_level) miss.push('ระดับชั้น');
-    const cur = currentFiles(sub.id);
+    const cur = await currentFiles(sub.id);
     if (ff.pdfonly) {
       if (!cur.length) miss.push('ไฟล์ PDF');
       else if (cur.some((x) => x.mime !== 'application/pdf')) miss.push('ไฟล์ PDF แทนไฟล์ Word หรือไฟล์ชนิดอื่นที่แนบไว้');
@@ -232,9 +241,9 @@ function missingForSubmit(sub, ff) {
   return miss;
 }
 
-function trySubmit(req, subId) {
-  const sub = wf.getSub(subId);
-  const miss = missingForSubmit(sub, req.ff);
+async function trySubmit(req, subId) {
+  const sub = await wf.getSub(subId);
+  const miss = await missingForSubmit(sub, req.ff);
   if (miss.length) throw new UserError(`บันทึกร่างไว้แล้ว แต่ยังส่งไม่ได้ ต้องกรอก ${miss.join(' และ ')}`);
   // ผู้ดูแลระบบส่งแทนครูได้แม้ปิดรับแล้ว
   if (req.me.is_admin && req.me.id !== sub.teacher_id) return wf.submitAs(subId, req.me);
@@ -252,25 +261,25 @@ function submittedMessage(sub) {
 
 // บันทึกแล้ว ถ้าครูกดส่งด้วยให้ส่งต่อ ส่งไม่ผ่านก็ยังเก็บร่างไว้ แล้วพากลับไปหน้าแก้ไข
 // รายวิชาที่ใช้ในช่องรหัสวิชา: วิชาที่ครูสอนขึ้นก่อน ตามด้วยรายวิชาของโรงเรียน
-function subjectChoices(req) {
-  const mine = req.ff.teachlist ? teaching.list(req.me.id, Number(req.settings.academic_year), Number(req.settings.semester)) : [];
+async function subjectChoices(req) {
+  const mine = req.ff.teachlist ? await teaching.list(req.me.id, Number(req.settings.academic_year), Number(req.settings.semester)) : [];
   const out = mine.map((x) => ({ code: x.subject_code, name: x.subject_name, grade: x.grade_level }));
   const seen = new Set(out.map((x) => x.code));
-  for (const x of q.all('SELECT * FROM subjects ORDER BY code')) if (!seen.has(x.code)) out.push(x);
+  for (const x of await q.all('SELECT * FROM subjects ORDER BY code')) if (!seen.has(x.code)) out.push(x);
   return out;
 }
 
 // จำวิชาที่ส่งงานไว้ในรายการรายวิชาที่สอน (ส่งแผน = วิชาหลัก)
-function rememberSubject(req, sub, f) {
+async function rememberSubject(req, sub, f) {
   if (!req.ff.teachlist || !f.subject_code || teaching.skipActivity(f.subject_code)) return;
-  const owner = sub.teacher_id === req.me.id ? req.me : q.get('SELECT * FROM users WHERE id = ?', sub.teacher_id);
-  teaching.ensure(owner, sub.academic_year, sub.semester, { code: f.subject_code, name: f.subject_name, grade: f.grade_level }, sub.doc_type === 'plan');
+  const owner = sub.teacher_id === req.me.id ? req.me : await q.get('SELECT id, plan_quota FROM users WHERE id = ?', sub.teacher_id);
+  await teaching.ensure(owner, sub.academic_year, sub.semester, { code: f.subject_code, name: f.subject_name, grade: f.grade_level }, sub.doc_type === 'plan');
 }
 
-function finishSave(req, res, id, wantSubmit, savedMsg) {
+async function finishSave(req, res, id, wantSubmit, savedMsg) {
   if (!wantSubmit) return respond(req, res, `/s/${id}`, 'success', savedMsg);
   try {
-    const sub = trySubmit(req, id);
+    const sub = await trySubmit(req, id);
     return respond(req, res, `/s/${id}`, 'success', submittedMessage(sub));
   } catch (e) {
     if (e instanceof UserError || e instanceof wf.WorkflowError) return respond(req, res, `/s/${id}/edit`, 'error', e.message);
@@ -279,7 +288,7 @@ function finishSave(req, res, id, wantSubmit, savedMsg) {
 }
 
 function findDuplicate(teacherId, year, sem, docType, code, exceptId = 0) {
-  if (!code) return null;
+  if (!code) return Promise.resolve(null);
   return q.get(
     'SELECT id FROM submissions WHERE doc_type = ? AND teacher_id = ? AND academic_year = ? AND semester = ? AND subject_code = ? AND id != ?',
     docType,
@@ -291,33 +300,40 @@ function findDuplicate(teacherId, year, sem, docType, code, exceptId = 0) {
   );
 }
 
+// กันกดส่งสองครั้งเร็ว ๆ: งานของครูคนเดียวกันต่อคิวทีละคำขอจนจบ transaction ต้องเป็นคำสั่งแรกใน transaction
+function lockTeacher(teacherId) {
+  return q.get('SELECT pg_advisory_xact_lock(?) AS x', teacherId);
+}
+
 // ---------- คู่มือรายวิชา และ แผนการจัดการเรียนรู้ ----------
 
 const workUpload = uploader([{ name: 'main_files', maxCount: 10 }]);
 
-router.get('/works/new', (req, res) => {
+router.get('/works/new', async (req, res) => {
   const type = WORK_TYPES.includes(req.query.type) ? req.query.type : 'manual';
   if (!req.me.department_id) throw new UserError('บัญชีของคุณยังไม่ได้กำหนดกลุ่มสาระ กรุณาแจ้งผู้ดูแลระบบ');
   const year = Number(req.settings.academic_year);
   const sem = Number(req.settings.semester);
   if (type === 'plan' && req.ff.onemain) {
-    const why = teaching.planBlocked(req.me, year, sem);
+    const why = await teaching.planBlocked(req.me, year, sem);
     if (why) throw new UserError(why);
   }
   const sub = { doc_type: type, academic_year: year, semester: sem, teaching_methods: '[]' };
   // กดมาจากรายวิชาที่มีอยู่แล้ว ให้กรอกรหัสและชื่อวิชาให้เลย
-  const from = req.query.from ? q.get('SELECT * FROM submissions WHERE id = ? AND teacher_id = ?', Number(req.query.from), req.me.id) : null;
+  const fromId = util.idOrNull(req.query.from);
+  const from = fromId ? await q.get('SELECT * FROM submissions WHERE id = ? AND teacher_id = ?', fromId, req.me.id) : null;
+  const subjects = await subjectChoices(req);
   if (from) Object.assign(sub, { subject_code: from.subject_code, subject_name: from.subject_name, grade_level: from.grade_level });
   else if (req.query.code) {
     const code = str(req.query.code, 30);
-    const x = subjectChoices(req).find((c) => c.code === code);
+    const x = subjects.find((c) => c.code === code);
     Object.assign(sub, { subject_code: code, subject_name: x ? x.name : '', grade_level: x ? x.grade : '' });
   }
   res.render('work_form', {
     title: `ส่ง${wf.DOC_TYPES[type].label}`,
     sub,
     files: [],
-    subjects: subjectChoices(req),
+    subjects,
     window: submitWindow(req.settings),
     isNew: true,
   });
@@ -332,10 +348,7 @@ router.post('/works', workUpload, async (req, res) => {
   let problem = null;
   if (!type) problem = 'ไม่รู้จักชนิดงาน';
   else if (!req.me.department_id) problem = 'บัญชีของคุณยังไม่ได้กำหนดกลุ่มสาระ กรุณาแจ้งผู้ดูแลระบบ';
-  else if (findDuplicate(req.me.id, year, sem, type, f.subject_code)) {
-    problem = `${wf.DOC_TYPES[type].label}วิชา ${f.subject_code} ส่งไว้แล้วในภาคเรียนนี้ ให้เปิดงานเดิมแล้วกดแก้ไขแทน`;
-  } else if (teaching.skipActivity(f.subject_code)) problem = 'วิชากิจกรรมพัฒนาผู้เรียน (รหัสขึ้นต้นด้วย ก) ไม่ต้องส่งแผนและคู่มือ';
-  else if (type === 'plan' && req.ff.onemain) problem = teaching.planBlocked(req.me, year, sem) || null;
+  else if (teaching.skipActivity(f.subject_code)) problem = 'วิชากิจกรรมพัฒนาผู้เรียน (รหัสขึ้นต้นด้วย ก) ไม่ต้องส่งแผนและคู่มือ';
   if (problem) {
     cleanupUploads(req);
     throw new UserError(problem);
@@ -345,11 +358,20 @@ router.post('/works', workUpload, async (req, res) => {
   const now = nowStr();
   let id;
   try {
-    id = q.tx(() => {
-      const r = q.run(
+    id = await q.tx(async () => {
+      // ตรวจงานซ้ำและโควตาแผนหลังล็อกครู กดส่งสองครั้งพร้อมกัน คำขอที่สองต้องรอแล้วเห็นงานแรก
+      await lockTeacher(req.me.id);
+      if (await findDuplicate(req.me.id, year, sem, type, f.subject_code)) {
+        throw new UserError(`${wf.DOC_TYPES[type].label}วิชา ${f.subject_code} ส่งไว้แล้วในภาคเรียนนี้ ให้เปิดงานเดิมแล้วกดแก้ไขแทน`);
+      }
+      if (type === 'plan' && req.ff.onemain) {
+        const why = await teaching.planBlocked(req.me, year, sem);
+        if (why) throw new UserError(why);
+      }
+      const r = await q.get(
         `INSERT INTO submissions (doc_type, teacher_id, department_id, academic_year, semester, subject_code, subject_name,
            grade_level, teaching_methods, link_url, doc_no, created_at, updated_at)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) RETURNING id`,
         type,
         req.me.id,
         req.me.department_id,
@@ -364,46 +386,43 @@ router.post('/works', workUpload, async (req, res) => {
         now,
         now
       );
-      const newId = Number(r.lastInsertRowid);
-      saveFiles(newId, req, 'main_files', 'main');
-      rememberSubject(req, { teacher_id: req.me.id, doc_type: type, academic_year: year, semester: sem }, f);
-      return newId;
+      await saveFiles(r.id, req, 'main_files', 'main');
+      await rememberSubject(req, { teacher_id: req.me.id, doc_type: type, academic_year: year, semester: sem }, f);
+      return r.id;
     });
   } catch (e) {
     cleanupUploads(req);
     throw e;
   }
-  finishSave(req, res, id, b.action === 'submit', `บันทึกร่างเรียบร้อย${mergedMsg} ยังไม่ได้ส่งให้ผู้ตรวจ`);
+  await finishSave(req, res, id, b.action === 'submit', `บันทึกร่างเรียบร้อย${mergedMsg} ยังไม่ได้ส่งให้ผู้ตรวจ`);
 });
 
 // ---------- บันทึกหลังแผน ----------
 
 const noteUpload = uploader([{ name: 'attach_files', maxCount: 10 }]);
 
-function parentPlanFor(req, planId) {
-  const plan = q.get("SELECT * FROM submissions WHERE id = ? AND doc_type = 'plan'", Number(planId));
+async function parentPlanFor(req, planId) {
+  const id = util.idOrNull(planId);
+  const plan = id === null ? undefined : await q.get("SELECT * FROM submissions WHERE id = ? AND doc_type = 'plan'", id);
   if (!plan || plan.teacher_id !== req.me.id) throw new UserError('ไม่พบแผนการจัดการเรียนรู้ของคุณ');
   if (plan.status === 'draft') throw new UserError('ต้องส่งแผนการจัดการเรียนรู้รายวิชานี้ก่อน จึงจะเขียนบันทึกหลังแผนได้');
   return plan;
 }
 
-router.get('/notes/new', (req, res) => {
-  const plan = parentPlanFor(req, req.query.plan);
+router.get('/notes/new', async (req, res) => {
+  const plan = await parentPlanFor(req, req.query.plan);
   // ใช้หน่วยและห้องเดียวกับบันทึกฉบับล่าสุด ครูไม่ต้องพิมพ์ซ้ำ
-  const last = q.get("SELECT * FROM submissions WHERE parent_id = ? AND doc_type = 'note' ORDER BY id DESC LIMIT 1", plan.id);
-  const maxNo = q.get(
-    "SELECT MAX(CAST(plan_no AS INTEGER)) AS n FROM submissions WHERE parent_id = ? AND doc_type = 'note'",
-    plan.id
-  ).n;
+  const last = await q.get("SELECT * FROM submissions WHERE parent_id = ? AND doc_type = 'note' ORDER BY id DESC LIMIT 1", plan.id);
+  const maxNo = (await q.get("SELECT MAX(to_int_lenient(plan_no)) AS n FROM submissions WHERE parent_id = ? AND doc_type = 'note'", plan.id)).n;
   const sub = { plan_no: String((maxNo || 0) + 1), note_mode: last && req.ff.notefile ? last.note_mode : 'type' };
   if (last) Object.assign(sub, { unit_no: last.unit_no, unit_name: last.unit_name, class_room: last.class_room, hours: last.hours, students_total: last.students_total });
-  res.render('note_form', { title: 'เขียนบันทึกหลังแผน', plan, sub, files: [], isNew: true, ...noteHelpers(req, plan.id, 0) });
+  res.render('note_form', { title: 'เขียนบันทึกหลังแผน', plan, sub, files: [], isNew: true, ...(await noteHelpers(req, plan.id, 0)) });
 });
 
 // ประโยคสำเร็จรูป และข้อความจากบันทึกฉบับก่อนหน้าให้คัดลอกมาแก้
-function noteHelpers(req, planId, exceptId) {
+async function noteHelpers(req, planId, exceptId) {
   const prev = req.ff.chips
-    ? q.get(
+    ? await q.get(
         "SELECT plan_no, result_k, result_p, result_a, problems, suggestions FROM submissions WHERE parent_id = ? AND doc_type = 'note' AND id != ? AND note_mode = 'type' AND (result_k != '' OR result_p != '' OR result_a != '') ORDER BY id DESC LIMIT 1",
         planId,
         exceptId
@@ -412,11 +431,11 @@ function noteHelpers(req, planId, exceptId) {
   return { phrases: req.ff.chips ? features.phrases(req.settings) : null, prev: prev || null };
 }
 
-router.post('/notes', noteUpload, (req, res) => {
+router.post('/notes', noteUpload, async (req, res) => {
   const b = req.body || {};
   let plan;
   try {
-    plan = parentPlanFor(req, b.plan_id);
+    plan = await parentPlanFor(req, b.plan_id);
   } catch (e) {
     cleanupUploads(req);
     throw e;
@@ -426,11 +445,11 @@ router.post('/notes', noteUpload, (req, res) => {
   const now = nowStr();
   let id;
   try {
-    id = q.tx(() => {
-      const r = q.run(
+    id = await q.tx(async () => {
+      const r = await q.get(
         `INSERT INTO submissions (doc_type, parent_id, teacher_id, department_id, academic_year, semester, subject_code, subject_name,
            grade_level, ${NOTE_COLS.join(', ')}, created_at, updated_at)
-         VALUES ('note', ?, ?, ?, ?, ?, ?, ?, ?, ${NOTE_COLS.map(() => '?').join(', ')}, ?, ?)`,
+         VALUES ('note', ?, ?, ?, ?, ?, ?, ?, ?, ${NOTE_COLS.map(() => '?').join(', ')}, ?, ?) RETURNING id`,
         plan.id,
         req.me.id,
         plan.department_id,
@@ -443,9 +462,8 @@ router.post('/notes', noteUpload, (req, res) => {
         now,
         now
       );
-      const newId = Number(r.lastInsertRowid);
-      saveFiles(newId, req, 'attach_files', 'attach');
-      return newId;
+      await saveFiles(r.id, req, 'attach_files', 'attach');
+      return r.id;
     });
   } catch (e) {
     cleanupUploads(req);
@@ -455,21 +473,21 @@ router.post('/notes', noteUpload, (req, res) => {
     req.flash('success', `บันทึกร่างแผนที่ ${f.plan_no || ''} แล้ว เขียนฉบับต่อไปได้เลย`);
     return respond(req, res, `/notes/new?plan=${plan.id}`, null, null);
   }
-  finishSave(req, res, id, b.action === 'submit', 'บันทึกร่างเรียบร้อย ยังไม่ได้ส่งให้ผู้ตรวจ');
+  await finishSave(req, res, id, b.action === 'submit', 'บันทึกร่างเรียบร้อย ยังไม่ได้ส่งให้ผู้ตรวจ');
 });
 
 // ส่งบันทึกหลังแผนหลายฉบับพร้อมกัน
-router.post('/notes/submit-many', (req, res) => {
+router.post('/notes/submit-many', async (req, res) => {
   const b = req.body || {};
-  const ids = asArray(b.ids).map(Number).filter(Boolean);
+  const ids = asArray(b.ids).map(util.idOrNull).filter(Boolean);
   if (!ids.length) throw new UserError('ยังไม่ได้เลือกบันทึกที่จะส่ง');
   let ok = 0;
   const problems = [];
   for (const id of ids) {
-    const sub = loadSub(id);
+    const sub = await loadSub(id);
     if (!editable(req, sub) || sub.doc_type !== 'note') continue;
     try {
-      trySubmit(req, id);
+      await trySubmit(req, id);
       ok += 1;
     } catch (e) {
       if (!(e instanceof UserError || e instanceof wf.WorkflowError)) throw e;
@@ -489,20 +507,20 @@ function approveLabel(sub) {
   return last && last.role === sub.current_role ? 'ลงนามอนุญาต' : 'ลงนามเห็นชอบ';
 }
 
-router.get('/s/:id', (req, res) => {
-  const sub = viewable(req, req.params.id);
+router.get('/s/:id', async (req, res) => {
+  const sub = await viewable(req, req.params.id);
   if (!sub) return res.status(404).render('error', { title: 'ไม่พบงานนี้', message: 'ไม่พบงานนี้ หรือคุณไม่มีสิทธิ์เปิดดู' });
-  const files = q.all('SELECT * FROM files WHERE submission_id = ? ORDER BY is_current DESC, id', sub.id);
+  const files = await q.all('SELECT * FROM files WHERE submission_id = ? ORDER BY is_current DESC, id', sub.id);
   const notes =
     sub.doc_type === 'plan'
-      ? q.all("SELECT * FROM submissions WHERE parent_id = ? AND doc_type = 'note' ORDER BY CAST(plan_no AS INTEGER), id", sub.id)
+      ? await q.all("SELECT * FROM submissions WHERE parent_id = ? AND doc_type = 'note' ORDER BY to_int_lenient(plan_no), id", sub.id)
       : [];
-  const reviews = wf.reviewsOf(sub.id);
+  const reviews = await wf.reviewsOf(sub.id);
   const lastReturn = [...reviews].reverse().find((r) => r.action === 'return');
   const sibling =
     sub.doc_type === 'note'
       ? null
-      : q.get(
+      : await q.get(
           'SELECT id, doc_type, status, current_role FROM submissions WHERE teacher_id = ? AND academic_year = ? AND semester = ? AND subject_code = ? AND doc_type = ?',
           sub.teacher_id,
           sub.academic_year,
@@ -510,7 +528,7 @@ router.get('/s/:id', (req, res) => {
           sub.subject_code,
           sub.doc_type === 'plan' ? 'manual' : 'plan'
         );
-  const parent = sub.parent_id ? q.get('SELECT id, subject_code, subject_name, status FROM submissions WHERE id = ?', sub.parent_id) : null;
+  const parent = sub.parent_id ? await q.get('SELECT id, subject_code, subject_name, status FROM submissions WHERE id = ?', sub.parent_id) : null;
   res.render('detail', {
     title: `${wf.DOC_TYPES[sub.doc_type].label} ${sub.subject_code}`,
     sub,
@@ -520,153 +538,161 @@ router.get('/s/:id', (req, res) => {
     lastReturn,
     sibling,
     parent,
-    steps: wf.progress(sub),
+    steps: await wf.progress(sub),
     canReview: wf.canReview(req.me, sub),
     needsScore: wf.needsScore(sub),
     rubric: wf.rubric(sub.doc_type),
     canEdit: editable(req, sub),
-    canWithdraw: wf.canWithdraw(req.me, sub),
+    canWithdraw: await wf.canWithdraw(req.me, sub),
     canDelete: (wf.isOwner(req.me, sub) && sub.status === 'draft' && !sub.submitted_at) || req.me.is_admin,
     isOwner: wf.isOwner(req.me, sub),
-    canPlan: !req.ff.onemain || !teaching.planBlocked(req.me, Number(req.settings.academic_year), Number(req.settings.semester)),
+    canPlan: !req.ff.onemain || !(await teaching.planBlocked(req.me, Number(req.settings.academic_year), Number(req.settings.semester))),
     approveLabel: approveLabel(sub),
   });
 });
 
-router.get('/s/:id/edit', (req, res) => {
-  const sub = viewable(req, req.params.id);
+router.get('/s/:id/edit', async (req, res) => {
+  const sub = await viewable(req, req.params.id);
   if (!editable(req, sub)) throw new UserError('แก้ไขได้เฉพาะงานของตนเองที่เป็นฉบับร่างหรือถูกส่งกลับ');
-  const files = currentFiles(sub.id);
-  const lastReturn = [...wf.reviewsOf(sub.id)].reverse().find((r) => r.action === 'return');
+  const files = await currentFiles(sub.id);
+  const lastReturn = [...(await wf.reviewsOf(sub.id))].reverse().find((r) => r.action === 'return');
   if (sub.doc_type !== 'note') {
     return res.render('work_form', {
       lastReturn,
       title: `แก้ไข${wf.DOC_TYPES[sub.doc_type].label}`,
       sub,
       files,
-      subjects: subjectChoices(req),
+      subjects: await subjectChoices(req),
       window: submitWindow(req.settings),
       isNew: false,
     });
   }
-  const plan = q.get('SELECT * FROM submissions WHERE id = ?', sub.parent_id);
-  res.render('note_form', { title: 'แก้ไขบันทึกหลังแผน', plan, sub, files, lastReturn, isNew: false, ...noteHelpers(req, plan.id, sub.id) });
+  const plan = await q.get('SELECT * FROM submissions WHERE id = ?', sub.parent_id);
+  res.render('note_form', { title: 'แก้ไขบันทึกหลังแผน', plan, sub, files, lastReturn, isNew: false, ...(await noteHelpers(req, plan.id, sub.id)) });
 });
 
-router.post('/s/:id', (req, res, next) => {
-  const sub = viewable(req, req.params.id);
+// บันทึกการแก้ไขลงฐาน (ทั้งหมดใน transaction เดียว)
+async function saveEdit(req, sub, b, now) {
+  await q.tx(async () => {
+    if (sub.doc_type === 'note') {
+      const f = noteFields(b, req.ff);
+      await q.run(
+        `UPDATE submissions SET ${NOTE_COLS.map((c) => `${c} = ?`).join(', ')}, updated_at = ? WHERE id = ?`,
+        ...NOTE_COLS.map((c) => f[c]),
+        now,
+        sub.id
+      );
+    } else {
+      const f = workFields(b, sub.doc_type);
+      if (teaching.skipActivity(f.subject_code) && f.subject_code !== sub.subject_code) throw new UserError('วิชากิจกรรมพัฒนาผู้เรียน (รหัสขึ้นต้นด้วย ก) ไม่ต้องส่งแผนและคู่มือ');
+      // ล็อกครูก่อนตรวจซ้ำ เหมือนตอนส่งงานใหม่
+      await lockTeacher(sub.teacher_id);
+      if (await findDuplicate(sub.teacher_id, sub.academic_year, sub.semester, sub.doc_type, f.subject_code, sub.id)) {
+        throw new UserError(`${wf.DOC_TYPES[sub.doc_type].label}วิชา ${f.subject_code} มีอยู่แล้วในภาคเรียนนี้`);
+      }
+      await q.run(
+        'UPDATE submissions SET subject_code = ?, subject_name = ?, grade_level = ?, teaching_methods = ?, link_url = ?, doc_no = ?, updated_at = ? WHERE id = ?',
+        f.subject_code,
+        f.subject_name,
+        f.grade_level,
+        f.teaching_methods,
+        f.link_url,
+        f.doc_no,
+        now,
+        sub.id
+      );
+      await rememberSubject(req, sub, f);
+      // บันทึกหลังแผนของเล่มนี้ ใช้รหัสและชื่อวิชาตามแผน
+      if (sub.doc_type === 'plan') {
+        await q.run(
+          "UPDATE submissions SET subject_code = ?, subject_name = ?, grade_level = ? WHERE parent_id = ? AND doc_type = 'note'",
+          f.subject_code,
+          f.subject_name,
+          f.grade_level,
+          sub.id
+        );
+      }
+    }
+    // ไฟล์ที่ติ๊กเอาออก เก็บไว้เป็นประวัติ ไม่ลบทิ้ง
+    for (const fid of asArray(b.remove_files).map(util.idOrNull).filter((x) => x !== null)) {
+      await q.run('UPDATE files SET is_current = 0 WHERE id = ? AND submission_id = ?', fid, sub.id);
+    }
+    if (sub.doc_type === 'note') await saveFiles(sub.id, req, 'attach_files', 'attach');
+    else {
+      // PDF ไฟล์เดียว: แนบไฟล์ใหม่แล้วไฟล์เดิมย้ายไปเป็นประวัติ
+      if (req.ff.pdfonly && ((req.files && req.files.main_files) || []).length) {
+        await q.run('UPDATE files SET is_current = 0 WHERE submission_id = ? AND is_current = 1', sub.id);
+      }
+      await saveFiles(sub.id, req, 'main_files', 'main');
+    }
+  });
+}
+
+router.post('/s/:id', async (req, res, next) => {
+  const sub = await viewable(req, req.params.id);
   if (!editable(req, sub)) return next(new UserError('แก้ไขได้เฉพาะงานของตนเองที่เป็นฉบับร่างหรือถูกส่งกลับ'));
   const mw = sub.doc_type === 'note' ? noteUpload : workUpload;
+  // callback แบบเก่า Express 5 ไม่จับ error ให้ ทุกทางต้องจบที่ next(e)
   mw(req, res, async (err) => {
-    if (err) return next(err);
-    const b = req.body || {};
-    const now = nowStr();
-    let mergedMsg = '';
     try {
-      rejectBadFiles(req);
-      if (sub.doc_type !== 'note') mergedMsg = await preparePdf(req, sub.doc_type, str(b.subject_code, 30));
-      q.tx(() => {
-        if (sub.doc_type === 'note') {
-          const f = noteFields(b, req.ff);
-          q.run(
-            `UPDATE submissions SET ${NOTE_COLS.map((c) => `${c} = ?`).join(', ')}, updated_at = ? WHERE id = ?`,
-            ...NOTE_COLS.map((c) => f[c]),
-            now,
-            sub.id
-          );
-        } else {
-          const f = workFields(b, sub.doc_type);
-          if (teaching.skipActivity(f.subject_code) && f.subject_code !== sub.subject_code) throw new UserError('วิชากิจกรรมพัฒนาผู้เรียน (รหัสขึ้นต้นด้วย ก) ไม่ต้องส่งแผนและคู่มือ');
-          if (findDuplicate(sub.teacher_id, sub.academic_year, sub.semester, sub.doc_type, f.subject_code, sub.id)) {
-            throw new UserError(`${wf.DOC_TYPES[sub.doc_type].label}วิชา ${f.subject_code} มีอยู่แล้วในภาคเรียนนี้`);
-          }
-          q.run(
-            'UPDATE submissions SET subject_code = ?, subject_name = ?, grade_level = ?, teaching_methods = ?, link_url = ?, doc_no = ?, updated_at = ? WHERE id = ?',
-            f.subject_code,
-            f.subject_name,
-            f.grade_level,
-            f.teaching_methods,
-            f.link_url,
-            f.doc_no,
-            now,
-            sub.id
-          );
-          rememberSubject(req, sub, f);
-          // บันทึกหลังแผนของเล่มนี้ ใช้รหัสและชื่อวิชาตามแผน
-          if (sub.doc_type === 'plan') {
-            q.run(
-              "UPDATE submissions SET subject_code = ?, subject_name = ?, grade_level = ? WHERE parent_id = ? AND doc_type = 'note'",
-              f.subject_code,
-              f.subject_name,
-              f.grade_level,
-              sub.id
-            );
-          }
-        }
-        // ไฟล์ที่ติ๊กเอาออก เก็บไว้เป็นประวัติ ไม่ลบทิ้ง
-        for (const fid of asArray(b.remove_files)) {
-          q.run('UPDATE files SET is_current = 0 WHERE id = ? AND submission_id = ?', Number(fid), sub.id);
-        }
-        if (sub.doc_type === 'note') saveFiles(sub.id, req, 'attach_files', 'attach');
-        else {
-          // PDF ไฟล์เดียว: แนบไฟล์ใหม่แล้วไฟล์เดิมย้ายไปเป็นประวัติ
-          if (req.ff.pdfonly && ((req.files && req.files.main_files) || []).length) {
-            q.run('UPDATE files SET is_current = 0 WHERE submission_id = ? AND is_current = 1', sub.id);
-          }
-          saveFiles(sub.id, req, 'main_files', 'main');
-        }
-      });
-    } catch (e) {
-      cleanupUploads(req);
-      return next(e);
-    }
-    try {
-      finishSave(req, res, sub.id, b.action === 'submit', `บันทึกการแก้ไขเรียบร้อย${mergedMsg} ยังไม่ได้ส่งให้ผู้ตรวจ`);
+      if (err) return next(err);
+      const b = req.body || {};
+      const now = nowStr();
+      let mergedMsg = '';
+      try {
+        rejectBadFiles(req);
+        if (sub.doc_type !== 'note') mergedMsg = await preparePdf(req, sub.doc_type, str(b.subject_code, 30));
+        await saveEdit(req, sub, b, now);
+      } catch (e) {
+        cleanupUploads(req);
+        return next(e);
+      }
+      await finishSave(req, res, sub.id, b.action === 'submit', `บันทึกการแก้ไขเรียบร้อย${mergedMsg} ยังไม่ได้ส่งให้ผู้ตรวจ`);
     } catch (e) {
       next(e);
     }
   });
 });
 
-router.post('/s/:id/submit', (req, res) => {
-  const sub = viewable(req, req.params.id);
+router.post('/s/:id/submit', async (req, res) => {
+  const sub = await viewable(req, req.params.id);
   if (!editable(req, sub)) throw new UserError('ส่งได้เฉพาะงานของตนเองที่เป็นฉบับร่างหรือถูกส่งกลับ');
-  const after = trySubmit(req, sub.id);
+  const after = await trySubmit(req, sub.id);
   respond(req, res, `/s/${sub.id}`, 'success', submittedMessage(after));
 });
 
-router.post('/s/:id/withdraw', (req, res) => {
-  const sub = viewable(req, req.params.id);
+router.post('/s/:id/withdraw', async (req, res) => {
+  const sub = await viewable(req, req.params.id);
   if (!sub) throw new UserError('ไม่พบงานนี้');
-  wf.withdraw(sub.id, req.me);
+  await wf.withdraw(sub.id, req.me);
   respond(req, res, `/s/${sub.id}`, 'success', 'ดึงงานกลับมาแก้ไขแล้ว แก้เสร็จอย่าลืมกดส่งอีกครั้ง');
 });
 
-function deleteSubmission(id) {
-  const ids = [id, ...q.all('SELECT id FROM submissions WHERE parent_id = ?', id).map((r) => r.id)];
+async function deleteSubmission(id) {
+  const ids = [id, ...(await q.all('SELECT id FROM submissions WHERE parent_id = ?', id)).map((r) => r.id)];
   const stored = [];
-  for (const sid of ids) for (const f of q.all('SELECT stored_name FROM files WHERE submission_id = ?', sid)) stored.push(f.stored_name);
-  q.tx(() => {
-    q.run('DELETE FROM submissions WHERE parent_id = ?', id);
-    q.run('DELETE FROM submissions WHERE id = ?', id);
+  for (const sid of ids) for (const f of await q.all('SELECT stored_name FROM files WHERE submission_id = ?', sid)) stored.push(f.stored_name);
+  await q.tx(async () => {
+    await q.run('DELETE FROM submissions WHERE parent_id = ?', id);
+    await q.run('DELETE FROM submissions WHERE id = ?', id);
   });
   stored.forEach(removeStored);
 }
 
-router.post('/s/:id/delete', (req, res) => {
-  const sub = viewable(req, req.params.id);
+router.post('/s/:id/delete', async (req, res) => {
+  const sub = await viewable(req, req.params.id);
   if (!sub) throw new UserError('ไม่พบงานนี้');
   const ownDraft = wf.isOwner(req.me, sub) && sub.status === 'draft' && !sub.submitted_at;
   if (!ownDraft && !req.me.is_admin) throw new UserError('ลบได้เฉพาะฉบับร่างที่ยังไม่เคยส่ง');
-  deleteSubmission(sub.id);
+  await deleteSubmission(sub.id);
   respond(req, res, sub.parent_id ? `/s/${sub.parent_id}` : '/my', 'success', 'ลบเรียบร้อย');
 });
 
 // ---------- ไฟล์ ----------
 
-router.get('/f/:id', (req, res) => {
-  const f = q.get('SELECT * FROM files WHERE id = ?', Number(req.params.id));
-  const sub = f && viewable(req, f.submission_id);
+router.get('/f/:id', async (req, res) => {
+  const f = await loadFile(req.params.id);
+  const sub = f && (await viewable(req, f.submission_id));
   if (!sub) return res.status(404).render('error', { title: 'ไม่พบไฟล์', message: 'ไม่พบไฟล์ หรือคุณไม่มีสิทธิ์เปิดดู' });
   const inline = !req.query.dl && /^(application\/pdf|image\/)/.test(f.mime);
   res.set('Content-Type', f.mime || 'application/octet-stream');
@@ -678,9 +704,9 @@ router.get('/f/:id', (req, res) => {
 
 // ข้อมูลไฟล์สำหรับตัวแสดง PDF ในหน้าเว็บ ไม่บอกชื่อไฟล์และชนิดไฟล์ PDF
 // เพื่อไม่ให้โปรแกรมช่วยดาวน์โหลด (เช่น Internet Download Manager) ดักไปดาวน์โหลดแทนการแสดงผล
-router.get('/f/:id/raw', (req, res) => {
-  const f = q.get('SELECT * FROM files WHERE id = ?', Number(req.params.id));
-  const sub = f && viewable(req, f.submission_id);
+router.get('/f/:id/raw', async (req, res) => {
+  const f = await loadFile(req.params.id);
+  const sub = f && (await viewable(req, f.submission_id));
   if (!sub) return res.status(404).end();
   res.set('Content-Type', 'application/x-lesson-file');
   res.set('Cache-Control', 'private, no-store');
@@ -690,9 +716,9 @@ router.get('/f/:id/raw', (req, res) => {
 });
 
 // หน้าเปิดอ่านไฟล์ในเว็บ (PDF ทุกหน้า หรือรูป) ไม่ขึ้นกับการตั้งค่าเบราว์เซอร์ที่สั่งให้ดาวน์โหลด
-router.get('/f/:id/view', (req, res) => {
-  const f = q.get('SELECT * FROM files WHERE id = ?', Number(req.params.id));
-  const sub = f && viewable(req, f.submission_id);
+router.get('/f/:id/view', async (req, res) => {
+  const f = await loadFile(req.params.id);
+  const sub = f && (await viewable(req, f.submission_id));
   if (!sub) return res.status(404).render('error', { title: 'ไม่พบไฟล์', message: 'ไม่พบไฟล์ หรือคุณไม่มีสิทธิ์เปิดดู' });
   if (!/^(application\/pdf|image\/)/.test(f.mime)) return res.redirect(`/f/${f.id}?dl=1`);
   res.render('file_view', { title: f.original_name, file: f, sub });
@@ -720,48 +746,48 @@ function scorer(sub) {
   );
 }
 
-function printData(sub) {
-  const firstSubmit = q.get(
+async function printData(sub) {
+  const firstSubmit = await q.get(
     "SELECT created_at FROM reviews WHERE submission_id = ? AND action IN ('submit', 'resubmit') ORDER BY id LIMIT 1",
     sub.id
   );
   return {
     sub,
-    steps: wf.progress(sub),
+    steps: await wf.progress(sub),
     scoreDetail: util.parseJson(sub.score_detail, []),
-    scorer: scorer(sub),
+    scorer: await scorer(sub),
     gradeFull: gradeFull(sub.grade_level),
     deptFull: deptFull(sub.dept_name),
     submitDate: firstSubmit ? firstSubmit.created_at : sub.created_at,
-    files: sub.doc_type === 'note' ? currentFiles(sub.id) : [],
+    files: sub.doc_type === 'note' ? await currentFiles(sub.id) : [],
   };
 }
 
 router.get('/s/:id/print', async (req, res) => {
-  const sub = viewable(req, req.params.id);
+  const sub = await viewable(req, req.params.id);
   if (!sub) return res.status(404).render('error', { title: 'ไม่พบงานนี้', message: 'ไม่พบงานนี้ หรือคุณไม่มีสิทธิ์เปิดดู' });
   const qr = sub.status === 'draft' ? '' : await qrSvg(req, sub);
   if (sub.doc_type === 'note') {
-    return res.render('print_notes', { title: 'พิมพ์บันทึกหลังแผน', items: [{ ...printData(sub), qr }] });
+    return res.render('print_notes', { title: 'พิมพ์บันทึกหลังแผน', items: [{ ...(await printData(sub)), qr }] });
   }
   const view = req.query.doc === 'eval' ? 'print_eval' : 'print_memo';
-  res.render(view, { title: 'พิมพ์', rubric: wf.rubric(sub.doc_type), ...printData(sub), qr });
+  res.render(view, { title: 'พิมพ์', rubric: wf.rubric(sub.doc_type), ...(await printData(sub)), qr });
 });
 
 // พิมพ์บันทึกหลังแผนทั้งเล่ม (เฉพาะฉบับที่ส่งแล้ว)
 router.get('/s/:id/print-notes', async (req, res) => {
-  const plan = viewable(req, req.params.id);
+  const plan = await viewable(req, req.params.id);
   if (!plan || plan.doc_type !== 'plan') return res.status(404).render('error', { title: 'ไม่พบงานนี้', message: 'ไม่พบแผนนี้' });
-  const ids = q
-    .all(
-      "SELECT id FROM submissions WHERE parent_id = ? AND doc_type = 'note' AND status != 'draft' ORDER BY CAST(plan_no AS INTEGER), id",
+  const ids = (
+    await q.all(
+      "SELECT id FROM submissions WHERE parent_id = ? AND doc_type = 'note' AND status != 'draft' ORDER BY to_int_lenient(plan_no), id",
       plan.id
     )
-    .map((r) => r.id);
+  ).map((r) => r.id);
   const items = [];
   for (const id of ids) {
-    const s = loadSub(id);
-    items.push({ ...printData(s), qr: await qrSvg(req, s) });
+    const s = await loadSub(id);
+    items.push({ ...(await printData(s)), qr: await qrSvg(req, s) });
   }
   res.render('print_notes', { title: 'พิมพ์บันทึกหลังแผนทั้งเล่ม', items });
 });
@@ -778,30 +804,30 @@ function collectScores(b) {
   return out;
 }
 
-function applySignature(req) {
+async function applySignature(req) {
   const b = req.body || {};
   if (b.signature && validSignature(b.signature)) {
-    q.run('UPDATE users SET signature = ? WHERE id = ?', b.signature, req.me.id);
+    await q.run('UPDATE users SET signature = ? WHERE id = ?', b.signature, req.me.id);
     req.me.signature = b.signature;
   }
 }
 
-router.post('/s/:id/approve', (req, res) => {
-  const sub = viewable(req, req.params.id);
+router.post('/s/:id/approve', async (req, res) => {
+  const sub = await viewable(req, req.params.id);
   if (!sub) throw new UserError('ไม่พบงานนี้');
-  applySignature(req);
+  await applySignature(req);
   const b = req.body || {};
-  const after = wf.approve(sub.id, req.me, { comment: str(b.comment), scores: collectScores(b) });
-  const next = wf.inbox(req.me)[0];
+  const after = await wf.approve(sub.id, req.me, { comment: str(b.comment), scores: collectScores(b) });
+  const next = (await wf.inbox(req.me))[0];
   const msg =
     after.status === 'approved' ? 'ลงนามเรียบร้อย งานนี้ผ่านครบทุกระดับแล้ว' : `ลงนามเรียบร้อย ส่งต่อให้${wf.stepOf(after.current_role).label}แล้ว`;
   respond(req, res, next ? `/s/${next.id}` : '/inbox', 'success', next ? `${msg} ต่อไปเป็นงานถัดไปที่รอคุณ` : msg);
 });
 
-router.post('/s/:id/return', (req, res) => {
-  const sub = viewable(req, req.params.id);
+router.post('/s/:id/return', async (req, res) => {
+  const sub = await viewable(req, req.params.id);
   if (!sub) throw new UserError('ไม่พบงานนี้');
-  wf.sendBack(sub.id, req.me, { comment: str((req.body || {}).comment) });
+  await wf.sendBack(sub.id, req.me, { comment: str((req.body || {}).comment) });
   respond(req, res, '/inbox', 'success', 'ส่งกลับให้ครูแก้ไขเรียบร้อย');
 });
 
@@ -811,41 +837,42 @@ function adminOnly(req) {
   if (!req.me.is_admin) throw new UserError('เฉพาะผู้ดูแลระบบ');
 }
 
-router.post('/s/:id/admin-advance', (req, res) => {
+router.post('/s/:id/admin-advance', async (req, res) => {
   adminOnly(req);
-  const sub = loadSub(req.params.id);
-  const st = sub && wf.stepOf(sub.current_role);
-  const after = wf.overrideStep(Number(req.params.id), req.me, { comment: str((req.body || {}).comment) });
-  features.audit(req.me, `ดำเนินการแทน${st ? st.label : ''} ${wf.DOC_TYPES[sub.doc_type].label} ${sub.subject_code} ของ ${sub.teacher_name}`, `submission ${sub.id}`);
+  const sub = await loadSub(req.params.id);
+  if (!sub) throw new UserError('ไม่พบงานนี้');
+  const st = wf.stepOf(sub.current_role);
+  const after = await wf.overrideStep(sub.id, req.me, { comment: str((req.body || {}).comment) });
+  await features.audit(req.me, `ดำเนินการแทน${st ? st.label : ''} ${wf.DOC_TYPES[sub.doc_type].label} ${sub.subject_code} ของ ${sub.teacher_name}`, `submission ${sub.id}`);
   respond(req, res, `/s/${sub.id}`, 'success', after.status === 'approved' ? 'ดำเนินการแทนแล้ว งานนี้ผ่านครบทุกระดับ' : `ดำเนินการแทนแล้ว ขณะนี้${wf.statusText(after)}`);
 });
 
-router.post('/s/:id/admin-finish', (req, res) => {
+router.post('/s/:id/admin-finish', async (req, res) => {
   adminOnly(req);
-  const sub = loadSub(req.params.id);
+  const sub = await loadSub(req.params.id);
   if (!sub) throw new UserError('ไม่พบงานนี้');
-  const miss = sub.status === 'pending' ? [] : missingForSubmit(sub, req.ff);
+  const miss = sub.status === 'pending' ? [] : await missingForSubmit(sub, req.ff);
   if (miss.length) throw new UserError(`ยังให้ผ่านไม่ได้ งานนี้ยังขาด ${miss.join(' และ ')} กดแก้ไขเพื่อเติมให้ครบก่อน`);
-  wf.overrideAll(sub.id, req.me, { comment: str((req.body || {}).comment) });
-  features.audit(req.me, `ให้ผ่านครบทุกระดับแทน ${wf.DOC_TYPES[sub.doc_type].label} ${sub.subject_code} ของ ${sub.teacher_name}`, `submission ${sub.id}`);
+  await wf.overrideAll(sub.id, req.me, { comment: str((req.body || {}).comment) });
+  await features.audit(req.me, `ให้ผ่านครบทุกระดับแทน ${wf.DOC_TYPES[sub.doc_type].label} ${sub.subject_code} ของ ${sub.teacher_name}`, `submission ${sub.id}`);
   respond(req, res, `/s/${sub.id}`, 'success', 'ดำเนินการแทนแล้ว งานนี้ผ่านครบทุกระดับ ช่องลายเซ็นในเอกสารเว้นไว้ให้เซ็นด้วยมือ');
 });
 
-router.post('/inbox/approve-many', (req, res) => {
+router.post('/inbox/approve-many', async (req, res) => {
   const b = req.body || {};
-  applySignature(req);
+  await applySignature(req);
   if (!req.me.signature) throw new UserError('กรุณาบันทึกลายเซ็นในหน้าข้อมูลส่วนตัวก่อน');
-  const ids = asArray(b.ids).map(Number).filter(Boolean);
+  const ids = asArray(b.ids).map(util.idOrNull).filter(Boolean);
   if (!ids.length) throw new UserError('ยังไม่ได้เลือกรายการ');
   let done = 0;
   let skipped = 0;
   for (const id of ids) {
-    const sub = wf.getSub(id);
-    if (!wf.canReview(req.me, sub) || wf.needsScore(sub)) {
+    const sub = await wf.getSub(id);
+    if (!sub || !wf.canReview(req.me, sub) || wf.needsScore(sub)) {
       skipped += 1;
       continue;
     }
-    wf.approve(id, req.me, { comment: str(b.comment) });
+    await wf.approve(id, req.me, { comment: str(b.comment) });
     done += 1;
   }
   const extra = skipped ? ` ข้าม ${skipped} รายการที่ต้องให้คะแนนก่อน หรือไม่ได้รอคุณแล้ว` : '';
