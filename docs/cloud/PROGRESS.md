@@ -283,6 +283,26 @@
 
 **ค้าง / ต้องถามผู้ใช้:** ไม่มี
 
+## ตอน 14 · ขึ้นใช้งานจริง (เริ่ม 6 ต.ค. 2569) กำลังทำ พักไว้
+
+ผู้ใช้สั่งทำต่อในแชทเดียวกับตอน 13 แล้วขอพักกลางตอน
+
+**ทำแล้ว**
+- **ข้อ 1 Supabase** (โปรเจกต์ `plan-system` id `uhvumfdiwvbeabvmobii` ภูมิภาค Singapore ผู้ใช้สร้างไว้แล้ว): ผู้ใช้อนุญาตให้ Claude รันผ่านเครื่องมือ Supabase ที่เชื่อมไว้แทนการวางใน SQL Editor · รัน `schema.sql` → `seed.sql` → `supabase-lockdown.sql` (migration ชื่อ schema_v1 seed_v1 lockdown_v1) · ตรวจเทียบกับไฟล์ต้นฉบับบน PGlite: ตาราง 17 · คอลัมน์ ดัชนี ค่าตั้ง กลุ่มสาระ ขั้นตอน แบบประเมิน md5 ตรงกันทุกชุด · ตารางที่ anon หรือ authenticated เข้าถึงได้ 0 · trigger audit_log 3 ตัว · `crypt()` ใช้ได้ (pgcrypto อยู่ใน schema extensions ซึ่งอยู่ใน search_path ของ postgres) · ปีการศึกษาเริ่มต้น 2569
+- **คำเตือนของ Supabase (security advisor)** แก้แล้ว (migration lockdown_functions): ฟังก์ชัน `audit_log_append_only` `to_int_lenient` ตั้ง `search_path = ''` · ถอนสิทธิ์เรียกฟังก์ชันใน public จาก public anon authenticated (รวม `rls_auto_enable()` ที่ Supabase สร้างเองจากการตั้งค่าเปิด RLS อัตโนมัติ ซึ่งเดิมคนไม่เข้าระบบเรียกได้) · แก้ใน `db/schema.sql` และ `db/supabase-lockdown.sql` ให้ตรงกันแล้ว · ที่เหลือคือ "RLS เปิดแต่ไม่มี policy" ระดับ INFO ตั้งใจไว้ (ปิดประตูทั้งหมด)
+- **`scripts/cloud-setup.js`** (ผู้ใช้รันในหน้าต่างคำสั่งแยกของตัวเอง): wrangler login · สร้าง Hyperdrive `plan-db` แบบ `--caching-disabled` (ถามที่อยู่ฐานแบบไม่แสดงบนจอ) แล้วใส่ id ใน wrangler.jsonc · build แล้ว `wrangler deploy --secrets-file` ไฟล์ชั่วคราวลบทันที · SESSION_SECRET สุ่ม · SETUP_TOKEN สุ่มแบบพิมพ์ง่าย แสดงบนจอและเก็บ `data-dev/production-setup-token.txt` · รหัส Google Drive อ่านจาก `.dev.vars` · รันซ้ำได้ ข้ามขั้นที่ทำแล้ว · **ยังไม่ได้รัน**
+- `npm test` 96 ผ่าน (หลังแก้ฟังก์ชันในโครงตาราง)
+
+**เอกสารล่าสุดต่างจากแผน (แจ้งผู้ใช้แล้ว):** ปุ่มปิด Data API ย้ายไปที่ Integrations → Data API → Overview สวิตช์ Enable Data API (แผนเขียน Settings → API) · Cloudflare ยังแนะนำ Direct connection กับ Hyperdrive · `--caching-disabled` ยังมีใน wrangler 4.147
+
+**รอผู้ใช้ (บอกแล้ว ผู้ใช้ขอพักก่อน):**
+1. ปิด Data API ที่ https://supabase.com/dashboard/project/uhvumfdiwvbeabvmobii/integrations/data_api/overview
+2. สมัครบัญชี Cloudflare แบบฟรี
+3. เตรียมรหัสผ่านฐานข้อมูล Supabase (ลืมให้ Reset ใน Project Settings → Database) ห้ามส่งในแชท
+4. ผู้ใช้พิมพ์ "พร้อม" แล้วนั่งที่คอม → Claude เปิดหน้าต่างคำสั่งแยก (Start-Process cmd แบบตอน 10) รัน `node scripts/cloud-setup.js` · บอกที่คัดลอก Direct connection string: ปุ่ม Connect บนสุดของหน้าโปรเจกต์ Supabase → Direct connection → แทน [YOUR-PASSWORD] ด้วยรหัสผ่านฐาน · ถ้า Hyperdrive ต่อไม่ได้ (Direct ของแบบฟรีอาจเป็น IPv6 อย่างเดียว) ใช้ Session pooler ห้าม Transaction pooler
+
+**ขั้นถัดไปหลังขึ้นเว็บ (แผนข้อ 6 ถึง 9):** ผู้ใช้เปิด `*.workers.dev/setup` กรอกรหัสตั้งค่าครั้งแรก สร้างผู้ดูแลระบบ ตั้ง public_url · `node scripts/check-cloud.js --base <เว็บจริง>` ด้วยบัญชีทดลองชื่อสมมติ (ตั้ง CHECK_ADMIN_USER CHECK_ADMIN_PASS · ไฟล์ทดลองจะเข้าโฟลเดอร์จริง ระบบส่งแผนการสอน ต้องย้ายไปถังขยะและลบบัญชีทดลองหลังตรวจ) · ทดสอบลงนามพร้อมกัน 2 คำขอ · ทดสอบ anon key อ่านตารางไม่ได้ · วัด CPU ใน Observability · เช็คนิยามการพักโปรเจกต์ของ Supabase แบบฟรี
+
 ## ไอเดียรอเสนอผู้ใช้หลังตอน 15 (ผู้ใช้สั่งไว้ 5 ต.ค. 2569 ว่าห้ามลืม)
 
 ทุกตอนที่เห็นไอเดียฟังก์ชันที่เป็นประโยชน์ ให้จดเพิ่มที่นี่ ไม่แทรกกลางงาน พอย้ายขึ้นคลาวด์เสร็จ (จบตอน 15) ต้องเสนอรายการนี้ให้ผู้ใช้เลือก พร้อมประโยชน์สั้น ๆ ของแต่ละข้อ

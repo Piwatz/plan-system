@@ -14,11 +14,14 @@ $$;
 revoke all on all tables in schema public from anon, authenticated;
 revoke all on all sequences in schema public from anon, authenticated;
 revoke all on all functions in schema public from anon, authenticated;
+-- Postgres ให้สิทธิ์เรียกฟังก์ชันแก่ทุกคน (public) เป็นค่าเริ่มต้น รวมฟังก์ชัน rls_auto_enable ที่ Supabase สร้างเอง ถอนทั้งหมด เหลือแต่เจ้าของ
+revoke execute on all functions in schema public from public;
 
 -- ค่าเริ่มต้นของ Supabase ให้สิทธิ์ตารางใหม่แก่ anon ถอนไว้ก่อนสำหรับตารางที่จะสร้างภายหลัง
 alter default privileges in schema public revoke all on tables from anon, authenticated;
 alter default privileges in schema public revoke all on sequences from anon, authenticated;
 alter default privileges in schema public revoke all on functions from anon, authenticated;
+alter default privileges in schema public revoke execute on functions from public;
 
 -- ตรวจผล: แสดงตารางที่ยังไม่ปิด (ยังไม่เปิด RLS หรือ anon และ authenticated ยังมีสิทธิ์ใด ๆ) ไม่มีแถว = ปิดครบทุกตาราง
 select c.relname as table_name, c.relrowsecurity as rls_on

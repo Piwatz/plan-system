@@ -172,7 +172,7 @@ create table if not exists audit_log (
   action text collate "C" not null,
   detail text collate "C" not null default ''
 );
-create or replace function audit_log_append_only() returns trigger language plpgsql as $$
+create or replace function audit_log_append_only() returns trigger language plpgsql set search_path = '' as $$
 begin
   raise exception 'audit_log is append-only';
 end;
@@ -229,7 +229,8 @@ create table if not exists drive_folders (
 
 -- เลขแผนที่ครูพิมพ์ (ยาวได้ 20 ตัว อาจว่าง หรือมีตัวอักษร) เป็นจำนวนเต็ม ใช้แทน CAST(plan_no AS INTEGER) ของ SQLite
 -- อ่านเฉพาะตัวเลขต้นข้อความไม่เกิน 9 หลัก กัน integer ล้น ไม่มีตัวเลขได้ 0
-create or replace function to_int_lenient(t text) returns integer language sql immutable as $$
+-- search_path ว่าง: ใช้แต่ฟังก์ชันใน pg_catalog (คำเตือนของ Supabase ตอน 14)
+create or replace function to_int_lenient(t text) returns integer language sql immutable set search_path = '' as $$
   select coalesce(nullif(substring(t from '^\s*([0-9]{1,9})'), '')::integer, 0)
 $$;
 
