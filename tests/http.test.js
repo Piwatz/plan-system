@@ -16,16 +16,16 @@ let base;
 let server;
 
 test.before(async () => {
-  seed.main();
+  await seed.main({ target: ':memory:', keepOpen: true });
   const { createApp } = require('../src/app');
   server = createApp().listen(0);
   await new Promise((r) => server.once('listening', r));
   base = `http://127.0.0.1:${server.address().port}`;
 });
 
-test.after(() => {
+test.after(async () => {
   server.close();
-  db.close();
+  await db.close();
   fs.rmSync(tmp, { recursive: true, force: true });
 });
 
@@ -107,7 +107,7 @@ test('ทุกหน้าเปิดได้ในทุกบทบาท',
 
 test('เปิดรายละเอียดและหน้าพิมพ์ของงานทุกชิ้นได้', async () => {
   const admin = await as('admin');
-  for (const s of db.q.all('SELECT id, doc_type FROM submissions')) {
+  for (const s of (await db.q.all('SELECT id, doc_type FROM submissions'))) {
     ok(await admin.get(`/s/${s.id}`), `/s/${s.id}`);
     ok(await admin.get(`/s/${s.id}/print`), `/s/${s.id}/print`);
     if (s.doc_type !== 'note') ok(await admin.get(`/s/${s.id}/print?doc=eval`), `/s/${s.id}/print?doc=eval`);
@@ -124,7 +124,7 @@ test('ครูต่างกลุ่มสาระเปิดงานข�
   const other = await as('math2');
   const r = await other.get('/s/1');
   assert.equal(r.status, 404);
-  const file = db.q.get('SELECT id FROM files WHERE submission_id = 1');
+  const file = (await db.q.get('SELECT id FROM files WHERE submission_id = 1'));
   assert.equal((await other.get(`/f/${file.id}`)).status, 404);
 });
 
@@ -141,10 +141,10 @@ test('ส่งคู่มือพร้อมไฟล์ แล้วผ่�
   assert.equal(r.status, 200, r.text);
   const json = JSON.parse(r.text);
   const id = Number(json.redirect.split('/').pop());
-  let sub = db.q.get('SELECT * FROM submissions WHERE id = ?', id);
+  let sub = (await db.q.get('SELECT * FROM submissions WHERE id = ?', id));
   assert.equal(sub.status, 'pending');
   assert.equal(sub.current_role, 'dept_head');
-  const f = db.q.get('SELECT * FROM files WHERE submission_id = ?', id);
+  const f = (await db.q.get('SELECT * FROM files WHERE submission_id = ?', id));
   assert.equal(f.original_name, 'คู่มือ ทดสอบ.pdf', 'ชื่อไฟล์ภาษาไทยต้องไม่เพี้ยน');
   const dl = await t.get(`/f/${f.id}`);
   assert.equal(dl.status, 200);
@@ -153,18 +153,18 @@ test('ส่งคู่มือพร้อมไฟล์ แล้วผ่�
   const page = await head.get(`/s/${id}`);
   assert.match(page.text, /แบบประเมินคู่มือรายวิชา/);
   const scores = {};
-  for (const it of db.q.all("SELECT id FROM rubric_items WHERE doc_type = 'manual' AND is_active = 1")) scores[`score_${it.id}`] = '4';
+  for (const it of (await db.q.all("SELECT id FROM rubric_items WHERE doc_type = 'manual' AND is_active = 1"))) scores[`score_${it.id}`] = '4';
   assert.equal((await head.post(`/s/${id}/approve`, { comment: 'ดี' })).status, 302);
-  assert.equal(db.q.get('SELECT current_role FROM submissions WHERE id = ?', id).current_role, 'dept_head', 'ไม่ให้คะแนนต้องไม่ผ่าน');
+  assert.equal((await db.q.get('SELECT current_role FROM submissions WHERE id = ?', id)).current_role, 'dept_head', 'ไม่ให้คะแนนต้องไม่ผ่าน');
   await head.post(`/s/${id}/approve`, { ...scores, comment: 'ดี' });
-  sub = db.q.get('SELECT * FROM submissions WHERE id = ?', id);
+  sub = (await db.q.get('SELECT * FROM submissions WHERE id = ?', id));
   assert.equal(sub.score_total, 80);
   assert.equal(sub.current_role, 'section_head');
 
   for (const u of ['section', 'acad', 'deputy']) await (await as(u)).post(`/s/${id}/approve`, { comment: 'เห็นชอบ' });
   const dir = await as('director');
   await dir.post('/inbox/approve-many', { ids: String(id), comment: 'อนุญาต' });
-  sub = db.q.get('SELECT * FROM submissions WHERE id = ?', id);
+  sub = (await db.q.get('SELECT * FROM submissions WHERE id = ?', id));
   assert.equal(sub.status, 'approved');
 
   const evalPage = await t.get(`/s/${id}/print?doc=eval`);
@@ -173,11 +173,11 @@ test('ส่งคู่มือพร้อมไฟล์ แล้วผ่�
 
 test('ส่งกลับแก้ไขต้องมีเหตุผล และครูแก้แล้วส่งใหม่ได้', async () => {
   const head = await as('scihead');
-  const id = db.q.get("SELECT id FROM submissions WHERE doc_type = 'plan' AND subject_code = 'ว21101'").id;
+  const id = (await db.q.get("SELECT id FROM submissions WHERE doc_type = 'plan' AND subject_code = 'ว21101'")).id;
   await head.post(`/s/${id}/return`, { comment: '' });
-  assert.equal(db.q.get('SELECT status FROM submissions WHERE id = ?', id).status, 'pending');
+  assert.equal((await db.q.get('SELECT status FROM submissions WHERE id = ?', id)).status, 'pending');
   await head.post(`/s/${id}/return`, { comment: 'เพิ่มแผนที่ 5' });
-  assert.equal(db.q.get('SELECT status FROM submissions WHERE id = ?', id).status, 'returned');
+  assert.equal((await db.q.get('SELECT status FROM submissions WHERE id = ?', id)).status, 'returned');
   const t = await as('sci2');
   ok(await t.get(`/s/${id}/edit`), 'edit');
   const fd = new FormData();
@@ -187,14 +187,14 @@ test('ส่งกลับแก้ไขต้องมีเหตุผล �
   fd.set('action', 'submit');
   const r = await t.req('POST', `/s/${id}`, fd);
   assert.equal(r.status, 302);
-  const s = db.q.get('SELECT * FROM submissions WHERE id = ?', id);
+  const s = (await db.q.get('SELECT * FROM submissions WHERE id = ?', id));
   assert.equal(s.status, 'pending');
   assert.equal(s.current_role, 'dept_head');
 });
 
 test('ครูเขียนบันทึกหลังแผนเป็นร่างหลายฉบับ แล้วส่งพร้อมกัน', async () => {
   const t = await as('teacher');
-  const planId = db.q.get("SELECT id FROM submissions WHERE doc_type = 'plan' AND subject_code = 'ว30203'").id;
+  const planId = (await db.q.get("SELECT id FROM submissions WHERE doc_type = 'plan' AND subject_code = 'ว30203'")).id;
   ok(await t.get(`/notes/new?plan=${planId}`), 'note form');
   const ids = [];
   for (const no of ['6', '7']) {
@@ -211,7 +211,7 @@ test('ครูเขียนบันทึกหลังแผนเป็�
   const r = await t.post('/notes/submit-many', new URLSearchParams([...ids.map((i) => ['ids', String(i)]), ['back', `/s/${planId}`]]));
   assert.equal(r.status, 302);
   for (const id of ids) {
-    const s = db.q.get('SELECT * FROM submissions WHERE id = ?', id);
+    const s = (await db.q.get('SELECT * FROM submissions WHERE id = ?', id));
     assert.equal(s.status, 'pending');
     assert.equal(s.current_role, 'dept_head');
   }

@@ -415,7 +415,7 @@ async function inbox(user) {
      LEFT JOIN departments d ON d.id = s.department_id
      LEFT JOIN submissions p ON p.id = s.parent_id
      WHERE s.status = 'pending' AND s.current_role IN (${marks})
-     ORDER BY s.updated_at`,
+     ORDER BY s.updated_at, s.id`,
     ...user.roles
   );
   const self = selfSign();

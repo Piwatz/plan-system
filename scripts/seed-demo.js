@@ -79,7 +79,9 @@ function makePdf(title) {
   return Buffer.from(out, 'latin1');
 }
 
-async function main() {
+// target: ':memory:' สำหรับชุดทดสอบ (ไม่ใส่ = PGlite ที่ data-demo/pg เสมอ ไม่ใช้ DATABASE_URL กันข้อมูลทดลองหลุดเข้าฐานจริง)
+// keepOpen: ชุดทดสอบใช้ฐานเดิมต่อ ไม่ปิด
+async function main({ target, keepOpen = false } = {}) {
   process.env.DATA_DIR = process.env.DATA_DIR || 'data-demo';
   const config = require('../src/config');
   // ลบเฉพาะโฟลเดอร์ข้อมูลทดลอง ไม่แตะข้อมูลจริงเด็ดขาด
@@ -89,7 +91,7 @@ async function main() {
   const db = require('../src/db');
   const auth = require('../src/auth');
   const wf = require('../src/workflow');
-  await db.open();
+  await db.open(target || config.PG_DIR);
   await db.ensureRefs();
   const { q, nowStr, setSetting } = db;
 
@@ -376,7 +378,7 @@ async function main() {
 
   console.log(`สร้างข้อมูลทดลองเรียบร้อย ผู้ใช้ ${Object.keys(people).length} คน งาน ${(await q.get('SELECT COUNT(*) AS n FROM submissions')).n} รายการ`);
   console.log(`โฟลเดอร์ข้อมูลทดลอง: ${config.DATA_DIR}`);
-  await db.close();
+  if (!keepOpen) await db.close();
 }
 
 module.exports.main = main;

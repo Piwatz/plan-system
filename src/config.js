@@ -19,5 +19,6 @@ module.exports = {
   PG_DIR: path.join(DATA_DIR, 'pg'),
   UPLOAD_DIR: path.join(DATA_DIR, 'uploads'),
   PORT: Number(process.env.PORT || arg('port', 3000)),
-  DEMO: Boolean(process.env.DEMO || arg('demo', false)),
+  // เปิดเฉพาะ DEMO=1 หรือ --demo (เดิม DEMO=0 ก็ถือว่าเปิด)
+  DEMO: process.env.DEMO === '1' || arg('demo', false) === true,
 };

@@ -683,7 +683,7 @@ router.post('/line/test', async (req, res) => {
 
 // ฐานข้อมูลเป็น Postgres แล้ว VACUUM INTO ของ SQLite ใช้ไม่ได้ ตอน 10 ทำสำรองแบบใหม่ (JSON ทุกตาราง)
 router.get('/backup', (req, res) => {
-  res.status(503).render('error', { title: 'สำรองข้อมูล', message: 'ระบบสำรองข้อมูลกำลังปรับปรุง ยังใช้ไม่ได้ชั่วคราว' });
+  res.render('error', { title: 'สำรองข้อมูล', message: 'ระบบสำรองข้อมูลกำลังปรับปรุง ยังใช้ไม่ได้ชั่วคราว' });
 });
 
 module.exports = router;

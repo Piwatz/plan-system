@@ -197,7 +197,7 @@ router.get('/', async (req, res) => {
     nextUp.push({ title: `${s.doc_type === 'manual' ? 'คู่มือ' : 'แผน'} ${s.subject_code} ถูกส่งกลับให้แก้ไข`, sub: (await lastReturn(s.id)).slice(0, 90), href: `/s/${s.id}`, tone: 'back' });
   }
   const noteTodo = await q.all(
-    "SELECT id, parent_id, subject_code, plan_no, status FROM submissions WHERE teacher_id = ? AND doc_type = 'note' AND status IN ('draft', 'returned') AND academic_year = ? AND semester = ? ORDER BY to_int_lenient(plan_no)",
+    "SELECT id, parent_id, subject_code, plan_no, status FROM submissions WHERE teacher_id = ? AND doc_type = 'note' AND status IN ('draft', 'returned') AND academic_year = ? AND semester = ? ORDER BY to_int_lenient(plan_no), id",
     me.id,
     t.year,
     t.semester

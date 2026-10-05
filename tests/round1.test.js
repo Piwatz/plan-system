@@ -18,16 +18,16 @@ let base;
 let server;
 
 test.before(async () => {
-  seed.main();
+  await seed.main({ target: ':memory:', keepOpen: true });
   const { createApp } = require('../src/app');
   server = createApp().listen(0);
   await new Promise((r) => server.once('listening', r));
   base = `http://127.0.0.1:${server.address().port}`;
 });
 
-test.after(() => {
+test.after(async () => {
   server.close();
-  db.close();
+  await db.close();
   fs.rmSync(tmp, { recursive: true, force: true });
 });
 
@@ -65,8 +65,8 @@ async function as(username) {
   return c;
 }
 
-const uid = (username) => db.q.get('SELECT id FROM users WHERE username = ?', username).id;
-const teachRow = (username, code) => db.q.get('SELECT * FROM teach_subjects WHERE teacher_id = ? AND subject_code = ?', uid(username), code);
+const uid = async (username) => (await db.q.get('SELECT id FROM users WHERE username = ?', username)).id;
+const teachRow = async (username, code) => (await db.q.get('SELECT * FROM teach_subjects WHERE teacher_id = ? AND subject_code = ?', (await uid(username)), code));
 
 // PDF จริงจำนวน n หน้า ขนาดหน้ากว้าง width ใช้แยกว่าหน้าไหนมาจากไฟล์ไหน
 async function realPdf(n, width) {
@@ -117,16 +117,16 @@ test('แผน 1 วิชาหลักต่อภาค ผู้ดูแ�
   let r = await sendWork(t, '/works', { doc_type: 'plan', subject_code: 'ว22201', subject_name: 'โครงงานวิทยาศาสตร์ 1', grade_level: 'ม.2', action: 'draft' }, [[pdf, 'แผน.pdf']]);
   assert.equal(r.status, 400);
   assert.match(JSON.parse(r.text).error, /ส่งแผนการจัดการเรียนรู้ได้ 1 วิชา/);
-  assert.equal(db.q.get("SELECT 1 AS x FROM submissions WHERE doc_type = 'plan' AND subject_code = 'ว22201'"), undefined);
+  assert.equal((await db.q.get("SELECT 1 AS x FROM submissions WHERE doc_type = 'plan' AND subject_code = 'ว22201'")), undefined);
 
   const admin = await as('admin');
-  await admin.post(`/admin/users/${uid('sci2')}/plan-quota`, { plan_quota: '2' });
-  assert.equal(db.q.get('SELECT plan_quota AS n FROM users WHERE id = ?', uid('sci2')).n, 2);
-  assert.ok(db.q.get("SELECT 1 AS x FROM audit_log WHERE action LIKE 'ตั้งจำนวนแผนต่อภาค%'"));
+  await admin.post(`/admin/users/${(await uid('sci2'))}/plan-quota`, { plan_quota: '2' });
+  assert.equal((await db.q.get('SELECT plan_quota AS n FROM users WHERE id = ?', (await uid('sci2')))).n, 2);
+  assert.ok((await db.q.get("SELECT 1 AS x FROM audit_log WHERE action ILIKE 'ตั้งจำนวนแผนต่อภาค%'")));
   r = await sendWork(t, '/works', { doc_type: 'plan', subject_code: 'ว22201', subject_name: 'โครงงานวิทยาศาสตร์ 1', grade_level: 'ม.2', action: 'draft' }, [[pdf, 'แผน.pdf']]);
   assert.equal(r.status, 200, r.text);
-  assert.equal(teachRow('sci2', 'ว22201').is_main, 1, 'วิชาที่ส่งแผนกลายเป็นวิชาหลัก');
-  await admin.post(`/admin/users/${uid('sci2')}/plan-quota`, { plan_quota: '1' });
+  assert.equal((await teachRow('sci2', 'ว22201')).is_main, 1, 'วิชาที่ส่งแผนกลายเป็นวิชาหลัก');
+  await admin.post(`/admin/users/${(await uid('sci2'))}/plan-quota`, { plan_quota: '1' });
 
   // ปิดสวิตช์แล้วส่งแผนได้ทุกวิชาเหมือนเดิม
   await admin.post('/admin/features/onemain', { on: '0' });
@@ -148,26 +148,26 @@ test('แผนและคู่มือรับเฉพาะ PDF และ
   ]);
   assert.equal(r.status, 200, r.text);
   const id = Number(JSON.parse(r.text).redirect.split('/').pop());
-  const files = db.q.all('SELECT * FROM files WHERE submission_id = ? AND is_current = 1', id);
+  const files = (await db.q.all('SELECT * FROM files WHERE submission_id = ? AND is_current = 1', id));
   assert.equal(files.length, 1, 'เหลือไฟล์เดียว');
   assert.equal(files[0].original_name, 'คู่มือรายวิชา ว30112.pdf');
   const merged = await PDFDocument.load(fs.readFileSync(path.join(tmp, 'data-demo', 'uploads', files[0].stored_name)));
   assert.deepEqual(merged.getPages().map((p) => p.getWidth()), [200, 300, 300], 'ปกมาก่อน ตามด้วยเนื้อหา');
-  assert.ok(teachRow('sci2', 'ว30112'), 'ส่งคู่มือแล้ววิชานี้เข้าไปในรายวิชาที่สอน');
-  assert.equal(teachRow('sci2', 'ว30112').is_main, 0);
+  assert.ok((await teachRow('sci2', 'ว30112')), 'ส่งคู่มือแล้ววิชานี้เข้าไปในรายวิชาที่สอน');
+  assert.equal((await teachRow('sci2', 'ว30112')).is_main, 0);
 
   // แนบไฟล์ใหม่แทนไฟล์เดิม ไฟล์เดิมเก็บเป็นประวัติ
   r = await sendWork(t, `/s/${id}`, { ...base }, [[await realPdf(4, 250), 'ฉบับแก้.pdf']]);
   assert.equal(r.status, 200, r.text);
-  const cur = db.q.all('SELECT * FROM files WHERE submission_id = ? AND is_current = 1', id);
+  const cur = (await db.q.all('SELECT * FROM files WHERE submission_id = ? AND is_current = 1', id));
   assert.equal(cur.length, 1);
   assert.equal(cur[0].original_name, 'ฉบับแก้.pdf');
-  assert.equal(db.q.get('SELECT COUNT(*) AS n FROM files WHERE submission_id = ?', id).n, 2);
+  assert.equal((await db.q.get('SELECT COUNT(*) AS n FROM files WHERE submission_id = ?', id)).n, 2);
 
   // งานเก่าที่แนบไว้หลายไฟล์ ส่งไม่ได้จนกว่าจะแนบ PDF ไฟล์เดียว
-  db.q.run("INSERT INTO files (submission_id, kind, original_name, stored_name, mime, size, uploaded_at) VALUES (?, 'main', 'เก่า.docx', 'x.docx', 'application/msword', 10, '2569-01-01')", id);
+  await db.q.run("INSERT INTO files (submission_id, kind, original_name, stored_name, mime, size, uploaded_at) VALUES (?, 'main', 'เก่า.docx', 'x.docx', 'application/msword', 10, '2569-01-01')", id);
   await t.post(`/s/${id}/submit`, {});
-  assert.equal(db.q.get('SELECT status FROM submissions WHERE id = ?', id).status, 'draft');
+  assert.equal((await db.q.get('SELECT status FROM submissions WHERE id = ?', id)).status, 'draft');
 
   // ปิดตัวรวม PDF แล้วแนบหลายไฟล์ไม่ได้
   const admin = await as('admin');
@@ -185,47 +185,47 @@ test('รายวิชาที่สอน: เพิ่ม ตั้งว�
   const t = await as('teacher');
   assert.equal((await t.get('/teaching')).status, 200);
   await t.post('/teaching/add', { subject_code: 'ว30299', subject_name: 'วิชาทดลอง', grade_level: 'ม.6' });
-  const row = teachRow('teacher', 'ว30299');
+  const row = (await teachRow('teacher', 'ว30299'));
   assert.ok(row);
   assert.equal(row.is_main, 0);
   // ส่งแผนวิชาหลักไปแล้ว ตั้งวิชาอื่นเป็นวิชาหลักแทนไม่ได้
   await t.post(`/teaching/${row.id}/main`, {});
-  assert.equal(teachRow('teacher', 'ว30299').is_main, 0);
+  assert.equal((await teachRow('teacher', 'ว30299')).is_main, 0);
   // วิชาที่มีงานแล้วเอาออกไม่ได้ วิชาที่ยังไม่มีงานเอาออกได้
-  await t.post(`/teaching/${teachRow('teacher', 'ว30203').id}/delete`, {});
-  assert.ok(teachRow('teacher', 'ว30203'));
+  await t.post(`/teaching/${(await teachRow('teacher', 'ว30203')).id}/delete`, {});
+  assert.ok((await teachRow('teacher', 'ว30203')));
   await t.post(`/teaching/${row.id}/delete`, {});
-  assert.equal(teachRow('teacher', 'ว30299'), undefined);
+  assert.equal((await teachRow('teacher', 'ว30299')), undefined);
 
   // ครูที่ยังไม่มีแผน เลือกวิชาหลักใหม่ได้ วิชาหลักเดิมที่ยังไม่มีแผนถูกยกเลิก
   const thai = await as('thaihead');
   await thai.post('/teaching/add', { subject_code: 'ท31101', subject_name: 'ภาษาไทย 4', grade_level: 'ม.4', is_main: '1' });
   await thai.post('/teaching/add', { subject_code: 'ท32101', subject_name: 'ภาษาไทย 5', grade_level: 'ม.5', is_main: '1' });
-  assert.equal(teachRow('thaihead', 'ท31101').is_main, 0);
-  assert.equal(teachRow('thaihead', 'ท32101').is_main, 1);
+  assert.equal((await teachRow('thaihead', 'ท31101')).is_main, 0);
+  assert.equal((await teachRow('thaihead', 'ท32101')).is_main, 1);
   const home = (await thai.get('/')).text;
   assert.match(home, /แผน ท32101 ยังไม่ส่ง/);
 
   // ครูแก้รายวิชาของคนอื่นไม่ได้ ผู้ดูแลระบบแก้แทนได้และบันทึกประวัติ
-  await t.post('/teaching/add', { u: String(uid('sci2')), subject_code: 'ว39999', subject_name: 'แอบเพิ่ม' });
-  assert.equal(teachRow('sci2', 'ว39999'), undefined);
+  await t.post('/teaching/add', { u: String((await uid('sci2'))), subject_code: 'ว39999', subject_name: 'แอบเพิ่ม' });
+  assert.equal((await teachRow('sci2', 'ว39999')), undefined);
   const admin = await as('admin');
-  assert.equal((await admin.get(`/teaching?u=${uid('teacher')}`)).status, 200);
-  await admin.post('/teaching/add', { u: String(uid('teacher')), subject_code: 'ว30298', subject_name: 'วิชาจากผู้ดูแล' });
-  assert.ok(teachRow('teacher', 'ว30298'));
-  assert.ok(db.q.get("SELECT 1 AS x FROM audit_log WHERE action LIKE 'เพิ่มรายวิชาที่สอน ว30298 แทน%'"));
+  assert.equal((await admin.get(`/teaching?u=${(await uid('teacher'))}`)).status, 200);
+  await admin.post('/teaching/add', { u: String((await uid('teacher'))), subject_code: 'ว30298', subject_name: 'วิชาจากผู้ดูแล' });
+  assert.ok((await teachRow('teacher', 'ว30298')));
+  assert.ok((await db.q.get("SELECT 1 AS x FROM audit_log WHERE action ILIKE 'เพิ่มรายวิชาที่สอน ว30298 แทน%'")));
 });
 
 test('หัวหน้ากลุ่มสาระให้คะแนนและลงนามงานของตัวเองผ่านหน้าเว็บ', async () => {
   const head = await as('scihead');
-  const id = db.q.get("SELECT id FROM submissions WHERE doc_type = 'manual' AND subject_code = 'ว31101' AND teacher_id = ?", uid('scihead')).id;
+  const id = (await db.q.get("SELECT id FROM submissions WHERE doc_type = 'manual' AND subject_code = 'ว31101' AND teacher_id = ?", (await uid('scihead')))).id;
   assert.match((await head.get('/inbox')).text, new RegExp(`/s/${id}`));
   const page = (await head.get(`/s/${id}`)).text;
   assert.match(page, /งานของคุณเอง/);
   const scores = {};
-  for (const it of db.q.all("SELECT id FROM rubric_items WHERE doc_type = 'manual' AND is_active = 1")) scores[`score_${it.id}`] = '5';
+  for (const it of (await db.q.all("SELECT id FROM rubric_items WHERE doc_type = 'manual' AND is_active = 1"))) scores[`score_${it.id}`] = '5';
   await head.post(`/s/${id}/approve`, { ...scores, comment: 'ตรวจทานแล้ว' });
-  const s = db.q.get('SELECT * FROM submissions WHERE id = ?', id);
+  const s = (await db.q.get('SELECT * FROM submissions WHERE id = ?', id));
   assert.equal(s.current_role, 'section_head');
   assert.equal(s.score_total, 100);
 });
@@ -291,29 +291,29 @@ test('นำเข้ารายวิชาจากตารางสอน: 
   assert.doesNotMatch(preview.text, /แนะแนว อย่างเดียว/, 'ครูที่สอนแต่วิชากิจกรรมไม่ต้องขึ้น');
   assert.match(preview.text, /มีครู 1 คนที่ระบบหาชื่อในระบบส่งแผนไม่เจอ/);
   // ยังไม่บันทึกอะไรจนกว่าจะกดนำเข้า
-  assert.equal(teachRow('teacher', 'ว30205'), undefined);
+  assert.equal((await teachRow('teacher', 'ว30205')), undefined);
 
   const fields = formFields(preview.text);
   assert.equal(fields.get('n'), '3');
   const r = await admin.post('/admin/teach-import', fields);
   assert.equal(r.status, 302);
-  assert.equal(teachRow('teacher', 'ว30205').grade_level, 'ม.5');
-  assert.equal(teachRow('teacher', 'ว30205').is_main, 0, 'ไม่ตั้งวิชาหลักให้ ครูเลือกเอง');
-  assert.ok(teachRow('teacher', 'ว21103'), 'วิชาที่สอนร่วมกันได้ทั้งสองคน');
-  assert.ok(teachRow('sci2', 'ว21103'), 'จับคู่ชื่อได้แม้เว้นวรรคต่างกัน');
-  assert.equal(teachRow('teacher', 'ก21901'), undefined);
-  assert.equal(db.q.get("SELECT 1 AS x FROM teach_subjects WHERE subject_code = 'ว20299'"), undefined, 'ครูที่ไม่ได้เลือกชื่อไม่ถูกนำเข้า');
-  assert.ok(db.q.get("SELECT 1 AS x FROM subjects WHERE code = 'ว30205'"), 'เพิ่มในรายวิชาของโรงเรียนด้วย');
-  assert.ok(db.q.get("SELECT 1 AS x FROM audit_log WHERE action LIKE 'นำเข้ารายวิชาที่สอนจากตารางสอน%'"));
+  assert.equal((await teachRow('teacher', 'ว30205')).grade_level, 'ม.5');
+  assert.equal((await teachRow('teacher', 'ว30205')).is_main, 0, 'ไม่ตั้งวิชาหลักให้ ครูเลือกเอง');
+  assert.ok((await teachRow('teacher', 'ว21103')), 'วิชาที่สอนร่วมกันได้ทั้งสองคน');
+  assert.ok((await teachRow('sci2', 'ว21103')), 'จับคู่ชื่อได้แม้เว้นวรรคต่างกัน');
+  assert.equal((await teachRow('teacher', 'ก21901')), undefined);
+  assert.equal((await db.q.get("SELECT 1 AS x FROM teach_subjects WHERE subject_code = 'ว20299'")), undefined, 'ครูที่ไม่ได้เลือกชื่อไม่ถูกนำเข้า');
+  assert.ok((await db.q.get("SELECT 1 AS x FROM subjects WHERE code = 'ว30205'")), 'เพิ่มในรายวิชาของโรงเรียนด้วย');
+  assert.ok((await db.q.get("SELECT 1 AS x FROM audit_log WHERE action ILIKE 'นำเข้ารายวิชาที่สอนจากตารางสอน%'")));
   // นำเข้าซ้ำไม่เกิดรายการซ้ำ
   await admin.post('/admin/teach-import', fields);
-  assert.equal(db.q.get("SELECT COUNT(*) AS n FROM teach_subjects WHERE teacher_id = ? AND subject_code = 'ว30205'", uid('teacher')).n, 1);
+  assert.equal((await db.q.get("SELECT COUNT(*) AS n FROM teach_subjects WHERE teacher_id = ? AND subject_code = 'ว30205'", (await uid('teacher')))).n, 1);
 });
 
 test('วิชากิจกรรมพัฒนาผู้เรียนเพิ่มในรายวิชาที่สอนและส่งงานไม่ได้', async () => {
   const t = await as('teacher');
   await t.post('/teaching/add', { subject_code: 'ก21901', subject_name: 'แนะแนว', grade_level: 'ม.1' });
-  assert.equal(teachRow('teacher', 'ก21901'), undefined);
+  assert.equal((await teachRow('teacher', 'ก21901')), undefined);
   const r = await sendWork(t, '/works', { doc_type: 'manual', subject_code: 'ก21901', subject_name: 'แนะแนว', grade_level: 'ม.1', action: 'draft' }, [[await realPdf(1, 300), 'คู่มือ.pdf']]);
   assert.equal(r.status, 400);
   assert.match(JSON.parse(r.text).error, /กิจกรรมพัฒนาผู้เรียน/);

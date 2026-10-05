@@ -16,14 +16,15 @@ let server;
 let cookie = '';
 
 test.before(async () => {
+  await db.open(':memory:');
   server = createApp().listen(0);
   await new Promise((r) => server.once('listening', r));
   base = `http://127.0.0.1:${server.address().port}`;
 });
 
-test.after(() => {
+test.after(async () => {
   server.close();
-  db.close();
+  await db.close();
   fs.rmSync(tmp, { recursive: true, force: true });
 });
 
@@ -63,10 +64,10 @@ test('ครั้งแรกพาไปหน้าตั้งค่า ส�
   assert.equal(imp.status, 200);
   assert.match(imp.text, /เพิ่มใหม่ <b>3<\/b>/);
   assert.match(imp.text, /ไม่พบกลุ่มสาระ/);
-  const u2 = db.q.get("SELECT * FROM users WHERE username = 'T02'");
+  const u2 = (await db.q.get("SELECT * FROM users WHERE username = 'T02'"));
   assert.equal(u2.must_change_password, 1);
-  assert.deepEqual(db.q.all('SELECT role FROM user_roles WHERE user_id = ?', u2.id).map((r) => r.role), ['dept_head']);
-  const u3 = db.q.get("SELECT * FROM users WHERE username = 'T03'");
+  assert.deepEqual((await db.q.all('SELECT role FROM user_roles WHERE user_id = ?', u2.id)).map((r) => r.role), ['dept_head']);
+  const u3 = (await db.q.get("SELECT * FROM users WHERE username = 'T03'"));
   assert.equal(u3.is_teacher, 0, 'รองผู้อำนวยการไม่นับเป็นครูผู้สอน');
 
   // ครูเข้าระบบครั้งแรกต้องเปลี่ยนรหัสผ่านก่อน

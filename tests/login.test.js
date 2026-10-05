@@ -18,16 +18,16 @@ let base;
 let server;
 
 test.before(async () => {
-  seed.main();
+  await seed.main({ target: ':memory:', keepOpen: true });
   const { createApp } = require('../src/app');
   server = createApp().listen(0);
   await new Promise((r) => server.once('listening', r));
   base = `http://127.0.0.1:${server.address().port}`;
 });
 
-test.after(() => {
+test.after(async () => {
   server.close();
-  db.close();
+  await db.close();
   fs.rmSync(tmp, { recursive: true, force: true });
 });
 
@@ -61,7 +61,7 @@ async function login(username, password = seed.DEMO_PASSWORD) {
   return { c, ok: r.status === 302, r };
 }
 
-const uid = (username) => db.q.get('SELECT id FROM users WHERE username = ?', username).id;
+const uid = async (username) => (await db.q.get('SELECT id FROM users WHERE username = ?', username)).id;
 
 test('หน้าเข้าสู่ระบบมีรายชื่อให้เลือกแยกกลุ่มสาระ และแป้นตัวเลข ปิดสวิตช์แล้วกลับเป็นช่องพิมพ์', async () => {
   const page = (await new Client().get('/login')).text;
@@ -75,13 +75,13 @@ test('หน้าเข้าสู่ระบบมีรายชื่อ�
   assert.match(bad.text, /รหัสผ่านไม่ถูกต้อง/);
   assert.match(bad.text, /<option value="teacher" selected>/, 'ใส่ผิดแล้วชื่อที่เลือกไว้ยังอยู่');
 
-  db.setSetting('ff_namepick', '0');
-  db.setSetting('ff_pin', '0');
+  await db.setSetting('ff_namepick', '0');
+  await db.setSetting('ff_pin', '0');
   const off = (await new Client().get('/login')).text;
   assert.doesNotMatch(off, /pick-name/);
   assert.match(off, /<input type="text" id="username" name="username"/);
-  db.setSetting('ff_namepick', '1');
-  db.setSetting('ff_pin', '1');
+  await db.setSetting('ff_namepick', '1');
+  await db.setSetting('ff_pin', '1');
 });
 
 test('ครูตั้งรหัสตัวเลข 4 หลักได้ ผู้อำนวยการและผู้ดูแลระบบต้อง 6 ตัว', async () => {
@@ -99,30 +99,30 @@ test('ครูตั้งรหัสตัวเลข 4 หลักได�
 
   // ผู้ดูแลระบบตั้งรหัสให้: ครู 4 หลักได้ ผู้อำนวยการไม่ได้
   const a = (await login('admin')).c;
-  await a.post(`/admin/users/${uid('sci2')}/reset`, { password: '4321' });
+  await a.post(`/admin/users/${(await uid('sci2'))}/reset`, { password: '4321' });
   assert.ok((await login('sci2', '4321')).ok);
-  await a.post(`/admin/users/${uid('director')}/reset`, { password: '4321' });
+  await a.post(`/admin/users/${(await uid('director'))}/reset`, { password: '4321' });
   assert.equal((await login('director', '4321')).ok, false);
   assert.ok((await login('director')).ok, 'รหัสเดิมของผู้อำนวยการยังใช้ได้');
 
   // ปิดสวิตช์แล้วครูก็ต้อง 6 ตัวเหมือนเดิม
-  db.setSetting('ff_pin', '0');
-  await a.post(`/admin/users/${uid('sci2')}/reset`, { password: '9876' });
+  await db.setSetting('ff_pin', '0');
+  await a.post(`/admin/users/${(await uid('sci2'))}/reset`, { password: '9876' });
   assert.equal((await login('sci2', '9876')).ok, false);
-  db.setSetting('ff_pin', '1');
+  await db.setSetting('ff_pin', '1');
 });
 
-test('ใส่รหัสผิดเกิน 20 ครั้งต่อชื่อ ล็อกชื่อนั้นไม่ว่าจะเดาจากเครื่องไหน', () => {
+test('ใส่รหัสผิดเกิน 20 ครั้งต่อชื่อ ล็อกชื่อนั้นไม่ว่าจะเดาจากเครื่องไหน', async () => {
   const key = auth.userKey('ทดสอบล็อก');
-  for (let i = 0; i < 19; i++) auth.recordFail(key);
-  assert.equal(auth.isLocked(key), false);
-  auth.recordFail(key);
-  assert.equal(auth.isLocked(key), true);
-  auth.clearFails(key);
-  assert.equal(auth.minPassword({ is_admin: 1, roles: [] }, true), 6);
-  assert.equal(auth.minPassword({ is_admin: 0, roles: ['director'] }, true), 6);
-  assert.equal(auth.minPassword({ is_admin: 0, roles: ['dept_head'] }, true), 4);
-  assert.equal(auth.minPassword({ is_admin: 0, roles: [] }, false), 6);
+  for (let i = 0; i < 19; i++) await auth.recordFail(key);
+  assert.equal((await auth.isLocked(key)), false);
+  await auth.recordFail(key);
+  assert.equal((await auth.isLocked(key)), true);
+  await auth.clearFails(key);
+  assert.equal((await auth.minPassword({ is_admin: 1, roles: [] }, true)), 6);
+  assert.equal((await auth.minPassword({ is_admin: 0, roles: ['director'] }, true)), 6);
+  assert.equal((await auth.minPassword({ is_admin: 0, roles: ['dept_head'] }, true)), 4);
+  assert.equal((await auth.minPassword({ is_admin: 0, roles: [] }, false)), 6);
 });
 
 test('นำเข้ารายชื่อแบบสร้างชื่อผู้ใช้อัตโนมัติ: ตัดคำนำหน้าและนามสกุล ชื่อซ้ำต่อท้ายด้วยเลข นำเข้าซ้ำไม่สร้างคนใหม่', async () => {
@@ -136,11 +136,11 @@ test('นำเข้ารายชื่อแบบสร้างชื่�
   ].join('\n');
   const r = await a.post('/admin/users-import', { data, password: '1234', auto_username: '1' });
   assert.match(r.text, /เพิ่มใหม่ <b>4<\/b> คน/);
-  const name = (full) => db.q.get('SELECT username FROM users WHERE full_name = ?', full).username;
-  assert.equal(name('นายสมศักดิ์ ทดลองดี'), 'สมศักดิ์');
-  assert.equal(name('นางสาวสมศักดิ์ อื่นอีก'), 'สมศักดิ์2');
-  assert.equal(name('ว่าที่ร้อยตรีวิชัย สมมติ'), 'วิชัย');
-  assert.equal(name('นางนายิกา ตัวอย่าง'), 'นายิกา', 'ชื่อที่ขึ้นต้นด้วย นาย ไม่ถูกตัดผิด');
+  const name = async (full) => (await db.q.get('SELECT username FROM users WHERE full_name = ?', full)).username;
+  assert.equal((await name('นายสมศักดิ์ ทดลองดี')), 'สมศักดิ์');
+  assert.equal((await name('นางสาวสมศักดิ์ อื่นอีก')), 'สมศักดิ์2');
+  assert.equal((await name('ว่าที่ร้อยตรีวิชัย สมมติ')), 'วิชัย');
+  assert.equal((await name('นางนายิกา ตัวอย่าง')), 'นายิกา', 'ชื่อที่ขึ้นต้นด้วย นาย ไม่ถูกตัดผิด');
   assert.match(r.text, /<td>นายสมศักดิ์ ทดลองดี<\/td><td><b>สมศักดิ์<\/b><\/td>/, 'แสดงชื่อผู้ใช้ที่ได้ให้ผู้ดูแลจด');
 
   const again = await a.post('/admin/users-import', { data, password: '1234', auto_username: '1' });
@@ -149,5 +149,5 @@ test('นำเข้ารายชื่อแบบสร้างชื่�
 
   // เพิ่มทีละคนโดยเว้นชื่อผู้ใช้ไว้
   await a.post('/admin/users', { full_name: 'นายสมศักดิ์ คนที่สาม', password: '5678', is_teacher: '1', is_active: '1' });
-  assert.equal(name('นายสมศักดิ์ คนที่สาม'), 'สมศักดิ์3');
+  assert.equal((await name('นายสมศักดิ์ คนที่สาม')), 'สมศักดิ์3');
 });
