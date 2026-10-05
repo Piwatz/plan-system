@@ -187,7 +187,8 @@ async function main() {
     console.log('  ' + e.message);
   } finally {
     console.log('');
-    await withPrompt((rl) => rl.question('  กด Enter เพื่อปิดหน้าต่าง '));
+    // เปิดในหน้าต่างของผู้ใช้ รอให้อ่านก่อนปิด · รันจากสคริปต์อื่น (ไม่มีแป้นพิมพ์) ไม่ต้องรอ
+    if (process.stdin.isTTY) await withPrompt((rl) => rl.question('  กด Enter เพื่อปิดหน้าต่าง '));
   }
 }
 

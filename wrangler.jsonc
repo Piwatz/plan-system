@@ -2,7 +2,7 @@
 // ห้ามใส่รหัสลับในไฟล์นี้ (SESSION_SECRET SETUP_TOKEN รหัส Google Drive ใช้ wrangler secret put · ในเครื่องใช้ .dev.vars)
 {
   "$schema": "node_modules/wrangler/config-schema.json",
-  "name": "plan-system",
+  "name": "plan",
   "main": "src/worker.mjs",
   "compatibility_date": "2026-10-05",
   "compatibility_flags": ["nodejs_compat"],
