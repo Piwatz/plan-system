@@ -19,3 +19,11 @@ revoke all on all functions in schema public from anon, authenticated;
 alter default privileges in schema public revoke all on tables from anon, authenticated;
 alter default privileges in schema public revoke all on sequences from anon, authenticated;
 alter default privileges in schema public revoke all on functions from anon, authenticated;
+
+-- ตรวจผล: แสดงตารางที่ยังไม่ปิด (ยังไม่เปิด RLS หรือ anon และ authenticated ยังมีสิทธิ์ใด ๆ) ไม่มีแถว = ปิดครบทุกตาราง
+select c.relname as table_name, c.relrowsecurity as rls_on
+from pg_class c join pg_namespace n on n.oid = c.relnamespace
+where n.nspname = 'public' and c.relkind in ('r', 'p')
+  and (not c.relrowsecurity
+    or has_table_privilege('anon', c.oid, 'SELECT, INSERT, UPDATE, DELETE, TRUNCATE, REFERENCES, TRIGGER')
+    or has_table_privilege('authenticated', c.oid, 'SELECT, INSERT, UPDATE, DELETE, TRUNCATE, REFERENCES, TRIGGER'));

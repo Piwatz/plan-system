@@ -1,6 +1,7 @@
 // รหัสผ่านเก็บแบบเข้ารหัสทางเดียว (bcrypt ของ pgcrypto ในฐานข้อมูล) อ่านย้อนกลับไม่ได้
 // เข้ารหัสในฐานข้อมูล ไม่กิน CPU ของเซิร์ฟเวอร์ (Workers แบบฟรีให้ 10 ms ต่อคำขอ)
 const { q } = require('./db');
+const config = require('./config');
 const { rolesOf, signatureOf } = require('./workflow');
 
 async function hashPassword(pw) {
@@ -13,41 +14,71 @@ async function verifyPassword(pw, userId) {
   return Boolean(r && r.ok);
 }
 
-// กันการเดารหัสผ่าน: ผิดเกิน 8 ครั้งใน 10 นาที ต้องรอ (ตอน 12 ย้ายไปเก็บในฐานข้อมูล)
-const attempts = new Map();
+// กันการเดารหัสผ่าน: ผิดเกิน 8 ครั้งใน 10 นาที (ต่อเครื่องและชื่อผู้ใช้) ต้องรอ
+// ตัวนับเก็บในตาราง login_attempts เพราะ Workers ไม่มีหน่วยความจำค้างระหว่างคำขอ และเปิดแอปใหม่แล้วยังล็อกอยู่
 const WINDOW_MS = 10 * 60 * 1000;
 const MAX_FAILS = 8;
-
-function throttleKey(req, username) {
-  return `${req.ip}|${String(username).toLowerCase()}`;
-}
-
 // ล็อกรายชื่อผู้ใช้ด้วย ไม่ว่าเดาจากเครื่องไหน (สำคัญเมื่อใช้รหัสตัวเลขสั้น ๆ)
 const MAX_FAILS_PER_USER = 20;
+
+// IP ของผู้ใช้: เว็บจริงอยู่หลัง Cloudflare อ่านจาก CF-Connecting-IP (Cloudflare เขียนทับเอง คนนอกปลอมไม่ได้)
+// ในเครื่องใช้ req.ip (trust proxy เฉพาะ loopback)
+function clientIp(req) {
+  return (config.PRODUCTION ? req.get('cf-connecting-ip') : req.ip) || '';
+}
+
+// ไม่รู้ IP ได้ null แล้วไม่นับแบบต่อเครื่อง (ถ้าทุกคำขอ IP ว่างเหมือนกัน คนนอกจะล็อกชื่อใครก็ได้ด้วย 8 ครั้ง)
+// ยังเหลือตัวนับต่อชื่อผู้ใช้ 20 ครั้ง
+function throttleKey(req, username) {
+  const ip = clientIp(req);
+  return ip ? `${ip}|${String(username).toLowerCase()}` : null;
+}
 
 function userKey(username) {
   return `user|${String(username).toLowerCase()}`;
 }
 
-// async ไว้ก่อน ตอน 12 ย้ายตัวนับลงฐานข้อมูลโดยไม่ต้องแก้ที่เรียก
-async function isLocked(key) {
-  const a = attempts.get(key);
-  if (!a) return false;
-  if (Date.now() - a.first > WINDOW_MS) {
-    attempts.delete(key);
-    return false;
-  }
-  return a.count >= (key.startsWith('user|') ? MAX_FAILS_PER_USER : MAX_FAILS);
+function limitOf(key) {
+  return key.startsWith('user|') ? MAX_FAILS_PER_USER : MAX_FAILS;
 }
 
-async function recordFail(key) {
-  const a = attempts.get(key);
-  if (!a || Date.now() - a.first > WINDOW_MS) attempts.set(key, { first: Date.now(), count: 1 });
-  else a.count += 1;
+// รับได้หลายกุญแจในคำสั่งเดียว กุญแจ null ข้าม · ล็อกเมื่อกุญแจใดกุญแจหนึ่งผิดครบจำนวนภายใน 10 นาที
+async function isLocked(...keys) {
+  keys = keys.filter(Boolean);
+  if (!keys.length) return false;
+  const rows = await q.all(
+    `SELECT key, count FROM login_attempts WHERE key IN (${keys.map(() => '?').join(', ')}) AND first_at > ?`,
+    ...keys,
+    Date.now() - WINDOW_MS
+  );
+  return rows.some((r) => r.count >= limitOf(r.key));
 }
 
-async function clearFails(key) {
-  attempts.delete(key);
+// นับเพิ่มครั้งละ 1 ถ้าครั้งแรกเก่ากว่า 10 นาทีเริ่มนับใหม่ ทำในคำสั่งเดียว (คำขอพร้อมกันไม่นับหาย)
+async function recordFail(...keys) {
+  keys = keys.filter(Boolean);
+  if (!keys.length) return;
+  const now = Date.now();
+  await q.run(
+    `INSERT INTO login_attempts (key, first_at, count) VALUES ${keys.map(() => '(?, ?, 1)').join(', ')}
+     ON CONFLICT (key) DO UPDATE SET
+       count = CASE WHEN login_attempts.first_at > ? THEN login_attempts.count + 1 ELSE 1 END,
+       first_at = CASE WHEN login_attempts.first_at > ? THEN login_attempts.first_at ELSE excluded.first_at END`,
+    ...keys.flatMap((k) => [k, now]),
+    now - WINDOW_MS,
+    now - WINDOW_MS
+  );
+}
+
+async function clearFails(...keys) {
+  keys = keys.filter(Boolean);
+  if (!keys.length) return;
+  await q.run(`DELETE FROM login_attempts WHERE key IN (${keys.map(() => '?').join(', ')})`, ...keys);
+}
+
+// ล้างตัวนับที่หมดอายุแล้ว (เรียกจากงานรายชั่วโมง)
+async function cleanupAttempts() {
+  await q.run('DELETE FROM login_attempts WHERE first_at <= ?', Date.now() - WINDOW_MS);
 }
 
 // ความยาวรหัสผ่านขั้นต่ำ: ครูใช้รหัสตัวเลข 4 หลักได้ (ฟังก์ชันเสริม pin)
@@ -95,12 +126,14 @@ function requireAdmin(req, res, next) {
 module.exports = {
   hashPassword,
   verifyPassword,
+  clientIp,
   throttleKey,
   userKey,
   minPassword,
   isLocked,
   recordFail,
   clearFails,
+  cleanupAttempts,
   loadUser,
   signatureOf,
   requireLogin,

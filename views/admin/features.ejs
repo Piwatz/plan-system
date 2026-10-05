@@ -53,7 +53,7 @@
       <form method="post" action="/admin/line" data-confirm="บันทึกการตั้งค่า LINE">
         <div class="field">
           <label for="line_token">Channel access token</label>
-          <input type="password" id="line_token" name="line_token" autocomplete="off" placeholder="<%= settings.line_token ? 'บันทึกไว้แล้ว เว้นว่างไว้ถ้าไม่เปลี่ยน' : 'วางรหัสจาก LINE Developers' %>">
+          <input type="password" id="line_token" name="line_token" autocomplete="off" placeholder="<%= settings.line_token_set ? 'บันทึกไว้แล้ว เว้นว่างไว้ถ้าไม่เปลี่ยน' : 'วางรหัสจาก LINE Developers' %>">
         </div>
         <div class="field">
           <label for="line_to">รหัสกลุ่ม LINE ที่จะส่งเข้า (Group ID)</label>

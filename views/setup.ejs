@@ -6,6 +6,13 @@
     <p class="center muted">สร้างบัญชีผู้ดูแลระบบ จากนั้นจึงเพิ่มรายชื่อครูและผู้ตรวจ</p>
     <% if (error) { %><div class="alert alert-error"><%= error %></div><% } %>
     <form method="post" action="/setup">
+      <% if (needToken) { %>
+      <div class="field">
+        <label for="setup_token">รหัสสำหรับตั้งค่าครั้งแรก <span class="req">*</span></label>
+        <input type="password" id="setup_token" name="setup_token" autocomplete="off" required>
+        <div class="hint">ใช้รหัสที่ตั้งไว้ตอนติดตั้งระบบ</div>
+      </div>
+      <% } %>
       <div class="field">
         <label for="school_name">ชื่อโรงเรียน <span class="req">*</span></label>
         <input type="text" id="school_name" name="school_name" value="<%= form.school_name || '' %>" placeholder="เช่น โรงเรียนตัวอย่างวิทยา" required>

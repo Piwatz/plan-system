@@ -14,7 +14,15 @@ const themes = require('./themes');
 const icons = require('./icons');
 const { CompiledView } = require('./view');
 
+// กุญแจเซ็น cookie: เว็บจริงต้องตั้ง SESSION_SECRET (สุ่มยาว 32 ตัวขึ้นไป) ไม่ตั้งแล้วไม่เปิดระบบ
+// ในเครื่องใช้ SESSION_SECRET ถ้าตั้งไว้ ไม่ตั้งก็สุ่มเก็บในไฟล์ secret.key ของโฟลเดอร์ข้อมูล (data-pg ไม่ใช่ data ของระบบเดิม)
 function secretKey() {
+  const env = process.env.SESSION_SECRET || '';
+  if (config.PRODUCTION) {
+    if (env.length < 32) throw new Error('APP_ENV=production ต้องตั้ง SESSION_SECRET ยาวอย่างน้อย 32 ตัวอักษร');
+    return env;
+  }
+  if (env) return env;
   const f = path.join(config.DATA_DIR, 'secret.key');
   try {
     return fs.readFileSync(f, 'utf8').trim();
@@ -27,12 +35,16 @@ function secretKey() {
 }
 
 function createApp() {
+  const production = config.PRODUCTION;
+  const keys = [secretKey()];
   // เปลี่ยนทุกครั้งที่เปิดระบบใหม่ เบราว์เซอร์จะโหลดไฟล์ CSS/JS รุ่นล่าสุด
   const assetVersion = Date.now().toString(36);
   const app = express();
   // หน้าเว็บ compile ไว้ล่วงหน้าใน dist/views.js (npm run build) ไม่ใช้ EJS ตอนรัน
   app.set('view', CompiledView);
-  app.set('trust proxy', 'loopback');
+  // เว็บจริงอยู่หลัง Cloudflare ตัวรับคำขอเติม x-forwarded-proto เอง (cookie แบบ secure ต้องรู้ว่าเป็น https)
+  // IP ของผู้ใช้บนเว็บจริงอ่านจาก CF-Connecting-IP (auth.clientIp) ไม่ใช้ req.ip
+  app.set('trust proxy', production ? true : 'loopback');
   app.disable('x-powered-by');
 
   app.use((req, res, next) => {
@@ -41,6 +53,8 @@ function createApp() {
       'X-Frame-Options': 'SAMEORIGIN',
       'Referrer-Policy': 'same-origin',
     });
+    // เว็บจริงบังคับ https ตลอด 1 ปี
+    if (production) res.set('Strict-Transport-Security', 'max-age=31536000');
     next();
   });
 
@@ -67,26 +81,28 @@ function createApp() {
   app.use(
     cookieSession({
       name: 'plan_session',
-      keys: [secretKey()],
+      keys,
       maxAge: 7 * 24 * 60 * 60 * 1000,
       sameSite: 'lax',
       httpOnly: true,
+      secure: production,
     })
   );
 
   // กันเว็บอื่นแอบส่งฟอร์ม (และท่อนไฟล์ PUT) เข้ามาในนามผู้ใช้
+  // ดู Origin ก่อน · เว็บจริงถ้าไม่มี Origin ให้ดู Referer แทน ถ้าไม่มีทั้งคู่ปฏิเสธ (ในเครื่องปล่อยผ่านเหมือนเดิม)
+  const hostOf = (u) => {
+    try {
+      return new URL(u).host;
+    } catch {
+      return ''; // ผิดรูปแบบ
+    }
+  };
   app.use((req, res, next) => {
     if (req.method !== 'POST' && req.method !== 'PUT') return next();
     const origin = req.get('origin');
-    if (origin && origin !== 'null') {
-      let host = '';
-      try {
-        host = new URL(origin).host;
-      } catch {
-        // origin ผิดรูปแบบ
-      }
-      if (host !== req.get('host')) return res.status(403).send('Forbidden');
-    }
+    const from = origin && origin !== 'null' ? origin : production ? req.get('referer') : '';
+    if (from ? hostOf(from) !== req.get('host') : production) return res.status(403).send('Forbidden');
     next();
   });
 
@@ -105,9 +121,12 @@ function createApp() {
     // โหมดกลางคืนและตัวอักษรใหญ่ จำไว้ในเครื่องของผู้ใช้แต่ละเครื่อง (ไม่เก็บในฐานข้อมูล)
     const theme = themes.resolve(settings.theme);
     const night = themes.resolve(settings.theme, { dark: true });
+    // หน้าเว็บไม่ได้รับรหัสลับ LINE ได้แค่รู้ว่าตั้งไว้แล้วหรือยัง (โค้ดฝั่งเซิร์ฟเวอร์ยังอ่านจาก req.settings)
+    const { line_token: lineToken, ...pubSettings } = settings;
+    pubSettings.line_token_set = Boolean(lineToken);
     Object.assign(res.locals, {
       me: req.me,
-      settings,
+      settings: pubSettings,
       util,
       wf,
       ff,

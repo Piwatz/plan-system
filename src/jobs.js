@@ -1,4 +1,4 @@
-// งานตามเวลา: ทุกชั่วโมงทิ้งไฟล์ที่ส่งค้างไว้เกิน 1 วัน · ทุกคืนตีสองสำรองข้อมูลเข้าที่เก็บไฟล์ เก็บ 30 ฉบับล่าสุด
+// งานตามเวลา: ทุกชั่วโมงทิ้งไฟล์ที่ส่งค้างไว้เกิน 1 วัน และล้างตัวนับรหัสผ่านผิดที่หมดอายุ · ทุกคืนตีสองสำรองข้อมูลเข้าที่เก็บไฟล์ เก็บ 30 ฉบับล่าสุด
 // บน Node เรียก tick ทุกนาที (start) · บน Workers เรียก hourly และ nightly จาก Cron Trigger (ตอน 13)
 const db = require('./db');
 const { q, nowStr, getSettings, setSetting } = db;
@@ -40,7 +40,11 @@ async function nightlyBackup() {
 }
 
 async function hourly() {
-  return db.withScope(cleanupPending);
+  return db.withScope(async () => {
+    // ตัวนับรหัสผ่านผิดที่หมดอายุแล้ว
+    await require('./auth').cleanupAttempts();
+    return cleanupPending();
+  });
 }
 
 async function nightly() {

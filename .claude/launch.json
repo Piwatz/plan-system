@@ -31,6 +31,23 @@
       "env": {
         "TZ": "UTC"
       }
+    },
+    {
+      "name": "plan-setup-check",
+      "runtimeExecutable": "node",
+      "runtimeArgs": [
+        "--disable-warning=ExperimentalWarning",
+        "server.js",
+        "--data",
+        "data-dev/setup-check",
+        "--port",
+        "3102"
+      ],
+      "port": 3102,
+      "env": {
+        "SETUP_TOKEN": "setup-check-token-2569",
+        "FILE_STORE": "local"
+      }
     }
   ]
 }

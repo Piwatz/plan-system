@@ -1,4 +1,5 @@
 // เข้าสู่ระบบ ออกจากระบบ ตั้งค่าครั้งแรก เปลี่ยนรหัสผ่าน
+const crypto = require('crypto');
 const express = require('express');
 const db = require('../db');
 const { q, nowStr, setSetting } = db;
@@ -20,9 +21,26 @@ router.use(async (req, res, next) => {
   next();
 });
 
+// เว็บจริงต้องกรอกรหัสสำหรับตั้งค่าครั้งแรก (SETUP_TOKEN ที่ผู้ติดตั้งตั้งไว้ในเซิร์ฟเวอร์) กันคนนอกเปิดหน้านี้ก่อนแล้วได้เป็นผู้ดูแลระบบ
+// ในเครื่องถ้าตั้ง SETUP_TOKEN ไว้ก็ต้องกรอกเหมือนกัน (ลองก่อนขึ้นเว็บจริงได้)
+function needSetupToken() {
+  return config.PRODUCTION || Boolean(process.env.SETUP_TOKEN);
+}
+
+// เทียบแบบใช้เวลาเท่ากันทุกกรณี ไม่บอกใบ้ว่าถูกไปกี่ตัว
+function setupTokenOk(given) {
+  const want = process.env.SETUP_TOKEN || '';
+  const h = (x) => crypto.createHash('sha256').update(String(x)).digest();
+  return Boolean(want) && crypto.timingSafeEqual(h(given || ''), h(want));
+}
+
+function setupPage(error, form) {
+  return { title: 'ตั้งค่าครั้งแรก', error, form, needToken: needSetupToken() };
+}
+
 router.get('/setup', async (req, res) => {
   if (await hasUsers()) return res.redirect('/login');
-  res.render('setup', { title: 'ตั้งค่าครั้งแรก', error: null, form: {} });
+  res.render('setup', setupPage(null, {}));
 });
 
 router.post('/setup', async (req, res) => {
@@ -30,10 +48,22 @@ router.post('/setup', async (req, res) => {
   const b = req.body || {};
   const form = { school_name: (b.school_name || '').trim(), username: (b.username || '').trim(), full_name: (b.full_name || '').trim() };
   let error = null;
+  if (needSetupToken()) {
+    // เดารหัสถูกนับเหมือนเข้าสู่ระบบผิด (ต่อเครื่อง 8 ครั้ง และรวมทุกเครื่อง 20 ครั้ง ใน 10 นาที)
+    const ip = auth.clientIp(req);
+    const keys = [ip ? `${ip}|setup` : null, 'user|setup'];
+    if (!process.env.SETUP_TOKEN) error = 'ระบบยังไม่ได้ตั้งรหัสสำหรับตั้งค่าครั้งแรก กรุณาติดต่อผู้ติดตั้งระบบ';
+    else if (await auth.isLocked(...keys)) error = 'ใส่รหัสผ่านผิดหลายครั้ง กรุณารอ 10 นาทีแล้วลองใหม่ หรือติดต่อผู้ดูแลระบบ';
+    else if (!setupTokenOk(b.setup_token)) {
+      await auth.recordFail(...keys);
+      error = 'รหัสสำหรับตั้งค่าครั้งแรกไม่ถูกต้อง';
+    }
+    if (error) return res.status(403).render('setup', setupPage(error, form));
+  }
   if (!form.school_name || !form.username || !form.full_name) error = 'กรุณากรอกข้อมูลให้ครบ';
   else if (String(b.password || '').length < 6) error = 'รหัสผ่านต้องยาวอย่างน้อย 6 ตัวอักษร';
   else if (b.password !== b.password2) error = 'รหัสผ่านสองช่องไม่ตรงกัน';
-  if (error) return res.render('setup', { title: 'ตั้งค่าครั้งแรก', error, form });
+  if (error) return res.render('setup', setupPage(error, form));
   const r = await q.tx(async () => {
     await setSetting('school_name', form.school_name);
     return q.get(
@@ -97,16 +127,14 @@ router.post('/login', async (req, res) => {
   const ukey = auth.userKey(username);
   const fail = async (error) => res.status(401).render('login', await loginPage(req, { error, username }));
   if (!username) return fail('กรุณาเลือกชื่อ หรือพิมพ์ชื่อผู้ใช้');
-  if ((await auth.isLocked(key)) || (await auth.isLocked(ukey))) return fail('ใส่รหัสผ่านผิดหลายครั้ง กรุณารอ 10 นาทีแล้วลองใหม่ หรือติดต่อผู้ดูแลระบบ');
+  if (await auth.isLocked(key, ukey)) return fail('ใส่รหัสผ่านผิดหลายครั้ง กรุณารอ 10 นาทีแล้วลองใหม่ หรือติดต่อผู้ดูแลระบบ');
   // ชื่อผู้ใช้ไม่สนตัวพิมพ์เล็กใหญ่ (เหมือน COLLATE NOCASE ของระบบเดิม)
   const u = await q.get('SELECT id, must_change_password FROM users WHERE lower(username) = lower(?) AND is_active = 1', username);
   if (!u || !(await auth.verifyPassword(password, u.id))) {
-    await auth.recordFail(key);
-    await auth.recordFail(ukey);
+    await auth.recordFail(key, ukey);
     return fail(req.ff.namepick ? 'รหัสผ่านไม่ถูกต้อง' : 'ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง');
   }
-  await auth.clearFails(key);
-  await auth.clearFails(ukey);
+  await auth.clearFails(key, ukey);
   await q.run('UPDATE users SET last_login_at = ? WHERE id = ?', nowStr(), u.id);
   const back = req.session.returnTo;
   req.session.uid = u.id;
