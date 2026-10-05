@@ -38,21 +38,24 @@ function registryScope(me) {
   return null;
 }
 
+// ระดับที่ยังไม่มีผู้ตรวจ ถามฐานคำสั่งเดียว: แถว h = ผู้ถือบทบาทที่ยังใช้งาน (บทบาท กลุ่มสาระ) · แถว d = กลุ่มสาระที่มีครู เรียงตาม id
 async function setupWarnings() {
+  const rows = await q.all(
+    `SELECT 'h' AS k, r.role, u.department_id AS dept_id, NULL AS name FROM user_roles r JOIN users u ON u.id = r.user_id WHERE u.is_active = 1
+     UNION ALL
+     SELECT 'd', NULL, d.id, d.name FROM departments d
+     WHERE EXISTS (SELECT 1 FROM users t WHERE t.department_id = d.id AND t.is_active = 1 AND t.is_teacher = 1)
+     ORDER BY k, dept_id`
+  );
+  const held = rows.filter((r) => r.k === 'h');
+  const depts = rows.filter((r) => r.k === 'd');
   const warn = [];
   for (const st of wf.allSteps()) {
     if (!st.for_plan && !st.for_manual && !st.for_note) continue;
     if (st.scope === 'school') {
-      const n = (await q.get('SELECT COUNT(*) AS n FROM user_roles r JOIN users u ON u.id = r.user_id WHERE r.role = ? AND u.is_active = 1', st.role)).n;
-      if (!n) warn.push(`ยังไม่ได้กำหนดผู้ใดเป็น ${st.label}`);
+      if (!held.some((h) => h.role === st.role)) warn.push(`ยังไม่ได้กำหนดผู้ใดเป็น ${st.label}`);
     } else {
-      const depts = await q.all(
-        `SELECT d.name FROM departments d
-         WHERE EXISTS (SELECT 1 FROM users t WHERE t.department_id = d.id AND t.is_active = 1 AND t.is_teacher = 1)
-           AND NOT EXISTS (SELECT 1 FROM users u JOIN user_roles r ON r.user_id = u.id WHERE u.department_id = d.id AND r.role = ? AND u.is_active = 1)`,
-        st.role
-      );
-      for (const d of depts) warn.push(`กลุ่มสาระ ${d.name} ยังไม่มี ${st.label}`);
+      for (const d of depts) if (!held.some((h) => h.role === st.role && h.dept_id === d.dept_id)) warn.push(`กลุ่มสาระ ${d.name} ยังไม่มี ${st.label}`);
     }
   }
   return warn;
@@ -61,7 +64,7 @@ async function setupWarnings() {
 // รายวิชาของครูในภาคเรียน แต่ละวิชามีคู่มือ แผน และจำนวนบันทึกหลังแผน
 async function mySubjects(userId, t) {
   const works = await q.all(
-    `SELECT s.*,
+    `SELECT ${wf.subCols('s')},
        (SELECT COUNT(*) FROM submissions n WHERE n.parent_id = s.id AND n.doc_type = 'note') AS note_total,
        (SELECT COUNT(*) FROM submissions n WHERE n.parent_id = s.id AND n.doc_type = 'note' AND n.status = 'approved') AS note_done,
        (SELECT COUNT(*) FROM submissions n WHERE n.parent_id = s.id AND n.doc_type = 'note' AND n.status IN ('draft', 'returned')) AS note_todo
@@ -159,12 +162,28 @@ router.get('/', async (req, res) => {
   const works = subjects.flatMap((r) => [r.manual, r.plan]).filter(Boolean);
   const pendingWorks = works.filter((s) => s.status === 'pending');
   const returnedWorks = works.filter((s) => s.status === 'returned');
-  const notes = await q.get(
-    "SELECT COUNT(*) AS n, COUNT(*) FILTER (WHERE status IN ('draft', 'returned')) AS todo FROM submissions WHERE teacher_id = ? AND doc_type = 'note' AND academic_year = ? AND semester = ?",
+  // บันทึกหลังแผนของภาคนี้ทั้งหมด (คอลัมน์สั้น ๆ) ใช้ทั้งนับจำนวนและรายการที่ค้าง
+  const myNotes = await q.all(
+    "SELECT id, parent_id, subject_code, plan_no, status FROM submissions WHERE teacher_id = ? AND doc_type = 'note' AND academic_year = ? AND semester = ? ORDER BY to_int_lenient(plan_no), id",
     me.id,
     t.year,
     t.semester
   );
+  const noteTodo = myNotes.filter((x) => x.status === 'draft' || x.status === 'returned');
+  const notes = { n: myNotes.length, todo: noteTodo.length };
+  // ความเห็นล่าสุดที่ส่งกลับ ของทุกงานที่ถูกส่งกลับ ในคำสั่งเดียว
+  const returnedIds = [...returnedWorks, ...noteTodo.filter((x) => x.status === 'returned')].map((s) => s.id);
+  const returnComments = new Map();
+  if (returnedIds.length) {
+    for (const r of await q.all(
+      "SELECT DISTINCT ON (submission_id) submission_id, comment FROM reviews WHERE submission_id = ANY(?) AND action = 'return' ORDER BY submission_id, id DESC",
+      returnedIds
+    )) {
+      returnComments.set(r.submission_id, r.comment);
+    }
+  }
+  const lastReturn = (id) => returnComments.get(id) || '';
+  const warnings = me.is_admin ? await setupWarnings() : [];
   // สิ่งที่ยังค้าง: ถูกส่งกลับ ยังเป็นร่าง หรือยังไม่ได้ส่งอีกชิ้น
   const todo = [];
   if (mainMissing) todo.push('แผนวิชาหลัก ยังไม่ได้เลือกวิชาหลัก');
@@ -178,7 +197,7 @@ router.get('/', async (req, res) => {
     }
   }
   const activity = await q.all(
-    `SELECT r.*, s.doc_type, s.subject_code, s.subject_name, s.plan_no FROM reviews r
+    `SELECT ${wf.reviewCols('r')}, s.doc_type, s.subject_code, s.subject_name, s.plan_no FROM reviews r
      JOIN submissions s ON s.id = r.submission_id
      WHERE s.teacher_id = ? AND r.action IN ('approve', 'return')
      ORDER BY r.id DESC LIMIT 6`,
@@ -188,22 +207,13 @@ router.get('/', async (req, res) => {
   const alerts = await q.all('SELECT * FROM notifications WHERE user_id = ? AND read_at IS NULL ORDER BY id DESC LIMIT 3', me.id);
   // รายการ "สิ่งที่ต้องทำต่อ" สำหรับหน้าแรกบนมือถือ เรียงจากเรื่องด่วน
   const nextUp = [];
-  if (me.is_admin) {
-    for (const w of (await setupWarnings()).slice(0, 3)) nextUp.push({ title: w, sub: 'แตะเพื่อตั้งค่าผู้ตรวจในรายชื่อผู้ใช้', href: '/admin/users', tone: 'wait' });
-  }
+  for (const w of warnings.slice(0, 3)) nextUp.push({ title: w, sub: 'แตะเพื่อตั้งค่าผู้ตรวจในรายชื่อผู้ใช้', href: '/admin/users', tone: 'wait' });
   if (inbox.length) nextUp.push({ title: `มีงานรอคุณลงนาม ${inbox.length} รายการ`, sub: 'แตะเพื่อเปิดงานรอตรวจ', href: '/inbox', tone: 'primary' });
-  const lastReturn = async (id) => ((await q.get("SELECT comment FROM reviews WHERE submission_id = ? AND action = 'return' ORDER BY id DESC LIMIT 1", id)) || {}).comment || '';
   for (const s of returnedWorks) {
-    nextUp.push({ title: `${s.doc_type === 'manual' ? 'คู่มือ' : 'แผน'} ${s.subject_code} ถูกส่งกลับให้แก้ไข`, sub: (await lastReturn(s.id)).slice(0, 90), href: `/s/${s.id}`, tone: 'back' });
+    nextUp.push({ title: `${s.doc_type === 'manual' ? 'คู่มือ' : 'แผน'} ${s.subject_code} ถูกส่งกลับให้แก้ไข`, sub: lastReturn(s.id).slice(0, 90), href: `/s/${s.id}`, tone: 'back' });
   }
-  const noteTodo = await q.all(
-    "SELECT id, parent_id, subject_code, plan_no, status FROM submissions WHERE teacher_id = ? AND doc_type = 'note' AND status IN ('draft', 'returned') AND academic_year = ? AND semester = ? ORDER BY to_int_lenient(plan_no), id",
-    me.id,
-    t.year,
-    t.semester
-  );
   for (const n of noteTodo.filter((x) => x.status === 'returned')) {
-    nextUp.push({ title: `บันทึกหลังแผน ${n.subject_code} แผนที่ ${n.plan_no} ถูกส่งกลับ`, sub: (await lastReturn(n.id)).slice(0, 90), href: `/s/${n.id}/edit`, tone: 'back' });
+    nextUp.push({ title: `บันทึกหลังแผน ${n.subject_code} แผนที่ ${n.plan_no} ถูกส่งกลับ`, sub: lastReturn(n.id).slice(0, 90), href: `/s/${n.id}/edit`, tone: 'back' });
   }
   const drafts = noteTodo.filter((x) => x.status === 'draft');
   if (drafts.length) {
@@ -249,7 +259,7 @@ router.get('/', async (req, res) => {
     inboxNotes: inbox.filter((s) => s.doc_type === 'note').length,
     window: submitWindow(req.settings),
     daysLeft: util.daysUntil(req.settings.submit_end),
-    warnings: me.is_admin ? await setupWarnings() : [],
+    warnings,
   });
 });
 
@@ -257,7 +267,7 @@ router.get('/', async (req, res) => {
 router.get('/my', async (req, res) => {
   const t = term(req);
   const works = await q.all(
-    `SELECT s.*,
+    `SELECT ${wf.subCols('s')},
        (SELECT COUNT(*) FROM submissions n WHERE n.parent_id = s.id AND n.doc_type = 'note') AS note_total,
        (SELECT COUNT(*) FROM submissions n WHERE n.parent_id = s.id AND n.doc_type = 'note' AND n.status = 'approved') AS note_done,
        (SELECT COUNT(*) FROM submissions n WHERE n.parent_id = s.id AND n.doc_type = 'note' AND n.status IN ('draft', 'returned')) AS note_todo
@@ -329,7 +339,7 @@ async function registryRows(req, scope) {
     params.push(`%${kw}%`, `%${kw}%`, `%${kw}%`, `%${kw}%`);
   }
   const rows = await q.all(
-    `SELECT s.*, u.full_name AS teacher_name, d.name AS dept_name
+    `SELECT ${wf.subCols('s')}, u.full_name AS teacher_name, d.name AS dept_name
      FROM submissions s JOIN users u ON u.id = s.teacher_id LEFT JOIN departments d ON d.id = s.department_id
      WHERE ${where.join(' AND ')}
      ORDER BY d.sort NULLS FIRST, u.full_name, s.subject_code, to_int_lenient(s.plan_no)

@@ -61,20 +61,19 @@ async function minPassword(user, pinOn) {
 
 // ผู้ใช้ที่เข้าระบบอยู่ ไม่ดึงรหัสผ่านที่เข้ารหัสแล้ว และไม่ดึงรูปลายเซ็น (หลายร้อย KB)
 // signature ได้เป็นที่อยู่ /media/signature?v=รุ่น ถ้ามีลายเซ็น (template ใช้เช็กว่ามีลายเซ็นและแสดงรูป)
-// งานที่ต้องใช้รูปลายเซ็นจริงให้เรียก signatureOf()
+// งานที่ต้องใช้รูปลายเซ็นจริงให้เรียก signatureOf() · บทบาทมาในคำสั่งเดียวกัน (ทุกคำขอเรียก)
 async function loadUser(id) {
   const u = await q.get(
     `SELECT u.id, u.username, u.must_change_password, u.full_name, u.position, u.department_id, u.is_teacher, u.is_admin,
        u.is_active, u.created_at, u.last_login_at, u.plan_quota,
        CASE WHEN coalesce(u.signature, '') = '' THEN NULL ELSE '/media/signature?v=' || substr(md5(u.signature), 1, 8) END AS signature,
-       d.name AS dept_name
+       d.name AS dept_name,
+       ARRAY(SELECT r.role FROM user_roles r WHERE r.user_id = u.id) AS roles
      FROM users u LEFT JOIN departments d ON d.id = u.department_id
      WHERE u.id = ? AND u.is_active = 1`,
     id
   );
-  if (!u) return null;
-  u.roles = await rolesOf(u.id);
-  return u;
+  return u || null;
 }
 
 function requireLogin(req, res, next) {

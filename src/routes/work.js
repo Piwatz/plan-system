@@ -124,24 +124,25 @@ function currentFiles(subId) {
   return q.all('SELECT * FROM files WHERE submission_id = ? AND is_current = 1 ORDER BY id', subId);
 }
 
-// id ใช้ไม่ได้ (ไม่ใช่เลข หรือเกินช่วง) ถือว่าไม่พบ แต่ละหน้าตอบ "ไม่พบ" ด้วยข้อความของตัวเองเหมือนเดิม
-async function loadSub(id) {
-  const n = util.idOrNull(id);
-  if (n === null) return undefined;
-  return q.get(
-    `SELECT s.*, u.full_name AS teacher_name, u.position AS teacher_position, d.name AS dept_name,
-       p.status AS parent_status
+// งานพร้อมชื่อครูและกลุ่มสาระ · signature = เอารูปลายเซ็นครูด้วย (เฉพาะหน้าพิมพ์)
+function subSelect(signature) {
+  return `SELECT ${wf.subCols('s')}${signature ? ', s.teacher_signature' : ''}, u.full_name AS teacher_name, u.position AS teacher_position,
+       d.name AS dept_name, p.status AS parent_status
      FROM submissions s
      JOIN users u ON u.id = s.teacher_id
      LEFT JOIN departments d ON d.id = s.department_id
-     LEFT JOIN submissions p ON p.id = s.parent_id
-     WHERE s.id = ?`,
-    n
-  );
+     LEFT JOIN submissions p ON p.id = s.parent_id`;
 }
 
-async function viewable(req, id) {
-  const sub = await loadSub(id);
+// id ใช้ไม่ได้ (ไม่ใช่เลข หรือเกินช่วง) ถือว่าไม่พบ แต่ละหน้าตอบ "ไม่พบ" ด้วยข้อความของตัวเองเหมือนเดิม
+async function loadSub(id, { signature = false } = {}) {
+  const n = util.idOrNull(id);
+  if (n === null) return undefined;
+  return q.get(`${subSelect(signature)} WHERE s.id = ?`, n);
+}
+
+async function viewable(req, id, opts) {
+  const sub = await loadSub(id, opts);
   if (!sub || !(await wf.canView(req.me, sub))) return null;
   return sub;
 }
@@ -321,7 +322,7 @@ router.get('/works/new', async (req, res) => {
   const sub = { doc_type: type, academic_year: year, semester: sem, teaching_methods: '[]' };
   // กดมาจากรายวิชาที่มีอยู่แล้ว ให้กรอกรหัสและชื่อวิชาให้เลย
   const fromId = util.idOrNull(req.query.from);
-  const from = fromId ? await q.get('SELECT * FROM submissions WHERE id = ? AND teacher_id = ?', fromId, req.me.id) : null;
+  const from = fromId ? await q.get(`SELECT ${wf.subCols()} FROM submissions WHERE id = ? AND teacher_id = ?`, fromId, req.me.id) : null;
   const subjects = await subjectChoices(req);
   if (from) Object.assign(sub, { subject_code: from.subject_code, subject_name: from.subject_name, grade_level: from.grade_level });
   else if (req.query.code) {
@@ -403,7 +404,7 @@ const noteUpload = uploader([{ name: 'attach_files', maxCount: 10 }]);
 
 async function parentPlanFor(req, planId) {
   const id = util.idOrNull(planId);
-  const plan = id === null ? undefined : await q.get("SELECT * FROM submissions WHERE id = ? AND doc_type = 'plan'", id);
+  const plan = id === null ? undefined : await q.get(`SELECT ${wf.subCols()} FROM submissions WHERE id = ? AND doc_type = 'plan'`, id);
   if (!plan || plan.teacher_id !== req.me.id) throw new UserError('ไม่พบแผนการจัดการเรียนรู้ของคุณ');
   if (plan.status === 'draft') throw new UserError('ต้องส่งแผนการจัดการเรียนรู้รายวิชานี้ก่อน จึงจะเขียนบันทึกหลังแผนได้');
   return plan;
@@ -412,7 +413,7 @@ async function parentPlanFor(req, planId) {
 router.get('/notes/new', async (req, res) => {
   const plan = await parentPlanFor(req, req.query.plan);
   // ใช้หน่วยและห้องเดียวกับบันทึกฉบับล่าสุด ครูไม่ต้องพิมพ์ซ้ำ
-  const last = await q.get("SELECT * FROM submissions WHERE parent_id = ? AND doc_type = 'note' ORDER BY id DESC LIMIT 1", plan.id);
+  const last = await q.get(`SELECT ${wf.subCols()} FROM submissions WHERE parent_id = ? AND doc_type = 'note' ORDER BY id DESC LIMIT 1`, plan.id);
   const maxNo = (await q.get("SELECT MAX(to_int_lenient(plan_no)) AS n FROM submissions WHERE parent_id = ? AND doc_type = 'note'", plan.id)).n;
   const sub = { plan_no: String((maxNo || 0) + 1), note_mode: last && req.ff.notefile ? last.note_mode : 'type' };
   if (last) Object.assign(sub, { unit_no: last.unit_no, unit_name: last.unit_name, class_room: last.class_room, hours: last.hours, students_total: last.students_total });
@@ -513,9 +514,9 @@ router.get('/s/:id', async (req, res) => {
   const files = await q.all('SELECT * FROM files WHERE submission_id = ? ORDER BY is_current DESC, id', sub.id);
   const notes =
     sub.doc_type === 'plan'
-      ? await q.all("SELECT * FROM submissions WHERE parent_id = ? AND doc_type = 'note' ORDER BY to_int_lenient(plan_no), id", sub.id)
+      ? await q.all(`SELECT ${wf.subCols()} FROM submissions WHERE parent_id = ? AND doc_type = 'note' ORDER BY to_int_lenient(plan_no), id`, sub.id)
       : [];
-  const reviews = await wf.reviewsOf(sub.id);
+  const reviews = await wf.reviewsOf(sub.id, { signatures: false });
   const lastReturn = [...reviews].reverse().find((r) => r.action === 'return');
   const sibling =
     sub.doc_type === 'note'
@@ -538,12 +539,12 @@ router.get('/s/:id', async (req, res) => {
     lastReturn,
     sibling,
     parent,
-    steps: await wf.progress(sub),
+    steps: await wf.progress(sub, { reviews }),
     canReview: wf.canReview(req.me, sub),
     needsScore: wf.needsScore(sub),
     rubric: wf.rubric(sub.doc_type),
     canEdit: editable(req, sub),
-    canWithdraw: await wf.canWithdraw(req.me, sub),
+    canWithdraw: await wf.canWithdraw(req.me, sub, reviews),
     canDelete: (wf.isOwner(req.me, sub) && sub.status === 'draft' && !sub.submitted_at) || req.me.is_admin,
     isOwner: wf.isOwner(req.me, sub),
     canPlan: !req.ff.onemain || !(await teaching.planBlocked(req.me, Number(req.settings.academic_year), Number(req.settings.semester))),
@@ -555,7 +556,7 @@ router.get('/s/:id/edit', async (req, res) => {
   const sub = await viewable(req, req.params.id);
   if (!editable(req, sub)) throw new UserError('แก้ไขได้เฉพาะงานของตนเองที่เป็นฉบับร่างหรือถูกส่งกลับ');
   const files = await currentFiles(sub.id);
-  const lastReturn = [...(await wf.reviewsOf(sub.id))].reverse().find((r) => r.action === 'return');
+  const lastReturn = [...(await wf.reviewsOf(sub.id, { signatures: false }))].reverse().find((r) => r.action === 'return');
   if (sub.doc_type !== 'note') {
     return res.render('work_form', {
       lastReturn,
@@ -567,7 +568,7 @@ router.get('/s/:id/edit', async (req, res) => {
       isNew: false,
     });
   }
-  const plan = await q.get('SELECT * FROM submissions WHERE id = ?', sub.parent_id);
+  const plan = await q.get(`SELECT ${wf.subCols()} FROM submissions WHERE id = ?`, sub.parent_id);
   res.render('note_form', { title: 'แก้ไขบันทึกหลังแผน', plan, sub, files, lastReturn, isNew: false, ...(await noteHelpers(req, plan.id, sub.id)) });
 });
 
@@ -739,32 +740,41 @@ function deptFull(name) {
   return /^(กลุ่มสาระ|กิจกรรม)/.test(name) ? name : `กลุ่มสาระการเรียนรู้${name}`;
 }
 
-function scorer(sub) {
-  return q.get(
-    "SELECT * FROM reviews WHERE submission_id = ? AND action = 'approve' AND score_total IS NOT NULL ORDER BY id DESC LIMIT 1",
-    sub.id
-  );
+// ข้อมูลหน้าพิมพ์ของงานหลายชิ้น ใช้ไม่เกิน 3 คำสั่งไม่ว่ากี่ชิ้น: ประวัติการตรวจ (รูปลายเซ็นเฉพาะการลงนามเห็นชอบ)
+// · ผู้ตรวจที่กำลังรอ (ถ้ามีงานรอตรวจ) · ไฟล์ของบันทึกหลังแผน · subs ต้องดึงพร้อม teacher_signature (subSelect(true))
+async function printDataMany(subs) {
+  if (!subs.length) return [];
+  const reviews = await wf.reviewsMany(subs.map((s) => s.id), { signatures: 'approve' });
+  const steps = await wf.progressMany(subs, { reviews });
+  const noteIds = subs.filter((s) => s.doc_type === 'note').map((s) => s.id);
+  const files = new Map(noteIds.map((id) => [id, []]));
+  if (noteIds.length) {
+    for (const f of await q.all('SELECT * FROM files WHERE submission_id = ANY(?) AND is_current = 1 ORDER BY id', noteIds)) files.get(f.submission_id).push(f);
+  }
+  return subs.map((sub, i) => {
+    const revs = reviews.get(sub.id) || [];
+    // วันที่ส่งครั้งแรก และผู้ให้คะแนนคนล่าสุด
+    const firstSubmit = revs.find((r) => r.action === 'submit' || r.action === 'resubmit');
+    const scorer = [...revs].reverse().find((r) => r.action === 'approve' && r.score_total != null);
+    return {
+      sub,
+      steps: steps[i],
+      scoreDetail: util.parseJson(sub.score_detail, []),
+      scorer,
+      gradeFull: gradeFull(sub.grade_level),
+      deptFull: deptFull(sub.dept_name),
+      submitDate: firstSubmit ? firstSubmit.created_at : sub.created_at,
+      files: sub.doc_type === 'note' ? files.get(sub.id) : [],
+    };
+  });
 }
 
 async function printData(sub) {
-  const firstSubmit = await q.get(
-    "SELECT created_at FROM reviews WHERE submission_id = ? AND action IN ('submit', 'resubmit') ORDER BY id LIMIT 1",
-    sub.id
-  );
-  return {
-    sub,
-    steps: await wf.progress(sub),
-    scoreDetail: util.parseJson(sub.score_detail, []),
-    scorer: await scorer(sub),
-    gradeFull: gradeFull(sub.grade_level),
-    deptFull: deptFull(sub.dept_name),
-    submitDate: firstSubmit ? firstSubmit.created_at : sub.created_at,
-    files: sub.doc_type === 'note' ? await currentFiles(sub.id) : [],
-  };
+  return (await printDataMany([sub]))[0];
 }
 
 router.get('/s/:id/print', async (req, res) => {
-  const sub = await viewable(req, req.params.id);
+  const sub = await viewable(req, req.params.id, { signature: true });
   if (!sub) return res.status(404).render('error', { title: 'ไม่พบงานนี้', message: 'ไม่พบงานนี้ หรือคุณไม่มีสิทธิ์เปิดดู' });
   const qr = sub.status === 'draft' ? '' : await qrSvg(req, sub);
   if (sub.doc_type === 'note') {
@@ -778,17 +788,14 @@ router.get('/s/:id/print', async (req, res) => {
 router.get('/s/:id/print-notes', async (req, res) => {
   const plan = await viewable(req, req.params.id);
   if (!plan || plan.doc_type !== 'plan') return res.status(404).render('error', { title: 'ไม่พบงานนี้', message: 'ไม่พบแผนนี้' });
-  const ids = (
-    await q.all(
-      "SELECT id FROM submissions WHERE parent_id = ? AND doc_type = 'note' AND status != 'draft' ORDER BY to_int_lenient(plan_no), id",
-      plan.id
-    )
-  ).map((r) => r.id);
+  // บันทึกทุกฉบับของเล่มในคำสั่งเดียว (เดิมถามทีละฉบับ)
+  const notes = await q.all(
+    `${subSelect(true)} WHERE s.parent_id = ? AND s.doc_type = 'note' AND s.status != 'draft' ORDER BY to_int_lenient(s.plan_no), s.id`,
+    plan.id
+  );
+  const data = await printDataMany(notes);
   const items = [];
-  for (const id of ids) {
-    const s = await loadSub(id);
-    items.push({ ...(await printData(s)), qr: await qrSvg(req, s) });
-  }
+  for (let i = 0; i < notes.length; i++) items.push({ ...data[i], qr: await qrSvg(req, notes[i]) });
   res.render('print_notes', { title: 'พิมพ์บันทึกหลังแผนทั้งเล่ม', items });
 });
 
@@ -864,17 +871,8 @@ router.post('/inbox/approve-many', async (req, res) => {
   if (!req.me.signature) throw new UserError('กรุณาบันทึกลายเซ็นในหน้าข้อมูลส่วนตัวก่อน');
   const ids = asArray(b.ids).map(util.idOrNull).filter(Boolean);
   if (!ids.length) throw new UserError('ยังไม่ได้เลือกรายการ');
-  let done = 0;
-  let skipped = 0;
-  for (const id of ids) {
-    const sub = await wf.getSub(id);
-    if (!sub || !wf.canReview(req.me, sub) || wf.needsScore(sub)) {
-      skipped += 1;
-      continue;
-    }
-    await wf.approve(id, req.me, { comment: str(b.comment) });
-    done += 1;
-  }
+  // ลงนามทุกงานที่เลือกใน transaction เดียว ข้ามงานที่ต้องให้คะแนนก่อน หรือไม่ได้รอคุณแล้ว
+  const { done, skipped } = await wf.approveMany(ids, req.me, { comment: str(b.comment) });
   const extra = skipped ? ` ข้าม ${skipped} รายการที่ต้องให้คะแนนก่อน หรือไม่ได้รอคุณแล้ว` : '';
   respond(req, res, '/inbox', 'success', `ลงนามเรียบร้อย ${done} รายการ${extra}`);
 });
@@ -884,4 +882,5 @@ module.exports.submitWindow = submitWindow;
 module.exports.gradeFull = gradeFull;
 module.exports.deptFull = deptFull;
 module.exports.printData = printData;
+module.exports.printDataMany = printDataMany;
 module.exports.subjectChoices = subjectChoices;

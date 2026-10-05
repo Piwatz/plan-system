@@ -144,13 +144,16 @@ function usernameTaken(name, exceptId = 0) {
   return q.get('SELECT 1 AS x FROM users WHERE lower(username) = lower(?) AND id != ?', name, exceptId);
 }
 
-async function autoUsername(fullName, taken = new Set()) {
+// ชื่อผู้ใช้ที่ลองตามลำดับ สมชาย สมชาย2 สมชาย3 ไปเรื่อย ๆ
+function* usernameCandidates(fullName) {
   const base = firstName(fullName);
-  if (!base) return '';
-  for (let n = 1; ; n++) {
-    const name = n === 1 ? base : `${base}${n}`;
-    if (!taken.has(name) && !(await usernameTaken(name))) return name;
-  }
+  if (!base) return;
+  for (let n = 1; ; n++) yield n === 1 ? base : `${base}${n}`;
+}
+
+async function autoUsername(fullName, taken = new Set()) {
+  for (const name of usernameCandidates(fullName)) if (!taken.has(name) && !(await usernameTaken(name))) return name;
+  return '';
 }
 
 // ผู้บริหาร (ผู้อำนวยการ รองผู้อำนวยการ) เป็นผู้ดูแลระบบไม่ได้ ตามข้อตกลงของโรงเรียน
@@ -163,7 +166,8 @@ function execAdmin(f) {
 
 async function setRoles(userId, roles) {
   await q.run('DELETE FROM user_roles WHERE user_id = ?', userId);
-  for (const r of new Set(roles)) await q.run('INSERT INTO user_roles (user_id, role) VALUES (?, ?)', userId, r);
+  const list = [...new Set(roles)];
+  if (list.length) await q.run('INSERT INTO user_roles (user_id, role) SELECT ?, r FROM unnest(?::text[]) WITH ORDINALITY AS x(r, n) ORDER BY n', userId, list);
 }
 
 router.post('/users', async (req, res) => {
@@ -308,6 +312,55 @@ router.get('/users-import', async (req, res) => {
   res.render('admin/users_import', { title: 'นำเข้ารายชื่อครู', result: null, departments: await departments(), steps: wf.allSteps() });
 });
 
+// เขียนผลการนำเข้ารายชื่อลงฐานรวดเดียว ไม่ว่ากี่คน: เพิ่มคนใหม่ · แก้คนเดิม · ลบแล้วใส่บทบาทใหม่ (ไม่เกิน 4 คำสั่ง)
+async function saveImported(users, hash) {
+  const fresh = users.filter((u) => u.fresh);
+  if (fresh.length) {
+    const added = await q.all(
+      `INSERT INTO users (username, password_hash, must_change_password, full_name, position, department_id, is_teacher, is_admin, created_at)
+       SELECT v.username, ?, 1, v.full_name, v.position, v.dept, v.is_teacher, v.is_admin, ?
+       FROM unnest(?::text[], ?::text[], ?::text[], ?::int[], ?::int[], ?::int[]) WITH ORDINALITY AS v(username, full_name, position, dept, is_teacher, is_admin, n)
+       ORDER BY v.n
+       RETURNING id, username`,
+      hash,
+      nowStr(),
+      fresh.map((u) => u.username),
+      fresh.map((u) => u.full_name),
+      fresh.map((u) => u.position),
+      fresh.map((u) => u.dept),
+      fresh.map((u) => u.is_teacher),
+      fresh.map((u) => u.is_admin)
+    );
+    const ids = new Map(added.map((r) => [r.username, r.id]));
+    for (const u of fresh) u.id = ids.get(u.username);
+  }
+  const changed = users.filter((u) => u.changed && !u.fresh);
+  if (changed.length) {
+    await q.run(
+      `UPDATE users u SET full_name = v.full_name, position = v.position, department_id = COALESCE(v.dept, u.department_id)
+       FROM unnest(?::int[], ?::text[], ?::text[], ?::int[]) AS v(id, full_name, position, dept)
+       WHERE u.id = v.id`,
+      changed.map((u) => u.id),
+      changed.map((u) => u.full_name),
+      changed.map((u) => u.position),
+      changed.map((u) => (u.dept === undefined ? null : u.dept))
+    );
+  }
+  const withRoles = users.filter((u) => u.roles);
+  if (withRoles.length) {
+    const old = withRoles.filter((u) => !u.fresh).map((u) => u.id);
+    if (old.length) await q.run('DELETE FROM user_roles WHERE user_id = ANY(?)', old);
+    const pairs = withRoles.flatMap((u) => [...new Set(u.roles)].map((r) => [u.id, r]));
+    if (pairs.length) {
+      await q.run(
+        'INSERT INTO user_roles (user_id, role) SELECT x.user_id, x.role FROM unnest(?::int[], ?::text[]) WITH ORDINALITY AS x(user_id, role, n) ORDER BY x.n',
+        pairs.map((p) => p[0]),
+        pairs.map((p) => p[1])
+      );
+    }
+  }
+}
+
 router.post('/users-import', async (req, res) => {
   const b = req.body || {};
   const pw = String(b.password || '');
@@ -323,6 +376,11 @@ router.post('/users-import', async (req, res) => {
   result.auto = auto;
   result.names = [];
   await q.tx(async () => {
+    // อ่านผู้ใช้ทุกคนครั้งเดียว แล้วไล่ทีละแถวในหน่วยความจำ (แถวหลังเห็นผลของแถวก่อนเหมือนเขียนฐานทีละแถว) ค่อยเขียนฐานรวดเดียวตอนท้าย
+    // ชื่อผู้ใช้ไม่สนตัวพิมพ์เล็กใหญ่แบบ lower() ของฐาน (เฉพาะ A ถึง Z)
+    const low = (x) => String(x).replace(/[A-Z]/g, (c) => c.toLowerCase());
+    const users = await q.all('SELECT id, username, full_name, is_admin FROM users ORDER BY id');
+    const findUser = (name) => users.find((u) => low(u.username) === low(name));
     for (let i = 0; i < rows.length; i++) {
       let cells = rows[i];
       if (auto) cells = ['', ...cells];
@@ -331,8 +389,10 @@ router.post('/users-import', async (req, res) => {
       if (i === 0 && (auto ? /^ชื่อ/.test(fullName) : /ชื่อผู้ใช้|รหัส|username/i.test(username || ''))) continue;
       if (auto && fullName) {
         // นำเข้าซ้ำ: ชื่อ สกุลตรงกับคนที่มีอยู่ ใช้บัญชีเดิม ไม่สร้างซ้ำ
-        const same = await q.get('SELECT username FROM users WHERE full_name = ?', fullName);
-        username = same ? same.username : await autoUsername(fullName, taken);
+        const same = users.find((u) => u.full_name === fullName);
+        username = '';
+        if (same) username = same.username;
+        else for (const name of usernameCandidates(fullName)) if (!taken.has(name) && !findUser(name)) { username = name; break; }
         taken.add(username);
       }
       if (!username || !fullName) {
@@ -352,39 +412,36 @@ router.post('/users-import', async (req, res) => {
         continue;
       }
       const teaches = stepRoles.some((r) => ['director', 'deputy_academic'].includes(r)) ? 0 : 1;
-      const existing = await q.get('SELECT id, is_admin FROM users WHERE lower(username) = lower(?)', username);
+      const existing = findUser(username);
       if (existing && existing.is_admin && roleText.trim() && execAdmin({ is_admin: 1, roles: stepRoles })) {
         result.errors.push(`แถว ${i + 1} ${fullName} ${EXEC_ADMIN_MSG}`);
         continue;
       }
       if (existing) {
-        await q.run(
-          'UPDATE users SET full_name = ?, position = ?, department_id = COALESCE(?, department_id) WHERE id = ?',
-          fullName.slice(0, 150),
-          position.slice(0, 150),
-          dept ? dept.id : null,
-          existing.id
-        );
-        if (roleText.trim()) await setRoles(existing.id, stepRoles);
+        // กลุ่มสาระว่าง ใช้ของเดิม (COALESCE)
+        existing.full_name = fullName.slice(0, 150);
+        existing.position = position.slice(0, 150);
+        if (dept) existing.dept = dept.id;
+        if (roleText.trim()) existing.roles = stepRoles;
+        existing.changed = true;
         result.updated += 1;
       } else {
-        const r = await q.get(
-          `INSERT INTO users (username, password_hash, must_change_password, full_name, position, department_id, is_teacher, is_admin, created_at)
-           VALUES (?, ?, 1, ?, ?, ?, ?, ?, ?) RETURNING id`,
-          username.slice(0, 50),
-          hash,
-          fullName.slice(0, 150),
-          position.slice(0, 150),
-          dept ? dept.id : null,
-          teaches,
-          isAdmin,
-          nowStr()
-        );
-        await setRoles(r.id, stepRoles);
+        users.push({
+          id: null,
+          username: username.slice(0, 50),
+          full_name: fullName.slice(0, 150),
+          position: position.slice(0, 150),
+          dept: dept ? dept.id : null,
+          is_teacher: teaches,
+          is_admin: isAdmin,
+          roles: stepRoles,
+          fresh: true,
+        });
         result.added += 1;
         result.names.push({ username, fullName });
       }
     }
+    await saveImported(users, hash);
   });
   res.render('admin/users_import', { title: 'นำเข้ารายชื่อครู', result, departments: depts, steps: wf.allSteps() });
 });
@@ -431,18 +488,17 @@ router.post('/departments/:id/delete', async (req, res) => {
 // ---------- ขั้นตอนการตรวจ ----------
 
 router.get('/workflow', async (req, res) => {
-  const steps = [];
-  for (const st of wf.allSteps()) {
-    steps.push({
-      ...st,
-      people: await q.all(
-        `SELECT u.full_name, d.name AS dept_name FROM users u JOIN user_roles r ON r.user_id = u.id
-         LEFT JOIN departments d ON d.id = u.department_id
-         WHERE r.role = ? AND u.is_active = 1 ORDER BY d.sort NULLS FIRST, u.full_name`,
-        st.role
-      ),
-    });
+  // ผู้ถือบทบาททุกระดับในคำสั่งเดียว แล้วแยกตามบทบาทโดยคงลำดับ
+  const people = new Map();
+  for (const { role, ...p } of await q.all(
+    `SELECT r.role, u.full_name, d.name AS dept_name FROM users u JOIN user_roles r ON r.user_id = u.id
+     LEFT JOIN departments d ON d.id = u.department_id
+     WHERE u.is_active = 1 ORDER BY d.sort NULLS FIRST, u.full_name, u.id`
+  )) {
+    if (!people.has(role)) people.set(role, []);
+    people.get(role).push(p);
   }
+  const steps = wf.allSteps().map((st) => ({ ...st, people: people.get(st.role) || [] }));
   res.render('admin/workflow', { title: 'ขั้นตอนการตรวจ', steps });
 });
 

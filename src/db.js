@@ -21,9 +21,40 @@ function ctx() {
   return als.getStore() || GLOBAL;
 }
 
-// middleware: เปิดขอบเขตใหม่ทุกคำขอ
+// ---------- นับคำสั่งต่อคำขอ ----------
+// บน Supabase ทุกคำสั่งคือการเดินทางไปกลับ 20 ถึง 50 ms และ Hyperdrive แบบฟรีให้ 100,000 คำสั่งต่อวัน
+// scope.queries = จำนวนคำสั่งที่ส่งไปฐาน (นับ BEGIN และ COMMIT ด้วย) · scope.blobs = จำนวนรูป (data URL) ที่ดึงออกมา
+const QUERY_LIMIT = 15;
+/** @type {null | ((req: any, stat: { queries: number, blobs: number }) => void)} */
+let watcher = null;
+
+// ทดสอบตั้งไว้ดูตัวเลขของแต่ละคำขอ fn(req, { queries, blobs }) ถูกเรียกก่อนส่งหัวคำตอบ · ส่ง null เพื่อเลิก
+function watchQueries(fn) {
+  watcher = fn;
+}
+
+// จำนวนคำสั่งในขอบเขตปัจจุบัน (ทดสอบใช้คู่กับ withScope)
+function queryCount() {
+  return ctx().scope.queries || 0;
+}
+
+// middleware: เปิดขอบเขตใหม่ทุกคำขอ · โหมดทดลองแจ้งใน log เมื่อหน้าไหนใช้เกิน 15 คำสั่ง
 function requestScope(req, res, next) {
-  als.run({ scope: {}, tx: null }, next);
+  const scope = { queries: 0, blobs: 0 };
+  if (watcher || config.DEMO) {
+    let done = false;
+    const writeHead = res.writeHead;
+    res.writeHead = function (...args) {
+      if (!done) {
+        done = true;
+        const stat = { queries: scope.queries, blobs: scope.blobs };
+        if (watcher) watcher(req, stat);
+        if (config.DEMO && stat.queries > QUERY_LIMIT) console.warn(`[ฐานข้อมูล] ${req.method} ${req.originalUrl} ใช้ ${stat.queries} คำสั่ง เกิน ${QUERY_LIMIT}`);
+      }
+      return writeHead.apply(this, args);
+    };
+  }
+  als.run({ scope, tx: null }, next);
 }
 
 // รันงานในขอบเขตใหม่ (cron ทดสอบ) ข้อมูลอ้างอิงไม่ปนกับงานอื่น
@@ -151,8 +182,19 @@ function need() {
   return backend;
 }
 
+// นับรูปเฉพาะตอนมีคนดู (ทดสอบ) ไม่เปลือง CPU บนเว็บจริง
+function countBlobs(scope, rows) {
+  for (const row of rows) {
+    for (const v of Object.values(row)) if (typeof v === 'string' && v.startsWith('data:')) scope.blobs += 1;
+  }
+}
+
 async function query(sql, values) {
-  return need().query(ctx(), toPg(sql), params(values));
+  const c = ctx();
+  c.scope.queries = (c.scope.queries || 0) + 1;
+  const r = await need().query(c, toPg(sql), params(values));
+  if (watcher && c.scope.blobs !== undefined) countBlobs(c.scope, r.rows);
+  return r;
 }
 
 const q = {
@@ -169,6 +211,7 @@ const q = {
   tx(fn) {
     const c = ctx();
     if (c.tx) return Promise.resolve().then(fn);
+    c.scope.queries = (c.scope.queries || 0) + 2; // BEGIN และ COMMIT
     return need().tx(c, fn);
   },
 };
@@ -206,14 +249,19 @@ const SETTINGS_SQL = `SELECT key, CASE
     ELSE value END AS value
   FROM settings`;
 
+// ทั้ง 3 อย่างในคำสั่งเดียว (ทุกคำขอใช้) Postgres รวมเป็น JSON แล้ว parse ครั้งเดียว ข้อมูลเล็ก ไม่กิน CPU
+const REFS_SQL = `SELECT
+    (SELECT coalesce(json_agg(json_build_array(s.key, s.value)), '[]') FROM (${SETTINGS_SQL}) s) AS settings,
+    (SELECT coalesce(json_agg(w ORDER BY w.seq), '[]') FROM workflow_steps w) AS steps,
+    (SELECT coalesce(json_agg(r ORDER BY r.doc_type, r.seq, r.id), '[]') FROM rubric_items r) AS rubrics`;
+
 async function ensureRefs() {
   const scope = ctx().scope;
   if (scope.refs) return scope.refs;
+  const r = await q.get(REFS_SQL);
   const settings = {};
-  for (const r of await q.all(SETTINGS_SQL)) settings[r.key] = r.value;
-  const steps = await q.all('SELECT * FROM workflow_steps ORDER BY seq');
-  const rubrics = await q.all('SELECT * FROM rubric_items ORDER BY doc_type, seq, id');
-  scope.refs = { settings, steps, rubrics };
+  for (const [key, value] of JSON.parse(r.settings)) settings[key] = value;
+  scope.refs = { settings, steps: JSON.parse(r.steps), rubrics: JSON.parse(r.rubrics) };
   return scope.refs;
 }
 
@@ -262,6 +310,9 @@ module.exports = {
   toPg,
   requestScope,
   withScope,
+  watchQueries,
+  queryCount,
+  QUERY_LIMIT,
   ensureRefs,
   refs,
   clearRefs,

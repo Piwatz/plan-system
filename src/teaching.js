@@ -22,6 +22,21 @@ async function list(teacherId, year, sem) {
   return features.isOn(null, 'noactivity') ? rows.filter((r) => !isActivity(r.subject_code)) : rows;
 }
 
+// รายวิชาที่สอนของครูหลายคนในคำสั่งเดียว: Map id ครู -> รายการ (ลำดับและตัวกรองเดียวกับ list)
+async function listMany(teacherIds, year, sem) {
+  const map = new Map(teacherIds.map((id) => [id, []]));
+  if (!teacherIds.length) return map;
+  const rows = await q.all(
+    'SELECT * FROM teach_subjects WHERE teacher_id = ANY(?) AND academic_year = ? AND semester = ? ORDER BY is_main DESC, subject_code',
+    teacherIds,
+    year,
+    sem
+  );
+  const skip = features.isOn(null, 'noactivity');
+  for (const r of rows) if (!(skip && isActivity(r.subject_code))) map.get(r.teacher_id).push(r);
+  return map;
+}
+
 function planQuota(user) {
   return Math.max(1, Number(user && user.plan_quota) || 1);
 }
@@ -85,4 +100,26 @@ async function ensure(user, year, sem, { code, name, grade }, main = false) {
   if (main) await trimMains(user.id, year, sem, planQuota(user), code);
 }
 
-module.exports = { isActivity, skipActivity, list, planQuota, plansOf, planBlocked, trimMains, ensure };
+// เพิ่มวิชาที่สอนหลายรายการในคำสั่งเดียว (นำเข้าจากตารางสอน ไม่ตั้งวิชาหลัก) กติกาเดียวกับ ensure
+// rows = [{ teacher_id, code, name, grade }] ห้ามมีครูกับรหัสวิชาซ้ำกันในชุดเดียว (รวมก่อนส่งมา)
+async function ensureMany(rows, year, sem) {
+  if (!rows.length) return;
+  await q.run(
+    `INSERT INTO teach_subjects (teacher_id, academic_year, semester, subject_code, subject_name, grade_level, is_main)
+     SELECT v.teacher_id, ?, ?, v.code, v.name, v.grade, 0
+     FROM unnest(?::int[], ?::text[], ?::text[], ?::text[]) WITH ORDINALITY AS v(teacher_id, code, name, grade, n)
+     ORDER BY v.n
+     ON CONFLICT (teacher_id, academic_year, semester, subject_code) DO UPDATE SET
+       subject_name = CASE WHEN excluded.subject_name != '' THEN excluded.subject_name ELSE teach_subjects.subject_name END,
+       grade_level = CASE WHEN excluded.grade_level != '' THEN excluded.grade_level ELSE teach_subjects.grade_level END,
+       is_main = GREATEST(teach_subjects.is_main, excluded.is_main)`,
+    year,
+    sem,
+    rows.map((r) => r.teacher_id),
+    rows.map((r) => r.code),
+    rows.map((r) => r.name || ''),
+    rows.map((r) => r.grade || '')
+  );
+}
+
+module.exports = { isActivity, skipActivity, list, listMany, ensureMany, planQuota, plansOf, planBlocked, trimMains, ensure };

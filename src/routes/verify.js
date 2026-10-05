@@ -26,7 +26,7 @@ router.get('/v/:code', async (req, res) => {
   const sub =
     req.ff.qr && /^[0-9a-f]{20}$/.test(code)
       ? await q.get(
-          `SELECT s.*, u.full_name AS teacher_name, d.name AS dept_name FROM submissions s
+          `SELECT ${wf.subCols('s')}, u.full_name AS teacher_name, d.name AS dept_name FROM submissions s
            JOIN users u ON u.id = s.teacher_id LEFT JOIN departments d ON d.id = s.department_id
            WHERE s.verify_code = ? AND s.status != 'draft'`,
           code

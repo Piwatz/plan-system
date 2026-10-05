@@ -81,30 +81,66 @@ router.post('/teach-import', needOn, async (req, res) => {
   let people = 0;
   let added = 0;
   let had = 0;
+  // อ่านแบบฟอร์มก่อน แล้วถามและเขียนฐานรวดเดียว (เดิมราว 4 คำสั่งต่อวิชา) จำนวนคำสั่งคงที่ไม่ว่ากี่คนกี่วิชา
+  const picks = [];
+  for (let i = 0; i < n; i++) {
+    const u = active.get(Number(b[`map_${i}`]));
+    if (!u) continue;
+    let subjects;
+    try {
+      subjects = JSON.parse(b[`subj_${i}`] || '[]');
+    } catch {
+      subjects = [];
+    }
+    const picked = new Set([].concat(b[`pick_${i}`] || []).map(String));
+    for (const s of Array.isArray(subjects) ? subjects : []) {
+      const code = String(s.code || '').trim().slice(0, 30);
+      if (!code || !picked.has(code) || teaching.skipActivity(code)) continue;
+      picks.push({ teacher_id: u.id, code, s });
+    }
+  }
   await q.tx(async () => {
     const touched = new Set();
-    for (let i = 0; i < n; i++) {
-      const u = active.get(Number(b[`map_${i}`]));
-      if (!u) continue;
-      let subjects;
-      try {
-        subjects = JSON.parse(b[`subj_${i}`] || '[]');
-      } catch {
-        subjects = [];
+    const ids = [...new Set(picks.map((p) => p.teacher_id))];
+    const deptOf = new Map();
+    const exists = new Set();
+    if (ids.length) {
+      for (const r of await q.all('SELECT id, department_id FROM users WHERE id = ANY(?)', ids)) deptOf.set(r.id, r.department_id);
+      for (const r of await q.all('SELECT teacher_id, subject_code FROM teach_subjects WHERE teacher_id = ANY(?) AND academic_year = ? AND semester = ?', ids, year, sem)) {
+        exists.add(`${r.teacher_id}\t${r.subject_code}`);
       }
-      const picked = new Set([].concat(b[`pick_${i}`] || []).map(String));
-      const owner = await q.get('SELECT id, department_id, plan_quota FROM users WHERE id = ?', u.id);
-      for (const s of Array.isArray(subjects) ? subjects : []) {
-        const code = String(s.code || '').trim().slice(0, 30);
-        if (!code || !picked.has(code) || teaching.skipActivity(code)) continue;
-        const exists = await q.get('SELECT 1 AS x FROM teach_subjects WHERE teacher_id = ? AND academic_year = ? AND semester = ? AND subject_code = ?', u.id, year, sem, code);
-        await teaching.ensure(owner, year, sem, { code, name: String(s.name || '').slice(0, 200), grade: String(s.grade || '').slice(0, 30) });
-        // รายวิชาของโรงเรียน ช่วยให้พิมพ์รหัสแล้วชื่อขึ้นเอง
-        await q.run('INSERT INTO subjects (code, name, department_id, grade) VALUES (?, ?, ?, ?) ON CONFLICT DO NOTHING', code, String(s.name || code).slice(0, 200), owner.department_id, String(s.grade || '').slice(0, 30));
-        if (exists) had += 1;
-        else added += 1;
-        touched.add(u.id);
-      }
+    }
+    // ครูกับวิชาเดียวกันซ้ำในไฟล์ รวมเป็นแถวเดียว ชื่อและชั้นใช้ค่าล่าสุดที่ไม่ว่าง เหมือนเพิ่มทีละรายการ
+    const rows = new Map();
+    const schoolSubjects = [];
+    for (const { teacher_id: tid, code, s } of picks) {
+      const key = `${tid}\t${code}`;
+      const name = String(s.name || '').slice(0, 200);
+      const grade = String(s.grade || '').slice(0, 30);
+      const row = rows.get(key);
+      if (row) {
+        if (name) row.name = name;
+        if (grade) row.grade = grade;
+      } else rows.set(key, { teacher_id: tid, code, name, grade });
+      // รายวิชาของโรงเรียน ช่วยให้พิมพ์รหัสแล้วชื่อขึ้นเอง
+      schoolSubjects.push({ code, name: String(s.name || code).slice(0, 200), dept: deptOf.get(tid) ?? null, grade });
+      if (exists.has(key)) had += 1;
+      else added += 1;
+      exists.add(key);
+      touched.add(tid);
+    }
+    await teaching.ensureMany([...rows.values()], year, sem);
+    if (schoolSubjects.length) {
+      await q.run(
+        `INSERT INTO subjects (code, name, department_id, grade)
+         SELECT v.code, v.name, v.dept, v.grade FROM unnest(?::text[], ?::text[], ?::int[], ?::text[]) WITH ORDINALITY AS v(code, name, dept, grade, n)
+         ORDER BY v.n
+         ON CONFLICT DO NOTHING`,
+        schoolSubjects.map((x) => x.code),
+        schoolSubjects.map((x) => x.name),
+        schoolSubjects.map((x) => x.dept),
+        schoolSubjects.map((x) => x.grade)
+      );
     }
     people = touched.size;
     await features.audit(req.me, `นำเข้ารายวิชาที่สอนจากตารางสอน ภาคเรียน ${sem}/${year}`, `ครู ${people} คน เพิ่มใหม่ ${added} วิชา มีอยู่แล้ว ${had} วิชา`);

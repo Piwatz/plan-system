@@ -38,13 +38,18 @@ function respond(req, res, url, type, text) {
 
 router.get('/notes', async (req, res) => {
   const t = currentTerm(req.settings);
-  const plans = [];
-  for (const r of (await mySubjects(req.me.id, t)).filter((x) => x.plan)) {
-    plans.push({
-      ...r,
-      notes: await q.all("SELECT * FROM submissions WHERE parent_id = ? AND doc_type = 'note' ORDER BY to_int_lenient(plan_no) DESC, id DESC", r.plan.id),
-    });
+  const withPlan = (await mySubjects(req.me.id, t)).filter((x) => x.plan);
+  // บันทึกของทุกแผนในคำสั่งเดียว แล้วแยกตามแผนโดยคงลำดับเดิม
+  const byPlan = new Map(withPlan.map((r) => [r.plan.id, []]));
+  if (byPlan.size) {
+    for (const n of await q.all(
+      `SELECT ${wf.subCols()} FROM submissions WHERE parent_id = ANY(?) AND doc_type = 'note' ORDER BY to_int_lenient(plan_no) DESC, id DESC`,
+      [...byPlan.keys()]
+    )) {
+      byPlan.get(n.parent_id).push(n);
+    }
   }
+  const plans = withPlan.map((r) => ({ ...r, notes: byPlan.get(r.plan.id) }));
   res.render('notes', { title: 'บันทึกหลังแผน', plans, term: t });
 });
 
@@ -72,7 +77,7 @@ router.get('/alerts', async (req, res) => {
 router.get('/results', needFeature('results'), async (req, res) => {
   const t = currentTerm(req.settings);
   const notes = await q.all(
-    `SELECT n.*, p.id AS plan_id FROM submissions n JOIN submissions p ON p.id = n.parent_id
+    `SELECT ${wf.subCols('n')}, p.id AS plan_id FROM submissions n JOIN submissions p ON p.id = n.parent_id
      WHERE n.teacher_id = ? AND n.doc_type = 'note' AND n.status != 'draft' AND n.academic_year = ? AND n.semester = ?
        AND n.students_total > 0 AND n.students_passed IS NOT NULL
      ORDER BY n.subject_code, to_int_lenient(n.plan_no), n.id`,
@@ -117,9 +122,11 @@ const PA_ITEMS = [
   { key: 'notes', label: 'บันทึกหลังแผนทุกฉบับ', note: 'ฉบับที่ลงนามครบแล้ว ฉบับละ 1 หน้า' },
 ];
 
-async function paData(me, year) {
+// งานที่ผ่านครบของทั้งปี · signatures = เอารูปลายเซ็นครูด้วย (หน้าพิมพ์แฟ้มเท่านั้น หน้ารายการไม่เอา)
+async function paData(me, year, { signatures = false } = {}) {
+  const cols = `${wf.subCols('s')}${signatures ? ', s.teacher_signature' : ''}, u.full_name AS teacher_name, u.position AS teacher_position, d.name AS dept_name`;
   const works = await q.all(
-    `SELECT s.*, u.full_name AS teacher_name, u.position AS teacher_position, d.name AS dept_name
+    `SELECT ${cols}
      FROM submissions s JOIN users u ON u.id = s.teacher_id LEFT JOIN departments d ON d.id = s.department_id
      WHERE s.teacher_id = ? AND s.academic_year = ? AND s.status = 'approved' AND s.doc_type IN ('manual', 'plan')
      ORDER BY s.semester, s.subject_code, s.doc_type DESC`,
@@ -127,7 +134,7 @@ async function paData(me, year) {
     year
   );
   const notes = await q.all(
-    `SELECT s.*, u.full_name AS teacher_name, u.position AS teacher_position, d.name AS dept_name
+    `SELECT ${cols}
      FROM submissions s JOIN users u ON u.id = s.teacher_id LEFT JOIN departments d ON d.id = s.department_id
      WHERE s.teacher_id = ? AND s.academic_year = ? AND s.status = 'approved' AND s.doc_type = 'note'
      ORDER BY s.semester, s.subject_code, to_int_lenient(s.plan_no), s.id`,
@@ -151,13 +158,15 @@ router.get('/pa', needFeature('pa'), async (req, res) => {
 router.get('/pa/print', needFeature('pa'), async (req, res) => {
   const year = util.intOr(req.query.year, 0) || Number(req.settings.academic_year);
   const inc = new Set(asArray(req.query.inc).filter((k) => PA_ITEMS.some((i) => i.key === k)));
-  const { works, notes } = await paData(req.me, year);
-  const { printData } = require('./work');
-  const pack = async (s) => ({ ...(await printData(s)), qr: await qrSvg(req, s) });
-  const workPages = [];
-  for (const s of works) workPages.push(await pack(s));
-  const notePages = [];
-  if (inc.has('notes')) for (const s of notes) notePages.push(await pack(s));
+  const { works, notes } = await paData(req.me, year, { signatures: true });
+  const { printDataMany } = require('./work');
+  // ข้อมูลพิมพ์ของทุกหน้าในคำสั่งชุดเดียว ไม่ถามฐานทีละงาน
+  const printed = [...works, ...(inc.has('notes') ? notes : [])];
+  const data = await printDataMany(printed);
+  const pages = [];
+  for (let i = 0; i < printed.length; i++) pages.push({ ...data[i], qr: await qrSvg(req, printed[i]) });
+  const workPages = pages.slice(0, works.length);
+  const notePages = pages.slice(works.length);
   const resultRows = notes
     .filter((n) => n.students_total > 0 && n.students_passed != null)
     .map((n) => ({ ...n, pct: Math.round((Math.min(n.students_passed, n.students_total) / n.students_total) * 100) }));
@@ -183,17 +192,37 @@ function boardScope(me) {
 }
 
 // จำนวนที่ต้องส่ง: คู่มือทุกวิชาที่สอน แผนเฉพาะวิชาหลัก (ถ้าเปิดฟังก์ชัน) ไม่มีรายวิชาเลยนับว่าต้องส่งอย่างละ 1
+// ครูทั้งกลุ่มสาระใช้ 3 คำสั่งเสมอ: ครูพร้อมจำนวนบันทึกและวันที่ส่งเตือนล่าสุด · งานของทุกคน · รายวิชาที่สอนของทุกคน
 async function boardRows(deptId, t, ff = {}) {
-  const teachers = await q.all('SELECT id, full_name, position FROM users WHERE department_id = ? AND is_active = 1 AND is_teacher = 1 ORDER BY full_name', deptId);
-  const out = [];
-  for (const u of teachers) {
-    const subs = await q.all(
-      "SELECT id, doc_type, status, subject_code FROM submissions WHERE teacher_id = ? AND academic_year = ? AND semester = ? AND doc_type IN ('manual', 'plan')",
-      u.id,
+  const teachers = await q.all(
+    `SELECT u.id, u.full_name, u.position,
+       (SELECT COUNT(*) FROM submissions n WHERE n.teacher_id = u.id AND n.doc_type = 'note' AND n.academic_year = ? AND n.semester = ?) AS notes_n,
+       (SELECT COUNT(*) FROM submissions n WHERE n.teacher_id = u.id AND n.doc_type = 'note' AND n.academic_year = ? AND n.semester = ? AND n.status IN ('draft', 'returned')) AS notes_todo,
+       (SELECT x.created_at FROM notifications x WHERE x.user_id = u.id AND x.link = '/my' ORDER BY x.id DESC LIMIT 1) AS reminded_at
+     FROM users u WHERE u.department_id = ? AND u.is_active = 1 AND u.is_teacher = 1 ORDER BY u.full_name`,
+    t.year,
+    t.semester,
+    t.year,
+    t.semester,
+    deptId
+  );
+  const ids = teachers.map((u) => u.id);
+  const subsOf = new Map(ids.map((id) => [id, []]));
+  if (ids.length) {
+    for (const s of await q.all(
+      "SELECT id, teacher_id, doc_type, status, subject_code FROM submissions WHERE teacher_id = ANY(?) AND academic_year = ? AND semester = ? AND doc_type IN ('manual', 'plan') ORDER BY id",
+      ids,
       t.year,
       t.semester
-    );
-    const taught = ff.teachlist ? await teaching.list(u.id, t.year, t.semester) : [];
+    )) {
+      subsOf.get(s.teacher_id).push(s);
+    }
+  }
+  const taughtOf = ff.teachlist ? await teaching.listMany(ids, t.year, t.semester) : new Map();
+  const out = [];
+  for (const { notes_n: notesN, notes_todo: notesTodo, reminded_at: remindedAt, ...u } of teachers) {
+    const subs = subsOf.get(u.id);
+    const taught = taughtOf.get(u.id) || [];
     const codes = [...new Set([...taught.map((x) => x.subject_code), ...subs.map((s) => s.subject_code)])];
     const planCodes = new Set([...taught.filter((x) => x.is_main).map((x) => x.subject_code), ...subs.filter((s) => s.doc_type === 'plan').map((s) => s.subject_code)]);
     const need = { manual: codes.length || 1, plan: ff.onemain ? planCodes.size || 1 : codes.length || 1 };
@@ -210,13 +239,6 @@ async function boardRows(deptId, t, ff = {}) {
     };
     const manual = summary('manual');
     const plan = summary('plan');
-    const notes = await q.get(
-      "SELECT COUNT(*) AS n, COUNT(*) FILTER (WHERE status IN ('draft', 'returned')) AS todo FROM submissions WHERE teacher_id = ? AND doc_type = 'note' AND academic_year = ? AND semester = ?",
-      u.id,
-      t.year,
-      t.semester
-    );
-    const last = await q.get("SELECT created_at FROM notifications WHERE user_id = ? AND link = '/my' ORDER BY id DESC LIMIT 1", u.id);
     const missingText = [];
     if (plan.missing) missingText.push('แผนการจัดการเรียนรู้');
     if (manual.missing) missingText.push('คู่มือรายวิชา');
@@ -225,11 +247,11 @@ async function boardRows(deptId, t, ff = {}) {
       subjects: codes.join(' '),
       manual,
       plan,
-      notes: notes.n || 0,
-      notesTodo: notes.todo || 0,
+      notes: notesN || 0,
+      notesTodo: notesTodo || 0,
       done: !manual.missing && !plan.missing,
       missingText: missingText.join(' และ '),
-      reminded: last ? util.ago(last.created_at) : '',
+      reminded: remindedAt ? util.ago(remindedAt) : '',
     });
   }
   return out;
@@ -254,7 +276,8 @@ router.get('/dept', needFeature('board'), async (req, res) => {
     doneCount: rows.filter((r) => r.done).length,
     filter,
     term: t,
-    inboxCount: (await wf.inbox(req.me)).length,
+    // นับไว้แล้วในตัวเลขบนเมนู (app.js) เงื่อนไขเดียวกับ wf.inbox
+    inboxCount: res.locals.badges.inbox,
     daysLeft: util.daysUntil(req.settings.submit_end),
   });
 });
@@ -307,22 +330,27 @@ router.get('/quicksign', needFeature('quicksign'), async (req, res) => {
   res.render('quicksign', { title: 'ลงนามบันทึกหลังแผน', card, files, left: list.length, signed, back, total: list.length + signed + back });
 });
 
+// บันทึกหลังแผนที่จะลงนามหรือส่งคืน ดึงแค่ id (การลงนามล็อกแถวและตรวจสิทธิ์เองใน workflow)
+async function noteOf(id) {
+  return q.get("SELECT id FROM submissions WHERE id = ? AND doc_type = 'note'", util.idParam(id));
+}
+
 function qsNext(req, signed, back) {
   return `/quicksign?signed=${signed}&back=${back}`;
 }
 
 router.post('/quicksign/:id/approve', needFeature('quicksign'), async (req, res) => {
   const b = req.body || {};
-  const sub = await wf.getSub(util.idParam(req.params.id));
-  if (!sub || sub.doc_type !== 'note') throw new wf.WorkflowError('ไม่พบบันทึกนี้');
+  const sub = await noteOf(req.params.id);
+  if (!sub) throw new wf.WorkflowError('ไม่พบบันทึกนี้');
   await wf.approve(sub.id, req.me, { comment: str(b.comment) || 'รับทราบ' });
   res.redirect(qsNext(req, (Number(b.signed) || 0) + 1, Number(b.back) || 0));
 });
 
 router.post('/quicksign/:id/return', needFeature('quicksign'), async (req, res) => {
   const b = req.body || {};
-  const sub = await wf.getSub(util.idParam(req.params.id));
-  if (!sub || sub.doc_type !== 'note') throw new wf.WorkflowError('ไม่พบบันทึกนี้');
+  const sub = await noteOf(req.params.id);
+  if (!sub) throw new wf.WorkflowError('ไม่พบบันทึกนี้');
   await wf.sendBack(sub.id, req.me, { comment: str(b.comment) });
   res.redirect(qsNext(req, Number(b.signed) || 0, (Number(b.back) || 0) + 1));
 });
@@ -330,11 +358,9 @@ router.post('/quicksign/:id/return', needFeature('quicksign'), async (req, res) 
 router.post('/quicksign/approve-rest', needFeature('quicksign'), async (req, res) => {
   const b = req.body || {};
   if (!req.me.signature) throw new wf.WorkflowError('กรุณาบันทึกลายเซ็นในหน้าข้อมูลส่วนตัวก่อน');
-  let n = 0;
-  for (const s of await noteQueue(req.me)) {
-    await wf.approve(s.id, req.me, { comment: str(b.comment) || 'รับทราบ' });
-    n += 1;
-  }
+  // ลงนามทุกฉบับที่เหลือใน transaction เดียว
+  const ids = (await noteQueue(req.me)).map((s) => s.id);
+  const { done: n } = await wf.approveMany(ids, req.me, { comment: str(b.comment) || 'รับทราบ' });
   res.redirect(qsNext(req, (Number(b.signed) || 0) + n, Number(b.back) || 0));
 });
 

@@ -88,7 +88,8 @@ function createApp() {
     next();
   });
 
-  // ทุกคำขอ (รวมหน้าเข้าสู่ระบบและหน้าสแกน QR): ผู้ใช้ 2 คำสั่ง · ข้อมูลอ้างอิง (ค่าตั้ง ขั้นตอน แบบประเมิน) · งานรอตรวจ · ตัวเลขบนเมนูรวมเป็นคำสั่งเดียว
+  // ทุกคำขอ (รวมหน้าเข้าสู่ระบบและหน้าสแกน QR) ใช้ไม่เกิน 3 คำสั่ง: ผู้ใช้พร้อมบทบาท · ข้อมูลอ้างอิง (ค่าตั้ง ขั้นตอน แบบประเมิน)
+  // · ตัวเลขบนเมนู 4 ตัว (งานรอตรวจนับในฐานด้วยเงื่อนไขเดียวกับ wf.inbox ไม่ดึงรายการ)
   app.use(async (req, res, next) => {
     req.me = req.session.uid ? await auth.loadUser(req.session.uid) : null;
     if (req.session.uid && !req.me) req.session = null;
@@ -123,16 +124,19 @@ function createApp() {
     if (req.session && req.session.flash) req.session.flash = null;
     if (req.me) {
       const b = res.locals.badges;
-      b.inbox = (await wf.inbox(req.me)).length;
+      const w = wf.inboxWhere(req.me, 'i');
       const n = await db.q.get(
         `SELECT
            COUNT(*) FILTER (WHERE status = 'returned') AS returned,
            COUNT(*) FILTER (WHERE doc_type = 'note' AND status IN ('draft', 'returned')) AS notes,
-           (SELECT COUNT(*) FROM notifications WHERE user_id = ? AND read_at IS NULL) AS alerts
+           (SELECT COUNT(*) FROM notifications WHERE user_id = ? AND read_at IS NULL) AS alerts,
+           ${w ? `(SELECT COUNT(*) FROM submissions i WHERE ${w.sql})` : '0'} AS inbox
          FROM submissions WHERE teacher_id = ?`,
         req.me.id,
+        ...(w ? w.params : []),
         req.me.id
       );
+      b.inbox = n.inbox;
       b.returned = n.returned;
       b.notes = n.notes;
       b.alerts = n.alerts;

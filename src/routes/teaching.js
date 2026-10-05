@@ -6,6 +6,7 @@ const util = require('../util');
 const auth = require('../auth');
 const features = require('../features');
 const teaching = require('../teaching');
+const wf = require('../workflow');
 const { currentTerm, cell } = require('./pages');
 
 const router = express.Router();
@@ -32,7 +33,8 @@ async function target(req) {
   const id = util.idParam((req.body && req.body.u) || req.query.u, { optional: true }) || req.me.id;
   if (id === req.me.id) return req.me;
   if (!req.me.is_admin) throw new UserError('แก้ได้เฉพาะรายวิชาของตัวเอง');
-  const u = await q.get('SELECT * FROM users WHERE id = ? AND is_active = 1', id);
+  // ไม่ดึงรหัสผ่านและรูปลายเซ็น
+  const u = await q.get('SELECT id, username, full_name, position, department_id, is_teacher, is_admin, is_active, plan_quota FROM users WHERE id = ? AND is_active = 1', id);
   if (!u) throw new UserError('ไม่พบครูคนนี้');
   return u;
 }
@@ -45,7 +47,7 @@ async function done(req, res, u, text, action) {
 
 function worksOf(u, t) {
   return q.all(
-    "SELECT * FROM submissions WHERE teacher_id = ? AND academic_year = ? AND semester = ? AND doc_type IN ('manual', 'plan')",
+    `SELECT ${wf.subCols()} FROM submissions WHERE teacher_id = ? AND academic_year = ? AND semester = ? AND doc_type IN ('manual', 'plan')`,
     u.id,
     t.year,
     t.semester
