@@ -1,16 +1,15 @@
 // ส่งแผนการจัดการเรียนรู้และคู่มือรายวิชา เขียนบันทึกหลังแผน เปิดไฟล์ พิมพ์ และการลงนามของผู้ตรวจ
-const fs = require('fs');
-const path = require('path');
-const crypto = require('crypto');
+const { pipeline } = require('stream/promises');
 const express = require('express');
 const { q, nowStr } = require('../db');
 const auth = require('../auth');
 const wf = require('../workflow');
 const util = require('../util');
-const { uploader, storedPath, relStored, removeStored, badFiles, ALLOWED } = require('../upload');
+const up = require('../upload');
+const storage = require('../storage');
+const drivepath = require('../drivepath');
 const features = require('../features');
 const teaching = require('../teaching');
-const { mergePdfs } = require('../pdf');
 const { qrSvg } = require('./verify');
 
 const router = express.Router();
@@ -52,72 +51,33 @@ function respond(req, res, url, type, text) {
   res.redirect(url);
 }
 
-function cleanupUploads(req) {
-  for (const list of Object.values(req.files || {})) {
-    for (const f of list) {
-      try {
-        fs.unlinkSync(f.path);
-      } catch {
-        // ไม่มีไฟล์ให้ลบ
-      }
-    }
-  }
+// ไฟล์ที่ส่งมาแต่บันทึกงานไม่สำเร็จ ย้ายไปถังขยะ (เรียกหลัง transaction เท่านั้น)
+function dropFiles(req, list) {
+  return up.discard(req.me.id, list.map((f) => f.token));
 }
 
-// ฟังก์ชันตรวจไฟล์ก่อนส่ง: ไม่รับไฟล์เสียหรือนามสกุลไม่ตรงกับไฟล์จริง
-function rejectBadFiles(req) {
-  if (!req.ff.filecheck) return;
-  const bad = badFiles(req);
+// ฟังก์ชันตรวจไฟล์ก่อนส่ง: ไม่รับไฟล์เสียหรือนามสกุลไม่ตรงกับไฟล์จริง (อ่าน 8 ไบต์แรกจากที่เก็บไฟล์)
+async function rejectBadFiles(req, list) {
+  if (!req.ff.filecheck || !list.length) return;
+  const bad = await up.badFiles(list);
   if (!bad.length) return;
-  cleanupUploads(req);
   throw new UserError(`ไฟล์ ${bad.join(' ')} เปิดไม่ได้ หรือนามสกุลไม่ตรงกับไฟล์จริง กรุณาบันทึกไฟล์ใหม่แล้วแนบอีกครั้ง`);
 }
 
-// แผนและคู่มือรับเฉพาะ PDF ไฟล์เดียว (เปิดปิดได้) ถ้าครูเลือกหลายไฟล์ ระบบรวมเป็นไฟล์เดียวตามลำดับที่เรียงไว้
-async function preparePdf(req, docType, code) {
-  const list = (req.files && req.files.main_files) || [];
+// แผนและคู่มือรับเฉพาะ PDF ไฟล์เดียว (เปิดปิดได้) ถ้าครูเลือกหลายไฟล์ เบราว์เซอร์รวมเป็นไฟล์เดียวตามลำดับที่เรียงไว้ก่อนส่ง
+// (public/js/pdfmerge.js) แล้วบอกจำนวนไฟล์และหน้าที่รวมมาในช่อง upload_merged upload_pages
+function checkPdf(req, docType, list) {
   if (!req.ff.pdfonly || !list.length) return '';
   const label = wf.DOC_TYPES[docType].label;
-  const notPdf = list.filter((x) => path.extname(x.originalname).toLowerCase() !== '.pdf');
+  const notPdf = list.filter((x) => x.ext !== '.pdf');
   if (notPdf.length) {
-    cleanupUploads(req);
-    throw new UserError(`${label}รับเฉพาะไฟล์ PDF (${notPdf.map((x) => x.originalname).join(' ')} ไม่ใช่ PDF) ถ้าเป็นไฟล์ Word ให้บันทึกเป็น PDF ก่อน แล้วแนบใหม่`);
+    throw new UserError(`${label}รับเฉพาะไฟล์ PDF (${notPdf.map((x) => x.name).join(' ')} ไม่ใช่ PDF) ถ้าเป็นไฟล์ Word ให้บันทึกเป็น PDF ก่อน แล้วแนบใหม่`);
   }
-  if (list.length === 1) return '';
-  if (!req.ff.pdfmerge) {
-    cleanupUploads(req);
-    throw new UserError(`${label}แนบได้ PDF ไฟล์เดียว ให้รวมปกและเนื้อหาเป็นไฟล์เดียวก่อน แล้วแนบใหม่`);
-  }
-  let merged;
-  try {
-    merged = await mergePdfs(list.map((x) => ({ path: x.path, name: x.originalname })));
-  } catch (e) {
-    cleanupUploads(req);
-    throw e;
-  }
-  const target = path.join(path.dirname(list[0].path), crypto.randomBytes(12).toString('hex') + '.pdf');
-  fs.writeFileSync(target, merged.buffer);
-  cleanupUploads(req);
-  const name = `${label} ${code || ''}`.trim() + '.pdf';
-  req.files.main_files = [{ path: target, originalname: name, size: merged.buffer.length }];
-  return ` รวม ${list.length} ไฟล์เป็นไฟล์เดียวแล้ว ${merged.pages} หน้า`;
-}
-
-async function saveFiles(subId, req, field, kind) {
-  const now = nowStr();
-  for (const f of (req.files && req.files[field]) || []) {
-    const ext = path.extname(f.originalname).toLowerCase();
-    await q.run(
-      'INSERT INTO files (submission_id, kind, original_name, stored_name, mime, size, uploaded_at) VALUES (?, ?, ?, ?, ?, ?, ?)',
-      subId,
-      kind,
-      f.originalname.slice(0, 200),
-      relStored(f.path),
-      ALLOWED[ext] || 'application/octet-stream',
-      f.size,
-      now
-    );
-  }
+  if (list.length > 1) throw new UserError(`${label}แนบได้ PDF ไฟล์เดียว ให้รวมปกและเนื้อหาเป็นไฟล์เดียวก่อน แล้วแนบใหม่`);
+  const b = req.body || {};
+  const merged = intOrNull(b.upload_merged);
+  const pages = intOrNull(b.upload_pages);
+  return req.ff.pdfmerge && merged > 1 && merged <= up.MAX_FILES && pages > 0 ? ` รวม ${merged} ไฟล์เป็นไฟล์เดียวแล้ว ${pages} หน้า` : '';
 }
 
 function currentFiles(subId) {
@@ -308,8 +268,6 @@ function lockTeacher(teacherId) {
 
 // ---------- คู่มือรายวิชา และ แผนการจัดการเรียนรู้ ----------
 
-const workUpload = uploader([{ name: 'main_files', maxCount: 10 }]);
-
 router.get('/works/new', async (req, res) => {
   const type = WORK_TYPES.includes(req.query.type) ? req.query.type : 'manual';
   if (!req.me.department_id) throw new UserError('บัญชีของคุณยังไม่ได้กำหนดกลุ่มสาระ กรุณาแจ้งผู้ดูแลระบบ');
@@ -340,25 +298,24 @@ router.get('/works/new', async (req, res) => {
   });
 });
 
-router.post('/works', workUpload, async (req, res) => {
+router.post('/works', async (req, res) => {
   const b = req.body || {};
   const type = WORK_TYPES.includes(b.doc_type) ? b.doc_type : null;
   const year = Number(req.settings.academic_year);
   const sem = Number(req.settings.semester);
   const f = type ? workFields(b, type) : null;
-  let problem = null;
-  if (!type) problem = 'ไม่รู้จักชนิดงาน';
-  else if (!req.me.department_id) problem = 'บัญชีของคุณยังไม่ได้กำหนดกลุ่มสาระ กรุณาแจ้งผู้ดูแลระบบ';
-  else if (teaching.skipActivity(f.subject_code)) problem = 'วิชากิจกรรมพัฒนาผู้เรียน (รหัสขึ้นต้นด้วย ก) ไม่ต้องส่งแผนและคู่มือ';
-  if (problem) {
-    cleanupUploads(req);
-    throw new UserError(problem);
-  }
-  rejectBadFiles(req);
-  const mergedMsg = await preparePdf(req, type, f.subject_code);
-  const now = nowStr();
+  const files = await up.take(req, 'main_files');
   let id;
+  let mergedMsg;
   try {
+    let problem = null;
+    if (!type) problem = 'ไม่รู้จักชนิดงาน';
+    else if (!req.me.department_id) problem = 'บัญชีของคุณยังไม่ได้กำหนดกลุ่มสาระ กรุณาแจ้งผู้ดูแลระบบ';
+    else if (teaching.skipActivity(f.subject_code)) problem = 'วิชากิจกรรมพัฒนาผู้เรียน (รหัสขึ้นต้นด้วย ก) ไม่ต้องส่งแผนและคู่มือ';
+    if (problem) throw new UserError(problem);
+    await rejectBadFiles(req, files);
+    mergedMsg = checkPdf(req, type, files);
+    const now = nowStr();
     id = await q.tx(async () => {
       // ตรวจงานซ้ำและโควตาแผนหลังล็อกครู กดส่งสองครั้งพร้อมกัน คำขอที่สองต้องรอแล้วเห็นงานแรก
       await lockTeacher(req.me.id);
@@ -387,20 +344,18 @@ router.post('/works', workUpload, async (req, res) => {
         now,
         now
       );
-      await saveFiles(r.id, req, 'main_files', 'main');
+      await up.attach(r.id, files, 'main');
       await rememberSubject(req, { teacher_id: req.me.id, doc_type: type, academic_year: year, semester: sem }, f);
       return r.id;
     });
   } catch (e) {
-    cleanupUploads(req);
+    await dropFiles(req, files);
     throw e;
   }
   await finishSave(req, res, id, b.action === 'submit', `บันทึกร่างเรียบร้อย${mergedMsg} ยังไม่ได้ส่งให้ผู้ตรวจ`);
 });
 
 // ---------- บันทึกหลังแผน ----------
-
-const noteUpload = uploader([{ name: 'attach_files', maxCount: 10 }]);
 
 async function parentPlanFor(req, planId) {
   const id = util.idOrNull(planId);
@@ -432,20 +387,16 @@ async function noteHelpers(req, planId, exceptId) {
   return { phrases: req.ff.chips ? features.phrases(req.settings) : null, prev: prev || null };
 }
 
-router.post('/notes', noteUpload, async (req, res) => {
+router.post('/notes', async (req, res) => {
   const b = req.body || {};
-  let plan;
-  try {
-    plan = await parentPlanFor(req, b.plan_id);
-  } catch (e) {
-    cleanupUploads(req);
-    throw e;
-  }
-  rejectBadFiles(req);
+  const files = await up.take(req, 'attach_files');
   const f = noteFields(b, req.ff);
-  const now = nowStr();
+  let plan;
   let id;
   try {
+    plan = await parentPlanFor(req, b.plan_id);
+    await rejectBadFiles(req, files);
+    const now = nowStr();
     id = await q.tx(async () => {
       const r = await q.get(
         `INSERT INTO submissions (doc_type, parent_id, teacher_id, department_id, academic_year, semester, subject_code, subject_name,
@@ -463,11 +414,11 @@ router.post('/notes', noteUpload, async (req, res) => {
         now,
         now
       );
-      await saveFiles(r.id, req, 'attach_files', 'attach');
+      await up.attach(r.id, files, 'attach');
       return r.id;
     });
   } catch (e) {
-    cleanupUploads(req);
+    await dropFiles(req, files);
     throw e;
   }
   if (b.action === 'new') {
@@ -573,7 +524,7 @@ router.get('/s/:id/edit', async (req, res) => {
 });
 
 // บันทึกการแก้ไขลงฐาน (ทั้งหมดใน transaction เดียว)
-async function saveEdit(req, sub, b, now) {
+async function saveEdit(req, sub, b, now, files) {
   await q.tx(async () => {
     if (sub.doc_type === 'note') {
       const f = noteFields(b, req.ff);
@@ -618,41 +569,32 @@ async function saveEdit(req, sub, b, now) {
     for (const fid of asArray(b.remove_files).map(util.idOrNull).filter((x) => x !== null)) {
       await q.run('UPDATE files SET is_current = 0 WHERE id = ? AND submission_id = ?', fid, sub.id);
     }
-    if (sub.doc_type === 'note') await saveFiles(sub.id, req, 'attach_files', 'attach');
+    if (sub.doc_type === 'note') await up.attach(sub.id, files, 'attach');
     else {
       // PDF ไฟล์เดียว: แนบไฟล์ใหม่แล้วไฟล์เดิมย้ายไปเป็นประวัติ
-      if (req.ff.pdfonly && ((req.files && req.files.main_files) || []).length) {
+      if (req.ff.pdfonly && files.length) {
         await q.run('UPDATE files SET is_current = 0 WHERE submission_id = ? AND is_current = 1', sub.id);
       }
-      await saveFiles(sub.id, req, 'main_files', 'main');
+      await up.attach(sub.id, files, 'main');
     }
   });
 }
 
-router.post('/s/:id', async (req, res, next) => {
+router.post('/s/:id', async (req, res) => {
   const sub = await viewable(req, req.params.id);
-  if (!editable(req, sub)) return next(new UserError('แก้ไขได้เฉพาะงานของตนเองที่เป็นฉบับร่างหรือถูกส่งกลับ'));
-  const mw = sub.doc_type === 'note' ? noteUpload : workUpload;
-  // callback แบบเก่า Express 5 ไม่จับ error ให้ ทุกทางต้องจบที่ next(e)
-  mw(req, res, async (err) => {
-    try {
-      if (err) return next(err);
-      const b = req.body || {};
-      const now = nowStr();
-      let mergedMsg = '';
-      try {
-        rejectBadFiles(req);
-        if (sub.doc_type !== 'note') mergedMsg = await preparePdf(req, sub.doc_type, str(b.subject_code, 30));
-        await saveEdit(req, sub, b, now);
-      } catch (e) {
-        cleanupUploads(req);
-        return next(e);
-      }
-      await finishSave(req, res, sub.id, b.action === 'submit', `บันทึกการแก้ไขเรียบร้อย${mergedMsg} ยังไม่ได้ส่งให้ผู้ตรวจ`);
-    } catch (e) {
-      next(e);
-    }
-  });
+  if (!editable(req, sub)) throw new UserError('แก้ไขได้เฉพาะงานของตนเองที่เป็นฉบับร่างหรือถูกส่งกลับ');
+  const b = req.body || {};
+  const files = await up.take(req, sub.doc_type === 'note' ? 'attach_files' : 'main_files');
+  let mergedMsg = '';
+  try {
+    await rejectBadFiles(req, files);
+    if (sub.doc_type !== 'note') mergedMsg = checkPdf(req, sub.doc_type, files);
+    await saveEdit(req, sub, b, nowStr(), files);
+  } catch (e) {
+    await dropFiles(req, files);
+    throw e;
+  }
+  await finishSave(req, res, sub.id, b.action === 'submit', `บันทึกการแก้ไขเรียบร้อย${mergedMsg} ยังไม่ได้ส่งให้ผู้ตรวจ`);
 });
 
 router.post('/s/:id/submit', async (req, res) => {
@@ -677,7 +619,8 @@ async function deleteSubmission(id) {
     await q.run('DELETE FROM submissions WHERE parent_id = ?', id);
     await q.run('DELETE FROM submissions WHERE id = ?', id);
   });
-  stored.forEach(removeStored);
+  // ย้ายไฟล์ไปถังขยะหลังลบในฐานสำเร็จแล้วเท่านั้น
+  await up.trashAll(stored);
 }
 
 router.post('/s/:id/delete', async (req, res) => {
@@ -689,17 +632,98 @@ router.post('/s/:id/delete', async (req, res) => {
   respond(req, res, sub.parent_id ? `/s/${sub.parent_id}` : '/my', 'success', 'ลบเรียบร้อย');
 });
 
+// ---------- ส่งไฟล์เป็นท่อน ----------
+// ฟอร์ม js-upload ส่งไฟล์ทีละไฟล์ก่อนบันทึกงาน: เริ่ม (ได้ token) แล้วส่งท่อนละ 5 MB ไปที่ PUT /upload/:token
+// เซิร์ฟเวอร์ส่งต่อแต่ละท่อนเข้าที่เก็บไฟล์ทันที ที่อยู่ปลายทาง (Drive session) อยู่ในฐานเท่านั้น ไม่ส่งให้เบราว์เซอร์
+
+// ข้อมูลงานสำหรับคิดโฟลเดอร์ใน Drive (ภาคเรียน / กลุ่มสาระ / ชื่อครู / ชนิดงาน) จากฟอร์มที่จะแนบไฟล์
+// form = ที่อยู่ของฟอร์ม: /works (งานใหม่) · /notes (บันทึกใหม่ ต้องมี plan_id) · /s/<id> (แก้ไขงานเดิม)
+async function uploadTarget(req, b) {
+  const form = String(b.form || '');
+  const m = /^\/s\/(\d+)$/.exec(form);
+  if (m) {
+    const sub = await viewable(req, m[1]);
+    if (!editable(req, sub)) throw new UserError('แก้ไขได้เฉพาะงานของตนเองที่เป็นฉบับร่างหรือถูกส่งกลับ');
+    // แผนและคู่มือ ใช้รหัสวิชาที่พิมพ์อยู่ในฟอร์มตอนนี้
+    return sub.doc_type === 'note' || !b.subject_code ? sub : { ...sub, subject_code: str(b.subject_code, 30), subject_name: str(b.subject_name, 200) };
+  }
+  if (form === '/notes') {
+    const plan = await parentPlanFor(req, b.plan_id);
+    return { ...plan, doc_type: 'note', teacher_name: req.me.full_name, dept_name: req.me.dept_name };
+  }
+  if (form === '/works' && WORK_TYPES.includes(b.doc_type)) {
+    if (!req.me.department_id) throw new UserError('บัญชีของคุณยังไม่ได้กำหนดกลุ่มสาระ กรุณาแจ้งผู้ดูแลระบบ');
+    return {
+      doc_type: b.doc_type,
+      academic_year: Number(req.settings.academic_year),
+      semester: Number(req.settings.semester),
+      subject_code: str(b.subject_code, 30),
+      subject_name: str(b.subject_name, 200),
+      teacher_name: req.me.full_name,
+      dept_name: req.me.dept_name,
+    };
+  }
+  throw new UserError('ส่งไฟล์ไม่สำเร็จ ลองใหม่อีกครั้ง');
+}
+
+router.post('/upload/start', async (req, res) => {
+  const b = req.body || {};
+  const field = b.field === 'attach_files' ? 'attach_files' : 'main_files';
+  const target = await uploadTarget(req, b);
+  let name = str(b.name, 200) || 'file';
+  // ไฟล์ที่เบราว์เซอร์รวมจากหลายไฟล์ ตั้งชื่อแบบเดิมของระบบ เช่น คู่มือรายวิชา ว31101.pdf
+  if (field === 'main_files' && intOrNull(b.merged) > 1) name = `${wf.DOC_TYPES[target.doc_type].label} ${target.subject_code || ''}`.trim() + '.pdf';
+  const count = Math.min(up.MAX_FILES, Math.max(1, intOrNull(b.count) || 1));
+  const idx = Math.min(count - 1, intOrNull(b.idx) || 0);
+  // แผนและคู่มือ ชื่อใน Drive เป็นรหัสและชื่อวิชา · ไฟล์ประกอบบันทึกหลังแผนใช้ชื่อเดิมของไฟล์
+  const parts = drivepath.relPath(target, { original_name: name }, idx, count).split('/');
+  const storeName = field === 'attach_files' ? name : parts[parts.length - 1];
+  const token = await up.start(req.me.id, { name, storeName, size: Number(b.size), folderPath: parts.slice(0, -1).join('/'), settings: req.settings });
+  res.json({ token, chunk: storage.CHUNK });
+});
+
+// ท่อนของไฟล์ (Content-Range) ไม่ผ่านตัวอ่าน body ส่งต่อเข้าที่เก็บไฟล์เป็นสตรีม
+router.put('/upload/:token', async (req, res) => {
+  const r = await up.putChunk(req.me.id, String(req.params.token).slice(0, 100), req.get('content-range'), req.get('content-length'), req);
+  res.json({ ok: true, ...r });
+});
+
 // ---------- ไฟล์ ----------
+
+// ส่งไฟล์จากที่เก็บไฟล์ต่อเป็นสตรีม (ไม่โหลดทั้งไฟล์ ไม่คำนวณ ETag) รองรับขอบางช่วง (Range) แบบเดียวกับเดิม
+async function sendStored(req, res, f, headers) {
+  const range = /^bytes=\d*-\d*$/.test(req.get('range') || '') ? req.get('range') : undefined;
+  let r;
+  try {
+    r = await storage.get(f.stored_name, { range });
+  } catch (e) {
+    if (e.code !== 'ENOENT' && e.status !== 404) console.error('เปิดไฟล์ไม่สำเร็จ', f.id, e.message);
+    if (!res.headersSent) res.status(404).end();
+    return;
+  }
+  res.status(r.status);
+  res.set({ ...headers, 'Accept-Ranges': 'bytes', 'Content-Length': String(r.length) });
+  if (r.contentRange) res.set('Content-Range', r.contentRange);
+  if (req.method === 'HEAD') {
+    r.stream.destroy();
+    return res.end();
+  }
+  try {
+    await pipeline(r.stream, res);
+  } catch {
+    // ผู้ใช้ปิดหน้าไปก่อนโหลดเสร็จ
+  }
+}
 
 router.get('/f/:id', async (req, res) => {
   const f = await loadFile(req.params.id);
   const sub = f && (await viewable(req, f.submission_id));
   if (!sub) return res.status(404).render('error', { title: 'ไม่พบไฟล์', message: 'ไม่พบไฟล์ หรือคุณไม่มีสิทธิ์เปิดดู' });
   const inline = !req.query.dl && /^(application\/pdf|image\/)/.test(f.mime);
-  res.set('Content-Type', f.mime || 'application/octet-stream');
-  res.set('Content-Disposition', util.contentDisposition(f.original_name, inline ? 'inline' : 'attachment'));
-  res.sendFile(storedPath(f.stored_name), (err) => {
-    if (err && !res.headersSent) res.status(404).end();
+  await sendStored(req, res, f, {
+    'Content-Type': f.mime || 'application/octet-stream',
+    'Content-Disposition': util.contentDisposition(f.original_name, inline ? 'inline' : 'attachment'),
+    'Cache-Control': 'public, max-age=0',
   });
 });
 
@@ -709,11 +733,7 @@ router.get('/f/:id/raw', async (req, res) => {
   const f = await loadFile(req.params.id);
   const sub = f && (await viewable(req, f.submission_id));
   if (!sub) return res.status(404).end();
-  res.set('Content-Type', 'application/x-lesson-file');
-  res.set('Cache-Control', 'private, no-store');
-  res.sendFile(storedPath(f.stored_name), (err) => {
-    if (err && !res.headersSent) res.status(404).end();
-  });
+  await sendStored(req, res, f, { 'Content-Type': 'application/x-lesson-file', 'Cache-Control': 'private, no-store' });
 });
 
 // หน้าเปิดอ่านไฟล์ในเว็บ (PDF ทุกหน้า หรือรูป) ไม่ขึ้นกับการตั้งค่าเบราว์เซอร์ที่สั่งให้ดาวน์โหลด

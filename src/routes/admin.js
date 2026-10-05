@@ -53,6 +53,8 @@ router.get('/', async (req, res) => {
     addresses: lanAddresses(),
     port: config.PORT,
     dataDir: config.DATA_DIR,
+    fileStore: config.FILE_STORE,
+    filesDir: config.FILES_DIR,
   });
 });
 
@@ -737,9 +739,13 @@ router.post('/line/test', async (req, res) => {
 
 // ---------- สำรองข้อมูล ----------
 
-// ฐานข้อมูลเป็น Postgres แล้ว VACUUM INTO ของ SQLite ใช้ไม่ได้ ตอน 10 ทำสำรองแบบใหม่ (JSON ทุกตาราง)
-router.get('/backup', (req, res) => {
-  res.render('error', { title: 'สำรองข้อมูล', message: 'ระบบสำรองข้อมูลกำลังปรับปรุง ยังใช้ไม่ได้ชั่วคราว' });
+// ข้อมูลทุกตารางเป็นไฟล์ JSON ไฟล์เดียว (Postgres สร้าง JSON เอง) ไฟล์งานอยู่ในที่เก็บไฟล์ ไม่อยู่ในไฟล์นี้
+router.get('/backup', async (req, res) => {
+  const { name, text } = await require('../backup').build();
+  res.set('Content-Type', 'application/json; charset=utf-8');
+  res.set('Content-Disposition', util.contentDisposition(name));
+  res.set('Cache-Control', 'no-store');
+  res.send(text);
 });
 
 module.exports = router;

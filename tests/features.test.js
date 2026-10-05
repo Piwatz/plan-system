@@ -11,6 +11,7 @@ process.env.DATA_DIR = path.join(tmp, 'data-demo');
 process.env.DEMO = '1';
 
 const seed = require('../scripts/seed-demo');
+const { sendForm } = require('./upload-client');
 const db = require('../src/db');
 
 let base;
@@ -163,11 +164,7 @@ test('บันทึกหลังแผนแบบแนบไฟล์ข�
   const t = await as('teacher');
   const planId = (await planOf('ว30203'));
   const send = async (fields, file) => {
-    const fd = new FormData();
-    fd.set('plan_id', String(planId));
-    for (const [k, v] of Object.entries(fields)) fd.set(k, v);
-    if (file) fd.set('attach_files', file, 'บันทึกของฉัน.pdf');
-    const r = await t.req('POST', '/notes', fd);
+    const r = await sendForm(t, '/notes', { plan_id: String(planId), ...fields }, file ? [[file, 'บันทึกของฉัน.pdf']] : [], { field: 'attach_files', headers: {} });
     return Number(r.location.split('/')[2]);
   };
   // แบบแนบไฟล์ ไม่มีไฟล์ ส่งไม่ได้
@@ -198,22 +195,14 @@ test('บันทึกหลังแผนแบบแนบไฟล์ข�
 
 test('ตรวจไฟล์ก่อนส่ง ไม่รับไฟล์ที่นามสกุลไม่ตรงกับไฟล์จริง', async () => {
   const t = await as('sci2');
-  const send = (blob) => {
-    const fd = new FormData();
-    fd.set('doc_type', 'manual');
-    fd.set('subject_code', 'ว30111');
-    fd.set('subject_name', 'ทดสอบไฟล์');
-    fd.set('grade_level', 'ม.4');
-    fd.set('action', 'draft');
-    fd.set('main_files', blob, 'แผน.pdf');
-    return t.req('POST', '/works', fd, { 'x-requested-with': 'XMLHttpRequest' });
-  };
-  const before = fs.readdirSync(path.join(tmp, 'data-demo', 'uploads'), { recursive: true }).length;
+  const send = (blob) => sendForm(t, '/works', { doc_type: 'manual', subject_code: 'ว30111', subject_name: 'ทดสอบไฟล์', grade_level: 'ม.4', action: 'draft' }, [[blob, 'แผน.pdf']]);
+  const trash = path.join(tmp, 'data-demo', 'files', '.trash');
+  const before = fs.existsSync(trash) ? fs.readdirSync(trash).length : 0;
   const bad = await send(new Blob(['นี่ไม่ใช่ PDF'], { type: 'application/pdf' }));
   assert.equal(bad.status, 400);
   assert.match(JSON.parse(bad.text).error, /เปิดไม่ได้/);
   assert.equal((await db.q.get("SELECT 1 AS x FROM submissions WHERE subject_code = 'ว30111'")), undefined);
-  assert.equal(fs.readdirSync(path.join(tmp, 'data-demo', 'uploads'), { recursive: true }).length, before, 'ไฟล์ที่ไม่รับต้องถูกลบทิ้ง');
+  assert.equal(fs.readdirSync(trash).length, before + 1, 'ไฟล์ที่ไม่รับต้องถูกย้ายไปถังขยะ');
   const good = await send(pdf());
   assert.equal(good.status, 200);
   assert.ok((await db.q.get("SELECT 1 AS x FROM submissions WHERE subject_code = 'ว30111'")));

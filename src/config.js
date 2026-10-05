@@ -11,14 +11,19 @@ function arg(name, fallback) {
 const ROOT = path.resolve(__dirname, '..');
 // ระบบรุ่นคลาวด์ในเครื่องเก็บที่ data-pg ไม่แตะโฟลเดอร์ data ของระบบเดิม
 const DATA_DIR = path.resolve(ROOT, process.env.DATA_DIR || arg('data', 'data-pg'));
+const DEMO = process.env.DEMO === '1' || arg('demo', false) === true;
 
 module.exports = {
   ROOT,
   DATA_DIR,
   // ฐานข้อมูล PGlite ในเครื่อง (ใช้เมื่อไม่ได้ตั้ง DATABASE_URL)
   PG_DIR: path.join(DATA_DIR, 'pg'),
-  UPLOAD_DIR: path.join(DATA_DIR, 'uploads'),
+  // ไฟล์งานในเครื่อง (ที่เก็บแบบ local): ค่าเริ่มต้น data-files · ระบุโฟลเดอร์ข้อมูลเอง (โหมดทดลอง ทดสอบ) ใช้ <โฟลเดอร์ข้อมูล>/files
+  FILES_DIR: path.resolve(ROOT, process.env.FILES_DIR || (process.env.DATA_DIR || arg('data', false) ? path.join(DATA_DIR, 'files') : 'data-files')),
   PORT: Number(process.env.PORT || arg('port', 3000)),
   // เปิดเฉพาะ DEMO=1 หรือ --demo (เดิม DEMO=0 ก็ถือว่าเปิด)
-  DEMO: process.env.DEMO === '1' || arg('demo', false) === true,
+  DEMO,
+  // ที่เก็บไฟล์งาน: gdrive = Google Drive ของโรงเรียน (ต้องตั้ง GDRIVE_CLIENT_ID GDRIVE_CLIENT_SECRET GDRIVE_REFRESH_TOKEN)
+  // โหมดทดลองใช้ในเครื่องเสมอ กันไฟล์ทดลองหลุดเข้า Drive จริง
+  FILE_STORE: !DEMO && process.env.FILE_STORE === 'gdrive' ? 'gdrive' : 'local',
 };

@@ -10,6 +10,7 @@ process.env.DATA_DIR = path.join(tmp, 'data-demo');
 process.env.DEMO = '1';
 
 const seed = require('../scripts/seed-demo');
+const { sendForm } = require('./upload-client');
 const db = require('../src/db');
 
 let base;
@@ -130,14 +131,8 @@ test('ครูต่างกลุ่มสาระเปิดงานข�
 
 test('ส่งคู่มือพร้อมไฟล์ แล้วผ่านครบ 5 ระดับทางหน้าเว็บ', async () => {
   const t = await as('sci2');
-  const fd = new FormData();
-  fd.set('doc_type', 'manual');
-  fd.set('subject_code', 'ว30101');
-  fd.set('subject_name', 'ฟิสิกส์พื้นฐาน');
-  fd.set('grade_level', 'ม.4');
-  fd.set('action', 'submit');
-  fd.set('main_files', new Blob(['%PDF-1.4 test'], { type: 'application/pdf' }), 'คู่มือ ทดสอบ.pdf');
-  const r = await t.req('POST', '/works', fd, { 'x-requested-with': 'XMLHttpRequest' });
+  const fields = { doc_type: 'manual', subject_code: 'ว30101', subject_name: 'ฟิสิกส์พื้นฐาน', grade_level: 'ม.4', action: 'submit' };
+  const r = await sendForm(t, '/works', fields, [[new Blob(['%PDF-1.4 test'], { type: 'application/pdf' }), 'คู่มือ ทดสอบ.pdf']]);
   assert.equal(r.status, 200, r.text);
   const json = JSON.parse(r.text);
   const id = Number(json.redirect.split('/').pop());
@@ -180,11 +175,7 @@ test('ส่งกลับแก้ไขต้องมีเหตุผล �
   assert.equal((await db.q.get('SELECT status FROM submissions WHERE id = ?', id)).status, 'returned');
   const t = await as('sci2');
   ok(await t.get(`/s/${id}/edit`), 'edit');
-  const fd = new FormData();
-  fd.set('subject_code', 'ว21101');
-  fd.set('subject_name', 'วิทยาศาสตร์ 1');
-  fd.set('grade_level', 'ม.1');
-  fd.set('action', 'submit');
+  const fd = new URLSearchParams({ subject_code: 'ว21101', subject_name: 'วิทยาศาสตร์ 1', grade_level: 'ม.1', action: 'submit' });
   const r = await t.req('POST', `/s/${id}`, fd);
   assert.equal(r.status, 302);
   const s = (await db.q.get('SELECT * FROM submissions WHERE id = ?', id));
@@ -198,12 +189,7 @@ test('ครูเขียนบันทึกหลังแผนเป็�
   ok(await t.get(`/notes/new?plan=${planId}`), 'note form');
   const ids = [];
   for (const no of ['6', '7']) {
-    const fd = new FormData();
-    fd.set('plan_id', String(planId));
-    fd.set('plan_no', no);
-    fd.set('topic', `เรื่องทดสอบ ${no}`);
-    fd.set('result_k', 'นักเรียนเข้าใจ');
-    fd.set('action', 'draft');
+    const fd = new URLSearchParams({ plan_id: String(planId), plan_no: no, topic: `เรื่องทดสอบ ${no}`, result_k: 'นักเรียนเข้าใจ', action: 'draft' });
     const r = await t.req('POST', '/notes', fd);
     assert.equal(r.status, 302);
     ids.push(Number(r.location.split('/').pop()));

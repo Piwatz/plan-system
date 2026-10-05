@@ -26,7 +26,11 @@
   </div>
   <div class="card">
     <h3>สำรองข้อมูล</h3>
-    <p class="muted small">ข้อมูลทั้งหมดอยู่ในโฟลเดอร์<br><code style="overflow-wrap:anywhere"><%= dataDir %></code><br>ควรคัดลอกทั้งโฟลเดอร์ไปเก็บในแฟลชไดรฟ์อย่างน้อยสัปดาห์ละครั้ง (ไฟล์ที่ครูส่งอยู่ในโฟลเดอร์ uploads)</p>
+<% if (fileStore === 'gdrive') { %>
+    <p class="muted small">กดปุ่มด้านล่างเพื่อดาวน์โหลดข้อมูลในระบบทั้งหมดเป็นไฟล์เดียว<br>ระบบสำรองให้เองทุกคืนตอนตีสอง เก็บไว้ในโฟลเดอร์ สำรองข้อมูล ของ Google Drive โรงเรียน ย้อนหลัง 30 วัน<br>ไฟล์งานที่ครูส่งเก็บอยู่ใน Google Drive โรงเรียน โฟลเดอร์ ระบบส่งแผนการสอน</p>
+<% } else { %>
+    <p class="muted small">กดปุ่มด้านล่างเพื่อดาวน์โหลดข้อมูลในระบบทั้งหมดเป็นไฟล์เดียว<br>ระบบสำรองให้เองทุกคืนตอนตีสอง เก็บไว้ในโฟลเดอร์ สำรองข้อมูล ย้อนหลัง 30 วัน<br>ไฟล์งานที่ครูส่งเก็บอยู่ในโฟลเดอร์<br><code style="overflow-wrap:anywhere"><%= filesDir %></code></p>
+<% } %>
     <a class="btn btn-primary" href="/admin/backup">ดาวน์โหลดสำรองฐานข้อมูล</a>
     <div class="muted small" style="margin-top:6px">งานที่ส่งแล้วทั้งหมด <%= counts.submissions %> รายการ</div>
   </div>

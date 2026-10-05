@@ -204,6 +204,29 @@ create table if not exists login_attempts (
   count integer not null
 );
 
+-- ไฟล์ที่กำลังอัปโหลดเป็นท่อน (ตอน 10) เบราว์เซอร์ถือแค่ token ที่อยู่ปลายทาง (session_uri) อยู่ในฐานเท่านั้น
+-- status: uploading = กำลังส่งท่อน · sending = มีท่อนกำลังส่งอยู่ · done = ครบแล้ว รอบันทึกงาน · used = ผูกกับงานแล้ว · trashed = ทิ้งแล้ว
+-- drive_file_id = ที่เก็บไฟล์เมื่อครบ (gdrive:<id> หรือ local:<path>) รูปเดียวกับ files.stored_name
+create table if not exists pending_uploads (
+  token text collate "C" primary key,
+  user_id integer not null references users(id) on delete cascade,
+  session_uri text collate "C" not null,
+  name text collate "C" not null,
+  mime text collate "C" not null default '',
+  size bigint not null,
+  received bigint not null default 0,
+  drive_file_id text collate "C",
+  status text collate "C" not null default 'uploading',
+  created_at text collate "C" not null
+);
+create index if not exists idx_pending_status on pending_uploads (status, created_at);
+
+-- id ของโฟลเดอร์ใน Google Drive ตามตำแหน่ง เช่น ระบบส่งแผนการสอน/ภาคเรียน 2-2569 ไม่ต้องค้นใน Drive ซ้ำทุกครั้ง
+create table if not exists drive_folders (
+  path text collate "C" primary key,
+  folder_id text collate "C" not null
+);
+
 -- เลขแผนที่ครูพิมพ์ (ยาวได้ 20 ตัว อาจว่าง หรือมีตัวอักษร) เป็นจำนวนเต็ม ใช้แทน CAST(plan_no AS INTEGER) ของ SQLite
 -- อ่านเฉพาะตัวเลขต้นข้อความไม่เกิน 9 หลัก กัน integer ล้น ไม่มีตัวเลขได้ 0
 create or replace function to_int_lenient(t text) returns integer language sql immutable as $$

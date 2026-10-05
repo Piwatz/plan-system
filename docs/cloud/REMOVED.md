@@ -20,6 +20,14 @@ Cloudflare Workers ไม่มีเครื่องให้ติดตั�
 - เก็บไว้: การคิดชื่อโฟลเดอร์และชื่อไฟล์ (`safeName` `relPath`) ย้ายไป `src/drivepath.js` ตรรกะเดิมทุกตัวอักษร ใช้ต่อในตอน 10 ซึ่งไฟล์จะเก็บใน Google Drive โดยตรง
 - `wf.onAdvance` และ `notify()` ใน `src/workflow.js` ยังอยู่แต่ไม่มีผู้ฟัง ถ้าจะใช้อีกบน Workers ต้องใช้ `ctx.waitUntil` แทน `setImmediate`
 
+## 3. รวม PDF และรับไฟล์งานบนเซิร์ฟเวอร์ (ตอน 10 · 6 ต.ค. 2569)
+
+ไม่ได้ตัดฟังก์ชัน แต่ย้ายที่ทำงาน เพราะ Workers แบบฟรีมีเวลาประมวลผล 10 ms ต่อคำขอ และไม่มีโฟลเดอร์ในเครื่อง
+
+- ลบ: `src/pdf.js` (รวม PDF บนเซิร์ฟเวอร์) · multer แบบเขียนดิสก์ในเส้นทางส่งงาน `/works` `/notes` `/s/:id` · `storedPath` `relStored` `removeStored` · โฟลเดอร์ `uploads` · `config.UPLOAD_DIR`
+- แทนด้วย: รวม PDF ในเบราว์เซอร์ `public/js/pdfmerge.js` (ข้อความ error เดิม) · ส่งไฟล์เป็นท่อน `/upload/start` `PUT /upload/:token` · ที่เก็บไฟล์ `src/storage.js` (Google Drive หรือโฟลเดอร์ในเครื่อง) · ตรวจชนิดไฟล์จาก 8 ไบต์แรก
+- multer ยังใช้กับโลโก้ (1 MB) และไฟล์ `งานล่าสุด.json` เพราะเล็ก
+
 ## กู้คืน
 
 ของเดิมทั้งหมดอยู่ที่ tag `before-cloud` เช่น `git checkout before-cloud -- src/convert.js src/drive.js tests/round2.test.js`

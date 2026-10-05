@@ -163,7 +163,8 @@ async function main({ target, keepOpen = false } = {}) {
   for (const [code, name, d, g] of subjects) await q.run('INSERT INTO subjects (code, name, department_id, grade) VALUES (?, ?, ?, ?)', code, name, d, g);
   const subjectOf = Object.fromEntries(subjects.map((s) => [s[0], s]));
 
-  const uploadDir = path.join(config.UPLOAD_DIR, 'demo');
+  // ไฟล์ตัวอย่างอยู่ในที่เก็บแบบ local (<โฟลเดอร์ข้อมูล>/files/demo) อ้างถึงด้วย local:demo/...
+  const uploadDir = path.join(config.FILES_DIR, 'demo');
   fs.mkdirSync(uploadDir, { recursive: true });
   async function work(who, type, code, extra = {}) {
     const u = people[who];
@@ -185,8 +186,8 @@ async function main({ target, keepOpen = false } = {}) {
     );
     const id = r.id;
     const fileName = `${type === 'plan' ? 'แผนการจัดการเรียนรู้' : 'คู่มือรายวิชา'}_${code}.pdf`;
-    const stored = `demo/${id}.pdf`;
-    fs.writeFileSync(path.join(config.UPLOAD_DIR, stored), makePdf(`${type === 'plan' ? 'Lesson plan' : 'Course manual'} ${code}`));
+    const stored = `local:demo/${id}.pdf`;
+    fs.writeFileSync(path.join(uploadDir, `${id}.pdf`), makePdf(`${type === 'plan' ? 'Lesson plan' : 'Course manual'} ${code}`));
     await q.run(
       "INSERT INTO files (submission_id, kind, original_name, stored_name, mime, size, uploaded_at) VALUES (?, 'main', ?, ?, 'application/pdf', 900, ?)",
       id,
@@ -333,8 +334,8 @@ async function main({ target, keepOpen = false } = {}) {
   await wf.submit(p5, P.sci2);
   const fn = await note(p5, 0);
   await q.run("UPDATE submissions SET note_mode = 'file', topic = 'สารและสมบัติของสาร', result_k = '', result_p = '', result_a = '', problems = '', suggestions = '' WHERE id = ?", fn);
-  fs.writeFileSync(path.join(config.UPLOAD_DIR, 'demo', 'note-' + fn + '.pdf'), makePdf('Post-lesson note'));
-  await q.run("INSERT INTO files (submission_id, kind, original_name, stored_name, mime, size, uploaded_at) VALUES (?, 'attach', ?, ?, 'application/pdf', 900, ?)", fn, 'บันทึกหลังแผน_แผนที่1.pdf', 'demo/note-' + fn + '.pdf', nowStr());
+  fs.writeFileSync(path.join(uploadDir, 'note-' + fn + '.pdf'), makePdf('Post-lesson note'));
+  await q.run("INSERT INTO files (submission_id, kind, original_name, stored_name, mime, size, uploaded_at) VALUES (?, 'attach', ?, ?, 'application/pdf', 900, ?)", fn, 'บันทึกหลังแผน_แผนที่1.pdf', 'local:demo/note-' + fn + '.pdf', nowStr());
   await wf.submit(fn, P.sci2);
   await q.run(
     "INSERT INTO notifications (user_id, from_user_id, from_name, text, link, created_at) VALUES (?, ?, ?, ?, '/my', ?)",

@@ -55,6 +55,8 @@ function createApp() {
   for (const dir of ['legacy/build', 'cmaps', 'standard_fonts', 'wasm', 'iccs']) {
     app.use(`/vendor/pdfjs/${dir}`, express.static(path.join(nm, 'pdfjs-dist', ...dir.split('/')), { maxAge: '7d', index: false }));
   }
+  // ตัวรวม PDF ในเบราว์เซอร์ (pdf-lib) ใช้ตอนครูแนบหลายไฟล์
+  app.use('/vendor/pdf-lib', express.static(path.join(nm, 'pdf-lib', 'dist'), { maxAge: '7d', index: false }));
 
   // ขอบเขตฐานข้อมูลต่อคำขอ (ข้อมูลอ้างอิง และตัวต่อบน Workers)
   app.use(db.requestScope);
@@ -72,9 +74,9 @@ function createApp() {
     })
   );
 
-  // กันเว็บอื่นแอบส่งฟอร์มเข้ามาในนามผู้ใช้
+  // กันเว็บอื่นแอบส่งฟอร์ม (และท่อนไฟล์ PUT) เข้ามาในนามผู้ใช้
   app.use((req, res, next) => {
-    if (req.method !== 'POST') return next();
+    if (req.method !== 'POST' && req.method !== 'PUT') return next();
     const origin = req.get('origin');
     if (origin && origin !== 'null') {
       let host = '';

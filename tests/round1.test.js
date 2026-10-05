@@ -12,6 +12,7 @@ process.env.DATA_DIR = path.join(tmp, 'data-demo');
 process.env.DEMO = '1';
 
 const seed = require('../scripts/seed-demo');
+const { sendForm } = require('./upload-client');
 const db = require('../src/db');
 
 let base;
@@ -75,15 +76,10 @@ async function realPdf(n, width) {
   return new Blob([await doc.save()], { type: 'application/pdf' });
 }
 
-function workForm(fields, files = []) {
-  const fd = new FormData();
-  for (const [k, v] of Object.entries(fields)) fd.set(k, v);
-  for (const [blob, name] of files) fd.append('main_files', blob, name);
-  return fd;
-}
-
-function sendWork(c, url, fields, files) {
-  return c.req('POST', url, workForm(fields, files), { 'x-requested-with': 'XMLHttpRequest' });
+// ส่งงานแบบหน้าเว็บ: หลาย PDF รวมในเบราว์เซอร์ก่อนส่งเมื่อเปิดตัวรวม (ช่องไฟล์มี data-sortable)
+async function sendWork(c, url, fields, files) {
+  const merge = (await db.q.get("SELECT value FROM settings WHERE key = 'ff_pdfmerge'")).value === '1';
+  return sendForm(c, url, fields, files, { merge });
 }
 
 test('หน้าสถานะกลุ่มสาระนับคู่มือครบตามรายวิชาที่สอน และแผนเฉพาะวิชาหลัก', async () => {
@@ -151,7 +147,7 @@ test('แผนและคู่มือรับเฉพาะ PDF และ
   const files = (await db.q.all('SELECT * FROM files WHERE submission_id = ? AND is_current = 1', id));
   assert.equal(files.length, 1, 'เหลือไฟล์เดียว');
   assert.equal(files[0].original_name, 'คู่มือรายวิชา ว30112.pdf');
-  const merged = await PDFDocument.load(fs.readFileSync(path.join(tmp, 'data-demo', 'uploads', files[0].stored_name)));
+  const merged = await PDFDocument.load(fs.readFileSync(path.join(tmp, 'data-demo', 'files', files[0].stored_name.replace(/^local:/, ''))));
   assert.deepEqual(merged.getPages().map((p) => p.getWidth()), [200, 300, 300], 'ปกมาก่อน ตามด้วยเนื้อหา');
   assert.ok((await teachRow('sci2', 'ว30112')), 'ส่งคู่มือแล้ววิชานี้เข้าไปในรายวิชาที่สอน');
   assert.equal((await teachRow('sci2', 'ว30112')).is_main, 0);

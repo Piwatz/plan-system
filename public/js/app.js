@@ -75,38 +75,127 @@
     if (busy) busy.classList.remove('show');
   }
 
-  // ส่งฟอร์มที่มีไฟล์ด้วย XHR เพื่อแสดงแถบความคืบหน้า
-  function sendWithProgress(form, submitter) {
-    const data = new FormData(form);
-    if (submitter && submitter.name) data.set(submitter.name, submitter.value);
-    const xhr = new XMLHttpRequest();
-    // ใช้ getAttribute เพราะปุ่มชื่อ action จะบัง form.action
-    xhr.open('POST', form.getAttribute('action') || window.location.pathname);
-    xhr.setRequestHeader('X-Requested-With', 'XMLHttpRequest');
-    xhr.upload.onprogress = (e) => {
-      if (e.lengthComputable) setProgress(Math.round((e.loaded / e.total) * 100));
-    };
-    xhr.onload = () => {
-      let res = null;
-      try {
-        res = JSON.parse(xhr.responseText);
-      } catch {
-        res = null;
+  // ---------- ส่งฟอร์มที่มีไฟล์ ----------
+  // 1) แผนและคู่มือที่เลือกหลาย PDF รวมเป็นไฟล์เดียวในเครื่องนี้ก่อน (public/js/pdfmerge.js + pdf-lib)
+  // 2) ส่งไฟล์ทีละไฟล์ ท่อนละ 5 MB ได้ token กลับมา (แถบความคืบหน้ารวมทุกท่อนทุกไฟล์)
+  // 3) ส่งฟอร์มแบบปกติ (ไม่มีไฟล์) พร้อม token ในช่อง upload_<ชื่อช่องไฟล์>
+  const NET_ERROR = 'เชื่อมต่อระบบไม่ได้ ตรวจสอบอินเทอร์เน็ตหรือ Wi-Fi แล้วลองใหม่';
+
+  class SendError extends Error {
+    constructor(msg) {
+      super(msg);
+      this.userMessage = msg;
+    }
+  }
+
+  // คำขอ XHR คืน JSON · onUp(ไบต์ที่ส่งแล้ว) สำหรับแถบความคืบหน้า
+  function request(method, url, body, headers, onUp) {
+    return new Promise((resolve, reject) => {
+      const xhr = new XMLHttpRequest();
+      xhr.open(method, url);
+      xhr.setRequestHeader('X-Requested-With', 'XMLHttpRequest');
+      Object.entries(headers || {}).forEach(([k, v]) => xhr.setRequestHeader(k, v));
+      if (onUp) xhr.upload.onprogress = (e) => onUp(e.loaded);
+      xhr.onload = () => {
+        let res = null;
+        try {
+          res = JSON.parse(xhr.responseText);
+        } catch {
+          res = null;
+        }
+        if (xhr.status >= 200 && xhr.status < 300 && res) resolve(res);
+        else reject(new SendError((res && res.error) || 'บันทึกไม่สำเร็จ ลองใหม่อีกครั้ง'));
+      };
+      xhr.onerror = () => reject(new SendError(NET_ERROR));
+      xhr.send(body);
+    });
+  }
+
+  function loadScript(src) {
+    return new Promise((resolve, reject) => {
+      const s = document.createElement('script');
+      s.src = src;
+      s.onload = resolve;
+      s.onerror = () => reject(new SendError(NET_ERROR));
+      document.head.appendChild(s);
+    });
+  }
+
+  async function mergeInBrowser(files) {
+    if (!window.PDFLib) await loadScript('/vendor/pdf-lib/pdf-lib.min.js');
+    if (!window.PdfMerge) await loadScript('/static/js/pdfmerge.js');
+    const list = [];
+    for (const f of files) list.push({ name: f.name, bytes: new Uint8Array(await f.arrayBuffer()) });
+    return window.PdfMerge.mergePdfs(window.PDFLib, list);
+  }
+
+  // ไฟล์ที่ต้องส่งจากทุกช่องในฟอร์ม เรียงตามลำดับที่ครูจัด
+  async function collectFiles(form) {
+    const jobs = [];
+    for (const input of form.querySelectorAll('input[type=file][name]')) {
+      const files = Array.from(input.files || []);
+      if (!files.length) continue;
+      const zone = input.closest('[data-dropzone]');
+      const merge = zone && zone.hasAttribute('data-sortable') && files.length > 1 && files.every((f) => /\.pdf$/i.test(f.name));
+      if (merge) {
+        showBusy('กำลังรวมไฟล์ PDF', false);
+        const m = await mergeInBrowser(files);
+        jobs.push({ field: input.name, blob: new Blob([m.bytes], { type: 'application/pdf' }), name: 'merged.pdf', merged: files.length, pages: m.pages });
+      } else {
+        files.forEach((f, i) => jobs.push({ field: input.name, blob: f, name: f.name, idx: i, count: files.length }));
       }
-      if (res && res.redirect) {
+    }
+    return jobs;
+  }
+
+  async function sendWithProgress(form, submitter) {
+    // ใช้ getAttribute เพราะปุ่มชื่อ action จะบัง form.action
+    const url = form.getAttribute('action') || window.location.pathname;
+    const title = submitter && submitter.value === 'submit' ? 'กำลังส่งงาน' : 'กำลังบันทึก';
+    const data = new URLSearchParams();
+    for (const [k, v] of new FormData(form)) if (typeof v === 'string') data.append(k, v);
+    if (submitter && submitter.name) data.set(submitter.name, submitter.value);
+    try {
+      const jobs = await collectFiles(form);
+      showBusy(title, true);
+      setProgress(0);
+      const total = jobs.reduce((a, j) => a + j.blob.size, 0) || 1;
+      let sent = 0;
+      for (const j of jobs) {
+        const info = new URLSearchParams({ form: url, field: j.field, name: j.name, size: String(j.blob.size), idx: String(j.idx || 0), count: String(j.count || 1) });
+        if (j.merged) info.set('merged', String(j.merged));
+        ['doc_type', 'subject_code', 'subject_name', 'plan_id'].forEach((k) => data.has(k) && info.set(k, data.get(k)));
+        const start = await request('POST', '/upload/start', info, { 'Content-Type': 'application/x-www-form-urlencoded' });
+        const size = j.blob.size;
+        let pos = 0;
+        do {
+          const end = Math.min(pos + start.chunk, size);
+          const range = size ? 'bytes ' + pos + '-' + (end - 1) + '/' + size : 'bytes */0';
+          const base = sent + pos;
+          await request('PUT', '/upload/' + encodeURIComponent(start.token), j.blob.slice(pos, end), { 'Content-Type': 'application/octet-stream', 'Content-Range': range }, (n) =>
+            setProgress(Math.min(99, Math.round(((base + n) / total) * 100)))
+          );
+          pos = end;
+        } while (pos < size);
+        sent += size;
+        data.append('upload_' + j.field, start.token);
+        if (j.merged) {
+          data.set('upload_merged', String(j.merged));
+          data.set('upload_pages', String(j.pages));
+        }
+      }
+      setProgress(100);
+      const res = await request('POST', url, data, { 'Content-Type': 'application/x-www-form-urlencoded' });
+      if (res.redirect) {
         window.location.href = res.redirect;
         return;
       }
       hideBusy();
-      tell((res && res.error) || 'บันทึกไม่สำเร็จ ลองใหม่อีกครั้ง');
-    };
-    xhr.onerror = () => {
+      tell('บันทึกไม่สำเร็จ ลองใหม่อีกครั้ง');
+    } catch (err) {
       hideBusy();
-      tell('เชื่อมต่อระบบไม่ได้ ตรวจสอบอินเทอร์เน็ตหรือ Wi-Fi แล้วลองใหม่');
-    };
-    showBusy(submitter && submitter.value === 'submit' ? 'กำลังส่งงาน' : 'กำลังบันทึก', true);
-    setProgress(0);
-    xhr.send(data);
+      tell((err && err.userMessage) || NET_ERROR);
+    }
   }
 
   // ส่งต่อจริง: ฟอร์มมีไฟล์ใช้ XHR พร้อมแถบความคืบหน้า ฟอร์มอื่นปล่อยเบราว์เซอร์ส่งตามปกติ

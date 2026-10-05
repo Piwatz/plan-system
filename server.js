@@ -1,5 +1,13 @@
 // จุดเริ่มต้นของโปรแกรม: npm start  หรือดับเบิลคลิกไฟล์ .bat
 const os = require('os');
+// รหัสลับในเครื่อง (DATABASE_URL รหัส Google Drive) อยู่ในไฟล์ .dev.vars หรือ .env ไม่ commit
+for (const f of ['.dev.vars', '.env']) {
+  try {
+    process.loadEnvFile(require('path').join(__dirname, f));
+  } catch {
+    // ไม่มีไฟล์นี้
+  }
+}
 const config = require('./src/config');
 // แปลงหน้าเว็บเป็น dist/views.js ทุกครั้งที่เปิดระบบ (ไฟล์ .bat และ npm start ไม่ต้องสั่ง build เอง)
 require('./scripts/build-views').build({ quiet: true });
@@ -23,12 +31,15 @@ async function start() {
   const app = createApp();
   // ส่งสรุปเข้า LINE ทุกเช้า (ทำงานเฉพาะเมื่อผู้ดูแลระบบเปิดฟังก์ชันนี้และตั้งค่า LINE แล้ว)
   if (!config.DEMO) require('./src/line').start();
+  // ล้างไฟล์ที่ส่งค้าง และสำรองข้อมูลทุกคืน
+  require('./src/jobs').start();
   const server = app.listen(config.PORT, () => {
     console.log('');
     console.log('  ระบบส่งแผนการสอนออนไลน์ เปิดแล้ว' + (config.DEMO ? ' (โหมดทดลอง ข้อมูลสมมติ)' : ''));
     console.log(`  เครื่องนี้:            http://localhost:${config.PORT}`);
     for (const ip of lanAddresses()) console.log(`  เครื่องอื่นในโรงเรียน: http://${ip}:${config.PORT}`);
     console.log(`  ข้อมูลเก็บที่:         ${config.DATA_DIR}`);
+    console.log(`  ไฟล์งานเก็บที่:        ${config.FILE_STORE === 'gdrive' ? 'Google Drive' : config.FILES_DIR}`);
     console.log('  ปิดหน้าต่างนี้ = ปิดระบบ');
     console.log('');
     // เปิดเบราว์เซอร์ให้เอง เมื่อสั่งเปิดผ่านไฟล์ .bat (มี --open)
