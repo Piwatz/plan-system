@@ -1,5 +1,5 @@
 // งานตามเวลา: ทุกชั่วโมงทิ้งไฟล์ที่ส่งค้างไว้เกิน 1 วัน และล้างตัวนับรหัสผ่านผิดที่หมดอายุ · ทุกคืนตีสองสำรองข้อมูลเข้าที่เก็บไฟล์ เก็บ 30 ฉบับล่าสุด
-// บน Node เรียก tick ทุกนาที (start) · บน Workers เรียก hourly และ nightly จาก Cron Trigger (ตอน 13)
+// บน Node เรียก tick ทุกนาที (start) · บน Workers เรียก runCron จาก Cron Trigger (src/worker.mjs)
 const db = require('./db');
 const { q, nowStr, getSettings, setSetting } = db;
 const storage = require('./storage');
@@ -79,4 +79,27 @@ function start() {
   return timer;
 }
 
-module.exports = { BACKUP_FOLDER, KEEP_BACKUPS, cleanupPending, nightlyBackup, hourly, nightly, tick, start };
+// Workers: Cron Trigger ใน wrangler.jsonc (เวลา UTC) · ทุก 5 นาทีดูเวลาส่ง LINE (ส่งช้ากว่าเวลาที่ตั้งได้ไม่เกิน 5 นาที)
+// ทุกชั่วโมงล้างไฟล์ค้าง · 19:00 UTC = ตีสองเวลาไทย สำรองข้อมูล
+const CRONS = {
+  '*/5 * * * *': () =>
+    db.withScope(async () => {
+      await db.ensureRefs();
+      await require('./line').tick();
+    }),
+  '0 * * * *': hourly,
+  '0 19 * * *': nightly,
+};
+
+async function runCron(cron) {
+  const job = CRONS[cron];
+  if (!job) throw new Error(`ไม่รู้จักงานตามเวลา ${cron}`);
+  try {
+    await job();
+  } catch (e) {
+    console.error(`งานตามเวลา ${cron} ไม่สำเร็จ`, e.message);
+    throw e;
+  }
+}
+
+module.exports = { BACKUP_FOLDER, KEEP_BACKUPS, CRONS, cleanupPending, nightlyBackup, hourly, nightly, tick, start, runCron };

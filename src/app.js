@@ -13,6 +13,7 @@ const features = require('./features');
 const themes = require('./themes');
 const icons = require('./icons');
 const { CompiledView } = require('./view');
+const { STATIC_MOUNTS } = require('./static');
 
 // กุญแจเซ็น cookie: เว็บจริงต้องตั้ง SESSION_SECRET (สุ่มยาว 32 ตัวขึ้นไป) ไม่ตั้งแล้วไม่เปิดระบบ
 // ในเครื่องใช้ SESSION_SECRET ถ้าตั้งไว้ ไม่ตั้งก็สุ่มเก็บในไฟล์ secret.key ของโฟลเดอร์ข้อมูล (data-pg ไม่ใช่ data ของระบบเดิม)
@@ -23,6 +24,8 @@ function secretKey() {
     return env;
   }
   if (env) return env;
+  // Workers ไม่มีดิสก์ให้เก็บกุญแจ (wrangler dev ในเครื่องก็ต้องตั้ง ดู scripts/workers-dev.js)
+  if (config.WORKERS) throw new Error('บน Cloudflare Workers ต้องตั้ง SESSION_SECRET');
   const f = path.join(config.DATA_DIR, 'secret.key');
   try {
     return fs.readFileSync(f, 'utf8').trim();
@@ -34,11 +37,13 @@ function secretKey() {
   }
 }
 
-function createApp() {
+// options.assetVersion = รหัสรุ่นไฟล์ static ที่ build สร้าง (Workers ส่งมาจาก dist/assets-version.js)
+function createApp(options = {}) {
   const production = config.PRODUCTION;
   const keys = [secretKey()];
-  // เปลี่ยนทุกครั้งที่เปิดระบบใหม่ เบราว์เซอร์จะโหลดไฟล์ CSS/JS รุ่นล่าสุด
-  const assetVersion = Date.now().toString(36);
+  // บน Node เปลี่ยนทุกครั้งที่เปิดระบบใหม่ เบราว์เซอร์จะโหลดไฟล์ CSS/JS รุ่นล่าสุด
+  // บน Workers ใช้รหัสจากตอน build (Date.now() ตอนเริ่มบน Workers ได้ 0 และไม่ได้เปลี่ยนตามรุ่นไฟล์)
+  const assetVersion = options.assetVersion || Date.now().toString(36);
   const app = express();
   // หน้าเว็บ compile ไว้ล่วงหน้าใน dist/views.js (npm run build) ไม่ใช้ EJS ตอนรัน
   app.set('view', CompiledView);
@@ -59,18 +64,10 @@ function createApp() {
   });
 
   // ฟอนต์และกราฟเก็บไว้ในเครื่อง ใช้งานใน Wi-Fi โรงเรียนได้แม้อินเทอร์เน็ตล่ม
-  const nm = path.join(config.ROOT, 'node_modules');
-  app.use('/static', express.static(path.join(config.ROOT, 'public'), { maxAge: 0 }));
-  app.use('/vendor/chart.js', express.static(path.join(nm, 'chart.js', 'dist'), { maxAge: '7d' }));
-  app.use('/vendor/kanit', express.static(path.join(nm, '@fontsource', 'kanit'), { maxAge: '30d' }));
-  app.use('/vendor/sarabun', express.static(path.join(nm, '@fontsource', 'sarabun'), { maxAge: '30d' }));
-  app.use('/vendor/fonts', express.static(path.join(nm, '@fontsource'), { maxAge: '30d', index: false }));
-  // ตัวแสดงไฟล์ PDF ในหน้าเว็บ (PDF.js) ใช้แทนการให้เบราว์เซอร์เปิดไฟล์เอง
-  for (const dir of ['legacy/build', 'cmaps', 'standard_fonts', 'wasm', 'iccs']) {
-    app.use(`/vendor/pdfjs/${dir}`, express.static(path.join(nm, 'pdfjs-dist', ...dir.split('/')), { maxAge: '7d', index: false }));
+  // บน Workers ไฟล์ชุดนี้คัดลอกไว้ที่ dist/assets ตอน build (scripts/build-assets.js) Cloudflare ส่งให้เองโดยไม่ผ่านแอป
+  if (!config.WORKERS) {
+    for (const m of STATIC_MOUNTS) app.use(m.url, express.static(path.join(config.ROOT, m.dir), { maxAge: m.maxAge, index: m.index }));
   }
-  // ตัวรวม PDF ในเบราว์เซอร์ (pdf-lib) ใช้ตอนครูแนบหลายไฟล์
-  app.use('/vendor/pdf-lib', express.static(path.join(nm, 'pdf-lib', 'dist'), { maxAge: '7d', index: false }));
 
   // ขอบเขตฐานข้อมูลต่อคำขอ (ข้อมูลอ้างอิง และตัวต่อบน Workers)
   app.use(db.requestScope);
@@ -136,6 +133,8 @@ function createApp() {
       fontFiles: [...new Set([...themes.fontFiles(theme), ...(ff.prefs ? themes.fontFiles(night) : [])])],
       logoUrl: settings.school_logo || '/static/img/school-logo-sm.png',
       demo: config.DEMO,
+      // รันบน Cloudflare Workers: ข้อความที่พูดถึง Wi-Fi และเครื่องที่ติดตั้งระบบเปลี่ยนเป็นแบบคลาวด์
+      cloud: config.WORKERS,
       assetVersion,
       currentPath: req.path,
       flash: req.session && req.session.flash,

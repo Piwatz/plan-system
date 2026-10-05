@@ -37,8 +37,8 @@
     </div>
     <div class="field">
       <label for="public_url">ที่อยู่เว็บของระบบสำหรับ QR Code (ไม่บังคับ)</label>
-      <input type="url" id="public_url" name="public_url" value="<%= settings.public_url %>" placeholder="เช่น http://192.168.1.10:3000 หรือชื่อเว็บของโรงเรียน">
-      <div class="hint">QR Code บนเอกสารจะชี้มาที่อยู่นี้ ถ้าเว้นว่าง ระบบใช้ที่อยู่ในวง Wi-Fi ของเครื่องที่ติดตั้งระบบ</div>
+      <input type="url" id="public_url" name="public_url" value="<%= settings.public_url %>" placeholder="<%= cloud ? 'เช่น ที่อยู่เว็บของระบบที่ได้ตอนติดตั้ง' : 'เช่น http://192.168.1.10:3000 หรือชื่อเว็บของโรงเรียน' %>">
+      <div class="hint">QR Code บนเอกสารจะชี้มาที่อยู่นี้ ถ้าเว้นว่าง ระบบใช้<%= cloud ? 'ที่อยู่เว็บที่เปิดอยู่ตอนพิมพ์เอกสาร' : 'ที่อยู่ในวง Wi-Fi ของเครื่องที่ติดตั้งระบบ' %></div>
     </div>
 
     <h3 style="margin-top:18px">การจัดวางบนมือถือและไอแพดแนวตั้ง</h3>

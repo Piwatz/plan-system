@@ -11,7 +11,8 @@
     "start": "node --disable-warning=ExperimentalWarning server.js",
     "demo": "node --disable-warning=ExperimentalWarning scripts/seed-demo.js && node --disable-warning=ExperimentalWarning server.js --data data-demo --demo",
     "test": "node scripts/build-views.js && node --disable-warning=ExperimentalWarning --require ./tests/verify-views.js --test \"tests/*.test.js\"",
-    "build": "node scripts/build-views.js",
+    "build": "node scripts/build-views.js && node scripts/build-assets.js",
+    "dev:workers": "node --disable-warning=ExperimentalWarning scripts/workers-dev.js",
     "check-await": "node scripts/check-await.js",
     "check-types": "tsc -p tsconfig.check.json"
   },
@@ -44,6 +45,7 @@
     "@electric-sql/pglite": "^0.5.8",
     "@electric-sql/pglite-socket": "^0.2.11",
     "@types/node": "^26.6.4",
-    "typescript": "^7.0.2"
+    "typescript": "^7.0.2",
+    "wrangler": "^4.147.0"
   }
 }

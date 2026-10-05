@@ -48,6 +48,15 @@
         "SETUP_TOKEN": "setup-check-token-2569",
         "FILE_STORE": "local"
       }
+    },
+    {
+      "name": "plan-workers",
+      "runtimeExecutable": "node",
+      "runtimeArgs": [
+        "--disable-warning=ExperimentalWarning",
+        "scripts/workers-dev.js"
+      ],
+      "port": 8790
     }
   ]
 }

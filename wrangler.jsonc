@@ -1,0 +1,25 @@
+// ตั้งค่า Cloudflare Workers (เว็บจริง) · ในเครื่องลองด้วย npm run dev:workers (scripts/workers-dev.js)
+// ห้ามใส่รหัสลับในไฟล์นี้ (SESSION_SECRET SETUP_TOKEN รหัส Google Drive ใช้ wrangler secret put · ในเครื่องใช้ .dev.vars)
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "plan-system",
+  "main": "src/worker.mjs",
+  "compatibility_date": "2026-10-05",
+  "compatibility_flags": ["nodejs_compat"],
+  // ไฟล์ static ที่ npm run build คัดลอกไว้ (ฟอนต์ PDF.js Chart.js pdf-lib และ public/)
+  "assets": { "directory": "dist/assets" },
+  // โค้ดเดิมใช้ __dirname หาโฟลเดอร์โปรเจกต์ (src/config.js) แต่ Workers ไม่มี จึงแทนค่าตอน build
+  "define": { "__dirname": "\"/bundle/src\"" },
+  // id จริงใส่ตอนขึ้นเว็บ (ตอน 14) · ในเครื่องต่อ PGlite ที่ scripts/workers-dev.js เปิดไว้ที่พอร์ต 5433
+  "hyperdrive": [
+    {
+      "binding": "HYPERDRIVE",
+      "id": "00000000000000000000000000000000",
+      "localConnectionString": "postgres://postgres:postgres@localhost:5433/postgres"
+    }
+  ],
+  // เวลา UTC: ทุก 5 นาที LINE · ทุกชั่วโมงล้างไฟล์ค้าง · 19:00 UTC = ตีสองเวลาไทย สำรองข้อมูล (src/jobs.js CRONS)
+  "triggers": { "crons": ["*/5 * * * *", "0 * * * *", "0 19 * * *"] },
+  "vars": { "APP_ENV": "production", "FILE_STORE": "gdrive" },
+  "observability": { "enabled": true }
+}

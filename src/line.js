@@ -42,7 +42,7 @@ async function sendSummary({ test = false } = {}) {
   if (!r.ok) throw new Error(`LINE ตอบกลับรหัส ${r.status}`);
 }
 
-// ถึงเวลาที่ตั้งไว้และวันนี้ยังไม่ได้ส่ง จึงส่ง (ส่งวันละครั้ง) · Node เรียกทุกนาที · Workers เรียกจาก cron (ตอน 13)
+// ถึงเวลาที่ตั้งไว้และวันนี้ยังไม่ได้ส่ง จึงส่ง (ส่งวันละครั้ง) · Node เรียกทุกนาที · Workers เรียกทุก 5 นาทีจาก cron (jobs.runCron)
 async function tick() {
   const s = await getSettings();
   if (!features.isOn(s, 'line') || !s.line_token || !s.line_to) return;

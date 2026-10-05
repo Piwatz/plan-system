@@ -23,8 +23,16 @@ function isDemo() {
   return !isProduction() && (process.env.DEMO === '1' || arg('demo', false) === true);
 }
 
+// รันบน Cloudflare Workers (เว็บจริงและ wrangler dev) ไม่ใช่คอมเครื่องเดียว: ไม่มีดิสก์ ไม่มีวง Wi-Fi ข้อความบนจอบางจุดต่างกัน
+function isWorkers() {
+  return typeof navigator !== 'undefined' && navigator.userAgent === 'Cloudflare-Workers';
+}
+
 module.exports = {
   ROOT,
+  get WORKERS() {
+    return isWorkers();
+  },
   DATA_DIR,
   // ฐานข้อมูล PGlite ในเครื่อง (ใช้เมื่อไม่ได้ตั้ง DATABASE_URL)
   PG_DIR: path.join(DATA_DIR, 'pg'),

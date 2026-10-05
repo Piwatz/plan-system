@@ -21,8 +21,13 @@
 <div class="grid-2" style="margin-top:18px">
   <div class="card">
     <h3>ที่อยู่สำหรับให้ครูเข้าใช้</h3>
+<% if (cloud) { %>
+    <p class="muted small">ครูเปิดเบราว์เซอร์จากที่ไหนก็ได้ที่มีอินเทอร์เน็ต แล้วพิมพ์ที่อยู่ด้านล่าง</p>
+    <div style="font-size:1.15rem;overflow-wrap:anywhere"><b><%= webUrl %></b></div>
+<% } else { %>
     <p class="muted small">ครูที่ต่อ Wi-Fi เดียวกับเครื่องนี้ เปิดเบราว์เซอร์แล้วพิมพ์ที่อยู่ด้านล่าง</p>
     <% if (addresses.length) { for (const a of addresses) { %><div style="font-size:1.15rem"><b>http://<%= a %>:<%= port %></b></div><% } } else { %><div class="muted">ไม่พบการเชื่อมต่อเครือข่าย</div><% } %>
+<% } %>
   </div>
   <div class="card">
     <h3>สำรองข้อมูล</h3>

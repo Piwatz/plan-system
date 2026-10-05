@@ -39,8 +39,21 @@ function queryCount() {
 }
 
 // middleware: เปิดขอบเขตใหม่ทุกคำขอ · โหมดทดลองแจ้งใน log เมื่อหน้าไหนใช้เกิน 15 คำสั่ง
+// บน Workers ปิดตัวต่อฐานของคำขอเมื่อส่งคำตอบเสร็จ (ส่งงานปิดให้ ctx.waitUntil ที่ src/worker.mjs ใส่ไว้ในขอบเขตชั้นนอก)
 function requestScope(req, res, next) {
   const scope = { queries: 0, blobs: 0 };
+  const outer = als.getStore();
+  if (backend && backend.endScope) {
+    let ended = false;
+    const end = () => {
+      if (ended) return;
+      ended = true;
+      const done = backend.endScope(scope);
+      if (outer && outer.waitUntil) outer.waitUntil(done);
+    };
+    res.once('finish', end);
+    res.once('close', end);
+  }
   if (watcher || config.DEMO) {
     let done = false;
     const writeHead = res.writeHead;
@@ -57,9 +70,21 @@ function requestScope(req, res, next) {
   als.run({ scope, tx: null }, next);
 }
 
-// รันงานในขอบเขตใหม่ (cron ทดสอบ) ข้อมูลอ้างอิงไม่ปนกับงานอื่น
+// Workers: ขอบเขตชั้นนอกของคำขอ เก็บ waitUntil ของ Cloudflare ไว้ให้ requestScope ส่งงานปิดการเชื่อมต่อ
+function outerScope(extra, fn) {
+  return als.run({ scope: {}, tx: null, ...extra }, fn);
+}
+
+// รันงานในขอบเขตใหม่ (cron ทดสอบ) ข้อมูลอ้างอิงไม่ปนกับงานอื่น · บน Workers ปิดตัวต่อฐานของงานเมื่อจบ
 function withScope(fn) {
-  return als.run({ scope: {}, tx: null }, fn);
+  const scope = {};
+  return als.run({ scope, tx: null }, async () => {
+    try {
+      return await fn();
+    } finally {
+      if (backend && backend.endScope) await backend.endScope(scope);
+    }
+  });
 }
 
 // ---------- แปลงภาษา SQL ----------
@@ -124,8 +149,10 @@ function mutex() {
 
 // PGlite มี session เดียว: ระหว่าง transaction หนึ่งทำงาน คำสั่งจากคำขออื่นต้องรอ (ไม่อย่างนั้นจะหลุดเข้าไปอยู่ใน transaction เดียวกัน)
 async function openPglite(dataDir) {
-  const { PGlite } = require('@electric-sql/pglite');
-  const { pgcrypto } = require('@electric-sql/pglite/contrib/pgcrypto');
+  // ชื่อแพ็กเกจอยู่ในตัวแปร ตัว build ของ Workers จะไม่ลาก PGlite (ใหญ่หลาย MB และใช้บน Workers ไม่ได้) เข้าไปด้วย
+  const PGLITE = '@electric-sql/pglite';
+  const { PGlite } = require(PGLITE);
+  const { pgcrypto } = require(PGLITE + '/contrib/pgcrypto');
   if (dataDir) fs.mkdirSync(dataDir, { recursive: true });
   const pg = await PGlite.create(dataDir || undefined, { extensions: { pgcrypto }, parsers: PARSERS });
   const lock = mutex();
@@ -177,6 +204,62 @@ function openPool(connectionString) {
   };
 }
 
+// Cloudflare Workers ต่อผ่าน Hyperdrive: client ใหม่ทุกคำขอ (ใช้ client ข้ามคำขอบน Workers ไม่ได้) เชื่อมเมื่อมีคำสั่งแรก
+// ปิดเมื่อคำขอจบ (endScope) · คำขอที่ไม่ใช้ฐาน (เช่น ไฟล์ที่ไม่ต้องตรวจสิทธิ์) ไม่เปิดการเชื่อมต่อเลย
+// ในคำขอเดียวใช้ client เดียว: ระหว่าง transaction คำสั่งอื่นของคำขอเดียวกันต้องรอ (แบบเดียวกับ PGlite) ไม่หลุดเข้าไปใน transaction
+function openPerRequest(connectionString) {
+  const pg = require('pg');
+  const types = { getTypeParser: (oid, format) => PARSERS[oid] || pg.types.getTypeParser(oid, format) };
+  function conn(scope) {
+    if (!scope.pg) {
+      const client = new pg.Client({ connectionString: typeof connectionString === 'function' ? connectionString() : connectionString, types });
+      const ready = client.connect();
+      ready.catch(() => {}); // ผู้รอแต่ละคนได้ error เอง
+      scope.pg = { client, ready, lock: mutex() };
+    }
+    return scope.pg;
+  }
+  async function run(c, text, values) {
+    if (c.tx) return c.tx.query(text, values);
+    const p = conn(c.scope);
+    return p.lock(async () => {
+      await p.ready;
+      return p.client.query(text, values);
+    });
+  }
+  return {
+    kind: 'hyperdrive',
+    query: run,
+    exec: async (c, sql) => {
+      await run(c, sql);
+    },
+    tx(c, fn) {
+      const p = conn(c.scope);
+      return p.lock(async () => {
+        await p.ready;
+        await p.client.query('BEGIN');
+        try {
+          const r = await als.run({ scope: c.scope, tx: p.client }, fn);
+          await p.client.query('COMMIT');
+          return r;
+        } catch (e) {
+          await p.client.query('ROLLBACK').catch(() => {});
+          throw e;
+        }
+      });
+    },
+    // ปิดการเชื่อมต่อของคำขอ (ถ้าเคยเปิด) · มีคำสั่งตามมาหลังปิดจะเปิดใหม่ได้เอง
+    async endScope(scope) {
+      const p = scope.pg;
+      if (!p) return;
+      scope.pg = null;
+      await p.lock(async () => {}).catch(() => {});
+      await p.client.end().catch(() => {});
+    },
+    close: async () => {},
+  };
+}
+
 function need() {
   if (!backend) throw new Error('ยังไม่ได้เปิดฐานข้อมูล (ต้อง await db.open() ก่อน)');
   return backend;
@@ -223,6 +306,13 @@ async function open(target) {
   else if (!target && process.env.DATABASE_URL) backend = openPool(process.env.DATABASE_URL);
   else backend = await openPglite(target || config.PG_DIR);
   await migrate();
+  return backend;
+}
+
+// Workers: ต่อผ่าน Hyperdrive ทีละคำขอ ไม่รัน migrate() (เว็บจริงสร้างตารางด้วย db/schema.sql ใน Supabase เอง)
+// connectionString เป็นฟังก์ชันได้ (อ่าน env.HYPERDRIVE.connectionString ตอนเปิดการเชื่อมต่อ)
+function openWorkers(connectionString) {
+  if (!backend) backend = openPerRequest(connectionString);
   return backend;
 }
 
@@ -298,11 +388,13 @@ const { nowStr } = require('./time');
 
 module.exports = {
   open,
+  openWorkers,
   close,
   migrate,
   q,
   toPg,
   requestScope,
+  outerScope,
   withScope,
   watchQueries,
   queryCount,

@@ -25,3 +25,6 @@ data-files/
 data-dev/
 .dev.vars
 .env
+
+# ตัวจำลอง Cloudflare Workers ในเครื่อง (wrangler dev)
+.wrangler/

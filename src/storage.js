@@ -15,6 +15,8 @@ const { nowStr } = require('./time');
 
 // โฟลเดอร์หลักใน Drive ทุกอย่างของระบบอยู่ใต้โฟลเดอร์นี้
 const ROOT_FOLDER = 'ระบบส่งแผนการสอน';
+// ตอนทดลองระบบ (wrangler dev ในเครื่อง) ตั้ง GDRIVE_ROOT_FOLDER เป็นโฟลเดอร์แยก ไฟล์ทดลองไม่ปนกับโฟลเดอร์จริง
+const rootFolder = () => process.env.GDRIVE_ROOT_FOLDER || ROOT_FOLDER;
 // ท่อนละ 5 MiB (ทวีคูณของ 256 KiB ตามที่ Drive กำหนด)
 const CHUNK = 5 * 1024 * 1024;
 const CHUNK_UNIT = 256 * 1024;
@@ -138,6 +140,16 @@ function localBackend(root = config.FILES_DIR) {
 // ---------- แบบ Google Drive ----------
 const FOLDER_MIME = 'application/vnd.google-apps.folder';
 
+// สตรีมจาก Node บน Workers ถูกส่งแบบ chunked แม้ใส่ content-length (ลองแล้วในตอน 13) ห่อด้วย FixedLengthStream ให้ส่งความยาวจริง
+// บน Node ไม่มี FixedLengthStream และ fetch ส่งตาม content-length อยู่แล้ว
+function fixedLength(web, length) {
+  const Fixed = /** @type {any} */ (globalThis).FixedLengthStream;
+  if (typeof Fixed !== 'function') return web;
+  const fixed = new Fixed(length);
+  web.pipeTo(fixed.writable).catch(() => {}); // ข้อมูลขาดหรือเกิน fetch จะ error เอง
+  return fixed.readable;
+}
+
 // base = ที่อยู่ของ Google (ทดสอบส่งที่อยู่ของ Drive จำลองในเครื่อง)
 function gdriveBackend(env = process.env, { oauth = 'https://oauth2.googleapis.com', base = 'https://www.googleapis.com' } = {}) {
   const { q } = require('./db');
@@ -196,7 +208,7 @@ function gdriveBackend(env = process.env, { oauth = 'https://oauth2.googleapis.c
 
   // id ของโฟลเดอร์ตามตำแหน่ง (ใต้โฟลเดอร์หลัก) สร้างเมื่อยังไม่มี จำไว้ในตาราง drive_folders
   async function folderId(folderPath) {
-    const parts = [ROOT_FOLDER, ...String(folderPath || '').split('/').filter(Boolean).map((s) => safeName(s, '_'))];
+    const parts = [rootFolder(), ...String(folderPath || '').split('/').filter(Boolean).map((s) => safeName(s, '_'))];
     const keys = parts.map((_, i) => parts.slice(0, i + 1).join('/'));
     const known = new Map((await q.all('SELECT path, folder_id FROM drive_folders WHERE path = ANY(?)', keys)).map((r) => [r.path, r.folder_id]));
     let parent = null;
@@ -225,7 +237,7 @@ function gdriveBackend(env = process.env, { oauth = 'https://oauth2.googleapis.c
       return await fn(await folderId(folderPath));
     } catch (e) {
       if (e.status !== 404) throw e;
-      await q.run("DELETE FROM drive_folders WHERE path = ? OR path LIKE ? || '/%'", ROOT_FOLDER, ROOT_FOLDER);
+      await q.run("DELETE FROM drive_folders WHERE path = ? OR path LIKE ? || '/%'", rootFolder(), rootFolder());
       return fn(await folderId(folderPath));
     }
   }
@@ -255,7 +267,7 @@ function gdriveBackend(env = process.env, { oauth = 'https://oauth2.googleapis.c
       const r = await fetch(session, {
         method: 'PUT',
         headers: { 'content-length': String(length), 'content-range': total === 0 ? 'bytes */0' : `bytes ${start}-${end}/${total}` },
-        body: length ? Readable.toWeb(stream) : null,
+        body: length ? fixedLength(Readable.toWeb(stream), length) : null,
         duplex: 'half',
         signal: AbortSignal.timeout(10 * 60 * 1000),
       });

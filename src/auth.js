@@ -23,8 +23,9 @@ const MAX_FAILS_PER_USER = 20;
 
 // IP ของผู้ใช้: เว็บจริงอยู่หลัง Cloudflare อ่านจาก CF-Connecting-IP (Cloudflare เขียนทับเอง คนนอกปลอมไม่ได้)
 // ในเครื่องใช้ req.ip (trust proxy เฉพาะ loopback)
+// บน Workers (เว็บจริงและ wrangler dev) Cloudflare ใส่ CF-Connecting-IP ให้เอง ผู้ใช้ปลอมไม่ได้ ส่วน req.ip ว่าง
 function clientIp(req) {
-  return (config.PRODUCTION ? req.get('cf-connecting-ip') : req.ip) || '';
+  return (config.PRODUCTION || config.WORKERS ? req.get('cf-connecting-ip') : req.ip) || '';
 }
 
 // ไม่รู้ IP ได้ null แล้วไม่นับแบบต่อเครื่อง (ถ้าทุกคำขอ IP ว่างเหมือนกัน คนนอกจะล็อกชื่อใครก็ได้ด้วย 8 ครั้ง)

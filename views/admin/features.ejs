@@ -49,7 +49,7 @@
 
     <section class="card" id="line">
       <h2>เชื่อมต่อ LINE</h2>
-      <p class="muted small">ใช้ LINE Official Account ของโรงเรียน (Messaging API) สร้างที่ developers.line.biz แล้วเชิญบัญชีเข้ากลุ่ม LINE ของผู้ตรวจ ระบบจะส่งสรุปงานที่รอลงนามเข้ากลุ่มทุกเช้า เครื่องที่ติดตั้งระบบต้องต่ออินเทอร์เน็ต</p>
+      <p class="muted small">ใช้ LINE Official Account ของโรงเรียน (Messaging API) สร้างที่ developers.line.biz แล้วเชิญบัญชีเข้ากลุ่ม LINE ของผู้ตรวจ ระบบจะส่งสรุปงานที่รอลงนามเข้ากลุ่มทุกเช้า <%= cloud ? 'ข้อความอาจถึงช้ากว่าเวลาที่ตั้งไว้ไม่เกิน 5 นาที' : 'เครื่องที่ติดตั้งระบบต้องต่ออินเทอร์เน็ต' %></p>
       <form method="post" action="/admin/line" data-confirm="บันทึกการตั้งค่า LINE">
         <div class="field">
           <label for="line_token">Channel access token</label>

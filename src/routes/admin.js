@@ -50,7 +50,9 @@ router.get('/', async (req, res) => {
     title: 'ผู้ดูแลระบบ',
     counts,
     warnings: await require('./pages').setupWarnings(),
-    addresses: lanAddresses(),
+    // บนคลาวด์ไม่มีวง Wi-Fi (Workers เรียก os.networkInterfaces ไม่ได้) แสดงที่อยู่เว็บจริงแทน
+    addresses: config.WORKERS ? [] : lanAddresses(),
+    webUrl: require('./verify').baseUrl(req),
     port: config.PORT,
     dataDir: config.DATA_DIR,
     fileStore: config.FILE_STORE,
@@ -675,7 +677,8 @@ router.get('/features', async (req, res) => {
   const tab = features.PHRASE_GROUPS.some((g) => g.key === req.query.tab) ? req.query.tab : 'k';
   res.render('admin/features', {
     title: 'ฟังก์ชันเสริม',
-    list: features.FEATURES.map((f) => ({ ...f, on: features.isOn(req.settings, f.key) })),
+    // บนคลาวด์ใช้ข้อความตอนปิดแบบคลาวด์ (cloudOffNote) ถ้ามี
+    list: features.FEATURES.map((f) => ({ ...f, offNote: (config.WORKERS && f.cloudOffNote) || f.offNote, on: features.isOn(req.settings, f.key) })),
     log: await features.auditLog(30),
     groups: features.PHRASE_GROUPS,
     tab,
