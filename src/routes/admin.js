@@ -11,8 +11,6 @@ const util = require('../util');
 const config = require('../config');
 const features = require('../features');
 const themes = require('../themes');
-const convert = require('../convert');
-const drive = require('../drive');
 
 const router = express.Router();
 router.use(auth.requireLogin, auth.requireAdmin);
@@ -580,23 +578,12 @@ router.get('/features', (req, res) => {
       .filter((x) => x.trim()),
     lineReady: Boolean(req.settings.line_token && req.settings.line_to),
     ready: Object.fromEntries(Object.entries(NEEDS).map(([k, [ok]]) => [k, Boolean(ok(req.settings))])),
-    convertInfo: { exe: convert.findSoffice(req.settings), custom: req.settings.soffice_path || '', fonts: convert.sarabunFonts() },
-    driveInfo: {
-      dir: req.settings.drive_dir || '',
-      exists: Boolean(req.settings.drive_dir && fs.existsSync(req.settings.drive_dir)),
-      stats: drive.stats(),
-      when: drive.WHEN,
-      // หาโฟลเดอร์ Google Drive เฉพาะตอนกดปุ่ม เพราะต้องไล่ดูทุกไดรฟ์ในเครื่อง
-      found: req.query.finddrive ? drive.detectFolders() : null,
-    },
   });
 });
 
 // ฟังก์ชันที่ต้องตั้งค่าก่อนจึงจะเปิดได้
 const NEEDS = {
   line: [(s) => s.line_token && s.line_to, 'ต้องกรอกข้อมูล LINE Official Account ด้านล่างก่อน จึงจะเปิดได้'],
-  soffice: [(s) => convert.findSoffice(s), 'ยังไม่พบโปรแกรม LibreOffice ในเครื่องที่เปิดระบบ ติดตั้งตามวิธีในกล่อง ตัวแปลง Word เป็น PDF ก่อน จึงจะเปิดได้'],
-  drive: [(s) => s.drive_dir, 'ต้องตั้งโฟลเดอร์ในกล่อง คัดลอกไป Google Drive ก่อน จึงจะเปิดได้'],
 };
 
 router.post('/features/:key', (req, res) => {
@@ -605,10 +592,8 @@ router.post('/features/:key', (req, res) => {
   const on = (req.body || {}).on === '1';
   const need = f.needs && NEEDS[f.needs];
   if (on && need && !need[0](req.settings)) return fail(req, res, '/admin/features', need[1]);
-  const changed = features.setFlag(f.key, on, req.me);
-  // เพิ่งเปิดคัดลอกไป Drive: คัดลอกงานที่ส่งไว้แล้วทั้งหมดต่อเบื้องหลัง
-  if (changed && on && f.key === 'drivecopy') drive.syncAll().catch(() => {});
-  done(req, res, '/admin/features', `${on ? 'เปิด' : 'ปิด'} ${f.title} เรียบร้อย${changed && on && f.key === 'drivecopy' ? ' ระบบกำลังคัดลอกงานที่ส่งไว้แล้วไป Google Drive เบื้องหลัง' : ''}`);
+  features.setFlag(f.key, on, req.me);
+  done(req, res, '/admin/features', `${on ? 'เปิด' : 'ปิด'} ${f.title} เรียบร้อย`);
 });
 
 router.post('/phrases', (req, res) => {
@@ -644,50 +629,6 @@ router.post('/line/test', async (req, res) => {
   } catch (e) {
     fail(req, res, '/admin/features#line', `ส่งไม่สำเร็จ ${e.message}`);
   }
-});
-
-// ---------- ตัวแปลง Word และ Google Drive ----------
-
-router.post('/convert', (req, res) => {
-  const b = req.body || {};
-  const p = b.clear === '1' ? '' : String(b.soffice_path || '').trim().slice(0, 500);
-  if (p && !convert.fromCustom(p)) return fail(req, res, '/admin/features#convert', 'ไม่พบโปรแกรม LibreOffice ที่ที่อยู่นี้ ตรวจที่อยู่อีกครั้ง หรือเว้นว่างให้ระบบหาเอง');
-  setSetting('soffice_path', p);
-  features.audit(req.me, 'ตั้งที่อยู่โปรแกรม LibreOffice', p || 'ให้ระบบหาเอง');
-  done(req, res, '/admin/features#convert', p ? 'บันทึกที่อยู่โปรแกรม LibreOffice เรียบร้อย' : 'ให้ระบบหาโปรแกรม LibreOffice เองเรียบร้อย');
-});
-
-router.post('/drive', (req, res) => {
-  const b = req.body || {};
-  if (b.clear === '1') {
-    setSetting('drive_dir', '');
-    features.setFlag('drivecopy', false, req.me);
-    features.audit(req.me, 'ลบการตั้งค่าคัดลอกไป Google Drive', 'สำเนาที่คัดลอกไว้แล้วยังอยู่ใน Drive');
-    return done(req, res, '/admin/features#drive', 'เลิกคัดลอกไป Google Drive แล้ว สำเนาที่คัดลอกไว้แล้วยังอยู่ใน Drive');
-  }
-  let dir;
-  try {
-    dir = drive.prepareFolder(b.drive_dir);
-  } catch (e) {
-    return fail(req, res, '/admin/features#drive', e.userMessage || 'ใช้โฟลเดอร์นี้ไม่ได้');
-  }
-  const when = drive.WHEN[b.drive_when] ? b.drive_when : 'submit';
-  setSetting('drive_dir', dir);
-  setSetting('drive_when', when);
-  features.audit(req.me, 'ตั้งค่าคัดลอกไป Google Drive', `${dir} คัดลอก${drive.WHEN[when]}`);
-  done(req, res, '/admin/features#drive', `บันทึกโฟลเดอร์ Google Drive เรียบร้อย${req.ff.drivecopy ? '' : ' กดเปิดสวิตช์ คัดลอกแผนและคู่มือไป Google Drive เพื่อเริ่มใช้'}`);
-});
-
-router.post('/drive/sync', async (req, res) => {
-  if (!req.ff.drivecopy || !req.settings.drive_dir) return fail(req, res, '/admin/features#drive', 'ตั้งโฟลเดอร์และเปิดสวิตช์ คัดลอกแผนและคู่มือไป Google Drive ก่อน');
-  let r;
-  try {
-    r = await drive.syncAll();
-  } catch (e) {
-    return fail(req, res, '/admin/features#drive', e.userMessage || 'คัดลอกไม่สำเร็จ');
-  }
-  if (r.failed) return fail(req, res, '/admin/features#drive', `ตรวจ ${r.total} งาน คัดลอกไม่สำเร็จ ${r.failed} งาน เพราะ${r.error}`);
-  done(req, res, '/admin/features#drive', `ตรวจ ${r.total} งาน คัดลอกใหม่ ${r.copied} งาน ที่เหลือมีสำเนาล่าสุดใน Drive อยู่แล้ว`);
 });
 
 // ---------- สำรองข้อมูล ----------

@@ -845,7 +845,6 @@ body:has(.viewer.is-full) { overflow: hidden; }
   body:has(.sheet-bar.mini) .mtop { transition: transform 0.2s ease; }
   body.bars-away:has(.sheet-bar.mini) .mtop { transform: translateY(-100%); }
 }
-.dz-list li.converting { border-style: dashed; color: var(--muted); }
 /* ที่อยู่โฟลเดอร์และโปรแกรมยาว ๆ ในกล่องแจ้งเตือนและปุ่มเลือกโฟลเดอร์ ตัดบรรทัดได้บนมือถือ */
 .alert > span, .alert > div { overflow-wrap: anywhere; }
 .btn[data-fill] { white-space: normal; overflow-wrap: anywhere; text-align: left; height: auto; }

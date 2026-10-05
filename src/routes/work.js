@@ -11,8 +11,6 @@ const { uploader, storedPath, relStored, removeStored, badFiles, ALLOWED } = req
 const features = require('../features');
 const teaching = require('../teaching');
 const { mergePdfs } = require('../pdf');
-const convert = require('../convert');
-const drive = require('../drive');
 const { qrSvg } = require('./verify');
 
 const router = express.Router();
@@ -295,31 +293,6 @@ function findDuplicate(teacherId, year, sem, docType, code, exceptId = 0) {
 
 // ---------- คู่มือรายวิชา และ แผนการจัดการเรียนรู้ ----------
 
-// แปลง Word เป็น PDF ในหน้าส่งงานได้ไหม: เปิดฟังก์ชันอยู่ รับเฉพาะ PDF และเครื่องที่เปิดระบบมี LibreOffice
-function wordConvertReady(req) {
-  return Boolean(req.ff.wordconvert && req.ff.pdfonly && convert.findSoffice(req.settings));
-}
-
-// ครูเลือกไฟล์ Word ในหน้าส่งงาน หน้าเว็บส่งมาแปลงที่นี่ แล้วได้ PDF กลับไปให้ครูดูก่อนกดบันทึก
-// ไม่เก็บไฟล์ Word และ PDF ที่แปลงไว้ในระบบ ครูต้องกดบันทึกหรือส่งเองตามปกติ
-const convertUpload = uploader([{ name: 'file', maxCount: 1 }]);
-router.post('/convert/word', convertUpload, async (req, res) => {
-  try {
-    if (!req.ff.wordconvert) throw new UserError('ผู้ดูแลระบบปิดการแปลงไฟล์ Word อยู่ ให้บันทึกเป็น PDF จาก Word เองก่อน');
-    const f = req.files && req.files.file && req.files.file[0];
-    if (!f) throw new UserError('ไม่พบไฟล์ที่จะแปลง');
-    if (!convert.WORD_EXT.includes(path.extname(f.originalname).toLowerCase())) throw new UserError('แปลงได้เฉพาะไฟล์ Word นามสกุล .doc และ .docx');
-    rejectBadFiles(req);
-    const pdf = await convert.wordToPdf(f.path, f.originalname, req.settings);
-    // ไม่บอกว่าเป็น PDF เพื่อไม่ให้โปรแกรมช่วยดาวน์โหลดดักไปแทนหน้าเว็บ (เหมือน /f/:id/raw)
-    res.set('Content-Type', 'application/x-lesson-file');
-    res.set('Cache-Control', 'private, no-store');
-    res.send(pdf);
-  } finally {
-    cleanupUploads(req);
-  }
-});
-
 const workUpload = uploader([{ name: 'main_files', maxCount: 10 }]);
 
 router.get('/works/new', (req, res) => {
@@ -347,7 +320,6 @@ router.get('/works/new', (req, res) => {
     subjects: subjectChoices(req),
     window: submitWindow(req.settings),
     isNew: true,
-    wordConvert: wordConvertReady(req),
   });
 });
 
@@ -575,7 +547,6 @@ router.get('/s/:id/edit', (req, res) => {
       subjects: subjectChoices(req),
       window: submitWindow(req.settings),
       isNew: false,
-      wordConvert: wordConvertReady(req),
     });
   }
   const plan = q.get('SELECT * FROM submissions WHERE id = ?', sub.parent_id);
@@ -680,7 +651,6 @@ function deleteSubmission(id) {
     q.run('DELETE FROM submissions WHERE id = ?', id);
   });
   stored.forEach(removeStored);
-  drive.forget(ids).catch(() => {});
 }
 
 router.post('/s/:id/delete', (req, res) => {

@@ -142,11 +142,6 @@
           return;
         }
       }
-      if (form.querySelector('[data-dz-list] li.converting')) {
-        e.preventDefault();
-        await tell('รอให้แปลงไฟล์ Word เป็น PDF เสร็จก่อน แล้วกดอีกครั้ง');
-        return;
-      }
       if (form.querySelector('[data-dz-list] li.bad')) {
         e.preventDefault();
         await tell('มีไฟล์ที่ใช้ไม่ได้ (กรอบสีแดง) กดเอาออก แล้วเลือกไฟล์ใหม่ก่อน');
@@ -335,56 +330,6 @@
     const cover = zone.parentElement.querySelector('[data-cover]');
     let coverToken = 0;
     let dt = new DataTransfer();
-    // แปลง Word เป็น PDF: ส่งไฟล์ไปแปลงที่เครื่องที่เปิดระบบ แล้วใส่ PDF ที่ได้ในรายการแทน ครูเปิดดูทั้งไฟล์ได้ก่อนส่ง
-    const convertUrl = zone.dataset.convert || '';
-    const pending = [];
-    const converted = new Set();
-    const keyOf = (f) => f.name + '|' + f.size;
-    const isWord = (f) => /\.docx?$/i.test(f.name);
-    function convertWord(f) {
-      const item = { name: f.name, text: 'กำลังส่งไปแปลงเป็น PDF', el: null };
-      const say = (t) => {
-        item.text = t;
-        if (item.el) item.el.textContent = t;
-      };
-      pending.push(item);
-      render();
-      const data = new FormData();
-      data.append('file', f);
-      const xhr = new XMLHttpRequest();
-      xhr.open('POST', convertUrl);
-      xhr.setRequestHeader('X-Requested-With', 'XMLHttpRequest');
-      xhr.responseType = 'arraybuffer';
-      xhr.upload.onprogress = (e) => {
-        if (e.lengthComputable) say(e.loaded < e.total ? 'กำลังส่งไปแปลง ' + Math.round((e.loaded / e.total) * 100) + '%' : 'กำลังแปลงเป็น PDF รอสักครู่');
-      };
-      xhr.upload.onload = () => say('กำลังแปลงเป็น PDF รอสักครู่');
-      const done = () => pending.splice(pending.indexOf(item), 1);
-      xhr.onload = () => {
-        done();
-        if (xhr.status === 200) {
-          const pdf = new File([xhr.response], f.name.replace(/\.docx?$/i, '') + '.pdf', { type: 'application/pdf', lastModified: Date.now() });
-          converted.add(keyOf(pdf));
-          add([pdf]);
-          return;
-        }
-        let msg = 'แปลงไฟล์ ' + f.name + ' ไม่สำเร็จ';
-        try {
-          const res = JSON.parse(new TextDecoder().decode(xhr.response));
-          if (res && res.error) msg = res.error;
-        } catch {
-          // ใช้ข้อความตั้งต้น
-        }
-        render();
-        tell(msg);
-      };
-      xhr.onerror = () => {
-        done();
-        render();
-        tell('เชื่อมต่อระบบไม่ได้ ไฟล์ ' + f.name + ' ยังไม่ได้แปลง ลองเลือกใหม่อีกครั้ง');
-      };
-      xhr.send(data);
-    }
     // ดูหน้าแรกของไฟล์ PDF ที่จะส่ง (ไฟล์แรกในรายการ = หน้าปกหลังรวมไฟล์) ด้วย PDF.js ที่มากับระบบ
     async function showCover(file) {
       if (!cover) return;
@@ -472,21 +417,6 @@
             li.insertBefore(b, li.querySelector('[data-rm]'));
           });
         }
-        if (converted.has(keyOf(f))) {
-          const note = document.createElement('small');
-          note.className = 'muted';
-          note.textContent = 'แปลงจาก Word แล้ว';
-          li.insertBefore(note, li.querySelector('[data-rm]'));
-          const view = document.createElement('button');
-          view.type = 'button';
-          view.className = 'btn btn-ghost btn-sm';
-          view.textContent = 'เปิดดูทั้งไฟล์';
-          view.addEventListener('click', () => {
-            const url = URL.createObjectURL(f);
-            if (!window.open(url, '_blank')) window.location.assign(url);
-          });
-          li.insertBefore(view, li.querySelector('[data-rm]'));
-        }
         list.appendChild(li);
         if (doCheck) {
           const chk = document.createElement('span');
@@ -510,23 +440,9 @@
           });
         }
       });
-      pending.forEach((item) => {
-        const li = document.createElement('li');
-        li.className = 'converting';
-        li.innerHTML = '<span class="name"></span><small class="muted"></small>';
-        li.querySelector('.name').textContent = item.name;
-        item.el = li.querySelector('small');
-        item.el.textContent = item.text;
-        list.appendChild(li);
-      });
     }
     function add(files) {
-      let picked = Array.from(files);
-      if (convertUrl) {
-        picked.filter(isWord).forEach(convertWord);
-        picked = picked.filter((f) => !isWord(f));
-        if (!picked.length) return;
-      }
+      const picked = Array.from(files);
       if (single && picked.length) dt = new DataTransfer();
       (single ? picked.slice(-1) : picked).forEach((f) => dt.items.add(f));
       render();

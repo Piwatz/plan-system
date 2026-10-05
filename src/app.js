@@ -27,8 +27,6 @@ function secretKey() {
 
 function createApp() {
   db.open();
-  // ส่งงานหรือลงนามแล้ว คัดลอกไฟล์ไป Google Drive ต่อเบื้องหลัง (ทำงานเฉพาะเมื่อผู้ดูแลระบบเปิดและตั้งโฟลเดอร์แล้ว)
-  wf.onAdvance(require('./drive').queueSync);
   // เปลี่ยนทุกครั้งที่เปิดระบบใหม่ เบราว์เซอร์จะโหลดไฟล์ CSS/JS รุ่นล่าสุด
   const assetVersion = Date.now().toString(36);
   const app = express();

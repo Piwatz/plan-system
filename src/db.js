@@ -222,16 +222,6 @@ function migrate() {
       UNIQUE (teacher_id, academic_year, semester, subject_code)
     );
   `);
-  // สำเนาไฟล์ที่คัดลอกไปโฟลเดอร์ Google Drive แล้ว (ใช้เช็กว่าต้องคัดลอกใหม่ไหม และลบสำเนาเก่าเมื่อเปลี่ยนไฟล์)
-  db.exec(`
-    CREATE TABLE IF NOT EXISTS drive_copies (
-      submission_id INTEGER NOT NULL,
-      file_id INTEGER NOT NULL,
-      rel_path TEXT NOT NULL,
-      copied_at TEXT NOT NULL,
-      PRIMARY KEY (submission_id, file_id)
-    );
-  `);
   // รหัสสุ่มสำหรับ QR Code ตรวจสอบเอกสาร เดาไม่ได้ และไม่เรียงตามลำดับงาน
   db.exec(`
     CREATE UNIQUE INDEX IF NOT EXISTS idx_sub_verify ON submissions(verify_code);
@@ -336,11 +326,6 @@ const DEFAULT_SETTINGS = {
   resubmit_mode: 'resume',
   score_role: 'dept_head',
   max_upload_mb: '100',
-  soffice_path: '',
-  drive_dir: '',
-  drive_when: 'submit',
-  drive_last_ok: '',
-  drive_last_error: '',
   grade_levels: 'ม.1\nม.2\nม.3\nม.4\nม.5\nม.6',
   teaching_methods: [
     'Active Learning',

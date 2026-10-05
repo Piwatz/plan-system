@@ -73,12 +73,11 @@
           <p class="hint">แนบไฟล์ใหม่ด้านล่างเมื่อต้องการเปลี่ยน ไฟล์เดิมจะเก็บไว้ในประวัติ</p>
         <% } %>
       <% } %>
-      <% const conv = typeof wordConvert !== 'undefined' && wordConvert; %>
-      <label class="dropzone" data-dropzone data-accept="<%= conv ? 'pdf,doc,docx' : 'pdf' %>" <%= ff.pdfmerge ? 'data-sortable' : 'data-single' %> <%= ff.filecheck ? 'data-filecheck' : '' %> <%- conv ? 'data-convert="/convert/word"' : '' %> data-max-mb="<%= settings.max_upload_mb %>">
+      <label class="dropzone" data-dropzone data-accept="pdf" <%= ff.pdfmerge ? 'data-sortable' : 'data-single' %> <%= ff.filecheck ? 'data-filecheck' : '' %> data-max-mb="<%= settings.max_upload_mb %>">
         <span class="dz-icon"><%- icon('send', 34) %></span>
-        <b>ลากไฟล์ <%= conv ? 'PDF หรือ Word' : 'PDF' %> มาวางที่นี่ หรือกดเพื่อเลือกไฟล์</b><br>
-        <small class="muted"><%= conv ? 'PDF หรือ Word ระบบแปลง Word เป็น PDF ให้' : 'เฉพาะ PDF' %> ไม่เกิน <%= settings.max_upload_mb %> MB ต่อไฟล์<%= ff.pdfmerge ? ' เลือกได้หลายไฟล์ ระบบรวมให้' : '' %></small>
-        <input type="file" name="main_files" <%= ff.pdfmerge ? 'multiple' : '' %> accept=".pdf,application/pdf<%= conv ? ',.doc,.docx,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document' : '' %>">
+        <b>ลากไฟล์ PDF มาวางที่นี่ หรือกดเพื่อเลือกไฟล์</b><br>
+        <small class="muted">เฉพาะ PDF ไม่เกิน <%= settings.max_upload_mb %> MB ต่อไฟล์<%= ff.pdfmerge ? ' เลือกได้หลายไฟล์ ระบบรวมให้' : '' %></small>
+        <input type="file" name="main_files" <%= ff.pdfmerge ? 'multiple' : '' %> accept=".pdf,application/pdf">
       </label>
       <ul class="dz-list" data-dz-list></ul>
       <p class="hint" data-dz-merge hidden></p>
@@ -90,9 +89,6 @@
       <% } %>
       <details class="howto">
         <summary>มีแต่ไฟล์ Word ทำอย่างไร</summary>
-        <% if (conv) { %>
-          <p style="margin:8px 0 0">เลือกไฟล์ Word ที่ช่องด้านบนได้เลย ระบบจะแปลงเป็น PDF ให้ แล้วกด <b>เปิดดูทั้งไฟล์</b> ตรวจหน้าตาก่อนส่ง ถ้าตัวอักษรหรือการจัดหน้าเพี้ยน ให้บันทึกเป็น PDF จาก Word เองตามวิธีด้านล่าง ซึ่งได้หน้าตาตรงกับต้นฉบับที่สุด</p>
-        <% } %>
         <ol>
           <li><b>Word บน Windows</b> เปิดไฟล์ กด ไฟล์ (File) แล้วเลือก บันทึกเป็น (Save As) ช่องชนิดไฟล์เลือก PDF แล้วกดบันทึก</li>
           <li><b>Word บน Mac</b> เปิดไฟล์ กด File แล้วเลือก Save As ช่อง File Format เลือก PDF แล้วกด Export</li>
