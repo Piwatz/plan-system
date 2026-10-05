@@ -89,12 +89,13 @@
   .box.r .cl, .box.r .nm, .box.r .ps { margin-left: 9mm; }
   .box.r .sig-date { left: 9mm; }
   .box.r .sl { padding-left: 17mm; }
-  /* บันทึกหลังแผน: เส้นความเห็นเต็มบรรทัด บรรทัดลงชื่อเว้นลงมาจากเส้นความเห็น ลายเซ็นอยู่บนเส้นจุดครึ่งขวา */
+  /* บันทึกหลังแผน: เส้นความเห็นเต็มบรรทัด ลงชื่อ ชื่อ ตำแหน่ง และวันที่ลงนาม อยู่ครึ่งขวาเรียงลงมา ลายเซ็นอยู่บนเส้นจุด
+     วันที่อยู่ใต้ตำแหน่งจึงกินที่ 1 บรรทัด ชดเชยด้วยการลดช่องเหนือบรรทัดลงชื่อ ให้บันทึกยังจบใน 1 หน้า */
   .box.note { margin-top: 3pt; }
-  .box.note .sl { margin-top: 3.5mm; }
+  .box.note .sl { margin-top: 0.5mm; }
   .box.note .sl, .box.note .nm, .box.note .ps { width: 50%; margin-left: auto; padding-left: 0; text-align: center; }
   .box.note .spot { border-bottom: 1px dotted #444; }
-  .box.note .sig-date { left: 0; right: auto; bottom: 0; width: 50%; text-align: left; }
+  .box.note .sig-date { position: static; width: 50%; margin-left: auto; text-align: center; }
   .box.note .sig-date::before { content: 'ลงนามวันที่ '; }
   .box.full { grid-column: 1 / -1; width: 90.3mm; justify-self: center; margin-top: 0.6mm; }
   .box.full .t { text-align: center; white-space: nowrap; margin: 0 -20mm; }
