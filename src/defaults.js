@@ -84,7 +84,7 @@ const DEFAULT_SETTINGS = {
   line_last_sent: '',
   // คำนวณตอนเรียก ไม่คำนวณตอนโหลดโมดูล (บน Workers เวลาที่ระดับบนสุดเป็น 0 จะได้ปี 2513)
   get academic_year() {
-    return String(new Date().getFullYear() + 543);
+    return String(require('./time').bangkokParts().y + 543);
   },
   semester: '1',
   submit_open: '1',

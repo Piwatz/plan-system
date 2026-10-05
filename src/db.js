@@ -293,14 +293,8 @@ async function getLogo(key) {
   return (r && r.value) || '';
 }
 
-function pad(n) {
-  return String(n).padStart(2, '0');
-}
-
-// เวลาท้องถิ่นของเครื่อง เก็บเป็น YYYY-MM-DD HH:MM:SS (ตอน 11 เปลี่ยนเป็นเวลาไทยเสมอ)
-function nowStr(d = new Date()) {
-  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
-}
+// เวลาไทยเสมอ เก็บเป็น YYYY-MM-DD HH:MM:SS (อยู่ใน src/time.js ส่งต่อจากที่นี่ จุดเรียกเดิมไม่ต้องเปลี่ยน)
+const { nowStr } = require('./time');
 
 module.exports = {
   open,

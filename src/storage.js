@@ -11,6 +11,7 @@ const { Readable } = require('stream');
 const { pipeline } = require('stream/promises');
 const config = require('./config');
 const { safeName } = require('./drivepath');
+const { nowStr } = require('./time');
 
 // โฟลเดอร์หลักใน Drive ทุกอย่างของระบบอยู่ใต้โฟลเดอร์นี้
 const ROOT_FOLDER = 'ระบบส่งแผนการสอน';
@@ -108,7 +109,7 @@ function localBackend(root = config.FILES_DIR) {
       const p = abs(ref);
       const dir = path.join(root, '.trash');
       fs.mkdirSync(dir, { recursive: true });
-      const stamp = new Date().toISOString().replace(/\D/g, '').slice(0, 14);
+      const stamp = nowStr().replace(/\D/g, '');
       fs.renameSync(p, path.join(dir, `${stamp}-${crypto.randomBytes(3).toString('hex')}-${path.basename(p)}`));
     },
     // ไฟล์เล็ก (สำรองข้อมูล) เขียนครั้งเดียว

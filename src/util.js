@@ -1,4 +1,6 @@
 // ตัวช่วยเล็ก ๆ ที่ใช้หลายหน้า: วันที่ภาษาไทย ป้ายสถานะ CSV
+const time = require('./time');
+
 const TH_MONTHS = ['มกราคม', 'กุมภาพันธ์', 'มีนาคม', 'เมษายน', 'พฤษภาคม', 'มิถุนายน', 'กรกฎาคม', 'สิงหาคม', 'กันยายน', 'ตุลาคม', 'พฤศจิกายน', 'ธันวาคม'];
 const TH_MONTHS_SHORT = ['ม.ค.', 'ก.พ.', 'มี.ค.', 'เม.ย.', 'พ.ค.', 'มิ.ย.', 'ก.ค.', 'ส.ค.', 'ก.ย.', 'ต.ค.', 'พ.ย.', 'ธ.ค.'];
 
@@ -22,26 +24,28 @@ function thaiDateTime(s) {
   return `${thaiDate(s, true)} ${p.h ? `${p.h}:${p.mi} น.` : ''}`.trim();
 }
 
-// เวลาที่ผ่านมาแบบอ่านง่าย เช่น 2 ชั่วโมงก่อน เมื่อวาน
+// เวลาที่ผ่านมาแบบอ่านง่าย เช่น 2 ชั่วโมงก่อน เมื่อวาน (นับตามเวลาไทย ไม่ขึ้นกับเขตเวลาของเครื่อง)
 function ago(s, now = new Date()) {
   const p = parts(s);
   if (!p) return '';
-  const t = new Date(p.y, p.mo - 1, p.d, Number(p.h || 0), Number(p.mi || 0));
+  const t = time.parseLocal(String(s).slice(0, 16));
   const min = Math.floor((now - t) / 60000);
   if (min < 1) return 'เมื่อสักครู่';
   if (min < 60) return `${min} นาทีก่อน`;
-  if (min < 24 * 60 && t.getDate() === now.getDate()) return `${Math.floor(min / 60)} ชั่วโมงก่อน`;
-  const days = Math.round((new Date(now.getFullYear(), now.getMonth(), now.getDate()) - new Date(p.y, p.mo - 1, p.d)) / 86400000);
+  const n = time.bangkokParts(now);
+  const days = time.dayNumber(n.y, n.mo, n.d) - time.dayNumber(p.y, p.mo, p.d);
+  if (min < 24 * 60 && days === 0) return `${Math.floor(min / 60)} ชั่วโมงก่อน`;
   if (days <= 1) return 'เมื่อวาน';
   if (days < 7) return `${days} วันก่อน`;
   return thaiDate(s, true);
 }
 
-// จำนวนวันจากวันนี้ถึงวันที่กำหนด (YYYY-MM-DD) ติดลบถ้าเลยมาแล้ว
+// จำนวนวันจากวันนี้ (วันที่ไทย) ถึงวันที่กำหนด (YYYY-MM-DD) ติดลบถ้าเลยมาแล้ว
 function daysUntil(dateStr, now = new Date()) {
   const p = parts(dateStr);
   if (!p) return null;
-  return Math.round((new Date(p.y, p.mo - 1, p.d) - new Date(now.getFullYear(), now.getMonth(), now.getDate())) / 86400000);
+  const n = time.bangkokParts(now);
+  return time.dayNumber(p.y, p.mo, p.d) - time.dayNumber(n.y, n.mo, n.d);
 }
 
 const STATUS_CLASS = {

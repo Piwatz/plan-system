@@ -2,6 +2,7 @@
 const { pipeline } = require('stream/promises');
 const express = require('express');
 const { q, nowStr } = require('../db');
+const { todayStr } = require('../time');
 const auth = require('../auth');
 const wf = require('../workflow');
 const util = require('../util');
@@ -120,7 +121,7 @@ function editable(req, sub) {
 
 function submitWindow(settings) {
   if (settings.submit_open !== '1') return { open: false, reason: 'ขณะนี้ปิดรับการส่งแผนและคู่มือ' };
-  const today = nowStr().slice(0, 10);
+  const today = todayStr();
   if (settings.submit_start && today < settings.submit_start) return { open: false, reason: `เปิดรับส่งวันที่ ${util.thaiDate(settings.submit_start)}` };
   if (settings.submit_end && today > settings.submit_end) return { open: false, reason: `ปิดรับส่งแล้วตั้งแต่ ${util.thaiDate(settings.submit_end)}` };
   return { open: true, reason: '' };
