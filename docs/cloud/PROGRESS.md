@@ -283,7 +283,7 @@
 
 **ค้าง / ต้องถามผู้ใช้:** ไม่มี
 
-## ตอน 14 · ขึ้นใช้งานจริง (เริ่ม 6 ต.ค. 2569) กำลังทำ พักไว้
+## ตอน 14 · ขึ้นใช้งานจริง (เริ่ม 6 ต.ค. 2569) ขึ้นเว็บแล้ว พักไว้ก่อนสร้างผู้ดูแลระบบ
 
 ผู้ใช้สั่งทำต่อในแชทเดียวกับตอน 13 แล้วขอพักกลางตอน
 
@@ -295,11 +295,18 @@
 
 **เอกสารล่าสุดต่างจากแผน (แจ้งผู้ใช้แล้ว):** ปุ่มปิด Data API ย้ายไปที่ Integrations → Data API → Overview สวิตช์ Enable Data API (แผนเขียน Settings → API) · Cloudflare ยังแนะนำ Direct connection กับ Hyperdrive · `--caching-disabled` ยังมีใน wrangler 4.147
 
-**รอผู้ใช้ (บอกแล้ว ผู้ใช้ขอพักก่อน):**
-1. ปิด Data API ที่ https://supabase.com/dashboard/project/uhvumfdiwvbeabvmobii/integrations/data_api/overview
-2. สมัครบัญชี Cloudflare แบบฟรี
-3. เตรียมรหัสผ่านฐานข้อมูล Supabase (ลืมให้ Reset ใน Project Settings → Database) ห้ามส่งในแชท
-4. ผู้ใช้พิมพ์ "พร้อม" แล้วนั่งที่คอม → Claude เปิดหน้าต่างคำสั่งแยก (Start-Process cmd แบบตอน 10) รัน `node scripts/cloud-setup.js` · บอกที่คัดลอก Direct connection string: ปุ่ม Connect บนสุดของหน้าโปรเจกต์ Supabase → Direct connection → แทน [YOUR-PASSWORD] ด้วยรหัสผ่านฐาน · ถ้า Hyperdrive ต่อไม่ได้ (Direct ของแบบฟรีอาจเป็น IPv6 อย่างเดียว) ใช้ Session pooler ห้าม Transaction pooler
+**ขึ้นเว็บแล้ว (6 ต.ค. 2569 ราว 05:30 น.):** ผู้ใช้ปิด Data API ตั้งรหัสผ่านฐานใหม่ (Database → Settings → Reset database password ตามเอกสารล่าสุด) สมัคร Cloudflare ด้วย GitHub (บัญชีเดียวกับ Supabase อีเมล toey.piwatz@gmail.com) · รัน `scripts/cloud-setup.js` ในหน้าต่าง cmd แยก
+- Hyperdrive `plan-db` ต่อ Supabase แบบ **Direct connection ได้เลย** (ไม่ต้องใช้ Session pooler) ปิด caching · id ใส่ใน wrangler.jsonc แล้ว (commit bab3dd7)
+- deploy ผ่าน: **https://plan-system.plan-system.workers.dev** (subdomain ของบัญชี `plan-system`) · Total Upload 2583.76 KiB gzip 546.31 KiB · Worker Startup Time 33 ms · cron 3 ตัวลงทะเบียนแล้ว · secret 5 ตัวครบ (SESSION_SECRET SETUP_TOKEN GDRIVE_*) · vars APP_ENV=production FILE_STORE=gdrive
+- ตรวจจากเครื่อง: `/` → 302 `/setup` (Hyperdrive ต่อฐานได้ ฐานยังไม่มีผู้ใช้) · `/setup` 200 มีช่องรหัสตั้งค่าครั้งแรก · CSS และฟอนต์จาก Static Assets 200 · มี HSTS · ตอบราว 0.3 ถึง 0.5 วินาที
+- รหัสตั้งค่าครั้งแรกเก็บใน `data-dev/production-setup-token.txt` (ผู้ใช้ส่งภาพหน้าจอที่มีรหัสนี้มาในแชทแล้ว ใช้ได้ครั้งเดียว)
+- **ปัญหาเล็ก:** หน้าต่าง cmd ที่เปิดด้วย Start-Process แสดงภาษาไทยเพี้ยน (chcp 65001 ไม่มีผล) ผู้ใช้อ่านไม่ออก ต้องแปลจากภาพหน้าจอ · ครั้งหน้าที่ต้องเปิดหน้าต่างให้ผู้ใช้ ให้แก้ก่อน (เช่น เปิดผ่าน Windows Terminal หรือให้สคริปต์พิมพ์ภาษาอังกฤษง่าย ๆ คู่ภาษาไทย)
+- wrangler login ครั้งแรกหมดเวลาเพราะผู้ใช้ใช้เวลาเลือกวิธีเข้าบัญชีนาน (หน้า localhost:8976 เข้าไม่ได้) เปิดสคริปต์ใหม่แล้วผ่าน
+
+**ค้าง ณ ตอนพัก (6 ต.ค. 2569):** ฐานยังไม่มีผู้ใช้ (ตรวจผ่าน Supabase แล้ว users 0) · ผู้ใช้ต้องทำต่อ:
+1. เปิด https://plan-system.plan-system.workers.dev หน้าตั้งค่าครั้งแรก กรอกรหัสตั้งค่าครั้งแรก ชื่อโรงเรียน ชื่อจริงผู้ดูแล ชื่อผู้ใช้อังกฤษ รหัสผ่าน 6 ตัวขึ้นไป → เริ่มใช้งาน
+2. ตั้งค่าโรงเรียน ช่อง public_url = `https://plan-system.plan-system.workers.dev`
+3. แจ้ง Claude ว่าเสร็จ → Claude ตรวจในฐาน แล้วทำขั้นถัดไปด้านล่าง
 
 **ขั้นถัดไปหลังขึ้นเว็บ (แผนข้อ 6 ถึง 9):** ผู้ใช้เปิด `*.workers.dev/setup` กรอกรหัสตั้งค่าครั้งแรก สร้างผู้ดูแลระบบ ตั้ง public_url · `node scripts/check-cloud.js --base <เว็บจริง>` ด้วยบัญชีทดลองชื่อสมมติ (ตั้ง CHECK_ADMIN_USER CHECK_ADMIN_PASS · ไฟล์ทดลองจะเข้าโฟลเดอร์จริง ระบบส่งแผนการสอน ต้องย้ายไปถังขยะและลบบัญชีทดลองหลังตรวจ) · ทดสอบลงนามพร้อมกัน 2 คำขอ · ทดสอบ anon key อ่านตารางไม่ได้ · วัด CPU ใน Observability · เช็คนิยามการพักโปรเจกต์ของ Supabase แบบฟรี
 
