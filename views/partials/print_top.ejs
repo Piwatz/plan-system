@@ -32,6 +32,8 @@
   .toolbar .mac-tip[hidden] { display: none; }
   .paper { position: relative; width: 210mm; min-height: 297mm; margin: 16px auto; background: #fff; padding: 12.5mm 18mm 12.5mm 22mm; box-shadow: 0 4px 24px rgba(0,0,0,.15); }
   .paper + .paper { margin-top: 24px; }
+  /* --fit ย่อตัวอักษรของบันทึกหลังแผนที่สูงเกิน 1 หน้า (สคริปต์ท้ายไฟล์ตั้งให้ วัดในเครื่องที่เปิดอยู่) ไม่ตั้ง = ขนาดจริง */
+  .paper { font-size: calc(16pt * var(--fit, 1)); }
   .hide-qr .qr-corner, .hide-dates .sig-date { display: none !important; }
   .qr-corner { position: absolute; top: 6mm; right: 8mm; width: 18mm; text-align: center; font-size: 7pt; line-height: 1.1; color: #333; font-family: 'Kanit', sans-serif; }
   .qr-corner svg { width: 15mm; height: 15mm; display: block; margin: 0 auto 0.5mm; }
@@ -42,7 +44,7 @@
   .cover.color { background: linear-gradient(180deg, #1b3762 0 70mm, #fff 70mm); }
   .cover.color .band { color: #fff; }
   h1.doc { text-align: center; font-size: 18pt; font-weight: 700; margin: 0; }
-  h2.doc { text-align: center; font-size: 18pt; font-weight: 700; margin: 0 0 6pt; }
+  h2.doc { text-align: center; font-size: calc(18pt * var(--fit, 1)); font-weight: 700; margin: 0 0 6pt; }
   .row { display: flex; gap: 6px; align-items: baseline; }
   .row .k { font-weight: 700; white-space: nowrap; }
   .line { border-bottom: 1px dotted #444; flex: 1; min-height: 1.1em; padding: 0 4px; }
@@ -52,7 +54,7 @@
   .sign .sigline { display: flex; align-items: flex-end; justify-content: center; gap: 6px; min-height: 9mm; }
   .sign img { max-height: 9mm; max-width: 45mm; display: inline-block; }
   .muted { color: #444; }
-  .small { font-size: 14pt; }
+  .small { font-size: calc(14pt * var(--fit, 1)); }
 
   /* ช่องความเห็นผู้ตรวจ: หัวข้อ เส้นจุด 2 บรรทัด ลงชื่อ (ชื่อ) ตำแหน่ง ลายเซ็นวางทับ ไม่ดันบรรทัด */
   .box { position: relative; break-inside: avoid; min-width: 0; }
@@ -65,7 +67,7 @@
   .box .spot { display: inline-block; position: relative; width: 40mm; height: 0.7em; vertical-align: baseline; }
   .box .spot img { position: absolute; left: 50%; bottom: -0.8mm; transform: translateX(-50%); height: 9.5mm; max-width: 40mm; }
   .box .nm, .box .ps { text-align: center; }
-  .box .sig-date { position: absolute; left: 0; right: 0; text-align: center; font-size: 12pt; line-height: 1.2; }
+  .box .sig-date { position: absolute; left: 0; right: 0; text-align: center; font-size: calc(12pt * var(--fit, 1)); line-height: 1.2; }
 
   /* บันทึกข้อความ: วัดตำแหน่งจาก PDF แบบฟอร์มของโรงเรียน ครุฑสูง 1.5 ซม. มุมซ้ายบน ทุกอย่างจบใน 1 หน้า */
   .paper.memo { page: memo; padding: 12.5mm 23mm 16.3mm 25.4mm; line-height: 1.116; }
@@ -124,10 +126,11 @@
     .cover { min-height: 255mm; }
     .cover.color { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
   }
+  /* จอแคบแสดงแบบอ่านง่าย · html.fit-measure = สคริปต์กำลังวัดความสูงแบบแผ่น A4 (ชั่วคราว ไม่ทันวาดบนจอ) */
   @media screen and (max-width: 820px) {
-    .paper, .paper.memo, .paper.eval { width: auto; min-height: 0; margin: 10px; padding: 18px; }
-    .boxes { grid-template-columns: 1fr; }
-    .box.full { width: 100%; }
+    html:not(.fit-measure) .paper, html:not(.fit-measure) .paper.memo, html:not(.fit-measure) .paper.eval { width: auto; min-height: 0; margin: 10px; padding: 18px; }
+    html:not(.fit-measure) .boxes { grid-template-columns: 1fr; }
+    html:not(.fit-measure) .box.full { width: 100%; }
   }
 </style>
 </head>
@@ -155,7 +158,64 @@
         cur[box.dataset.opt] = box.checked;
         try { localStorage.setItem(key, JSON.stringify(cur)); } catch (e) {}
         document.documentElement.classList.toggle(box.dataset.opt === 'noQr' ? 'hide-qr' : 'hide-dates', box.checked);
+        fitNotes();
       });
     });
   })();
+
+  // บันทึกหลังแผนให้จบ 1 หน้าทุกเครื่อง: แต่ละเบราว์เซอร์วาดตัวอักษรไม่เท่ากัน (Safari บน Mac สูงกว่า Windows ราว 5%)
+  // วัดความสูงจริงในเครื่องนี้ ถ้าเกินพื้นที่พิมพ์ A4 (สูง 297 ขอบบนล่างรวม 25 เผื่ออีก 2 มม.) ย่อตัวอักษรเท่าที่จำเป็น ไม่ต่ำกว่า 85%
+  // ยาวเกินกว่านั้นปล่อยขึ้นหน้าใหม่ตามปกติ · วัดแบบแผ่น A4 เสมอ (จอแคบสลับเป็นแผ่น A4 ชั่วคราวระหว่างวัด) เนื้อหากว้างเท่ากระดาษจริง
+  function fitNotes() {
+    var root = document.documentElement;
+    root.classList.add('fit-measure');
+    try {
+      fitPapers();
+    } finally {
+      root.classList.remove('fit-measure');
+    }
+  }
+  function fitPapers() {
+    var probe = document.createElement('div');
+    probe.style.cssText = 'position:absolute;visibility:hidden;width:1px;height:100mm';
+    document.body.appendChild(probe);
+    var mm = probe.getBoundingClientRect().height / 100;
+    document.body.removeChild(probe);
+    var limit = 270 * mm;
+    var MIN = 0.85;
+    function height(p) {
+      var top = p.getBoundingClientRect().top + parseFloat(getComputedStyle(p).paddingTop);
+      var bottom = top;
+      for (var i = 0; i < p.children.length; i++) {
+        var c = p.children[i];
+        var cs = getComputedStyle(c);
+        if (cs.position === 'absolute' || cs.display === 'none') continue;
+        bottom = Math.max(bottom, c.getBoundingClientRect().bottom + parseFloat(cs.marginBottom));
+      }
+      return bottom - top;
+    }
+    document.querySelectorAll('.paper').forEach(function (p) {
+      if (!p.querySelector('.box.note')) return;
+      if (Math.abs(p.getBoundingClientRect().width - 210 * mm) > 2 * mm) return;
+      p.style.removeProperty('--fit');
+      var h = height(p);
+      var k = 1;
+      // ระยะที่เป็นมิลลิเมตรไม่ย่อตาม จึงคำนวณซ้ำ 2 ถึง 3 รอบจนพอดี
+      for (var i = 0; i < 4 && h > limit && k > MIN; i++) {
+        k = Math.max(MIN, k * (limit / h) - 0.002);
+        p.style.setProperty('--fit', String(k));
+        h = height(p);
+      }
+      if (h > limit) p.style.removeProperty('--fit');
+    });
+  }
+  fitNotes();
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(fitNotes);
+  window.addEventListener('load', fitNotes);
+  window.addEventListener('beforeprint', fitNotes);
+  var fitTimer = 0;
+  window.addEventListener('resize', function () {
+    clearTimeout(fitTimer);
+    fitTimer = setTimeout(fitNotes, 200);
+  });
 </script>
