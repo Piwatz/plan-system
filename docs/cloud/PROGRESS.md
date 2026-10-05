@@ -305,6 +305,8 @@
 
 **เปลี่ยนชื่อเว็บ (6 ต.ค. 2569 ดึก):** ผู้ใช้เลือก plan.chanu.workers.dev · ชื่อ Worker เปลี่ยนเป็น `plan` (deploy ใหม่ secret ครบ รหัสตั้งค่าครั้งแรกใหม่อยู่ใน data-dev/production-setup-token.txt) · ลบ Worker เก่า plan-system แล้ว · cron 3 ตัวลงที่ plan แล้ว (แบบฟรีได้ 5 cron ต่อบัญชี) · ตอนนี้อยู่ที่ https://plan.plan-system.workers.dev · **ค้าง: ผู้ใช้เปลี่ยนชื่อบัญชีส่วนตรงกลางเป็น chanu เองในหน้า https://dash.cloudflare.com/73c7f8b51510e947035437a73d4af0cd/workers/subdomain (API เปลี่ยนไม่ได้ error 10036)** chanu ยังว่างเมื่อเช็ก · แล้วค่อยสร้างผู้ดูแลระบบ ตั้ง public_url = https://plan.chanu.workers.dev
 
+**ผู้ใช้เปลี่ยนชื่อบัญชีเป็น chanu แล้ว: เว็บจริงอยู่ที่ https://plan.chanu.workers.dev (ตรวจแล้ว 302 ไป /setup) ที่อยู่เก่าใช้ไม่ได้แล้ว · รหัสตั้งค่าครั้งแรกใหม่ใน data-dev/production-setup-token.txt**
+
 **ค้าง ณ ตอนพัก (6 ต.ค. 2569):** ฐานยังไม่มีผู้ใช้ (ตรวจผ่าน Supabase แล้ว users 0) · ผู้ใช้ต้องทำต่อ:
 1. เปิด https://plan-system.plan-system.workers.dev หน้าตั้งค่าครั้งแรก กรอกรหัสตั้งค่าครั้งแรก ชื่อโรงเรียน ชื่อจริงผู้ดูแล ชื่อผู้ใช้อังกฤษ รหัสผ่าน 6 ตัวขึ้นไป → เริ่มใช้งาน
 2. ตั้งค่าโรงเรียน ช่อง public_url = `https://plan-system.plan-system.workers.dev`
