@@ -57,6 +57,11 @@ function createApp() {
     app.use(`/vendor/pdfjs/${dir}`, express.static(path.join(nm, 'pdfjs-dist', ...dir.split('/')), { maxAge: '7d', index: false }));
   }
 
+  // ขอบเขตฐานข้อมูลต่อคำขอ (ข้อมูลอ้างอิง และตัวต่อบน Workers)
+  app.use(db.requestScope);
+  // รูปโลโก้ เปิดได้โดยไม่เข้าระบบ วางก่อนส่วนที่อ่านผู้ใช้และค่าตั้ง
+  app.use(require('./routes/media'));
+
   app.use(express.urlencoded({ extended: true, limit: '2mb' }));
   app.use(
     cookieSession({

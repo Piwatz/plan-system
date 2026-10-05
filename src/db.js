@@ -1,387 +1,273 @@
-// ฐานข้อมูล SQLite ไฟล์เดียว (data/app.db) ใช้ตัวที่มากับ Node.js ไม่ต้องติดตั้งเพิ่ม
+// ฐานข้อมูล Postgres (Supabase บนเว็บจริง · PGlite ในเครื่องและตอนทดสอบ)
+// ตัวต่อทุกแบบหน้าตาเดียวกัน: q.get q.all q.run q.exec q.tx ทุกตัวต้อง await
+// โค้ดเดิมเขียน SQL แบบ SQLite ด้วย ? ชั้นนี้แปลงเป็น $1 $2 ให้เอง และครอบ "current_role" (คำสงวนของ Postgres) ให้เอง
 const fs = require('fs');
-const { DatabaseSync } = require('node:sqlite');
+const path = require('path');
+const { AsyncLocalStorage } = require('node:async_hooks');
 const config = require('./config');
+const { DEFAULT_STEPS } = require('./defaults');
 
-let db = null;
-const cache = new Map();
+// ---------- ตัวแปลงชนิดข้อมูล ----------
+// COUNT SUM ได้ int8 และ AVG ได้ numeric ซึ่งปกติกลับมาเป็นสตริง ให้เป็น number เหมือน SQLite
+// json คงเป็นสตริงดิบ (สำรองข้อมูลให้ Postgres สร้าง JSON แล้วส่งต่อเลย ไม่ parse ให้เปลือง CPU)
+const PARSERS = { 20: Number, 1700: Number, 114: (x) => x, 3802: (x) => x };
 
-function open(file = config.DB_FILE) {
-  if (db) return db;
-  if (file !== ':memory:') fs.mkdirSync(require('path').dirname(file), { recursive: true });
-  db = new DatabaseSync(file);
-  db.exec('PRAGMA journal_mode = WAL; PRAGMA foreign_keys = ON; PRAGMA busy_timeout = 5000;');
-  migrate();
-  seedDefaults();
-  return db;
+// ---------- ขอบเขตต่อคำขอ ----------
+// store = { scope, tx } · scope อยู่ตลอดคำขอ (ข้อมูลอ้างอิง ตัวต่อบน Workers) · tx คือ transaction ที่กำลังทำอยู่
+const als = new AsyncLocalStorage();
+const GLOBAL = { scope: {}, tx: null }; // นอกคำขอ เช่น ทดสอบ สคริปต์ข้อมูลทดลอง cron
+
+function ctx() {
+  return als.getStore() || GLOBAL;
 }
 
-function close() {
-  if (db) db.close();
-  db = null;
-  cache.clear();
+// middleware: เปิดขอบเขตใหม่ทุกคำขอ
+function requestScope(req, res, next) {
+  als.run({ scope: {}, tx: null }, next);
 }
 
-function stmt(sql) {
-  let s = cache.get(sql);
-  if (!s) {
-    s = db.prepare(sql);
-    cache.set(sql, s);
+// รันงานในขอบเขตใหม่ (cron ทดสอบ) ข้อมูลอ้างอิงไม่ปนกับงานอื่น
+function withScope(fn) {
+  return als.run({ scope: {}, tx: null }, fn);
+}
+
+// ---------- แปลงภาษา SQL ----------
+const sqlCache = new Map();
+
+// แปลง ? เป็น $n และครอบ current_role ด้วยเครื่องหมายคำพูด โดยข้ามข้อความใน '...' และชื่อใน "..."
+function toPg(sql) {
+  let out = sqlCache.get(sql);
+  if (out !== undefined) return out;
+  let n = 0;
+  let res = '';
+  let i = 0;
+  while (i < sql.length) {
+    const c = sql[i];
+    if (c === "'" || c === '"') {
+      let j = i + 1;
+      while (j < sql.length) {
+        if (sql[j] === c) {
+          if (sql[j + 1] === c) j += 2;
+          else break;
+        } else j++;
+      }
+      res += sql.slice(i, j + 1);
+      i = j + 1;
+      continue;
+    }
+    if (c === '?') {
+      res += '$' + ++n;
+      i++;
+      continue;
+    }
+    // ส่วนที่ไม่ใช่ข้อความ: ครอบ current_role ทั้งแบบมีและไม่มีชื่อตารางนำหน้า
+    let j = i;
+    while (j < sql.length && sql[j] !== "'" && sql[j] !== '"' && sql[j] !== '?') j++;
+    res += sql.slice(i, j).replace(/(^|[^\w"])current_role(?![\w"])/g, '$1"current_role"');
+    i = j;
   }
-  return s;
+  sqlCache.set(sql, res);
+  return res;
+}
+
+// undefined เป็น null · true false เป็น 1 0 (คอลัมน์ธงเป็น integer)
+function params(list) {
+  return list.map((v) => (v === undefined ? null : v === true ? 1 : v === false ? 0 : v));
+}
+
+// ---------- ตัวต่อ ----------
+let backend = null;
+
+function mutex() {
+  let chain = Promise.resolve();
+  return (fn) => {
+    const job = chain.then(fn);
+    chain = job.then(
+      () => {},
+      () => {}
+    );
+    return job;
+  };
+}
+
+// PGlite มี session เดียว: ระหว่าง transaction หนึ่งทำงาน คำสั่งจากคำขออื่นต้องรอ (ไม่อย่างนั้นจะหลุดเข้าไปอยู่ใน transaction เดียวกัน)
+async function openPglite(dataDir) {
+  const { PGlite } = require('@electric-sql/pglite');
+  const { pgcrypto } = require('@electric-sql/pglite/contrib/pgcrypto');
+  if (dataDir) fs.mkdirSync(dataDir, { recursive: true });
+  const pg = await PGlite.create(dataDir || undefined, { extensions: { pgcrypto }, parsers: PARSERS });
+  const lock = mutex();
+  const norm = (r) => ({ rows: r.rows, rowCount: r.affectedRows || 0 });
+  return {
+    kind: 'pglite',
+    query: (c, text, values) => (c.tx ? pg.query(text, values).then(norm) : lock(() => pg.query(text, values).then(norm))),
+    exec: (c, sql) => (c.tx ? pg.exec(sql) : lock(() => pg.exec(sql))),
+    tx: (c, fn) =>
+      lock(async () => {
+        await pg.exec('BEGIN');
+        try {
+          const r = await als.run({ scope: c.scope, tx: pg }, fn);
+          await pg.exec('COMMIT');
+          return r;
+        } catch (e) {
+          await pg.exec('ROLLBACK');
+          throw e;
+        }
+      }),
+    close: () => pg.close(),
+  };
+}
+
+// Node.js ต่อ Postgres จริง (DATABASE_URL) · transaction ยืม client ของตัวเองแล้วคืนใน finally เสมอ
+function openPool(connectionString) {
+  const pg = require('pg');
+  const types = { getTypeParser: (oid, format) => PARSERS[oid] || pg.types.getTypeParser(oid, format) };
+  const pool = new pg.Pool({ connectionString, types, max: 5 });
+  return {
+    kind: 'pool',
+    query: (c, text, values) => (c.tx || pool).query(text, values),
+    exec: (c, sql) => (c.tx || pool).query(sql),
+    async tx(c, fn) {
+      const client = await pool.connect();
+      try {
+        await client.query('BEGIN');
+        const r = await als.run({ scope: c.scope, tx: client }, fn);
+        await client.query('COMMIT');
+        return r;
+      } catch (e) {
+        await client.query('ROLLBACK').catch(() => {});
+        throw e;
+      } finally {
+        client.release();
+      }
+    },
+    close: () => pool.end(),
+  };
+}
+
+function need() {
+  if (!backend) throw new Error('ยังไม่ได้เปิดฐานข้อมูล (ต้อง await db.open() ก่อน)');
+  return backend;
+}
+
+async function query(sql, values) {
+  return need().query(ctx(), toPg(sql), params(values));
 }
 
 const q = {
-  get: (sql, ...p) => stmt(sql).get(...p),
-  all: (sql, ...p) => stmt(sql).all(...p),
-  run: (sql, ...p) => stmt(sql).run(...p),
-  exec: (sql) => db.exec(sql),
-  // รันหลายคำสั่งให้สำเร็จพร้อมกัน ถ้าพังกลางทางจะย้อนกลับทั้งหมด
+  // แถวแรก หรือ undefined ถ้าไม่พบ
+  get: async (sql, ...p) => (await query(sql, p)).rows[0],
+  all: async (sql, ...p) => (await query(sql, p)).rows,
+  // เพิ่มแถวแล้วต้องการ id ให้ใช้ q.get('INSERT ... RETURNING id') แทน (ไม่มี lastInsertRowid แล้ว)
+  run: async (sql, ...p) => ({ changes: (await query(sql, p)).rowCount }),
+  exec: async (sql) => {
+    await need().exec(ctx(), sql);
+  },
+  // รันหลายคำสั่งให้สำเร็จพร้อมกัน ถ้าพังกลางทางย้อนกลับทั้งหมด · ทุก q.* ข้างในเข้า transaction เอง · เรียกซ้อนใช้ชั้นนอก
+  // ห้ามใช้ Promise.all หลายคำสั่งข้างใน
   tx(fn) {
-    db.exec('BEGIN');
-    try {
-      const r = fn();
-      db.exec('COMMIT');
-      return r;
-    } catch (e) {
-      db.exec('ROLLBACK');
-      throw e;
-    }
+    const c = ctx();
+    if (c.tx) return Promise.resolve().then(fn);
+    return need().tx(c, fn);
   },
 };
 
-function migrate() {
-  db.exec(`
-    CREATE TABLE IF NOT EXISTS settings (
-      key TEXT PRIMARY KEY,
-      value TEXT
-    );
-    CREATE TABLE IF NOT EXISTS departments (
-      id INTEGER PRIMARY KEY,
-      name TEXT NOT NULL UNIQUE,
-      sort INTEGER NOT NULL DEFAULT 0
-    );
-    CREATE TABLE IF NOT EXISTS users (
-      id INTEGER PRIMARY KEY,
-      username TEXT NOT NULL UNIQUE COLLATE NOCASE,
-      password_hash TEXT NOT NULL,
-      must_change_password INTEGER NOT NULL DEFAULT 0,
-      full_name TEXT NOT NULL,
-      position TEXT NOT NULL DEFAULT '',
-      department_id INTEGER REFERENCES departments(id) ON DELETE SET NULL,
-      is_teacher INTEGER NOT NULL DEFAULT 1,
-      is_admin INTEGER NOT NULL DEFAULT 0,
-      is_active INTEGER NOT NULL DEFAULT 1,
-      signature TEXT,
-      created_at TEXT NOT NULL,
-      last_login_at TEXT
-    );
-    CREATE TABLE IF NOT EXISTS user_roles (
-      user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-      role TEXT NOT NULL,
-      PRIMARY KEY (user_id, role)
-    );
-    CREATE TABLE IF NOT EXISTS workflow_steps (
-      role TEXT PRIMARY KEY,
-      seq INTEGER NOT NULL,
-      label TEXT NOT NULL,
-      scope TEXT NOT NULL DEFAULT 'school',
-      for_manual INTEGER NOT NULL DEFAULT 1,
-      for_plan INTEGER NOT NULL DEFAULT 1,
-      for_note INTEGER NOT NULL DEFAULT 1
-    );
-    CREATE TABLE IF NOT EXISTS rubric_items (
-      id INTEGER PRIMARY KEY,
-      doc_type TEXT NOT NULL,
-      seq INTEGER NOT NULL DEFAULT 0,
-      title TEXT NOT NULL,
-      max_score INTEGER NOT NULL DEFAULT 5,
-      is_active INTEGER NOT NULL DEFAULT 1
-    );
-    CREATE TABLE IF NOT EXISTS subjects (
-      code TEXT PRIMARY KEY,
-      name TEXT NOT NULL,
-      department_id INTEGER REFERENCES departments(id) ON DELETE SET NULL,
-      grade TEXT NOT NULL DEFAULT ''
-    );
-    CREATE TABLE IF NOT EXISTS submissions (
-      id INTEGER PRIMARY KEY,
-      doc_type TEXT NOT NULL,
-      parent_id INTEGER REFERENCES submissions(id) ON DELETE CASCADE,
-      teacher_id INTEGER NOT NULL REFERENCES users(id),
-      department_id INTEGER REFERENCES departments(id) ON DELETE SET NULL,
-      academic_year INTEGER NOT NULL,
-      semester INTEGER NOT NULL,
-      subject_code TEXT NOT NULL DEFAULT '',
-      subject_name TEXT NOT NULL DEFAULT '',
-      grade_level TEXT NOT NULL DEFAULT '',
-      teaching_methods TEXT NOT NULL DEFAULT '[]',
-      link_url TEXT NOT NULL DEFAULT '',
-      doc_no TEXT NOT NULL DEFAULT '',
-      plan_no TEXT NOT NULL DEFAULT '',
-      topic TEXT NOT NULL DEFAULT '',
-      unit_no TEXT NOT NULL DEFAULT '',
-      unit_name TEXT NOT NULL DEFAULT '',
-      hours TEXT NOT NULL DEFAULT '',
-      class_room TEXT NOT NULL DEFAULT '',
-      teach_date TEXT NOT NULL DEFAULT '',
-      result_k TEXT NOT NULL DEFAULT '',
-      result_p TEXT NOT NULL DEFAULT '',
-      result_a TEXT NOT NULL DEFAULT '',
-      problems TEXT NOT NULL DEFAULT '',
-      suggestions TEXT NOT NULL DEFAULT '',
-      students_total INTEGER,
-      students_passed INTEGER,
-      status TEXT NOT NULL DEFAULT 'draft',
-      current_role TEXT,
-      returned_role TEXT,
-      score_total REAL,
-      score_max REAL,
-      score_detail TEXT,
-      score_role TEXT,
-      teacher_signature TEXT,
-      created_at TEXT NOT NULL,
-      submitted_at TEXT,
-      updated_at TEXT NOT NULL,
-      completed_at TEXT
-    );
-    CREATE INDEX IF NOT EXISTS idx_sub_teacher ON submissions(teacher_id);
-    CREATE INDEX IF NOT EXISTS idx_sub_status ON submissions(status, current_role);
-    CREATE INDEX IF NOT EXISTS idx_sub_term ON submissions(academic_year, semester);
-    CREATE INDEX IF NOT EXISTS idx_sub_parent ON submissions(parent_id);
-    CREATE TABLE IF NOT EXISTS files (
-      id INTEGER PRIMARY KEY,
-      submission_id INTEGER NOT NULL REFERENCES submissions(id) ON DELETE CASCADE,
-      kind TEXT NOT NULL,
-      original_name TEXT NOT NULL,
-      stored_name TEXT NOT NULL,
-      mime TEXT NOT NULL DEFAULT '',
-      size INTEGER NOT NULL DEFAULT 0,
-      is_current INTEGER NOT NULL DEFAULT 1,
-      uploaded_at TEXT NOT NULL
-    );
-    CREATE INDEX IF NOT EXISTS idx_files_sub ON files(submission_id);
-    CREATE TABLE IF NOT EXISTS reviews (
-      id INTEGER PRIMARY KEY,
-      submission_id INTEGER NOT NULL REFERENCES submissions(id) ON DELETE CASCADE,
-      role TEXT,
-      step_label TEXT NOT NULL DEFAULT '',
-      user_id INTEGER REFERENCES users(id) ON DELETE SET NULL,
-      user_name TEXT NOT NULL DEFAULT '',
-      user_position TEXT NOT NULL DEFAULT '',
-      action TEXT NOT NULL,
-      comment TEXT NOT NULL DEFAULT '',
-      score_total REAL,
-      score_max REAL,
-      score_detail TEXT,
-      signature TEXT,
-      created_at TEXT NOT NULL
-    );
-    CREATE INDEX IF NOT EXISTS idx_reviews_sub ON reviews(submission_id);
-    CREATE TABLE IF NOT EXISTS notifications (
-      id INTEGER PRIMARY KEY,
-      user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-      from_user_id INTEGER REFERENCES users(id) ON DELETE SET NULL,
-      from_name TEXT NOT NULL DEFAULT '',
-      text TEXT NOT NULL,
-      link TEXT NOT NULL DEFAULT '',
-      created_at TEXT NOT NULL,
-      read_at TEXT
-    );
-    CREATE INDEX IF NOT EXISTS idx_notif_user ON notifications(user_id, read_at);
-    -- ประวัติการเปิดปิดฟังก์ชันและการตั้งค่าสำคัญ เพิ่มได้อย่างเดียว แก้ไขหรือลบไม่ได้
-    CREATE TABLE IF NOT EXISTS audit_log (
-      id INTEGER PRIMARY KEY,
-      at TEXT NOT NULL,
-      user_id INTEGER,
-      user_name TEXT NOT NULL DEFAULT '',
-      action TEXT NOT NULL,
-      detail TEXT NOT NULL DEFAULT ''
-    );
-    CREATE TRIGGER IF NOT EXISTS audit_log_no_update BEFORE UPDATE ON audit_log
-      BEGIN SELECT RAISE(ABORT, 'audit_log is append-only'); END;
-    CREATE TRIGGER IF NOT EXISTS audit_log_no_delete BEFORE DELETE ON audit_log
-      BEGIN SELECT RAISE(ABORT, 'audit_log is append-only'); END;
-  `);
-  // คอลัมน์ที่เพิ่มภายหลัง ฐานข้อมูลเดิมจะได้คอลัมน์ใหม่โดยข้อมูลไม่หาย
-  addColumn('submissions', 'note_mode', "TEXT NOT NULL DEFAULT 'type'");
-  addColumn('submissions', 'verify_code', 'TEXT');
-  // จำนวนวิชาที่ครูส่งแผนได้ต่อภาค (ปกติ 1 วิชาหลัก ผู้ดูแลเพิ่มให้บางคนได้)
-  addColumn('users', 'plan_quota', 'INTEGER NOT NULL DEFAULT 1');
-  // รายวิชาที่ครูสอนในแต่ละภาค ใช้เช็กว่าส่งคู่มือครบทุกวิชา และวิชาหลักที่ต้องส่งแผน
-  db.exec(`
-    CREATE TABLE IF NOT EXISTS teach_subjects (
-      id INTEGER PRIMARY KEY,
-      teacher_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-      academic_year INTEGER NOT NULL,
-      semester INTEGER NOT NULL,
-      subject_code TEXT NOT NULL,
-      subject_name TEXT NOT NULL DEFAULT '',
-      grade_level TEXT NOT NULL DEFAULT '',
-      is_main INTEGER NOT NULL DEFAULT 0,
-      UNIQUE (teacher_id, academic_year, semester, subject_code)
-    );
-  `);
-  // รหัสสุ่มสำหรับ QR Code ตรวจสอบเอกสาร เดาไม่ได้ และไม่เรียงตามลำดับงาน
-  db.exec(`
-    CREATE UNIQUE INDEX IF NOT EXISTS idx_sub_verify ON submissions(verify_code);
-    UPDATE submissions SET verify_code = lower(hex(randomblob(10))) WHERE verify_code IS NULL;
-    CREATE TRIGGER IF NOT EXISTS submissions_verify_code AFTER INSERT ON submissions WHEN NEW.verify_code IS NULL
-      BEGIN UPDATE submissions SET verify_code = lower(hex(randomblob(10))) WHERE id = NEW.id; END;
-  `);
+// เปิดฐานข้อมูล: ':memory:' = PGlite ในหน่วยความจำ (ทดสอบ) · มี DATABASE_URL = Postgres จริง · ไม่มี = PGlite ในโฟลเดอร์ config.PG_DIR
+async function open(target) {
+  if (backend) return backend;
+  if (target === ':memory:') backend = await openPglite(null);
+  else if (!target && process.env.DATABASE_URL) backend = openPool(process.env.DATABASE_URL);
+  else backend = await openPglite(target || config.PG_DIR);
+  await migrate();
+  return backend;
 }
 
-function addColumn(table, col, def) {
-  const cols = db.prepare(`PRAGMA table_info(${table})`).all().map((c) => c.name);
-  if (!cols.includes(col)) db.exec(`ALTER TABLE ${table} ADD COLUMN ${col} ${def}`);
+async function close() {
+  const b = backend;
+  backend = null;
+  GLOBAL.scope = {};
+  if (b) await b.close();
 }
 
-const DEFAULT_DEPARTMENTS = [
-  'ภาษาไทย',
-  'คณิตศาสตร์',
-  'วิทยาศาสตร์และเทคโนโลยี',
-  'สังคมศึกษา ศาสนาและวัฒนธรรม',
-  'สุขศึกษาและพลศึกษา',
-  'ศิลปะ',
-  'การงานอาชีพ',
-  'ภาษาต่างประเทศ',
-];
+// โครงตารางและค่าเริ่มต้น ใช้ในเครื่องและตอนทดสอบเท่านั้น เว็บจริงรัน db/schema.sql และ db/seed.sql เองใน Supabase
+async function migrate() {
+  const dir = path.join(config.ROOT, 'db');
+  await q.exec(fs.readFileSync(path.join(dir, 'schema.sql'), 'utf8'));
+  await q.exec(fs.readFileSync(path.join(dir, 'seed.sql'), 'utf8'));
+}
 
-// ลำดับและชื่อตำแหน่งผู้ลงความเห็น ตามบันทึกข้อความของโรงเรียน
-// ผู้ดูแลระบบเปลี่ยนชื่อ หรือเปิดปิดบางระดับแยกตามชนิดงานได้ในหน้า "ขั้นตอนการตรวจ"
-// บันทึกหลังแผนใช้ 3 ระดับ: หัวหน้ากลุ่มสาระ รองผู้อำนวยการ ผู้อำนวยการ
-const DEFAULT_STEPS = [
-  { role: 'dept_head', seq: 1, label: 'หัวหน้ากลุ่มสาระการเรียนรู้', scope: 'department', for_note: 1 },
-  { role: 'section_head', seq: 2, label: 'หัวหน้างานส่งเสริมพัฒนากระบวนการเรียนรู้', scope: 'school', for_note: 0 },
-  { role: 'academic_head', seq: 3, label: 'หัวหน้ากลุ่มบริหารงานวิชาการ', scope: 'school', for_note: 0 },
-  { role: 'deputy_academic', seq: 4, label: 'รองผู้อำนวยการกลุ่มบริหารงานวิชาการ', scope: 'school', for_note: 1 },
-  { role: 'director', seq: 5, label: 'ผู้อำนวยการสถานศึกษา', scope: 'school', for_note: 1 },
-];
+// ---------- ข้อมูลอ้างอิงต่อคำขอ ----------
+// ค่าตั้ง ขั้นตอนตรวจ แบบประเมิน โหลดครั้งเดียวต่อคำขอ ฟังก์ชันที่ template เรียก (wf.stepOf ฯลฯ) จึงคงเป็นแบบ sync ได้
+// รูปโลโก้ไม่อยู่ในค่าตั้ง (ใหญ่หลาย MB) ได้เป็นที่อยู่ /media/logo?v=รุ่น แทน
+const SETTINGS_SQL = `SELECT key, CASE
+    WHEN key = 'school_logo' THEN CASE WHEN coalesce(value, '') = '' THEN '' ELSE '/media/logo?v=' || substr(md5(value), 1, 8) END
+    WHEN key = 'memo_logo' THEN CASE WHEN coalesce(value, '') = '' THEN '' ELSE '/media/memo-logo?v=' || substr(md5(value), 1, 8) END
+    ELSE value END AS value
+  FROM settings`;
 
-// แบบประเมิน 20 ข้อ ตามแบบฟอร์มของโรงเรียน (ข้อละ 5 ถึง 1 คะแนน รวมเต็ม 100)
-const DEFAULT_RUBRICS = {
-  plan: [
-    'แผนการจัดการเรียนรู้สอดคล้องสัมพันธ์กับหน่วยการเรียนรู้',
-    'แผนการจัดการเรียนรู้มีองค์ประกอบสำคัญครบถ้วน และเชื่อมโยงสัมพันธ์กัน',
-    'ความสอดคล้องของสาระสำคัญกับมาตรฐานการเรียนรู้หรือตัวชี้วัดหรือผลการเรียนรู้',
-    'ตัวชี้วัดหรือผลการเรียนรู้ครอบคลุมสาระการเรียนรู้ที่พัฒนาผู้เรียนให้เกิด K P A',
-    'จุดประสงค์การเรียนรู้พัฒนาผู้เรียนครอบคลุมด้าน K P A',
-    'การบูรณาการตามหลักสูตรของสถานศึกษา',
-    'สาระการเรียนรู้เหมาะสมกับเวลา และตัวชี้วัดหรือผลการเรียนรู้',
-    'กิจกรรมการเรียนรู้มีลำดับขั้นตอนเหมาะสมและเน้นผู้เรียนเป็นสำคัญ',
-    'กิจกรรมการเรียนรู้มีความหลากหลายและสามารถปฏิบัติได้จริง',
-    'กิจกรรมการเรียนรู้สามารถพัฒนาผู้เรียนครอบคลุมด้าน K P A',
-    'กิจกรรมการเรียนรู้ส่งเสริม พัฒนา ทักษะกระบวนการคิดของนักเรียน',
-    'กิจกรรมการเรียนรู้สอดแทรกคุณธรรม จริยธรรมและคุณลักษณะอันพึงประสงค์',
-    'กิจกรรมการเรียนรู้ส่งเสริม พัฒนา สมรรถนะสำคัญของผู้เรียน',
-    'กิจกรรมการเรียนรู้ส่งเสริมให้นักเรียนได้ปฏิบัติจริงและสรุปสร้างองค์ความรู้ได้ด้วยตนเอง',
-    'วัสดุอุปกรณ์ สื่อ และแหล่งเรียนรู้มีความหลากหลาย เหมาะสม',
-    'สื่อการเรียนรู้สอดคล้อง เหมาะสมกับสาระการเรียนรู้และกิจกรรมการเรียนรู้',
-    'นักเรียนได้มีส่วนร่วมในการใช้สื่อและแหล่งเรียนรู้ได้อย่างทั่วถึง',
-    'การทำชิ้นงาน/ภาระงาน มีความเหมาะสม และส่งเสริมให้นักเรียนได้ใช้กระบวนการคิด',
-    'การวัดและประเมินผลสอดคล้องกับจุดประสงค์/ตัวชี้วัด/ผลการเรียนรู้ ชัดเจนและเหมาะสม',
-    'ส่งแผนการจัดการเรียนรู้ตรงตามเวลาที่กำหนด',
-  ],
-  manual: [
-    'มีการวิเคราะห์หลักสูตรสถานศึกษา เพื่อจัดทำโครงสร้างรายวิชา',
-    'มีการวิเคราะห์หลักสูตรสถานศึกษา เพื่อจัดทำคำอธิบายรายวิชา',
-    'มีการจัดทำคำอธิบายรายวิชา',
-    'ตัวชี้วัดหรือผลการเรียนรู้ครอบคลุมสาระการเรียนรู้และตรงตามหลักสูตรสถานศึกษา',
-    'ออกแบบหน่วยการเรียนรู้ครบทุกมาตรฐานการเรียนรู้ ตัวชี้วัด/ผลการเรียนรู้ตามหลักสูตรฯ',
-    'บูรณาการจุดเน้นของสถานศึกษาในรายวิชา (สวนพฤกษศาสตร์ โรงเรียนสุจริต โรงเรียนวิถีพุทธ สถานศึกษาพอเพียง)',
-    'สาระการเรียนรู้เหมาะสมกับเวลา และตัวชี้วัดหรือผลการเรียนรู้',
-    'สื่อการเรียนรู้เหมาะสมกับเวลา และตัวชี้วัดหรือผลการเรียนรู้',
-    'ชิ้นงาน/ภาระงาน มีความเหมาะสม',
-    'กิจกรรมการเรียนรู้สามารถพัฒนาผู้เรียนครอบคลุมด้าน K P A',
-    'การวัดและประเมินผลสอดคล้องกับจุดประสงค์/ตัวชี้วัด/ผลการเรียนรู้ ชัดเจนและเหมาะสม',
-    'วัสดุอุปกรณ์ สื่อ และแหล่งเรียนรู้มีความหลากหลาย เหมาะสม',
-    'กิจกรรมการเรียนรู้ส่งเสริม พัฒนา สมรรถนะสำคัญของผู้เรียน',
-    'กิจกรรมการเรียนรู้ส่งเสริมให้นักเรียนได้ปฏิบัติจริงและสรุปสร้างองค์ความรู้ได้ด้วยตนเอง',
-    'มีกิจกรรมการเรียนรู้ที่ผู้เรียนมีส่วนร่วมในการใช้สื่อและแหล่งเรียนรู้ได้อย่างทั่วถึง',
-    'การวัดและประเมินผลสอดคล้องกับจุดประสงค์/ตัวชี้วัด/ผลการเรียนรู้ ชัดเจนและเหมาะสม',
-    'นักเรียนได้มีส่วนร่วมในการใช้สื่อและแหล่งเรียนรู้ได้อย่างทั่วถึง',
-    'มีเกณฑ์การจบและเกณฑ์การวัดผลการเรียนในรายวิชาอย่างชัดเจน',
-    'กำหนดน้ำหนักคะแนนเหมาะสมกับภาระงาน/ชิ้นงานแต่ละหน่วยการเรียนรู้',
-    'ส่งคู่มือรายวิชาตรงตามเวลาที่กำหนด',
-  ],
-};
+async function ensureRefs() {
+  const scope = ctx().scope;
+  if (scope.refs) return scope.refs;
+  const settings = {};
+  for (const r of await q.all(SETTINGS_SQL)) settings[r.key] = r.value;
+  const steps = await q.all('SELECT * FROM workflow_steps ORDER BY seq');
+  const rubrics = await q.all('SELECT * FROM rubric_items ORDER BY doc_type, seq, id');
+  scope.refs = { settings, steps, rubrics };
+  return scope.refs;
+}
 
-const DEFAULT_SETTINGS = {
-  school_name: 'โรงเรียนของเรา',
-  school_location: '',
-  school_logo: '',
-  memo_logo: '',
-  theme: 'i',
-  mobile_layout: 'simple',
-  public_url: '',
-  line_token: '',
-  line_to: '',
-  line_time: '07:00',
-  line_last_sent: '',
-  academic_year: String(new Date().getFullYear() + 543),
-  semester: '1',
-  submit_open: '1',
-  submit_start: '',
-  submit_end: '',
-  resubmit_mode: 'resume',
-  score_role: 'dept_head',
-  max_upload_mb: '100',
-  grade_levels: 'ม.1\nม.2\nม.3\nม.4\nม.5\nม.6',
-  teaching_methods: [
-    'Active Learning',
-    'สะเต็มศึกษา (STEM)',
-    'การอ่าน คิดวิเคราะห์ แบบ PISA',
-    'หลักปรัชญาของเศรษฐกิจพอเพียง',
-    'ค่านิยมหลักของคนไทย 12 ประการ',
-    'การจัดการเรียนรู้ฐานสมรรถนะ',
-    'ต้านทุจริตศึกษา',
-    'บูรณาการหน้าที่พลเมือง',
-  ].join('\n'),
-};
+// อ่านข้อมูลอ้างอิงแบบ sync (ต้อง await ensureRefs() ที่ทางเข้าก่อน) ไม่มีให้โยน error ชัด ๆ ไม่คืนค่าว่างเงียบ ๆ
+function refs() {
+  const r = ctx().scope.refs;
+  if (!r) throw new Error('ยังไม่ได้โหลดข้อมูลอ้างอิงของคำขอนี้ (ต้อง await db.ensureRefs() ที่ทางเข้าก่อน)');
+  return r;
+}
 
-function seedDefaults() {
-  const now = nowStr();
-  const defaults = { ...DEFAULT_SETTINGS, ...require('./features').defaultSettings() };
-  for (const [k, v] of Object.entries(defaults)) {
-    q.run('INSERT OR IGNORE INTO settings(key, value) VALUES (?, ?)', k, v);
-  }
-  if (!q.get('SELECT 1 AS x FROM departments LIMIT 1')) {
-    DEFAULT_DEPARTMENTS.forEach((n, i) => q.run('INSERT INTO departments(name, sort) VALUES (?, ?)', n, i + 1));
-  }
-  for (const s of DEFAULT_STEPS) {
-    q.run(
-      'INSERT OR IGNORE INTO workflow_steps(role, seq, label, scope, for_note) VALUES (?, ?, ?, ?, ?)',
-      s.role,
-      s.seq,
-      s.label,
-      s.scope,
-      s.for_note
-    );
-  }
-  for (const [type, items] of Object.entries(DEFAULT_RUBRICS)) {
-    if (q.get('SELECT 1 AS x FROM rubric_items WHERE doc_type = ? LIMIT 1', type)) continue;
-    items.forEach((t, i) => q.run('INSERT INTO rubric_items(doc_type, seq, title, max_score) VALUES (?, ?, ?, 5)', type, i + 1, t));
-  }
-  return now;
+// เขียนค่าตั้ง ขั้นตอนตรวจ หรือแบบประเมินแล้วต้องล้าง ให้โหลดใหม่ครั้งถัดไป
+function clearRefs() {
+  ctx().scope.refs = null;
+  if (ctx() !== GLOBAL) GLOBAL.scope.refs = null;
+}
+
+async function getSettings() {
+  return { ...(await ensureRefs()).settings };
+}
+
+async function setSetting(key, value) {
+  await q.run('INSERT INTO settings(key, value) VALUES (?, ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value', key, String(value ?? ''));
+  clearRefs();
+}
+
+// รูปโลโก้ตัวจริง (data URL) สำหรับเส้นทาง /media
+async function getLogo(key) {
+  const r = await q.get('SELECT value FROM settings WHERE key = ?', key);
+  return (r && r.value) || '';
 }
 
 function pad(n) {
   return String(n).padStart(2, '0');
 }
 
-// เวลาท้องถิ่นของเครื่อง เก็บเป็น YYYY-MM-DD HH:MM:SS
+// เวลาท้องถิ่นของเครื่อง เก็บเป็น YYYY-MM-DD HH:MM:SS (ตอน 11 เปลี่ยนเป็นเวลาไทยเสมอ)
 function nowStr(d = new Date()) {
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
 }
 
-function getSettings() {
-  const out = {};
-  for (const r of q.all('SELECT key, value FROM settings')) out[r.key] = r.value;
-  return out;
-}
-
-function setSetting(key, value) {
-  q.run('INSERT INTO settings(key, value) VALUES (?, ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value', key, String(value ?? ''));
-}
-
-module.exports = { open, close, q, nowStr, getSettings, setSetting, DEFAULT_STEPS, raw: () => db };
+module.exports = {
+  open,
+  close,
+  migrate,
+  q,
+  toPg,
+  requestScope,
+  withScope,
+  ensureRefs,
+  refs,
+  clearRefs,
+  getSettings,
+  setSetting,
+  getLogo,
+  nowStr,
+  DEFAULT_STEPS,
+  kind: () => backend && backend.kind,
+};

@@ -18,3 +18,10 @@ spike/*.log
 
 # หน้าเว็บที่ compile แล้ว สร้างใหม่ด้วย npm run build
 dist/
+
+# ข้อมูลของระบบรุ่นคลาวด์ในเครื่อง (PGlite และไฟล์)
+data-pg/
+data-files/
+data-dev/
+.dev.vars
+.env

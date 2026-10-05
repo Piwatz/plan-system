@@ -51,3 +51,16 @@
 **สิ่งที่ตัดสินใจเองระหว่างทาง (แจ้งผู้ใช้แล้ว):**
 1. `URLSearchParams` (ใช้ใน `views/registry.ejs`) ไม่ใช่ built-in ของ ECMAScript ตามรายการในแผน แต่เป็นมาตรฐาน WHATWG ที่มีทั้งบน Node และ Workers จึงนับเป็น global ไม่ดึงจาก locals (ถ้าดึงจาก locals จะได้ undefined และหน้าทะเบียนพัง)
 2. ไฟล์ .bat 2 ไฟล์ และ .command 2 ไฟล์ เปลี่ยนตัวเช็กว่าต้อง `npm install` ใหม่จาก `node_modules\pdf-lib` เป็น `node_modules\eslint-scope` เพราะเครื่องที่ติดตั้งรุ่นก่อนไม่มีแพ็กเกจใหม่ (บรรทัดคงแบบ CRLF และ LF ตามเดิม)
+
+## ตอน 4 · ชั้นฐานข้อมูลใหม่ + โครงตาราง Postgres (5 ต.ค. 2569) ผ่าน
+
+- แพ็กเกจ: `pg` 8.23.1 · dev `@electric-sql/pglite` 0.5.8 (Postgres 18.3 + pgcrypto) `@electric-sql/pglite-socket` `typescript` · ไม่ใช้ supabase-js
+- `db/schema.sql` 13 ตาราง (ไม่มี drive_copies) + `login_attempts` + `schema_version` · id เป็น integer identity · ข้อความทุกคอลัมน์ `collate "C"` · เวลาคงเป็นข้อความ · `"current_role"` · ชื่อผู้ใช้ unique บน `lower(username)` · `verify_code` default สุ่ม 20 ตัว · audit_log กัน update delete truncate · `to_int_lenient` · `pending_uploads` `drive_folders` รอตอน 10
+- `db/seed.sql` สร้างด้วย `scripts/make-seed-sql.js` จาก `src/defaults.js` (ย้ายค่าเริ่มต้นออกจาก db.js ไม่แก้ค่า) + `features.defaultSettings()`: ค่าตั้ง 49 คีย์ · กลุ่มสาระ 8 · ขั้นตอน 5 · แบบประเมิน 20 × 2 · รันซ้ำได้ · ปีการศึกษาเริ่มต้นคิดใน SQL ตามเวลาไทย
+- `db/supabase-lockdown.sql` · `db/migrations/README.md`
+- `src/db.js` ใหม่: PGlite (มีตัวล็อกกลาง) และ `pg.Pool` (DATABASE_URL) หน้าตาเดียวกัน · AsyncLocalStorage `requestScope` `withScope` · แปลง `?` และครอบ `current_role` ในชั้นนี้ชั้นเดียว · ตัวแปลงชนิด int8 numeric เป็น number json เป็นสตริงดิบ · `q.get` ไม่พบได้ undefined · `q.run` คืน `{ changes }` · `q.tx` ซ้อนได้ · `ensureRefs` `refs` `clearRefs` · `getSettings` ไม่ส่งรูปโลโก้ ได้ `/media/logo?v=md5 8 ตัว`
+- `src/routes/media.js` (`/media/logo` `/media/memo-logo`) วางใน app.js ก่อน middleware ที่อ่านผู้ใช้
+- `src/config.js`: ค่าเริ่มต้นโฟลเดอร์ข้อมูลเป็น `data-pg` (ไม่แตะ `data/`) · `PG_DIR` = `<โฟลเดอร์ข้อมูล>/pg` · `.gitignore` เพิ่ม data-pg data-files data-dev .dev.vars .env
+- `node --test tests/db.test.js`: tests 10 · pass 10 · fail 0 · ชุดทดสอบอื่นพังตามที่แผนตั้งใจ (กลับมาในตอน 8)
+
+**ตัดสินใจเองระหว่างทาง:** ครอบ `"current_role"` ให้อัตโนมัติในชั้นแปลง SQL (ข้ามข้อความในเครื่องหมายคำพูด) แทนการไล่แก้ทุกคำสั่ง ลดโอกาสลืม มีทดสอบครอบไว้ · ค่าตั้งที่ต้องดูต่อในตอน 7: หน้าตั้งค่าโรงเรียน (`src/routes/admin.js` 551) ต้องไม่เขียนที่อยู่ `/media/...` ทับรูปจริง

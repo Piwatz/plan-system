@@ -35,6 +35,12 @@
     "multer": "^2.4.0",
     "pdf-lib": "^1.17.1",
     "pdfjs-dist": "^6.4.299",
+    "pg": "^8.23.1",
     "qrcode": "^1.5.4"
+  },
+  "devDependencies": {
+    "@electric-sql/pglite": "^0.5.8",
+    "@electric-sql/pglite-socket": "^0.2.11",
+    "typescript": "^7.0.2"
   }
 }

@@ -9,12 +9,14 @@ function arg(name, fallback) {
 }
 
 const ROOT = path.resolve(__dirname, '..');
-const DATA_DIR = path.resolve(ROOT, process.env.DATA_DIR || arg('data', 'data'));
+// ระบบรุ่นคลาวด์ในเครื่องเก็บที่ data-pg ไม่แตะโฟลเดอร์ data ของระบบเดิม
+const DATA_DIR = path.resolve(ROOT, process.env.DATA_DIR || arg('data', 'data-pg'));
 
 module.exports = {
   ROOT,
   DATA_DIR,
-  DB_FILE: path.join(DATA_DIR, 'app.db'),
+  // ฐานข้อมูล PGlite ในเครื่อง (ใช้เมื่อไม่ได้ตั้ง DATABASE_URL)
+  PG_DIR: path.join(DATA_DIR, 'pg'),
   UPLOAD_DIR: path.join(DATA_DIR, 'uploads'),
   PORT: Number(process.env.PORT || arg('port', 3000)),
   DEMO: Boolean(process.env.DEMO || arg('demo', false)),
