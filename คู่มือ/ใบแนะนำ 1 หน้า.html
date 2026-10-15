@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="th"><head><meta charset="utf-8"><title>ใบแนะนำการใช้งาน ระบบส่งแผนการสอน</title>
+<link rel="stylesheet" href="../node_modules/@fontsource/sarabun/400.css">
+<link rel="stylesheet" href="../node_modules/@fontsource/sarabun/700.css">
+<style>
+@page { size: A4; margin: 10mm 12mm; }
+* { box-sizing: border-box; }
+body { font-family: 'Sarabun', sans-serif; font-size: 13.5pt; line-height: 1.35; color: #14243d; margin: 0; }
+h1 { font-size: 21pt; margin: 0; color: #1d3a66; }
+.top { display: flex; gap: 14px; align-items: center; border-bottom: 3px solid #1d3a66; padding-bottom: 8px; margin-bottom: 10px; }
+.top .t { flex: 1; }
+.url { font-size: 17pt; font-weight: 700; color: #b0341f; }
+.qr { width: 30mm; height: 30mm; }
+.qr svg { width: 100%; height: 100%; }
+.grid { display: grid; grid-template-columns: 1fr 1fr; gap: 9px; }
+.box { border: 1.5px solid #c9d4e3; border-radius: 10px; padding: 8px 11px; break-inside: avoid; }
+.box h2 { font-size: 14.5pt; margin: 0 0 4px; color: #1d3a66; }
+.n { display: inline-block; width: 24px; height: 24px; line-height: 24px; text-align: center; border-radius: 50%; background: #1d3a66; color: #fff; font-size: 12pt; margin-right: 4px; }
+ol, ul { margin: 2px 0 0; padding-left: 20px; }
+li { margin: 1px 0; }
+b.k { color: #b0341f; }
+.wide { grid-column: 1 / 3; }
+.note { background: #fff6e0; border-color: #e3a21a; }
+.foot { margin-top: 8px; font-size: 11.5pt; color: #4e5f78; text-align: center; }
+@media screen { body { padding: 10mm 12mm; background: #fff; } }
+</style></head>
+<body>
+<div class="top">
+  <div class="t">
+    <h1>ระบบส่งแผนการสอนออนไลน์</h1>
+    <div>โรงเรียนชานุมานวิทยาคม ใช้ได้ทั้งมือถือ แท็บเล็ต และคอมพิวเตอร์ จากที่ไหนก็ได้</div>
+    <div class="url">plan.chanu.workers.dev</div>
+  </div>
+  <div class="qr"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 29 29" shape-rendering="crispEdges"><path fill="#ffffff" d="M0 0h29v29H0z"/><path stroke="#000000" d="M0 0.5h7m4 0h5m1 0h4m1 0h7M0 1.5h1m5 0h1m2 0h3m1 0h6m3 0h1m5 0h1M0 2.5h1m1 0h3m1 0h1m1 0h3m2 0h1m1 0h1m3 0h1m2 0h1m1 0h3m1 0h1M0 3.5h1m1 0h3m1 0h1m1 0h1m1 0h1m3 0h2m1 0h1m2 0h1m1 0h1m1 0h3m1 0h1M0 4.5h1m1 0h3m1 0h1m1 0h1m1 0h1m1 0h1m2 0h2m1 0h3m1 0h1m1 0h3m1 0h1M0 5.5h1m5 0h1m1 0h1m11 0h1m1 0h1m5 0h1M0 6.5h7m1 0h1m1 0h1m1 0h1m1 0h1m1 0h1m1 0h1m1 0h1m1 0h7M8 7.5h2m1 0h2m1 0h1m1 0h1m2 0h2M0 8.5h1m1 0h5m2 0h1m1 0h1m4 0h2m1 0h1m2 0h5M1 9.5h1m1 0h1m4 0h3m2 0h3m3 0h4m1 0h1m3 0h1M2 10.5h3m1 0h3m1 0h1m2 0h6m1 0h1m1 0h1M2 11.5h1m1 0h2m3 0h1m1 0h1m1 0h1m1 0h1m2 0h6m1 0h1m1 0h1M0 12.5h4m2 0h1m1 0h1m2 0h1m2 0h2m1 0h1m2 0h1m4 0h2M0 13.5h1m2 0h3m2 0h2m1 0h2m2 0h2m2 0h6m3 0h1M1 14.5h1m1 0h7m1 0h2m4 0h2m2 0h1m1 0h4M3 15.5h1m5 0h1m1 0h1m2 0h1m1 0h1m2 0h2m1 0h1m1 0h1m2 0h1M0 16.5h1m3 0h5m3 0h1m3 0h4m5 0h2M0 17.5h2m2 0h1m3 0h2m1 0h1m1 0h3m1 0h3m1 0h4m1 0h1m1 0h1M0 18.5h1m3 0h5m4 0h5m2 0h3m1 0h1m1 0h1M0 19.5h1m2 0h1m1 0h1m1 0h2m1 0h2m1 0h1m1 0h1m2 0h1m1 0h2m1 0h1m3 0h1M0 20.5h1m1 0h3m1 0h2m4 0h1m1 0h2m1 0h1m2 0h5m1 0h3M8 21.5h1m1 0h1m4 0h2m1 0h3m3 0h5M0 22.5h7m3 0h1m8 0h2m1 0h1m1 0h3M0 23.5h1m5 0h1m1 0h4m2 0h1m1 0h1m1 0h3m3 0h1m2 0h2M0 24.5h1m1 0h3m1 0h1m1 0h1m1 0h1m6 0h1m2 0h5m1 0h1m1 0h1M0 25.5h1m1 0h3m1 0h1m1 0h1m1 0h2m1 0h3m2 0h1m1 0h1m4 0h2M0 26.5h1m1 0h3m1 0h1m1 0h2m1 0h5m3 0h9M0 27.5h1m5 0h1m2 0h3m1 0h1m2 0h1m3 0h2m2 0h2m1 0h1M0 28.5h7m1 0h1m1 0h1m3 0h4m1 0h1m4 0h3"/></svg></div>
+</div>
+<div class="grid">
+  <div class="box"><h2><span class="n">1</span>เข้าระบบครั้งแรก</h2>
+    <ol>
+      <li>สแกน QR หรือพิมพ์ที่อยู่ด้านบน</li>
+      <li>เลือกกลุ่มสาระ แล้ว<b>แตะชื่อตัวเอง</b></li>
+      <li>ใส่<b>รหัสเริ่มต้น</b> (ผู้ดูแลระบบแจ้งในกลุ่มไลน์)</li>
+      <li>ระบบให้<b>ตั้งรหัสใหม่</b> เป็นตัวเลข 4 หลักขึ้นไป จำไว้ให้ดี</li>
+    </ol></div>
+  <div class="box"><h2><span class="n">2</span>ตั้งค่าของตัวเอง (ครั้งเดียว)</h2>
+    <ol>
+      <li>เมนู <b>ข้อมูลส่วนตัว</b> (แตะชื่อตัวเองที่เมนู บนมือถือแตะ ฉัน) ใส่ตำแหน่ง และ<b>เซ็นชื่อ</b> บนจอ กดบันทึก</li>
+      <li>เมนู <b>รายวิชาที่สอน</b> ตรวจรายวิชา แล้วกด <b>ตั้งเป็นวิชาหลัก</b> 1 วิชา (วิชาที่ส่งแผน)</li>
+    </ol></div>
+  <div class="box"><h2><span class="n">3</span>ส่งคู่มือรายวิชาและแผน</h2>
+    <ol>
+      <li>เมนู <b>แผนและคู่มือของฉัน</b></li>
+      <li>กด <b>ส่งคู่มือรายวิชา</b> (ทุกวิชาที่สอน) หรือ <b>ส่งแผน</b> (เฉพาะวิชาหลัก)</li>
+      <li>แนบไฟล์ <b>PDF</b> ถ้ามีหลายไฟล์ เลือกพร้อมกันได้ ระบบรวมเป็นไฟล์เดียวให้</li>
+      <li>กด <b>ส่งให้ผู้ตรวจ</b> จะเห็นสถานะ "รอหัวหน้ากลุ่มสาระ"</li>
+    </ol></div>
+  <div class="box"><h2><span class="n">4</span>บันทึกหลังแผน (ตลอดภาคเรียน)</h2>
+    <ol>
+      <li>หลังสอนแต่ละแผน เมนู <b>บันทึกหลังแผน</b> กด <b>เขียนบันทึก</b></li>
+      <li>พิมพ์ผล K P A ปัญหา ข้อเสนอแนะ (แตะประโยคสำเร็จรูปได้) หรือแนบไฟล์ของตัวเอง</li>
+      <li>บันทึกร่างไว้หลายฉบับ แล้ว<b>ส่งพร้อมกัน</b>ได้</li>
+    </ol></div>
+  <div class="box"><h2><span class="n">5</span>ถ้างานถูกส่งกลับให้แก้</h2>
+    <ul>
+      <li>จะมีตัวเลขสีแดงที่เมนู และข้อความที่ <b>การแจ้งเตือน</b></li>
+      <li>เปิดงาน อ่านความเห็น กด <b>แก้ไข</b> แนบไฟล์ใหม่ แล้วกด <b>ส่งอีกครั้ง</b></li>
+    </ul></div>
+  <div class="box"><h2><span class="n">6</span>สำหรับผู้ตรวจ</h2>
+    <ul>
+      <li>เมนู <b>งานรอตรวจ</b> เปิดงาน อ่านไฟล์ แล้วกด <b>ลงนาม</b> หรือ <b>ส่งกลับแก้ไข</b></li>
+      <li>หัวหน้ากลุ่มสาระ <b>ให้คะแนน 20 ข้อ</b> ก่อนลงนาม</li>
+      <li>บันทึกหลังแผน ลงนามเร็วด้วย <b>ลงนามแบบไล่การ์ด</b></li>
+    </ul></div>
+  <div class="box wide note"><h2>ติดปัญหา</h2>
+    <ul>
+      <li><b>ลืมรหัสผ่าน</b> หรือ <b>ใส่ผิดจนถูกล็อก</b> แจ้งผู้ดูแลระบบให้ตั้งรหัสใหม่ (ถูกล็อกจะเข้าได้เองอีกครั้งหลัง 10 นาที)</li>
+      <li><b>ส่งไฟล์ไม่ผ่าน</b> ระบบรับเฉพาะ PDF ขนาดไม่เกินที่กำหนด ตรวจว่าไฟล์เปิดได้ เน็ตหลุดให้กดส่งใหม่ งานที่บันทึกแล้วไม่หาย</li>
+      <li><b>ชื่อ กลุ่มสาระ หรือรายวิชาไม่ถูกต้อง</b> แจ้งผู้ดูแลระบบ (งานส่งเสริมพัฒนากระบวนการเรียนรู้)</li>
+    </ul></div>
+</div>
+<div class="foot">คู่มือฉบับเต็ม แยกตามบทบาท อยู่ในไฟล์ คู่มือการใช้งาน ระบบส่งแผนการสอน.pdf</div>
+</body></html>
