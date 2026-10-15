@@ -1,0 +1,106 @@
+<!doctype html>
+<html lang="th"><head><meta charset="utf-8"><title>ตัวอย่างลงนามบนไฟล์ครู</title>
+<link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;700&family=Kanit:wght@500&display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#E3E9F2;font-family:Sarabun,sans-serif;color:#14243D;padding:24px}
+h1{font-family:Kanit;font-size:22px;margin:0 0 4px}
+.wrap{display:flex;gap:28px;align-items:flex-start;flex-wrap:wrap}
+.col{display:flex;flex-direction:column;gap:8px;align-items:center}
+.cap{font-family:Kanit;font-size:17px;background:#1D3A66;color:#fff;padding:4px 14px;border-radius:20px}
+.note{font-size:14px;max-width:420px;text-align:center}
+.a4{width:420px;height:594px;background:#fff;box-shadow:0 2px 10px #0003;position:relative;overflow:hidden;font-size:9.5px;line-height:1.45}
+.teacher{position:absolute;left:0;top:0;width:420px;height:594px;padding:30px 34px;box-sizing:border-box;background:#fff}
+.teacher h3{text-align:center;font-size:12px;margin:0 0 6px}
+.hand{color:#2a3f8f;font-style:italic}
+.ln{border-bottom:1px dotted #777;margin:2px 0;min-height:13px}
+.shrunk{transform:scale(.72);transform-origin:top center;outline:1px solid #bbb}
+.strip{position:absolute;left:0;right:0;bottom:0;height:150px;border-top:2px solid #1D3A66;display:flex;gap:6px;padding:8px 10px;box-sizing:border-box;background:#fff}
+.box{flex:1;font-size:8.5px;border:1px solid #ccd;padding:4px 5px;border-radius:3px;display:flex;flex-direction:column;gap:2px}
+.box b{font-size:8.5px}
+.sig{font-family:'Brush Script MT',cursive;font-size:15px;color:#1a2a7a;height:18px;text-align:center}
+.qr{position:absolute;right:8px;top:6px;width:34px;height:34px;background:repeating-linear-gradient(45deg,#000 0 3px,#fff 3px 6px);opacity:.75}
+.tag{position:absolute;left:6px;bottom:154px;font-size:9px;background:#FFF3D6;color:#8A5A00;padding:1px 6px;border-radius:8px}
+.pages{position:relative;width:420px;height:594px}
+.pages .a4{position:absolute}
+.badge{font-size:12px;color:#8A5A00}
+</style></head><body>
+<h1>ครูแนบ PDF ของตัวเอง ผู้ตรวจลงนาม ทำได้ 3 แบบ</h1>
+<p style="margin:0 0 18px;font-size:14px">ตัวอย่างใช้ชื่อสมมติ ลายเซ็นเป็นตัวอย่าง</p>
+<div class="wrap">
+
+<div class="col">
+<span class="cap">แบบ ก ย่อแผ่นครูลงเล็กน้อย เติมแถบลงนามด้านล่าง</span>
+<div class="a4">
+ <div class="qr"></div>
+ <div class="teacher shrunk">
+  <h3>บันทึกหลังแผนการจัดการเรียนรู้ที่ 3</h3>
+  <div>เรื่อง การเคลื่อนที่แนวตรง ชั้น ม.4/2 วันที่ 12 พ.ย. 2569</div>
+  <div style="margin-top:6px"><b>ด้านความรู้ (K)</b></div>
+  <div class="ln hand">นักเรียนอธิบายความหมายของการกระจัดและระยะทางได้ถูกต้อง</div><div class="ln hand">ร้อยละ 85 ทำแบบฝึกผ่านเกณฑ์</div>
+  <div style="margin-top:6px"><b>ด้านทักษะ / กระบวนการ (P)</b></div>
+  <div class="ln hand">ทำกิจกรรมกลุ่มวัดความเร็วรถทดลองได้</div><div class="ln"></div>
+  <div style="margin-top:6px"><b>ด้านคุณลักษณะ (A)</b></div>
+  <div class="ln hand">ตั้งใจเรียน ช่วยเหลือกันในกลุ่ม</div><div class="ln"></div>
+  <div style="margin-top:6px"><b>ปัญหา / อุปสรรค / แนวทางแก้ไข</b></div>
+  <div class="ln hand">เวลาไม่พอ คาบหน้าจะแบ่งกลุ่มให้เร็วขึ้น</div><div class="ln"></div><div class="ln"></div>
+  <div style="margin-top:6px"><b>ข้อเสนอแนะ</b></div><div class="ln"></div><div class="ln"></div>
+  <div style="text-align:right;margin-top:18px">ลงชื่อ <span class="sig" style="display:inline">Somchai</span> ครูผู้สอน<br>(นายสมชาย ใจดี)</div>
+ </div>
+ <span class="tag">ระบบเติมให้เอง</span>
+ <div class="strip">
+  <div class="box"><b>ความเห็นหัวหน้ากลุ่มสาระฯ</b><div>รับทราบ</div><div class="sig">Malee</div><div>(นางมาลี ตัวอย่าง)</div><div>12 พ.ย. 2569</div></div>
+  <div class="box"><b>ความเห็นรองผู้อำนวยการฯ</b><div>รับทราบ</div><div class="sig">Wichai</div><div>(นายวิชัย ทดลอง)</div><div>14 พ.ย. 2569</div></div>
+  <div class="box"><b>ความเห็นผู้อำนวยการ</b><div>รับทราบ</div><div class="sig">Prasert</div><div>(นายประเสริฐ สมมติ)</div><div>15 พ.ย. 2569</div></div>
+ </div>
+</div>
+<div class="note"><b>ข้อดี</b> ลายเซ็นอยู่บนแผ่นเดียวกับงานครูทุกแผ่น ไม่มีทางทับข้อความครู จำนวนแผ่นเท่าเดิม<br><b>ข้อเสีย</b> ตัวหนังสือของครูเล็กลงราวหนึ่งในสี่</div>
+</div>
+
+<div class="col">
+<span class="cap">แบบ ข แผ่นครูเต็มแผ่น ตามด้วยแผ่นลงนามคั่นทุกแผ่น</span>
+<div class="pages">
+ <div class="a4" style="left:0;top:0;transform:rotate(-2deg) translate(-6px,4px)"><div class="teacher" style="opacity:.9"><h3>บันทึกหลังแผนการจัดการเรียนรู้ที่ 3</h3><div class="ln hand">นักเรียนอธิบายความหมายของการกระจัด</div><div class="ln"></div><div class="ln"></div><div class="ln"></div><div class="ln"></div><div style="text-align:right;margin-top:300px">ลงชื่อ ครูผู้สอน<br>(นายสมชาย ใจดี)</div></div></div>
+ <div class="a4" style="left:0;top:0;transform:rotate(1.5deg) translate(10px,10px)">
+  <div class="qr"></div>
+  <div style="padding:30px 34px">
+   <h3 style="text-align:center;font-size:12px;margin:0">ใบลงนาม บันทึกหลังแผนที่ 3</h3>
+   <div style="text-align:center">นายสมชาย ใจดี รายวิชาฟิสิกส์ 1 ม.4/2</div>
+   <div style="display:flex;flex-direction:column;gap:12px;margin-top:20px">
+    <div class="box" style="font-size:10px"><b style="font-size:10px">ความเห็นหัวหน้ากลุ่มสาระฯ</b><div>รับทราบ</div><div class="sig">Malee</div><div>(นางมาลี ตัวอย่าง)</div></div>
+    <div class="box" style="font-size:10px"><b style="font-size:10px">ความเห็นรองผู้อำนวยการฯ</b><div>รับทราบ</div><div class="sig">Wichai</div><div>(นายวิชัย ทดลอง)</div></div>
+    <div class="box" style="font-size:10px"><b style="font-size:10px">ความเห็นผู้อำนวยการ</b><div>รับทราบ</div><div class="sig">Prasert</div><div>(นายประเสริฐ สมมติ)</div></div>
+   </div>
+  </div>
+ </div>
+</div>
+<div class="note"><b>ข้อดี</b> แผ่นของครูเต็มขนาด ไม่ย่อ<br><b>ข้อเสีย</b> กระดาษเพิ่มเท่าตัว (บันทึก 20 แผ่น กลายเป็น 40 แผ่น) และลายเซ็นไม่ได้อยู่แผ่นเดียวกับงานครู</div>
+</div>
+
+<div class="col">
+<span class="cap">แบบ ค หน้ารวมลงนาม 1 แผ่น วางหน้าแรกของเล่ม</span>
+<div class="a4">
+ <div class="qr"></div>
+ <div style="padding:26px 30px">
+  <h3 style="text-align:center;font-size:12px;margin:0">บันทึกหลังแผนการจัดการเรียนรู้ หน้ารวมลงนาม</h3>
+  <div style="text-align:center">รายวิชาฟิสิกส์ 1 รหัส ว31201 ชั้น ม.4/2 ภาคเรียนที่ 2 ปีการศึกษา 2569</div>
+  <div style="text-align:center">ครูผู้สอน นายสมชาย ใจดี</div>
+  <table style="width:100%;border-collapse:collapse;margin-top:8px;font-size:8.5px">
+   <tr style="background:#E3E9F2"><th style="border:1px solid #999;padding:2px">แผนที่</th><th style="border:1px solid #999">เรื่อง</th><th style="border:1px solid #999">วันที่สอน</th><th style="border:1px solid #999">ความเห็น</th></tr>
+   <tr><td style="border:1px solid #999;text-align:center">1</td><td style="border:1px solid #999;padding:0 3px">ปริมาณทางฟิสิกส์</td><td style="border:1px solid #999;text-align:center">3 พ.ย. 69</td><td style="border:1px solid #999;text-align:center">รับทราบ</td></tr>
+   <tr><td style="border:1px solid #999;text-align:center">2</td><td style="border:1px solid #999;padding:0 3px">เวกเตอร์</td><td style="border:1px solid #999;text-align:center">5 พ.ย. 69</td><td style="border:1px solid #999;text-align:center">รับทราบ</td></tr>
+   <tr><td style="border:1px solid #999;text-align:center">3</td><td style="border:1px solid #999;padding:0 3px">การเคลื่อนที่แนวตรง</td><td style="border:1px solid #999;text-align:center">12 พ.ย. 69</td><td style="border:1px solid #999;text-align:center">ควรเพิ่มเวลาฝึก</td></tr>
+   <tr><td style="border:1px solid #999;text-align:center">4</td><td style="border:1px solid #999;padding:0 3px">ความเร่ง</td><td style="border:1px solid #999;text-align:center">14 พ.ย. 69</td><td style="border:1px solid #999;text-align:center">รับทราบ</td></tr>
+   <tr><td colspan="4" style="border:1px solid #999;text-align:center;color:#666">รวม 18 แผน (ตารางต่อหน้าถัดไปถ้ายาว)</td></tr>
+  </table>
+  <div style="display:flex;flex-direction:column;gap:6px;margin-top:10px">
+   <div class="box"><b>ความเห็นหัวหน้ากลุ่มสาระฯ</b><div>รับทราบทั้งเล่ม</div><div class="sig">Malee</div><div>(นางมาลี ตัวอย่าง) 20 พ.ย. 2569</div></div>
+   <div class="box"><b>ความเห็นรองผู้อำนวยการฯ</b><div>รับทราบทั้งเล่ม</div><div class="sig">Wichai</div><div>(นายวิชัย ทดลอง) 22 พ.ย. 2569</div></div>
+   <div class="box"><b>ความเห็นผู้อำนวยการ</b><div>รับทราบทั้งเล่ม</div><div class="sig">Prasert</div><div>(นายประเสริฐ สมมติ) 23 พ.ย. 2569</div></div>
+  </div>
+ </div>
+</div>
+<div class="note"><b>ข้อดี</b> ผู้บริหารเซ็นแผ่นเดียวจบ เห็นภาพรวมทั้งเล่มในตาราง แผ่นของครูเต็มขนาดไม่ถูกแตะ ใช้ได้ทั้งครูพิมพ์ในเว็บและครูแนบ PDF กระดาษเพิ่มแค่ 1 แผ่น<br><b>ข้อเสีย</b> ต่างจากกระดาษเดิมที่เซ็นทุกแผ่น ควรถามผู้บริหารก่อนว่ารับได้ไหม</div>
+</div>
+
+</div>
+</body></html>
