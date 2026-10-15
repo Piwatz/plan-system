@@ -127,13 +127,20 @@ function submitWindow(settings) {
   return { open: true, reason: '' };
 }
 
-function workFields(b, docType) {
+// รูปแบบการจัดการเรียนรู้: ช่องที่ติ๊ก + ช่อง "อื่น ๆ (ระบุ)" ที่ครูพิมพ์เอง (ฟังก์ชันเสริม methodother)
+// พิมพ์หลายรูปแบบคั่นด้วยจุลภาคหรือขึ้นบรรทัดใหม่ เก็บเป็นรายการเดียวกับช่องที่ติ๊ก ไม่เกิน 5 รูปแบบ
+function methodsOf(b, ff = {}) {
+  const picked = asArray(b.teaching_methods).map((x) => str(x, 100)).filter(Boolean);
+  const other = ff.methodother ? String(b.teaching_methods_other || '').split(/[,\n]+/).map((x) => str(x, 100)).filter(Boolean).slice(0, 5) : [];
+  return [...new Set([...picked, ...other])];
+}
+
+function workFields(b, docType, ff) {
   return {
     subject_code: str(b.subject_code, 30),
     subject_name: str(b.subject_name, 200),
     grade_level: str(b.grade_level, 30),
-    teaching_methods:
-      docType === 'plan' ? JSON.stringify(asArray(b.teaching_methods).map((x) => str(x, 100)).filter(Boolean)) : '[]',
+    teaching_methods: docType === 'plan' ? JSON.stringify(methodsOf(b, ff)) : '[]',
     link_url: util.safeUrl(b.link_url).slice(0, 500),
     doc_no: str(b.doc_no, 50),
   };
@@ -304,7 +311,7 @@ router.post('/works', async (req, res) => {
   const type = WORK_TYPES.includes(b.doc_type) ? b.doc_type : null;
   const year = Number(req.settings.academic_year);
   const sem = Number(req.settings.semester);
-  const f = type ? workFields(b, type) : null;
+  const f = type ? workFields(b, type, req.ff) : null;
   const files = await up.take(req, 'main_files');
   let id;
   let mergedMsg;
@@ -536,7 +543,7 @@ async function saveEdit(req, sub, b, now, files) {
         sub.id
       );
     } else {
-      const f = workFields(b, sub.doc_type);
+      const f = workFields(b, sub.doc_type, req.ff);
       if (teaching.skipActivity(f.subject_code) && f.subject_code !== sub.subject_code) throw new UserError('วิชากิจกรรมพัฒนาผู้เรียน (รหัสขึ้นต้นด้วย ก) ไม่ต้องส่งแผนและคู่มือ');
       // ล็อกครูก่อนตรวจซ้ำ เหมือนตอนส่งงานใหม่
       await lockTeacher(sub.teacher_id);
@@ -905,3 +912,4 @@ module.exports.deptFull = deptFull;
 module.exports.printData = printData;
 module.exports.printDataMany = printDataMany;
 module.exports.subjectChoices = subjectChoices;
+module.exports.methodsOf = methodsOf;

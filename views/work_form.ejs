@@ -50,11 +50,18 @@
       <div class="field">
         <span class="label">รูปแบบหรือแนวทางการจัดการเรียนรู้ที่ใช้ในแผน</span>
         <div class="checks">
-          <% for (const m of util.lines(settings.teaching_methods)) { %>
+          <% const methodList = util.lines(settings.teaching_methods); for (const m of methodList) { %>
             <label class="check"><input type="checkbox" name="teaching_methods" value="<%= m %>" <%= methods.includes(m) ? 'checked' : '' %>> <%= m %></label>
           <% } %>
         </div>
       </div>
+      <% if (ff.methodother) { %>
+      <div class="field">
+        <label for="teaching_methods_other">อื่น ๆ (ระบุ)</label>
+        <input type="text" id="teaching_methods_other" name="teaching_methods_other" maxlength="300" value="<%= methods.filter((m) => !methodList.includes(m)).join(', ') %>" placeholder="เช่น การเรียนรู้แบบโครงงาน">
+        <div class="hint">ถ้ามีหลายรูปแบบ คั่นด้วยเครื่องหมายจุลภาค</div>
+      </div>
+      <% } %>
     <% } %>
 
     <h2 style="margin-top:18px">ไฟล์<%= T.label %></h2>

@@ -317,10 +317,11 @@ async function main() {
   const order = [[pc, 'ค.pdf'], [pa, 'ก.pdf'], [pb, 'ข.pdf']];
   const merged = await mergeLikeBrowser(order);
   const t1 = Date.now();
-  const plan = await sendWork(T.c, { doc_type: 'plan', subject_code: 'ว31101', subject_name: 'ฟิสิกส์ทดลอง 1', grade_level: 'ม.4', teaching_methods: 'การทดลอง', action: 'submit' }, order, { merge: true });
+  const plan = await sendWork(T.c, { doc_type: 'plan', subject_code: 'ว31101', subject_name: 'ฟิสิกส์ทดลอง 1', grade_level: 'ม.4', teaching_methods: 'Active Learning', teaching_methods_other: 'การเรียนรู้แบบโครงงาน', action: 'submit' }, order, { merge: true });
   const planMs = Date.now() - t1;
   const planPage = plan.id ? await T.c.get(`/s/${plan.id}`) : { text: '' };
   check('ส่งแผน 3 ไฟล์รวมเป็นไฟล์เดียว (เรียงใหม่ก่อนรวม) ส่งเป็นท่อนผ่าน Workers', plan.id && /รอ/.test(planPage.text) && (planPage.text.match(/data-view-file=/g) || []).length === 1, `${(merged.blob.size / 1048576).toFixed(1)} MB ${merged.pages} หน้า ${planMs} ms ${plan.error || ''}`);
+  check('รูปแบบการจัดการเรียนรู้ อื่น ๆ (ระบุ) ขึ้นในหน้ารายละเอียด', /การเรียนรู้แบบโครงงาน/.test(planPage.text) && /Active Learning/.test(planPage.text));
   const fileId = (/data-view-file="\/f\/(\d+)"/.exec(planPage.text) || [])[1];
   const raw = fileId ? await T.c.get(`/f/${fileId}/raw`, true) : { bytes: Buffer.alloc(0) };
   check('ดาวน์โหลดไฟล์แผนกลับมา ไบต์ตรงกับที่รวมในเบราว์เซอร์ทุกไบต์', raw.status === 200 && sha(raw.bytes) === sha(Buffer.from(await merged.blob.arrayBuffer())), `${raw.bytes.length} ไบต์`);
