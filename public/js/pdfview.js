@@ -53,7 +53,18 @@ class Viewer {
         }
       }, 250);
     });
-    this.open(this.pages.dataset.src, this.pages.dataset.type);
+    // หน้าที่มีหลายกรอบ (ลงนามทั้งเล่ม) โหลดไฟล์เมื่อเลื่อนมาใกล้ ไม่โหลดทุกไฟล์พร้อมกัน
+    if (box.hasAttribute('data-lazy') && 'IntersectionObserver' in window) {
+      const near = new IntersectionObserver(
+        (list) => {
+          if (!list.some((x) => x.isIntersecting)) return;
+          near.disconnect();
+          if (!this.doc && !this.task) this.open(this.pages.dataset.src, this.pages.dataset.type);
+        },
+        { rootMargin: '600px 0px' }
+      );
+      near.observe(box);
+    } else this.open(this.pages.dataset.src, this.pages.dataset.type);
   }
 
   message(text) {

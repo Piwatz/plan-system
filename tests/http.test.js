@@ -99,7 +99,12 @@ test('ทุกหน้าเปิดได้ในทุกบทบาท',
     ['soc1', common],
   ]) {
     const c = await as(user);
-    for (const url of pages) ok(await c.get(url), `${user} ${url}`);
+    for (const url of pages) {
+      let r = await c.get(url);
+      // ส่งบันทึกหลังแผนทั้งเล่ม: ไล่การ์ดพาไปหน้าลงนามทั้งเล่มของเล่มแรก
+      if (url === '/quicksign' && r.status === 302 && /^\/s\/\d+\/book$/.test(String(r.location))) r = await c.get(String(r.location));
+      ok(r, `${user} ${url}`);
+    }
   }
   const t = await as('teacher');
   assert.equal((await t.get('/admin')).status, 403);
@@ -185,6 +190,9 @@ test('ส่งกลับแก้ไขต้องมีเหตุผล �
 
 test('ครูเขียนบันทึกหลังแผนเป็นร่างหลายฉบับ แล้วส่งพร้อมกัน', async () => {
   const t = await as('teacher');
+  // เลือกหลายฉบับส่ง ใช้เมื่อปิดส่งทั้งเล่ม
+  const admin = await as('admin');
+  await admin.post('/admin/features/notebook', { on: '0' });
   const planId = (await db.q.get("SELECT id FROM submissions WHERE doc_type = 'plan' AND subject_code = 'ว30203'")).id;
   ok(await t.get(`/notes/new?plan=${planId}`), 'note form');
   const ids = [];
@@ -201,6 +209,7 @@ test('ครูเขียนบันทึกหลังแผนเป็�
     assert.equal(s.status, 'pending');
     assert.equal(s.current_role, 'dept_head');
   }
+  await admin.post('/admin/features/notebook', { on: '1' });
 });
 
 test('ส่งออก CSV ภาษาไทยเปิดใน Excel ได้', async () => {

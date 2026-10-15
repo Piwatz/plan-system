@@ -239,7 +239,7 @@
       if (submitter && submitter.dataset.needChecked) {
         if (!form.querySelector('input[name="' + submitter.dataset.needChecked + '"]:checked')) {
           e.preventDefault();
-          await tell('ยังไม่ได้เลือกรายการ');
+          await tell(submitter.dataset.needMessage || 'ยังไม่ได้เลือกรายการ');
           return;
         }
       }
@@ -781,7 +781,7 @@
   // ปุ่มเลือกไฟล์ และปุ่ม "เปิดดู" ในรายการไฟล์ เปิดไฟล์ในกรอบแสดงไฟล์ของหน้านี้ (ไม่ดาวน์โหลด)
   document.querySelectorAll('[data-view-file]').forEach((b) =>
     b.addEventListener('click', () => {
-      const box = document.querySelector('[data-pdfbox]');
+      const box = b.closest('[data-pdfbox]') || document.querySelector('[data-pdfbox]');
       if (!box) return;
       box.dispatchEvent(new CustomEvent('pdfbox:open', { detail: { url: b.dataset.viewFile, type: b.dataset.type || 'pdf' } }));
       box.querySelectorAll('[data-view-file]').forEach((x) => {

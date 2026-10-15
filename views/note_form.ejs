@@ -1,6 +1,8 @@
 <%- include('partials/top') %>
 <%
   const fileMode = ff.notefile && sub.note_mode === 'file';
+  // แนบได้เฉพาะ PDF (ฟังก์ชันเสริม notepdf)
+  const accept = ff.notepdf ? 'pdf' : 'pdf,doc,docx,jpg,jpeg,png';
   const kpa = [
     { id: 'result_k', tag: 'K', label: 'ด้านความรู้', ph: 'นักเรียนเข้าใจเนื้อหาเรื่องนี้แค่ไหน' },
     { id: 'result_p', tag: 'P', label: 'ด้านทักษะ / กระบวนการ', ph: 'นักเรียนทำกิจกรรม ทดลอง หรือฝึกทักษะได้อย่างไร' },
@@ -71,7 +73,7 @@
     <% if (ff.notefile) { %>
       <section data-mode="file" <%= fileMode ? '' : 'hidden' %>>
         <h2 style="margin-top:12px">ไฟล์บันทึกหลังแผนของฉัน</h2>
-        <p class="muted">เขียนในแบบของตัวเองใน Word หรือ PDF แล้วแนบมา ไม่ต้องพิมพ์ซ้ำในระบบ ระบบจะพิมพ์หน้าความเห็นและลายเซ็นผู้บริหาร 3 ระดับแยกให้ 1 หน้า ใช้แนบท้ายไฟล์ ผู้ตรวจลงนามในระบบได้เหมือนเดิม</p>
+        <p class="muted">เขียนในแบบของตัวเอง<%= ff.notepdf ? ' แล้วบันทึกเป็น PDF' : 'ใน Word หรือ PDF' %> แล้วแนบมา ไม่ต้องพิมพ์ซ้ำในระบบ ระบบจะพิมพ์หน้าความเห็นและลายเซ็นผู้บริหาร 3 ระดับแยกให้ 1 หน้า ใช้แนบท้ายไฟล์ ผู้ตรวจลงนามในระบบได้เหมือนเดิม</p>
       </section>
     <% } %>
 
@@ -125,12 +127,12 @@
         <% } %>
       </ul>
     <% } %>
-    <label class="dropzone" data-dropzone <%= ff.filecheck ? 'data-filecheck' : '' %> data-max-mb="<%= settings.max_upload_mb %>" data-accept="pdf,doc,docx,jpg,jpeg,png">
+    <label class="dropzone" data-dropzone <%= ff.filecheck ? 'data-filecheck' : '' %> data-max-mb="<%= settings.max_upload_mb %>" data-accept="<%= accept %>">
       <span class="dz-icon"><%- icon('file', 34) %></span>
-      <b data-mode="file" <%= fileMode ? '' : 'hidden' %>>แตะเพื่อเลือกไฟล์บันทึกหลังแผน PDF หรือ Word</b>
-      <b data-mode="type" <%= fileMode ? 'hidden' : '' %>>แนบรูปกิจกรรมหรือไฟล์ประกอบ (ไม่บังคับ)</b><br>
-      <small class="muted">ลากมาวาง หรือกดเพื่อเลือก</small>
-      <input type="file" name="attach_files" multiple accept=".pdf,.doc,.docx,.jpg,.jpeg,.png">
+      <b data-mode="file" <%= fileMode ? '' : 'hidden' %>>แตะเพื่อเลือกไฟล์บันทึกหลังแผน <%= ff.notepdf ? 'PDF' : 'PDF หรือ Word' %></b>
+      <b data-mode="type" <%= fileMode ? 'hidden' : '' %>><%= ff.notepdf ? 'แนบไฟล์ประกอบ PDF (ไม่บังคับ)' : 'แนบรูปกิจกรรมหรือไฟล์ประกอบ (ไม่บังคับ)' %></b><br>
+      <small class="muted">ลากมาวาง หรือกดเพื่อเลือก<%= ff.notepdf ? ' รับเฉพาะไฟล์ PDF' : '' %></small>
+      <input type="file" name="attach_files" multiple accept="<%= accept.split(',').map((x) => '.' + x).join(',') %>">
     </label>
     <ul class="dz-list" data-dz-list></ul>
 
@@ -138,10 +140,16 @@
     <div class="btn-row">
       <button class="btn btn-ghost btn-lg" type="submit" name="action" value="draft">บันทึกร่าง</button>
       <% if (isNew) { %><button class="btn btn-ghost btn-lg" type="submit" name="action" value="new">บันทึกร่างแล้วเขียนแผนถัดไป</button><% } %>
-      <button class="btn btn-primary btn-lg" type="submit" name="action" value="submit"
-        data-confirm="ยืนยันส่งบันทึกหลังแผนฉบับนี้ให้ผู้ลงความเห็น" data-ok-label="ส่งเลย"><%- icon('send', 20) %> <%= sub.status === 'returned' ? 'ส่งอีกครั้งหลังแก้ไข' : 'ส่งให้ผู้ลงความเห็น' %></button>
+      <% if (!ff.notebook) { %>
+        <button class="btn btn-primary btn-lg" type="submit" name="action" value="submit"
+          data-confirm="ยืนยันส่งบันทึกหลังแผนฉบับนี้ให้ผู้ลงความเห็น" data-ok-label="ส่งเลย"><%- icon('send', 20) %> <%= sub.status === 'returned' ? 'ส่งอีกครั้งหลังแก้ไข' : 'ส่งให้ผู้ลงความเห็น' %></button>
+      <% } %>
     </div>
-    <p class="muted small" style="margin-top:10px">เขียนหลายฉบับเป็นร่างไว้ก่อน แล้วไปกดส่งพร้อมกันทีเดียวในหน้ารายวิชาได้</p>
+    <% if (ff.notebook) { %>
+      <p class="muted small" style="margin-top:10px">ผู้ตรวจยังไม่เห็นบันทึกที่เป็นร่าง เขียนครบทุกคาบแล้วกด <b>ส่งทั้งเล่ม</b> ในหน้ารายวิชาครั้งเดียว</p>
+    <% } else { %>
+      <p class="muted small" style="margin-top:10px">เขียนหลายฉบับเป็นร่างไว้ก่อน แล้วไปกดส่งพร้อมกันทีเดียวในหน้ารายวิชาได้</p>
+    <% } %>
   </form>
 </div>
 <%- include('partials/bottom') %>

@@ -273,6 +273,9 @@ test('ลบงานแล้วไฟล์อยู่ในถังขย�
 
 test('บันทึกหลังแผนแนบไฟล์ประกอบหลายไฟล์ เก็บในโฟลเดอร์บันทึกหลังแผน ชื่อไฟล์เดิม', async () => {
   const t = await as('teacher');
+  // แนบรูปได้เมื่อปิดสวิตช์ PDF อย่างเดียว
+  const admin = await as('admin');
+  await admin.post('/admin/features/notepdf', { on: '0' });
   const plan = await db.q.get("SELECT id FROM submissions WHERE doc_type = 'plan' AND subject_code = 'ว30203'");
   const r = await sendForm(
     t,
@@ -285,7 +288,7 @@ test('บันทึกหลังแผนแนบไฟล์ประก�
     { field: 'attach_files' }
   );
   assert.equal(r.status, 200, r.text);
-  const id = Number(JSON.parse(r.text).redirect.split('/').pop());
+  const id = (await db.q.get("SELECT id FROM submissions WHERE parent_id = ? AND doc_type = 'note' AND plan_no = '31'", plan.id)).id;
   const files = await db.q.all('SELECT * FROM files WHERE submission_id = ? ORDER BY id', id);
   assert.deepEqual(
     files.map((f) => [f.original_name, f.kind, f.mime]),
@@ -295,6 +298,7 @@ test('บันทึกหลังแผนแนบไฟล์ประก�
     ]
   );
   assert.match(files[0].stored_name, /\/บันทึกหลังแผน\/\w{8} ใบงาน\.pdf$/);
+  await admin.post('/admin/features/notepdf', { on: '1' });
 });
 
 test('สำรองข้อมูล: ได้ JSON ครบ 13 ตาราง parse ได้ ชื่อไฟล์ภาษาไทย เฉพาะผู้ดูแลระบบ', async () => {

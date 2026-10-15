@@ -145,12 +145,16 @@ function createApp(options = {}) {
     if (req.me) {
       const b = res.locals.badges;
       const w = wf.inboxWhere(req.me, 'i');
+      // ส่งบันทึกหลังแผนทั้งเล่ม: นับบันทึกเป็นเล่ม (แผนเดียวกันและรอระดับเดียวกัน) ตรงกับ wf.groupBooks
+      const inboxCount = ff.notebook
+        ? "COUNT(DISTINCT CASE WHEN i.doc_type = 'note' AND i.parent_id IS NOT NULL THEN 'b' || i.parent_id || '|' || i.current_role ELSE 's' || i.id END)"
+        : 'COUNT(*)';
       const n = await db.q.get(
         `SELECT
            COUNT(*) FILTER (WHERE status = 'returned') AS returned,
            COUNT(*) FILTER (WHERE doc_type = 'note' AND status IN ('draft', 'returned')) AS notes,
            (SELECT COUNT(*) FROM notifications WHERE user_id = ? AND read_at IS NULL) AS alerts,
-           ${w ? `(SELECT COUNT(*) FROM submissions i WHERE ${w.sql})` : '0'} AS inbox
+           ${w ? `(SELECT ${inboxCount} FROM submissions i WHERE ${w.sql})` : '0'} AS inbox
          FROM submissions WHERE teacher_id = ?`,
         req.me.id,
         ...(w ? w.params : []),

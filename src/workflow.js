@@ -323,7 +323,9 @@ async function approve(subId, actor, { comment = '', scores = null, signature = 
 // ลงนามเห็นชอบหลายงานพร้อมกันใน transaction เดียว (ลงนามที่เลือกในกล่องงาน และลงนามบันทึกที่เหลือทั้งหมด)
 // กติกาเดียวกับ approve ทีละงาน ตามลำดับใน ids · ข้ามงานที่ไม่ได้รอผู้ใช้คนนี้แล้ว หรือต้องให้คะแนนก่อน
 // จำนวนคำสั่งคงที่ไม่ว่าจะลงนามกี่งาน: ล็อกทุกแถว · ลายเซ็น · ผู้ตรวจ · เพิ่มประวัติ · แก้สถานะ · คืน { done, skipped }
-async function approveMany(ids, actor, { comment = '' } = {}) {
+// comments = { id: ข้อความ } ความเห็นแยกรายฉบับ (ลงนามบันทึกทั้งเล่ม) ฉบับที่ไม่มีใช้ comment
+/** @param {number[]} ids @param {any} actor @param {{ comment?: string, comments?: Record<string, string> }} [opts] */
+async function approveMany(ids, actor, { comment = '', comments = {} } = {}) {
   await db.ensureRefs();
   if (!ids.length) return { done: 0, skipped: 0 };
   return q.tx(async () => {
@@ -351,7 +353,8 @@ async function approveMany(ids, actor, { comment = '' } = {}) {
       if (!sig) throw new WorkflowError('กรุณาเซ็นชื่อก่อนลงนาม');
       if (!hmap) hmap = await holdersByRole();
       const st = stepOf(sub.current_role);
-      logs.push({ sub: sub.id, actor, role: st.role, step_label: st.label, action: 'approve', comment: text });
+      const own = comments[sub.id];
+      logs.push({ sub: sub.id, actor, role: st.role, step_label: st.label, action: 'approve', comment: own == null ? text : String(own).trim() });
       const next = planAdvance(sub, st.seq + 1, hmap, self);
       for (const s of next.skips) logs.push({ sub: sub.id, actor: null, ...s });
       // จำสถานะใหม่ไว้ ถ้า id เดิมซ้ำในรายการ จะตัดสินจากสถานะใหม่เหมือนทำทีละงาน
@@ -361,25 +364,7 @@ async function approveMany(ids, actor, { comment = '' } = {}) {
       done += 1;
     }
     if (logs.length) {
-      await q.run(
-        `INSERT INTO reviews (submission_id, role, step_label, user_id, user_name, user_position, action, comment, signature, created_at)
-         SELECT v.submission_id, v.role, v.step_label, v.user_id, v.user_name, v.user_position, v.action, v.comment,
-           CASE WHEN v.signed = 1 THEN ?::text END, ?
-         FROM unnest(?::int[], ?::text[], ?::text[], ?::int[], ?::text[], ?::text[], ?::text[], ?::text[], ?::int[])
-           WITH ORDINALITY AS v(submission_id, role, step_label, user_id, user_name, user_position, action, comment, signed, n)
-         ORDER BY v.n`,
-        sig,
-        now,
-        logs.map((l) => l.sub),
-        logs.map((l) => l.role),
-        logs.map((l) => l.step_label),
-        logs.map((l) => (l.actor ? l.actor.id : null)),
-        logs.map((l) => (l.actor ? l.actor.full_name : '')),
-        logs.map((l) => (l.actor ? l.actor.position || '' : '')),
-        logs.map((l) => l.action),
-        logs.map((l) => l.comment),
-        logs.map((l) => (l.action === 'approve' ? 1 : 0))
-      );
+      await logMany(logs.map((l) => ({ ...l, signed: l.action === 'approve' })), sig, now);
       const list = [...finals.values()];
       await q.run(
         `UPDATE submissions s SET status = v.status, current_role = v.cur, updated_at = ?,
@@ -396,6 +381,153 @@ async function approveMany(ids, actor, { comment = '' } = {}) {
     }
     return { done, skipped };
   });
+}
+
+// เพิ่มประวัติหลายแถวในคำสั่งเดียว เรียงตามลำดับใน logs · แถวที่ signed ใส่รูปลายเซ็น sig
+// logs = [{ sub, actor, role, step_label, action, comment, signed }]
+function logMany(logs, sig, now) {
+  return q.run(
+    `INSERT INTO reviews (submission_id, role, step_label, user_id, user_name, user_position, action, comment, signature, created_at)
+     SELECT v.submission_id, v.role, v.step_label, v.user_id, v.user_name, v.user_position, v.action, v.comment,
+       CASE WHEN v.signed = 1 THEN ?::text END, ?
+     FROM unnest(?::int[], ?::text[], ?::text[], ?::int[], ?::text[], ?::text[], ?::text[], ?::text[], ?::int[])
+       WITH ORDINALITY AS v(submission_id, role, step_label, user_id, user_name, user_position, action, comment, signed, n)
+     ORDER BY v.n`,
+    sig,
+    now,
+    logs.map((l) => l.sub),
+    logs.map((l) => l.role ?? null),
+    logs.map((l) => l.step_label ?? ''),
+    logs.map((l) => (l.actor ? l.actor.id : null)),
+    logs.map((l) => (l.actor ? l.actor.full_name : '')),
+    logs.map((l) => (l.actor ? l.actor.position || '' : '')),
+    logs.map((l) => l.action),
+    logs.map((l) => l.comment ?? ''),
+    logs.map((l) => (l.signed ? 1 : 0))
+  );
+}
+
+// ---------- บันทึกหลังแผนทั้งเล่ม (ฟังก์ชันเสริม notebook) ----------
+// 1 เล่ม = บันทึกหลังแผนทุกฉบับของแผน 1 วิชา (parent_id) แต่ละฉบับยังเก็บสถานะและประวัติของตัวเอง หน้าพิมพ์จึงมีลายเซ็นทุกแผ่นเหมือนเดิม
+
+// ความเห็นของแผ่นที่ไม่ต้องแก้ ตอนผู้ตรวจส่งกลับทั้งเล่ม (หน้าแผนใช้แยกแผ่นที่ต้องแก้จากข้อความนี้)
+const BOOK_KEEP = 'ส่งกลับพร้อมทั้งเล่ม แผ่นนี้ไม่ต้องแก้';
+
+// ส่งหลายฉบับในครั้งเดียว กติกาเดียวกับ submit ทีละฉบับ (ผู้ดูแลระบบส่งแทนครูเหมือน submitAs ไม่ใส่ลายเซ็นครู)
+// ทุกฉบับต้องเป็นร่างหรือถูกส่งกลับ ไม่อย่างนั้นไม่ส่งสักฉบับ · จำนวนคำสั่งคงที่ไม่ว่าจะส่งกี่ฉบับ · คืนงานฉบับล่าสุดเรียงตาม id
+async function submitMany(ids, actor) {
+  await db.ensureRefs();
+  const want = [...new Set(ids)];
+  if (!want.length) return [];
+  return q.tx(async () => {
+    const rows = await q.all(`SELECT ${subCols()} FROM submissions WHERE id = ANY(?) ORDER BY id FOR UPDATE`, want);
+    if (rows.length !== want.length) throw new WorkflowError('ไม่พบงานบางฉบับ');
+    const asAdmin = Boolean(actor && actor.is_admin) && rows.some((s) => s.teacher_id !== actor.id);
+    for (const s of rows) {
+      if (asAdmin) adminCheck(actor, s);
+      else if (!isOwner(actor, s)) throw new WorkflowError('ส่งได้เฉพาะงานของตนเอง');
+      if (s.status !== 'draft' && s.status !== 'returned') throw new WorkflowError('มีบางฉบับส่งไปแล้ว');
+    }
+    const now = nowStr();
+    const sent = new Set(
+      (await q.all("SELECT DISTINCT submission_id FROM reviews WHERE submission_id = ANY(?) AND action IN ('submit','resubmit')", want)).map(
+        (r) => r.submission_id
+      )
+    );
+    const sig = asAdmin ? null : await signatureOf(actor);
+    const hmap = await holdersByRole();
+    const self = selfSign();
+    const restart = db.refs().settings.resubmit_mode === 'restart';
+    const logs = [];
+    for (const s of rows) {
+      const first = asAdmin ? !sent.has(s.id) : s.status === 'draft' && !sent.has(s.id);
+      logs.push({ sub: s.id, actor, step_label: asAdmin ? 'ผู้ดูแลระบบส่งแทนครู' : 'ครูผู้สอน', action: first ? 'submit' : 'resubmit', signed: !asAdmin });
+      let startSeq = 0;
+      if (s.status === 'returned' && !restart) {
+        const st = stepOf(s.returned_role);
+        if (st) startSeq = st.seq;
+      }
+      const next = planAdvance(s, startSeq, hmap, self);
+      for (const k of next.skips) logs.push({ sub: s.id, actor: null, ...k });
+      s.status = next.role ? 'pending' : 'approved';
+      s.current_role = next.role;
+    }
+    await logMany(logs, sig, now);
+    const out = await q.all(
+      `UPDATE submissions s SET status = v.status, current_role = v.cur, updated_at = ?, submitted_at = COALESCE(s.submitted_at, ?),
+         teacher_signature = CASE WHEN ? = 1 THEN s.teacher_signature ELSE ?::text END,
+         completed_at = CASE WHEN v.status = 'approved' THEN ? ELSE s.completed_at END
+       FROM unnest(?::int[], ?::text[], ?::text[]) AS v(id, status, cur)
+       WHERE s.id = v.id RETURNING ${subCols('s')}`,
+      now,
+      now,
+      asAdmin ? 1 : 0,
+      sig,
+      now,
+      rows.map((s) => s.id),
+      rows.map((s) => s.status),
+      rows.map((s) => s.current_role)
+    );
+    for (const s of rows) notify(s.id);
+    return out.sort((a, b) => a.id - b.id);
+  });
+}
+
+// ส่งกลับหลายฉบับในครั้งเดียว · comments = { id: ข้อความ } ทุกฉบับต้องมีข้อความ · ข้ามฉบับที่ไม่ได้รอผู้ใช้คนนี้แล้ว · คืนจำนวนที่ส่งกลับ
+async function sendBackMany(ids, actor, { comments = {} } = {}) {
+  await db.ensureRefs();
+  const want = [...new Set(ids)];
+  if (!want.length) return 0;
+  return q.tx(async () => {
+    const rows = await q.all(`SELECT ${subCols()} FROM submissions WHERE id = ANY(?) ORDER BY id FOR UPDATE`, want);
+    const self = selfSign();
+    const logs = [];
+    const done = [];
+    for (const s of rows) {
+      if (!canReview(actor, s, self)) continue;
+      const text = String(comments[s.id] ?? '').trim();
+      if (!text) throw new WorkflowError('กรุณาเขียนเหตุผลหรือสิ่งที่ต้องแก้ไข');
+      const st = stepOf(s.current_role);
+      logs.push({ sub: s.id, actor, role: st.role, step_label: st.label, action: 'return', comment: text });
+      done.push({ id: s.id, role: st.role });
+    }
+    if (!done.length) return 0;
+    const now = nowStr();
+    await logMany(logs, null, now);
+    await q.run(
+      `UPDATE submissions s SET status = 'returned', returned_role = v.role, current_role = NULL, updated_at = ?
+       FROM unnest(?::int[], ?::text[]) AS v(id, role) WHERE s.id = v.id`,
+      now,
+      done.map((d) => d.id),
+      done.map((d) => d.role)
+    );
+    return done.length;
+  });
+}
+
+// รวมบันทึกหลังแผนในรายการงานรอตรวจเป็นเล่ม (แผนเดียวกันและรอระดับเดียวกัน) แถวแรกของเล่มเป็นตัวแทน ลำดับตามฉบับที่รอนานที่สุด
+// แถวเล่มมี book = { planId, ids, count, planNos }
+function groupBooks(rows) {
+  const out = [];
+  const books = new Map();
+  for (const s of rows) {
+    if (s.doc_type !== 'note' || !s.parent_id) {
+      out.push(s);
+      continue;
+    }
+    const key = `${s.parent_id}|${s.current_role}`;
+    let row = books.get(key);
+    if (!row) {
+      row = { ...s, book: { planId: s.parent_id, ids: [], count: 0, planNos: [] } };
+      books.set(key, row);
+      out.push(row);
+    }
+    row.book.ids.push(s.id);
+    row.book.count += 1;
+    row.book.planNos.push(s.plan_no);
+  }
+  for (const r of books.values()) r.book.planNos.sort((a, b) => (parseInt(a, 10) || 0) - (parseInt(b, 10) || 0));
+  return out;
 }
 
 async function sendBack(subId, actor, { comment = '' } = {}) {
@@ -634,6 +766,10 @@ module.exports = {
   submit,
   approve,
   approveMany,
+  submitMany,
+  sendBackMany,
+  groupBooks,
+  BOOK_KEEP,
   sendBack,
   canWithdraw,
   withdraw,

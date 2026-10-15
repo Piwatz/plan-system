@@ -1,9 +1,10 @@
 <%
   // กรอบแสดงไฟล์ที่ส่ง (PDF ทุกหน้า หรือรูปภาพ) ใช้ในหน้างาน หน้าตรวจ และหน้าเปิดดูไฟล์
+  // lazy = โหลดไฟล์เมื่อเลื่อนมาใกล้ (หน้าลงนามทั้งเล่มมีหลายกรอบ)
   const kind = (f) => (/pdf/.test(f.mime) ? 'pdf' : 'image');
   const f0 = files[0];
 %>
-<section class="card flush viewer <%= locals.cls || '' %>" data-pdfbox aria-label="ไฟล์ที่ส่ง">
+<section class="card flush viewer <%= locals.cls || '' %>" data-pdfbox <%= locals.lazy ? 'data-lazy' : '' %> aria-label="ไฟล์ที่ส่ง">
   <div class="viewer-bar">
     <span class="fname" data-viewer-name><%= f0.original_name %></span>
     <span class="muted small nowrap" data-pdf-info></span>

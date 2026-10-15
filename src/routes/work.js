@@ -82,6 +82,20 @@ function checkPdf(req, docType, list) {
   return req.ff.pdfmerge && merged > 1 && merged <= up.MAX_FILES && pages > 0 ? ` รวม ${merged} ไฟล์เป็นไฟล์เดียวแล้ว ${pages} หน้า` : '';
 }
 
+// บันทึกหลังแผนแนบได้เฉพาะ PDF (ฟังก์ชันเสริม notepdf) ทั้งไฟล์บันทึกของครูและไฟล์ประกอบ
+function checkNotePdf(req, list) {
+  if (!req.ff.notepdf || !list.length) return;
+  const notPdf = list.filter((x) => x.ext !== '.pdf');
+  if (notPdf.length) {
+    throw new UserError(`บันทึกหลังแผนแนบได้เฉพาะไฟล์ PDF (${notPdf.map((x) => x.name).join(' ')} ไม่ใช่ PDF) ถ้าเป็นไฟล์ Word หรือรูปภาพ ให้บันทึกเป็น PDF ก่อน แล้วแนบใหม่`);
+  }
+}
+
+// ส่งบันทึกหลังแผนทั้งเล่ม (ฟังก์ชันเสริม notebook): ครูส่งทีละฉบับไม่ได้ ผู้ตรวจลงนามทีละฉบับไม่ได้
+function bookMode(req, sub) {
+  return Boolean(req.ff.notebook && sub && sub.doc_type === 'note');
+}
+
 function currentFiles(subId) {
   return q.all('SELECT * FROM files WHERE submission_id = ? AND is_current = 1 ORDER BY id', subId);
 }
@@ -191,7 +205,9 @@ async function missingForSubmit(sub, ff) {
   if (sub.doc_type === 'note') {
     if (!sub.plan_no && !sub.topic) miss.push('แผนที่ หรือ เรื่อง');
     if (sub.note_mode === 'file') {
-      if ((await currentFiles(sub.id)).length === 0) miss.push('ไฟล์บันทึกหลังแผนของคุณ');
+      const cur = await currentFiles(sub.id);
+      if (cur.length === 0) miss.push('ไฟล์บันทึกหลังแผนของคุณ');
+      else if (ff.notepdf && cur.some((x) => x.mime !== 'application/pdf')) miss.push('ไฟล์ PDF แทนไฟล์ Word หรือรูปภาพที่แนบไว้');
     } else if (!sub.result_k && !sub.result_p && !sub.result_a) miss.push('ผลการจัดการเรียนรู้อย่างน้อย 1 ด้าน');
     if (ff.counts && (sub.students_total == null || sub.students_passed == null)) miss.push('จำนวนนักเรียนทั้งหมดและจำนวนที่ผ่านจุดประสงค์');
     if (sub.students_total != null && sub.students_passed != null && sub.students_passed > sub.students_total) {
@@ -404,6 +420,7 @@ router.post('/notes', async (req, res) => {
   let id;
   try {
     plan = await parentPlanFor(req, b.plan_id);
+    checkNotePdf(req, files);
     await rejectBadFiles(req, files);
     const now = nowStr();
     id = await q.tx(async () => {
@@ -434,11 +451,13 @@ router.post('/notes', async (req, res) => {
     req.flash('success', `บันทึกร่างแผนที่ ${f.plan_no || ''} แล้ว เขียนฉบับต่อไปได้เลย`);
     return respond(req, res, `/notes/new?plan=${plan.id}`, null, null);
   }
+  if (req.ff.notebook) return respond(req, res, `/s/${plan.id}#notes`, 'success', `บันทึกร่างแผนที่ ${f.plan_no || ''} แล้ว เขียนครบแล้วกด ส่งทั้งเล่ม`);
   await finishSave(req, res, id, b.action === 'submit', 'บันทึกร่างเรียบร้อย ยังไม่ได้ส่งให้ผู้ตรวจ');
 });
 
 // ส่งบันทึกหลังแผนหลายฉบับพร้อมกัน
 router.post('/notes/submit-many', async (req, res) => {
+  if (req.ff.notebook) throw new UserError('บันทึกหลังแผนส่งทั้งเล่ม กดปุ่ม ส่งทั้งเล่ม ในหน้ารายวิชา');
   const b = req.body || {};
   const ids = asArray(b.ids).map(util.idOrNull).filter(Boolean);
   if (!ids.length) throw new UserError('ยังไม่ได้เลือกบันทึกที่จะส่ง');
@@ -490,6 +509,18 @@ router.get('/s/:id', async (req, res) => {
           sub.doc_type === 'plan' ? 'manual' : 'plan'
         );
   const parent = sub.parent_id ? await q.get('SELECT id, subject_code, subject_name, status FROM submissions WHERE id = ?', sub.parent_id) : null;
+  // ส่งทั้งเล่ม: บันทึกฉบับเดียวลงนามในหน้าทั้งเล่ม · หน้าแผนบอกแผ่นที่ถูกส่งกลับให้แก้
+  const book = bookMode(req, sub);
+  const canSign = wf.canReview(req.me, sub);
+  const noteReturns = new Map();
+  if (req.ff.notebook && notes.length) {
+    const back = notes.filter((n) => n.status === 'returned').map((n) => n.id);
+    if (back.length) {
+      for (const r of await q.all("SELECT submission_id, comment FROM reviews WHERE submission_id = ANY(?) AND action = 'return' ORDER BY id", back)) {
+        noteReturns.set(r.submission_id, r.comment);
+      }
+    }
+  }
   res.render('detail', {
     title: `${wf.DOC_TYPES[sub.doc_type].label} ${sub.subject_code}`,
     sub,
@@ -500,11 +531,16 @@ router.get('/s/:id', async (req, res) => {
     sibling,
     parent,
     steps: await wf.progress(sub, { reviews }),
-    canReview: wf.canReview(req.me, sub),
+    canReview: canSign && !book,
+    bookSign: canSign && book,
+    noteReturns,
+    bookWaiting: req.ff.notebook ? notes.filter((n) => wf.canReview(req.me, n)).length : 0,
+    bookKeep: wf.BOOK_KEEP,
     needsScore: wf.needsScore(sub),
     rubric: wf.rubric(sub.doc_type),
     canEdit: editable(req, sub),
     canWithdraw: await wf.canWithdraw(req.me, sub, reviews),
+    bookMode: book,
     canDelete: (wf.isOwner(req.me, sub) && sub.status === 'draft' && !sub.submitted_at) || req.me.is_admin,
     isOwner: wf.isOwner(req.me, sub),
     canPlan: !req.ff.onemain || !(await teaching.planBlocked(req.me, Number(req.settings.academic_year), Number(req.settings.semester))),
@@ -596,6 +632,7 @@ router.post('/s/:id', async (req, res) => {
   const files = await up.take(req, sub.doc_type === 'note' ? 'attach_files' : 'main_files');
   let mergedMsg = '';
   try {
+    if (sub.doc_type === 'note') checkNotePdf(req, files);
     await rejectBadFiles(req, files);
     if (sub.doc_type !== 'note') mergedMsg = checkPdf(req, sub.doc_type, files);
     await saveEdit(req, sub, b, nowStr(), files);
@@ -603,12 +640,14 @@ router.post('/s/:id', async (req, res) => {
     await dropFiles(req, files);
     throw e;
   }
+  if (bookMode(req, sub)) return respond(req, res, `/s/${sub.parent_id}#notes`, 'success', 'บันทึกการแก้ไขเรียบร้อย แก้ครบแล้วกด ส่งทั้งเล่ม');
   await finishSave(req, res, sub.id, b.action === 'submit', `บันทึกการแก้ไขเรียบร้อย${mergedMsg} ยังไม่ได้ส่งให้ผู้ตรวจ`);
 });
 
 router.post('/s/:id/submit', async (req, res) => {
   const sub = await viewable(req, req.params.id);
   if (!editable(req, sub)) throw new UserError('ส่งได้เฉพาะงานของตนเองที่เป็นฉบับร่างหรือถูกส่งกลับ');
+  if (bookMode(req, sub)) throw new UserError('บันทึกหลังแผนส่งทั้งเล่ม กดปุ่ม ส่งทั้งเล่ม ในหน้ารายวิชา');
   const after = await trySubmit(req, sub.id);
   respond(req, res, `/s/${sub.id}`, 'success', submittedMessage(after));
 });
@@ -842,6 +881,126 @@ router.get('/s/:id/print-notes', async (req, res) => {
   res.render('print_notes', { title: 'พิมพ์บันทึกหลังแผนทั้งเล่ม', items });
 });
 
+// ---------- บันทึกหลังแผนทั้งเล่ม (ฟังก์ชันเสริม notebook) ----------
+// 1 เล่ม = บันทึกทุกฉบับของแผน 1 วิชา ครูกดส่งทั้งเล่มครั้งเดียว ผู้ตรวจอ่านไล่ทีละแผ่นแล้วลงนามครั้งเดียว
+
+function needBook(req) {
+  if (!req.ff.notebook) throw new UserError('ผู้ดูแลระบบปิดการส่งบันทึกหลังแผนทั้งเล่มไว้');
+}
+
+async function bookPlan(req, id) {
+  const plan = await viewable(req, id);
+  if (!plan || plan.doc_type !== 'plan') throw new UserError('ไม่พบแผนนี้');
+  return plan;
+}
+
+function bookNotes(planId, statuses) {
+  return q.all(
+    `SELECT ${wf.subCols()} FROM submissions WHERE parent_id = ? AND doc_type = 'note' AND status = ANY(?) ORDER BY to_int_lenient(plan_no), id`,
+    planId,
+    statuses
+  );
+}
+
+// แผ่นในเล่มที่รอผู้ใช้คนนี้ลงนามอยู่ตอนนี้
+async function bookWaiting(req, planId) {
+  return (await bookNotes(planId, ['pending'])).filter((n) => wf.canReview(req.me, n));
+}
+
+router.post('/s/:id/submit-book', async (req, res) => {
+  needBook(req);
+  const plan = await bookPlan(req, req.params.id);
+  const notes = (await bookNotes(plan.id, ['draft', 'returned'])).filter((n) => editable(req, n));
+  if (!notes.length) throw new UserError('ไม่มีบันทึกหลังแผนที่ยังไม่ได้ส่งในเล่มนี้');
+  const miss = [];
+  for (const n of notes) {
+    const m = await missingForSubmit(n, req.ff);
+    if (m.length) miss.push(`แผนที่ ${n.plan_no || n.topic} ขาด ${m.join(' และ ')}`);
+  }
+  if (miss.length) throw new UserError(`ยังส่งทั้งเล่มไม่ได้ ${miss.join(' · ')} กดแก้ไขแผ่นนั้นให้ครบก่อน`);
+  const after = await wf.submitMany(
+    notes.map((n) => n.id),
+    req.me
+  );
+  const where = [...new Set(after.map((n) => wf.statusText(n)))].join(' และ ');
+  respond(req, res, `/s/${plan.id}#notes`, 'success', `ส่งบันทึกหลังแผนทั้งเล่มเรียบร้อย ${after.length} แผ่น ขณะนี้${where}`);
+});
+
+router.get('/s/:id/book', async (req, res) => {
+  needBook(req);
+  const plan = await bookPlan(req, req.params.id);
+  const sheets = await bookWaiting(req, plan.id);
+  const files = new Map(sheets.map((n) => [n.id, []]));
+  if (sheets.length) {
+    for (const f of await q.all('SELECT * FROM files WHERE submission_id = ANY(?) AND is_current = 1 ORDER BY id', [...files.keys()])) {
+      files.get(f.submission_id).push(f);
+    }
+  }
+  const total = (await q.get("SELECT COUNT(*) AS n FROM submissions WHERE parent_id = ? AND doc_type = 'note' AND status != 'draft'", plan.id)).n;
+  const step = sheets.length ? wf.stepOf(sheets[0].current_role) : null;
+  res.render('note_book', { title: `ลงนามบันทึกหลังแผน ${plan.subject_code}`, plan, sheets, files, total: Number(total), step, isOwner: wf.isOwner(req.me, plan) });
+});
+
+// ความเห็นรายแผ่น ช่อง comment_<รหัสแผ่น> ค่าเริ่มต้น รับทราบ
+function sheetComment(b, id) {
+  return str(b[`comment_${id}`], 500);
+}
+
+// แผ่นที่ผู้ตรวจเห็นในหน้า (ids) และยังรอผู้ตรวจคนนี้ แผ่นที่เพิ่งส่งมาหลังเปิดหน้าไม่ถูกลงนามไปด้วย
+async function pickedSheets(req, planId) {
+  const seen = new Set(asArray((req.body || {}).ids).map(util.idOrNull).filter(Boolean));
+  const list = (await bookWaiting(req, planId)).filter((n) => seen.has(n.id));
+  if (!list.length) throw new UserError('ไม่มีแผ่นรอคุณลงนามในเล่มนี้แล้ว');
+  return list;
+}
+
+// งานถัดไปที่รอผู้ใช้คนนี้ (ส่งทั้งเล่ม: เล่มถัดไปเปิดหน้าลงนามทั้งเล่ม)
+async function nextInboxUrl(req) {
+  const list = await wf.inbox(req.me);
+  const next = (req.ff.notebook ? wf.groupBooks(list) : list)[0];
+  if (!next) return null;
+  return next.book ? `/s/${next.book.planId}/book` : `/s/${next.id}`;
+}
+
+router.post('/s/:id/book/approve', async (req, res) => {
+  needBook(req);
+  const plan = await bookPlan(req, req.params.id);
+  await applySignature(req);
+  const b = req.body || {};
+  const sheets = await pickedSheets(req, plan.id);
+  const comments = Object.fromEntries(sheets.map((n) => [n.id, sheetComment(b, n.id) || 'รับทราบ']));
+  const { done } = await wf.approveMany(
+    sheets.map((n) => n.id),
+    req.me,
+    { comments }
+  );
+  const next = await nextInboxUrl(req);
+  const msg = `ลงนามบันทึกหลังแผนทั้งเล่มเรียบร้อย ${done} แผ่น`;
+  respond(req, res, next || '/inbox', 'success', next ? `${msg} ต่อไปเป็นงานถัดไปที่รอคุณ` : msg);
+});
+
+router.post('/s/:id/book/return', async (req, res) => {
+  needBook(req);
+  const plan = await bookPlan(req, req.params.id);
+  const b = req.body || {};
+  const sheets = await pickedSheets(req, plan.id);
+  const fix = new Set(asArray(b.fix).map(util.idOrNull).filter(Boolean));
+  const fixed = sheets.filter((n) => fix.has(n.id));
+  if (!fixed.length) throw new UserError('ติ๊กเลือกแผ่นที่ต้องแก้อย่างน้อย 1 แผ่น แล้วเขียนสิ่งที่ต้องแก้ในช่องความเห็นของแผ่นนั้น');
+  for (const n of fixed) {
+    const c = sheetComment(b, n.id);
+    if (!c || c === 'รับทราบ') throw new UserError(`เขียนสิ่งที่ครูต้องแก้ในช่องความเห็นของแผนที่ ${n.plan_no || n.topic} ก่อนส่งกลับ`);
+  }
+  const which = `แผ่นที่ต้องแก้ แผนที่ ${fixed.map((n) => n.plan_no || n.topic).join(' ')}`;
+  const comments = Object.fromEntries(sheets.map((n) => [n.id, fix.has(n.id) ? sheetComment(b, n.id) : `${wf.BOOK_KEEP} (${which})`]));
+  const n = await wf.sendBackMany(
+    sheets.map((x) => x.id),
+    req.me,
+    { comments }
+  );
+  respond(req, res, '/inbox', 'success', `ส่งกลับทั้งเล่มให้ครูแก้ไขเรียบร้อย ${n} แผ่น (${which})`);
+});
+
 // ---------- ผู้ตรวจลงนาม ----------
 
 // คะแนนรายข้อส่งมาเป็นช่อง score_<รหัสข้อ>
@@ -862,21 +1021,27 @@ async function applySignature(req) {
   }
 }
 
+function noBookSingle(req, sub) {
+  if (bookMode(req, sub)) throw new UserError('บันทึกหลังแผนลงนามทั้งเล่ม กดเปิดลงนามทั้งเล่มจากงานรอตรวจ');
+}
+
 router.post('/s/:id/approve', async (req, res) => {
   const sub = await viewable(req, req.params.id);
   if (!sub) throw new UserError('ไม่พบงานนี้');
+  noBookSingle(req, sub);
   await applySignature(req);
   const b = req.body || {};
   const after = await wf.approve(sub.id, req.me, { comment: str(b.comment), scores: collectScores(b) });
-  const next = (await wf.inbox(req.me))[0];
+  const next = await nextInboxUrl(req);
   const msg =
     after.status === 'approved' ? 'ลงนามเรียบร้อย งานนี้ผ่านครบทุกระดับแล้ว' : `ลงนามเรียบร้อย ส่งต่อให้${wf.stepOf(after.current_role).label}แล้ว`;
-  respond(req, res, next ? `/s/${next.id}` : '/inbox', 'success', next ? `${msg} ต่อไปเป็นงานถัดไปที่รอคุณ` : msg);
+  respond(req, res, next || '/inbox', 'success', next ? `${msg} ต่อไปเป็นงานถัดไปที่รอคุณ` : msg);
 });
 
 router.post('/s/:id/return', async (req, res) => {
   const sub = await viewable(req, req.params.id);
   if (!sub) throw new UserError('ไม่พบงานนี้');
+  noBookSingle(req, sub);
   await wf.sendBack(sub.id, req.me, { comment: str((req.body || {}).comment) });
   respond(req, res, '/inbox', 'success', 'ส่งกลับให้ครูแก้ไขเรียบร้อย');
 });
@@ -912,7 +1077,13 @@ router.post('/inbox/approve-many', async (req, res) => {
   const b = req.body || {};
   await applySignature(req);
   if (!req.me.signature) throw new UserError('กรุณาบันทึกลายเซ็นในหน้าข้อมูลส่วนตัวก่อน');
-  const ids = asArray(b.ids).map(util.idOrNull).filter(Boolean);
+  // แถวเล่มบันทึกหลังแผนส่ง id ทุกฉบับในเล่มคั่นด้วยจุลภาค
+  const ids = /** @type {number[]} */ (
+    asArray(b.ids)
+      .flatMap((x) => String(x).split(','))
+      .map(util.idOrNull)
+      .filter(Boolean)
+  );
   if (!ids.length) throw new UserError('ยังไม่ได้เลือกรายการ');
   // ลงนามทุกงานที่เลือกใน transaction เดียว ข้ามงานที่ต้องให้คะแนนก่อน หรือไม่ได้รอคุณแล้ว
   const { done, skipped } = await wf.approveMany(ids, req.me, { comment: str(b.comment) });

@@ -322,6 +322,8 @@ async function noteQueue(me) {
 
 router.get('/quicksign', needFeature('quicksign'), async (req, res) => {
   const list = await noteQueue(req.me);
+  // ส่งทั้งเล่ม: ไล่ลงนามทีละเล่ม เปิดหน้าลงนามทั้งเล่มของเล่มที่รอนานที่สุด (ลงนามแล้วไปเล่มถัดไปเอง)
+  if (req.ff.notebook && list.length) return res.redirect(`/s/${list[0].parent_id}/book`);
   const signed = Math.max(0, Number(req.query.signed) || 0);
   const back = Math.max(0, Number(req.query.back) || 0);
   const card = list[0] || null;
@@ -335,11 +337,17 @@ async function noteOf(id) {
   return q.get("SELECT id FROM submissions WHERE id = ? AND doc_type = 'note'", util.idParam(id));
 }
 
+// ส่งทั้งเล่ม: ลงนามหรือส่งกลับทีละฉบับไม่ได้
+function noSingle(req, res, next) {
+  if (req.ff.notebook) return res.redirect('/quicksign');
+  next();
+}
+
 function qsNext(req, signed, back) {
   return `/quicksign?signed=${signed}&back=${back}`;
 }
 
-router.post('/quicksign/:id/approve', needFeature('quicksign'), async (req, res) => {
+router.post('/quicksign/:id/approve', needFeature('quicksign'), noSingle, async (req, res) => {
   const b = req.body || {};
   const sub = await noteOf(req.params.id);
   if (!sub) throw new wf.WorkflowError('ไม่พบบันทึกนี้');
@@ -347,7 +355,7 @@ router.post('/quicksign/:id/approve', needFeature('quicksign'), async (req, res)
   res.redirect(qsNext(req, (Number(b.signed) || 0) + 1, Number(b.back) || 0));
 });
 
-router.post('/quicksign/:id/return', needFeature('quicksign'), async (req, res) => {
+router.post('/quicksign/:id/return', needFeature('quicksign'), noSingle, async (req, res) => {
   const b = req.body || {};
   const sub = await noteOf(req.params.id);
   if (!sub) throw new wf.WorkflowError('ไม่พบบันทึกนี้');
@@ -355,7 +363,7 @@ router.post('/quicksign/:id/return', needFeature('quicksign'), async (req, res) 
   res.redirect(qsNext(req, Number(b.signed) || 0, (Number(b.back) || 0) + 1));
 });
 
-router.post('/quicksign/approve-rest', needFeature('quicksign'), async (req, res) => {
+router.post('/quicksign/approve-rest', needFeature('quicksign'), noSingle, async (req, res) => {
   const b = req.body || {};
   if (!req.me.signature) throw new wf.WorkflowError('กรุณาบันทึกลายเซ็นในหน้าข้อมูลส่วนตัวก่อน');
   // ลงนามทุกฉบับที่เหลือใน transaction เดียว

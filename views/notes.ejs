@@ -3,7 +3,7 @@
   <div>
     <div class="eyebrow">ภาคเรียนที่ <%= term.semester %>/<%= term.year %></div>
     <h1>บันทึกหลังแผน</h1>
-    <div class="sub">เขียนทีละแผนหลังสอนเสร็จ บันทึกร่างไว้หลายฉบับแล้วส่งพร้อมกันในหน้ารายวิชาได้</div>
+    <div class="sub"><%= ff.notebook ? 'เขียนทีละแผนหลังสอนเสร็จ บันทึกร่างไว้ เขียนครบแล้วกดส่งทั้งเล่มในหน้ารายวิชาครั้งเดียว' : 'เขียนทีละแผนหลังสอนเสร็จ บันทึกร่างไว้หลายฉบับแล้วส่งพร้อมกันในหน้ารายวิชาได้' %></div>
   </div>
 </div>
 
@@ -17,7 +17,7 @@
       <h2><%= r.code %> <%= r.name %></h2>
       <span class="badge"><%= r.grade %></span>
       <div class="actions">
-        <a class="btn btn-ghost" href="/s/<%= r.plan.id %>#notes">ดูทั้งเล่ม<%= todo ? ' และส่งหลายฉบับ' : '' %></a>
+        <a class="btn btn-ghost" href="/s/<%= r.plan.id %>#notes">ดูทั้งเล่ม<%= todo ? (ff.notebook ? ' และส่งทั้งเล่ม' : ' และส่งหลายฉบับ') : '' %></a>
         <% if (r.plan.status !== 'draft') { %><a class="btn btn-primary" href="/notes/new?plan=<%= r.plan.id %>"><%- icon('plus', 18) %> เขียนบันทึก</a><% } %>
       </div>
     </div>

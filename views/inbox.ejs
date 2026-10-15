@@ -1,5 +1,11 @@
 <%- include('partials/top') %>
-<% const T = wf.DOC_TYPES; const bulkable = rows.filter((s) => !s.needsScore).length; %>
+<%
+  const T = wf.DOC_TYPES;
+  const bulkable = rows.filter((s) => !s.needsScore).length;
+  // แถวเล่มบันทึกหลังแผน (ส่งทั้งเล่ม) เปิดหน้าลงนามทั้งเล่ม
+  const hrefOf = (s) => (s.book ? '/s/' + s.book.planId + '/book' : '/s/' + s.id);
+  const noteText = (s) => (s.book ? ' แผนที่ ' + s.book.planNos.join(' ') + ' (' + s.book.count + ' แผ่น)' : ' แผนที่ ' + s.plan_no);
+%>
 <div class="page-head">
   <div>
     <h1>งานรอตรวจ</h1>
@@ -18,13 +24,13 @@
   <div class="card"><div class="empty"><span class="big"></span>ไม่มีงานค้าง ตรวจครบแล้ว</div></div>
 <% } else { %>
   <div class="m-only">
-    <% if (counts.note && ff.quicksign) { %><a class="btn btn-primary btn-lg btn-block" style="margin-bottom:12px" href="/quicksign"><%- icon('cards', 20) %> ลงนามบันทึกหลังแผนแบบไล่การ์ด (<%= counts.note %>)</a><% } %>
+    <% if (counts.note && ff.quicksign) { %><a class="btn btn-primary btn-lg btn-block" style="margin-bottom:12px" href="/quicksign"><%- icon('cards', 20) %> <%= ff.notebook ? 'ลงนามบันทึกหลังแผนทีละเล่ม (' + counts.note + ' เล่ม)' : 'ลงนามบันทึกหลังแผนแบบไล่การ์ด (' + counts.note + ')' %></a><% } %>
     <% for (const s of rows) { %>
-      <a class="card m-inbox" href="/s/<%= s.id %>">
+      <a class="card m-inbox" href="<%= hrefOf(s) %>">
         <span class="qs-ini"><%= util.initials(s.teacher_name) %></span>
         <span class="m-inbox-text">
           <span class="tags"><span class="badge badge-blue"><%= T[s.doc_type].label %></span><% if (s.needsScore) { %><span class="badge badge-amber">ต้องให้คะแนน</span><% } %></span>
-          <b><%= s.subject_code %> <%= s.subject_name %><%= s.doc_type === 'note' ? ' แผนที่ ' + s.plan_no : '' %></b>
+          <b><%= s.subject_code %> <%= s.subject_name %><%= s.doc_type === 'note' ? noteText(s) : '' %></b>
           <span class="muted small"><%= s.teacher_name %>  <%= util.ago(s.updated_at) %></span>
         </span>
         <%- icon('next', 22) %>
@@ -46,14 +52,14 @@
       <tbody>
       <% for (const s of rows) { %>
         <tr>
-          <td><% if (!s.needsScore) { %><input type="checkbox" name="ids" value="<%= s.id %>" aria-label="เลือก"><% } else { %><span title="ต้องให้คะแนน"></span><% } %></td>
+          <td><% if (!s.needsScore) { %><input type="checkbox" name="ids" value="<%= s.book ? s.book.ids.join(',') : s.id %>" aria-label="เลือก"><% } else { %><span title="ต้องให้คะแนน"></span><% } %></td>
           <td class="nowrap"><%= T[s.doc_type].label %></td>
           <td><%= s.teacher_name %></td>
-          <td><b><%= s.subject_code %></b> <%= s.subject_name %><%= s.doc_type === 'note' ? ' แผนที่ ' + s.plan_no + (s.topic ? ' ' + s.topic : '') : '' %>
+          <td><b><%= s.subject_code %></b> <%= s.subject_name %><%= s.doc_type === 'note' ? (s.book ? noteText(s) : ' แผนที่ ' + s.plan_no + (s.topic ? ' ' + s.topic : '')) : '' %>
             <% if (s.needsScore) { %><br><span class="badge badge-amber">ต้องให้คะแนน</span><% } %></td>
           <td class="hide-sm"><%= s.dept_name %></td>
           <td class="hide-sm nowrap"><%= util.thaiDate(s.updated_at, true) %></td>
-          <td class="right"><a class="btn btn-sm btn-primary" href="/s/<%= s.id %>"><%= s.needsScore ? 'ให้คะแนน' : 'เปิดตรวจ' %></a></td>
+          <td class="right"><a class="btn btn-sm btn-primary" href="<%= hrefOf(s) %>"><%= s.needsScore ? 'ให้คะแนน' : s.book ? 'เปิดทั้งเล่ม' : 'เปิดตรวจ' %></a></td>
         </tr>
       <% } %>
       </tbody>

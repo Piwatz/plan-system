@@ -1,0 +1,92 @@
+<%- include('partials/top') %>
+<%
+  // ลงนามบันทึกหลังแผนทั้งเล่ม (ฟังก์ชันเสริม notebook): อ่านไล่ทีละแผ่น ความเห็นตั้งไว้ รับทราบ ทุกแผ่น แก้เฉพาะแผ่น แล้วลงนามครั้งเดียว
+  const sayList = ['รับทราบ', 'ดีมาก เป็นแบบอย่างได้', 'ควรสอนซ่อมเสริมนักเรียนที่ยังไม่ผ่าน'];
+  const kpa = [['ด้านความรู้ (K)', 'result_k'], ['ด้านทักษะ / กระบวนการ (P)', 'result_p'], ['ด้านคุณลักษณะ (A)', 'result_a'], ['ปัญหา / อุปสรรค / แนวทางแก้ไข', 'problems'], ['ข้อเสนอแนะ', 'suggestions']];
+  const viewable = (id) => (files.get(id) || []).filter((f) => /^(application\/pdf|image\/)/.test(f.mime));
+%>
+<div class="page-head">
+  <div style="min-width:0">
+    <div class="tags">
+      <span class="badge badge-blue">บันทึกหลังแผน ทั้งเล่ม</span>
+      <span class="badge">ภาคเรียนที่ <%= plan.semester %>/<%= plan.academic_year %></span>
+    </div>
+    <h1 style="margin-top:8px"><%= plan.subject_code %> <%= plan.subject_name %></h1>
+    <div class="sub"><%= plan.teacher_name %> กลุ่มสาระ<%= plan.dept_name %> <a href="/s/<%= plan.id %>#notes">ดูทั้งเล่ม</a></div>
+  </div>
+  <% if (sheets.length) { %>
+    <div class="actions"><button type="button" class="btn btn-primary" data-goto="book-sign"><%- icon('ok', 18) %> ไปลงนามท้ายเล่ม</button></div>
+  <% } %>
+</div>
+
+<% if (!sheets.length) { %>
+  <div class="card"><div class="empty"><span class="big"></span>ไม่มีแผ่นรอคุณลงนามในเล่มนี้แล้ว
+    <div class="btn-row" style="justify-content:center;margin-top:12px"><a class="btn btn-ghost" href="/inbox">ไปที่งานรอตรวจ</a><a class="btn btn-primary" href="/s/<%= plan.id %>#notes">ดูทั้งเล่ม</a></div>
+  </div></div>
+<% } else { %>
+  <div class="alert alert-info"><%- icon('books') %>
+    <span>รอคุณลงนามในฐานะ<b><%= step ? step.label : '' %></b> <b><%= sheets.length %> แผ่น</b><%= total > sheets.length ? ' จากที่ส่งแล้ว ' + total + ' แผ่น' : '' %> อ่านไล่ทีละแผ่น ความเห็นตั้งไว้ <b>รับทราบ</b> ทุกแผ่น แก้เฉพาะแผ่นที่ต้องการ แล้วลงนามครั้งเดียวท้ายเล่ม ลายเซ็นขึ้นทุกแผ่น</span>
+  </div>
+  <% if (isOwner) { %><p class="hint">งานของคุณเอง ระบบเปิดให้ลงนามในฐานะ<%= step ? step.label : '' %>ได้</p><% } %>
+
+  <nav class="chips" aria-label="ไปที่แผ่น" style="margin-bottom:14px">
+    <% sheets.forEach((n, i) => { %><a class="chip" href="#sheet-<%= n.id %>">แผ่น <%= i + 1 %> แผนที่ <%= n.plan_no %></a><% }) %>
+  </nav>
+
+  <form method="post" action="/s/<%= plan.id %>/book/approve" id="book-form" data-busy="กำลังลงนาม">
+    <% sheets.forEach((n, i) => { const v = viewable(n.id); const all = files.get(n.id) || []; const pct = n.students_total ? Math.round(Math.min(n.students_passed || 0, n.students_total) / n.students_total * 100) : null; %>
+      <input type="hidden" name="ids" value="<%= n.id %>">
+      <article class="card" id="sheet-<%= n.id %>">
+        <div class="card-head">
+          <h2>แผ่น <%= i + 1 %>/<%= sheets.length %> แผนที่ <%= n.plan_no %><%= n.topic ? ' เรื่อง ' + n.topic : '' %></h2>
+          <div class="actions"><a class="btn btn-sm btn-ghost" href="/s/<%= n.id %>" target="_blank" rel="noopener"><%- icon('eye', 16) %> เปิดฉบับเต็ม</a></div>
+        </div>
+        <div class="muted small"><%= [n.unit_no || n.unit_name ? 'หน่วยที่ ' + [n.unit_no, n.unit_name].filter(Boolean).join(' ') : '', n.class_room, util.thaiDate(n.teach_date, true), n.hours ? n.hours + ' ชั่วโมง' : '', pct != null ? 'ผ่านเกณฑ์ ' + n.students_passed + ' จาก ' + n.students_total + ' คน (' + pct + '%)' : ''].filter(Boolean).join('  ') %></div>
+        <% if (n.note_mode === 'file') { %>
+          <% if (v.length) { %>
+            <div style="margin-top:12px"><%- include('partials/file_viewer', { files: v, cls: 'inline', lazy: true }) %></div>
+          <% } else { %>
+            <div class="alert alert-info" style="margin-top:12px"><%- icon('file') %><span>ครูแนบไฟล์บันทึกหลังแผนของตัวเอง เปิดอ่านจากปุ่มด้านล่าง</span></div>
+          <% } %>
+        <% } else { %>
+          <% for (const [label, key] of kpa) { if (key === 'suggestions' && !n[key]) continue; %>
+            <div class="section-title"><%= label %></div>
+            <div class="text-block"><%= n[key] || '-' %></div>
+          <% } %>
+          <% if (v.length) { %><div style="margin-top:12px"><%- include('partials/file_viewer', { files: v, cls: 'inline', lazy: true }) %></div><% } %>
+        <% } %>
+        <% const others = all.filter((f) => !v.includes(f)); if (others.length) { %>
+          <div class="btn-row" style="margin-top:10px"><% for (const f of others) { %><a class="btn btn-sm btn-ghost" href="/f/<%= f.id %>?dl=1"><%- icon('file', 16) %> <%= f.original_name %></a><% } %></div>
+        <% } %>
+        <div class="field" style="margin:14px 0 0">
+          <label for="comment_<%= n.id %>">ความเห็นแผ่นนี้</label>
+          <input type="text" id="comment_<%= n.id %>" name="comment_<%= n.id %>" value="รับทราบ" maxlength="500">
+          <div class="chips"><% for (const say of sayList) { %><button type="button" class="chip<%= say === 'รับทราบ' ? ' on' : '' %>" data-say="<%= say %>" data-target="comment_<%= n.id %>"><%= say %></button><% } %></div>
+        </div>
+        <label class="check" style="margin-top:10px"><input type="checkbox" name="fix" value="<%= n.id %>"> แผ่นนี้ต้องแก้ (ใช้เมื่อส่งกลับทั้งเล่ม เขียนสิ่งที่ต้องแก้ในช่องความเห็น)</label>
+      </article>
+    <% }) %>
+
+    <div class="card review-panel" id="book-sign">
+      <h2>ลงนามทั้งเล่ม <%= sheets.length %> แผ่น</h2>
+      <div class="field">
+        <span class="label">ลายเซ็น</span>
+        <% if (me.signature) { %>
+          <div class="btn-row"><span class="sig-box"><img class="sig-preview" src="<%= me.signature %>" alt="ลายเซ็นของคุณ"></span> <small class="muted">ใช้ลายเซ็นที่บันทึกไว้ ขึ้นทุกแผ่น <a href="/profile">เปลี่ยนลายเซ็น</a></small></div>
+        <% } else { %>
+          <%- include('partials/sigpad') %>
+          <div class="hint">ระบบจะจำลายเซ็นนี้ไว้ ครั้งต่อไปไม่ต้องเซ็นใหม่</div>
+        <% } %>
+      </div>
+      <div class="qs-actions">
+        <button class="btn btn-ghost btn-lg" type="submit" formaction="/s/<%= plan.id %>/book/return" formnovalidate
+          data-need-checked="fix" data-need-message="ติ๊ก แผ่นนี้ต้องแก้ ในแผ่นที่ครูต้องแก้ และเขียนสิ่งที่ต้องแก้ในช่องความเห็นของแผ่นนั้นก่อน"
+          data-confirm="ส่งกลับทั้งเล่มให้ครูแก้ไข ระบบบอกครูว่าแผ่นที่ติ๊กไว้ต้องแก้" data-danger="1" data-ok-label="ส่งกลับทั้งเล่ม"><%- icon('undo', 20) %> ส่งกลับทั้งเล่ม</button>
+        <button class="btn btn-success btn-lg" type="submit"
+          <% if (!me.signature) { %>data-require-field="signature" data-require-message="กรุณาเซ็นชื่อในกรอบก่อน"<% } %>
+          data-confirm="ลงนามรับทราบบันทึกหลังแผนทั้งเล่ม <%= sheets.length %> แผ่น ตามความเห็นที่ตั้งไว้ในแต่ละแผ่น" data-ok-label="ลงนามทั้งเล่ม"><%- icon('ok', 20) %> ลงนามทั้งเล่ม (<%= sheets.length %> แผ่น)</button>
+      </div>
+    </div>
+  </form>
+<% } %>
+<%- include('partials/bottom') %>

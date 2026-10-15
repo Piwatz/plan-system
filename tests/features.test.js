@@ -162,6 +162,9 @@ test('เปลี่ยนธีมแล้วสีและฟอนต์�
 
 test('บันทึกหลังแผนแบบแนบไฟล์ของครูเอง และบังคับกรอกจำนวนนักเรียนเมื่อเปิดสวิตช์', async () => {
   const t = await as('teacher');
+  const admin = await as('admin');
+  // ทดสอบแบบส่งทีละฉบับ (ปิดส่งทั้งเล่ม) แบบทั้งเล่มอยู่ใน notebook.test.js
+  await admin.post('/admin/features/notebook', { on: '0' });
   const planId = (await planOf('ว30203'));
   const send = async (fields, file) => {
     const r = await sendForm(t, '/notes', { plan_id: String(planId), ...fields }, file ? [[file, 'บันทึกของฉัน.pdf']] : [], { field: 'attach_files', headers: {} });
@@ -179,7 +182,6 @@ test('บันทึกหลังแผนแบบแนบไฟล์ข�
   assert.match(print, /แนบเป็นไฟล์ในระบบ/);
   assert.match(print, /บันทึกของฉัน\.pdf/);
 
-  const admin = await as('admin');
   await admin.post('/admin/features/notefile', { on: '0' });
   id = await send({ plan_no: '22', note_mode: 'file', result_k: 'เข้าใจ', action: 'draft' }, pdf());
   assert.equal((await db.q.get('SELECT note_mode FROM submissions WHERE id = ?', id)).note_mode, 'type', 'ปิดแล้วต้องเป็นแบบพิมพ์');
@@ -191,6 +193,7 @@ test('บันทึกหลังแผนแบบแนบไฟล์ข�
   id = await send({ plan_no: '24', result_k: 'เข้าใจ', students_total: '38', students_passed: '30', action: 'submit' });
   assert.equal((await db.q.get('SELECT status FROM submissions WHERE id = ?', id)).status, 'pending');
   await admin.post('/admin/features/counts', { on: '0' });
+  await admin.post('/admin/features/notebook', { on: '1' });
 });
 
 test('ตรวจไฟล์ก่อนส่ง ไม่รับไฟล์ที่นามสกุลไม่ตรงกับไฟล์จริง', async () => {
@@ -210,6 +213,9 @@ test('ตรวจไฟล์ก่อนส่ง ไม่รับไฟล�
 
 test('ลงนามแบบไล่การ์ด ลงนาม ส่งกลับ และลงนามที่เหลือทั้งหมด', async () => {
   const head = await as('scihead');
+  // ไล่การ์ดทีละฉบับ ใช้เมื่อปิดส่งทั้งเล่ม (เปิดอยู่ ไล่ทีละเล่ม ดู notebook.test.js)
+  const admin = await as('admin');
+  await admin.post('/admin/features/notebook', { on: '0' });
   const queue = async () => (await db.q.all("SELECT id FROM submissions WHERE doc_type = 'note' AND status = 'pending' AND current_role = 'dept_head' AND department_id = (SELECT department_id FROM users WHERE username = 'scihead')")).map((r) => r.id);
   const start = (await queue());
   assert.ok(start.length >= 3);
@@ -235,6 +241,7 @@ test('ลงนามแบบไล่การ์ด ลงนาม ส่ง
     await other.post(`/quicksign/${any.id}/approve`, { comment: 'x' });
     assert.notEqual((await db.q.get('SELECT current_role FROM submissions WHERE id = ?', any.id)).current_role, null);
   }
+  await admin.post('/admin/features/notebook', { on: '1' });
 });
 
 test('หัวหน้ากลุ่มสาระส่งเตือนครูที่ยังส่งไม่ครบ ครูเห็นที่หน้าหลัก', async () => {

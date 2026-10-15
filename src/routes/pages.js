@@ -196,14 +196,25 @@ router.get('/', async (req, res) => {
       else if (s.status === 'draft') todo.push(`${name} ยังเป็นร่าง`);
     }
   }
-  const activity = await q.all(
-    `SELECT ${wf.reviewCols('r')}, s.doc_type, s.subject_code, s.subject_name, s.plan_no FROM reviews r
+  const recent = await q.all(
+    `SELECT ${wf.reviewCols('r')}, s.doc_type, s.subject_code, s.subject_name, s.plan_no, s.parent_id FROM reviews r
      JOIN submissions s ON s.id = r.submission_id
      WHERE s.teacher_id = ? AND r.action IN ('approve', 'return')
-     ORDER BY r.id DESC LIMIT 6`,
-    me.id
+     ORDER BY r.id DESC LIMIT ?`,
+    me.id,
+    req.ff.notebook ? 60 : 6
   );
-  const inbox = await wf.inbox(me);
+  // ส่งทั้งเล่ม: ลงนามหรือส่งกลับทั้งเล่มครั้งเดียว รวมเป็นบรรทัดเดียว (planNos = แผนที่ทุกแผ่น)
+  const activity = [];
+  for (const r of recent) {
+    const last = activity[activity.length - 1];
+    const same = req.ff.notebook && last && r.doc_type === 'note' && last.doc_type === 'note' && r.parent_id === last.parent_id && r.action === last.action && r.user_id === last.user_id && r.role === last.role;
+    if (same) last.planNos.push(r.plan_no);
+    else activity.push({ ...r, planNos: [r.plan_no] });
+  }
+  activity.splice(6);
+  for (const a of activity) a.planNos.sort((x, y) => (parseInt(x, 10) || 0) - (parseInt(y, 10) || 0));
+  const inbox = req.ff.notebook ? wf.groupBooks(await wf.inbox(me)) : await wf.inbox(me);
   const alerts = await q.all('SELECT * FROM notifications WHERE user_id = ? AND read_at IS NULL ORDER BY id DESC LIMIT 3', me.id);
   // รายการ "สิ่งที่ต้องทำต่อ" สำหรับหน้าแรกบนมือถือ เรียงจากเรื่องด่วน
   const nextUp = [];
@@ -212,8 +223,15 @@ router.get('/', async (req, res) => {
   for (const s of returnedWorks) {
     nextUp.push({ title: `${s.doc_type === 'manual' ? 'คู่มือ' : 'แผน'} ${s.subject_code} ถูกส่งกลับให้แก้ไข`, sub: lastReturn(s.id).slice(0, 90), href: `/s/${s.id}`, tone: 'back' });
   }
-  for (const n of noteTodo.filter((x) => x.status === 'returned')) {
+  // ส่งกลับทั้งเล่ม: แผ่นที่ผู้ตรวจบอกว่าไม่ต้องแก้ ไม่ต้องขึ้นเป็นงานค้าง (ครูกดส่งทั้งเล่มอีกครั้งในหน้ารายวิชา)
+  for (const n of noteTodo.filter((x) => x.status === 'returned' && !lastReturn(x.id).startsWith(wf.BOOK_KEEP))) {
     nextUp.push({ title: `บันทึกหลังแผน ${n.subject_code} แผนที่ ${n.plan_no} ถูกส่งกลับ`, sub: lastReturn(n.id).slice(0, 90), href: `/s/${n.id}/edit`, tone: 'back' });
+  }
+  if (req.ff.notebook) {
+    for (const planId of new Set(noteTodo.filter((x) => x.status === 'returned').map((x) => x.parent_id))) {
+      const n = noteTodo.find((x) => x.parent_id === planId);
+      nextUp.push({ title: `บันทึกหลังแผน ${n.subject_code} รอส่งทั้งเล่มอีกครั้ง`, sub: 'แก้แผ่นที่ต้องแก้แล้ว กดส่งทั้งเล่มในหน้ารายวิชา', href: `/s/${planId}#notes`, tone: 'back' });
+    }
   }
   const drafts = noteTodo.filter((x) => x.status === 'draft');
   if (drafts.length) {
@@ -306,7 +324,9 @@ router.get('/my', async (req, res) => {
 
 router.get('/inbox', async (req, res) => {
   const type = wf.DOC_TYPES[req.query.type] ? req.query.type : '';
-  const all = (await wf.inbox(req.me)).map((s) => ({ ...s, needsScore: wf.needsScore(s) }));
+  const list = await wf.inbox(req.me);
+  // ส่งบันทึกหลังแผนทั้งเล่ม: ผู้ตรวจเห็นเป็นงานเดียวต่อเล่ม
+  const all = (req.ff.notebook ? wf.groupBooks(list) : list).map((s) => ({ ...s, needsScore: wf.needsScore(s) }));
   const rows = type ? all.filter((s) => s.doc_type === type) : all;
   const counts = { all: all.length };
   for (const k of Object.keys(wf.DOC_TYPES)) counts[k] = all.filter((s) => s.doc_type === k).length;

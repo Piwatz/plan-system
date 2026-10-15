@@ -34,7 +34,10 @@
       <a class="btn btn-ghost" href="/s/<%= sub.id %>/print" target="_blank" rel="noopener"><%- icon('print', 18) %> บันทึกข้อความ</a>
       <% if (sub.score_max) { %><a class="btn btn-ghost" href="/s/<%= sub.id %>/print?doc=eval" target="_blank" rel="noopener"><%- icon('print', 18) %> แบบประเมิน</a><% } %>
     <% } %>
-    <% if (canEdit) { %>
+    <% if (canEdit && bookMode) { %>
+      <a class="btn btn-ghost" href="/s/<%= sub.id %>/edit"><%- icon('edit', 18) %> แก้ไข</a>
+      <a class="btn btn-primary" href="/s/<%= sub.parent_id %>#notes"><%- icon('send', 18) %> ไปหน้าส่งทั้งเล่ม</a>
+    <% } else if (canEdit) { %>
       <a class="btn btn-ghost" href="/s/<%= sub.id %>/edit"><%- icon('edit', 18) %> แก้ไข</a>
       <form method="post" action="/s/<%= sub.id %>/submit" class="inline-form" data-busy="กำลังส่งงาน">
         <button class="btn btn-primary" type="submit" data-confirm="<%= isOwner ? 'ยืนยันส่ง' + T.label + 'ให้ผู้ตรวจ' : 'ส่งงานนี้แทน ' + sub.teacher_name + ' ระบบจะบันทึกว่าผู้ดูแลระบบส่งแทน' %>" data-ok-label="ส่งเลย"><%- icon('send', 18) %> <%= !isOwner ? 'ส่งแทนครู' : sub.status === 'returned' ? 'ส่งอีกครั้ง' : 'ส่งให้ผู้ตรวจ' %></button>
@@ -59,11 +62,12 @@
   <div class="alert alert-error"><%- icon('undo') %>
     <div><b><%= lastReturn.user_name %></b> (<%= lastReturn.step_label %>) ส่งกลับให้แก้ไข เมื่อ <%= util.thaiDateTime(lastReturn.created_at) %>
       <div class="pre" style="margin-top:6px;color:var(--ink)"><%= lastReturn.comment %></div>
-      <% if (isOwner) { %><div style="margin-top:8px">กด <b>แก้ไข</b> ปรับตามความเห็น แล้วกดส่งอีกครั้ง งานจะกลับไปที่ผู้ส่งคืนโดยตรง</div><% } %>
+      <% if (isOwner && bookMode) { %><div style="margin-top:8px">กด <b>แก้ไข</b> ปรับตามความเห็น แล้วกด <b>ส่งทั้งเล่ม</b> ในหน้ารายวิชา</div>
+      <% } else if (isOwner) { %><div style="margin-top:8px">กด <b>แก้ไข</b> ปรับตามความเห็น แล้วกดส่งอีกครั้ง งานจะกลับไปที่ผู้ส่งคืนโดยตรง</div><% } %>
     </div>
   </div>
 <% } else if (sub.status === 'draft' && isOwner) { %>
-  <div class="alert alert-info"><%- icon('note') %><span>งานนี้ยังเป็นฉบับร่าง ผู้ตรวจจะยังไม่เห็นจนกว่าคุณจะกด <b>ส่งให้ผู้ตรวจ</b></span></div>
+  <div class="alert alert-info"><%- icon('note') %><span>งานนี้ยังเป็นฉบับร่าง ผู้ตรวจจะยังไม่เห็นจนกว่าคุณจะกด <b><%= bookMode ? 'ส่งทั้งเล่ม' : 'ส่งให้ผู้ตรวจ' %></b><%= bookMode ? ' ในหน้ารายวิชา' : '' %></span></div>
 <% } else if (sub.status === 'approved') { %>
   <div class="alert alert-success"><%- icon('ok') %><span><%= isNote ? 'ลงความเห็นครบทุกระดับแล้ว' : 'ผ่านการพิจารณาครบทุกระดับแล้ว' %> เมื่อ <%= util.thaiDateTime(sub.completed_at) %></span></div>
 <% } %>
@@ -72,6 +76,12 @@
   <h3>เส้นทางการตรวจ</h3>
   <%- include('partials/stepper') %>
 </div>
+
+<% if (bookSign) { %>
+  <div class="alert alert-info"><%- icon('books') %>
+    <span>บันทึกหลังแผนลงนามทั้งเล่ม อ่านไล่ทุกแผ่นแล้วลงนามครั้งเดียว <a class="btn btn-sm btn-primary" href="/s/<%= sub.parent_id %>/book">เปิดลงนามทั้งเล่ม</a></span>
+  </div>
+<% } %>
 
 <% if (canReview) {
   const maxTotal = rubric.reduce((a, it) => a + it.max_score, 0);
@@ -227,30 +237,42 @@
             <% if (isOwner && sub.status !== 'draft') { %><a class="btn btn-primary btn-sm" href="/notes/new?plan=<%= sub.id %>"><%- icon('plus', 16) %> เขียนบันทึกหลังแผน</a><% } %>
           </div>
         </div>
+        <% if (ff.notebook && bookWaiting) { %>
+          <div class="alert alert-info"><%- icon('books') %><span>เล่มนี้มี <b><%= bookWaiting %> แผ่น</b> รอคุณลงนาม <a class="btn btn-sm btn-primary" href="/s/<%= sub.id %>/book">เปิดลงนามทั้งเล่ม</a></span></div>
+        <% } %>
         <% if (!notes.length) { %>
           <div class="empty"><%= sub.status === 'draft' ? 'ส่งแผนเล่มนี้ก่อน แล้วจึงเขียนบันทึกหลังแผนได้' : 'ยังไม่มีบันทึกหลังแผน' %></div>
         <% } else { %>
-          <form method="post" action="/notes/submit-many" data-busy="กำลังส่งบันทึก">
+          <% const bookSend = ff.notebook && todo.length && (isOwner || (me.is_admin && sub.teacher_id !== me.id)); %>
+          <form method="post" action="<%= ff.notebook ? '/s/' + sub.id + '/submit-book' : '/notes/submit-many' %>" data-busy="กำลังส่งบันทึก">
             <input type="hidden" name="back" value="/s/<%= sub.id %>#notes">
             <div class="table-wrap"><table class="table">
               <thead><tr>
-                <% if (isOwner && todo.length) { %><th><input type="checkbox" data-check-all="ids" aria-label="เลือกทั้งหมด"></th><% } %>
+                <% if (!ff.notebook && isOwner && todo.length) { %><th><input type="checkbox" data-check-all="ids" aria-label="เลือกทั้งหมด"></th><% } %>
                 <th>แผนที่</th><th>เรื่อง</th><th class="hide-sm">วันที่สอน</th><th>สถานะ</th><th></th>
               </tr></thead>
               <tbody>
               <% for (const n of notes) { const can = isOwner && (n.status === 'draft' || n.status === 'returned'); %>
                 <tr>
-                  <% if (isOwner && todo.length) { %><td><% if (can) { %><input type="checkbox" name="ids" value="<%= n.id %>" aria-label="เลือกแผนที่ <%= n.plan_no %>"><% } %></td><% } %>
+                  <% if (!ff.notebook && isOwner && todo.length) { %><td><% if (can) { %><input type="checkbox" name="ids" value="<%= n.id %>" aria-label="เลือกแผนที่ <%= n.plan_no %>"><% } %></td><% } %>
                   <td class="nowrap"><b><%= n.plan_no %></b></td>
-                  <td><%= n.topic || (n.note_mode === 'file' ? 'แนบไฟล์' : '-') %></td>
+                  <td><%= n.topic || (n.note_mode === 'file' ? 'แนบไฟล์' : '-') %>
+                    <% const back = noteReturns.get(n.id); if (back != null) { const keep = back.startsWith(bookKeep); %>
+                      <div class="small" style="margin-top:4px"><span class="badge <%= keep ? 'badge-gray' : 'badge-red' %>"><%= keep ? 'ไม่ต้องแก้' : 'ต้องแก้' %></span> <% if (!keep) { %><span class="muted"><%= back %></span><% } %></div>
+                    <% } %></td>
                   <td class="hide-sm nowrap"><%= util.thaiDate(n.teach_date, true) %></td>
                   <td><%- include('partials/status', { s: n }) %></td>
-                  <td class="right"><a class="btn btn-sm btn-ghost" href="/s/<%= n.id %>">เปิด</a></td>
+                  <td class="right"><a class="btn btn-sm btn-ghost" href="/s/<%= n.id %><%= ff.notebook && can ? '/edit' : '' %>"><%= ff.notebook && can ? 'แก้ไข' : 'เปิด' %></a></td>
                 </tr>
               <% } %>
               </tbody>
             </table></div>
-            <% if (isOwner && todo.length) { %>
+            <% if (bookSend) { %>
+              <div class="btn-row" style="margin-top:10px">
+                <button class="btn btn-primary btn-lg" type="submit" data-confirm="<%= isOwner ? 'ส่งบันทึกหลังแผนทั้งเล่ม ' + todo.length + ' แผ่น ให้ผู้ลงความเห็น' : 'ส่งบันทึกหลังแผนทั้งเล่มแทน ' + sub.teacher_name + ' ระบบจะบันทึกว่าผู้ดูแลระบบส่งแทน' %>" data-ok-label="ส่งทั้งเล่ม"><%- icon('send', 20) %> <%= isOwner ? 'ส่งทั้งเล่ม' : 'ส่งทั้งเล่มแทนครู' %> (<%= todo.length %> แผ่น)</button>
+                <small class="muted">ส่งทุกแผ่นที่เป็นร่างหรือรอแก้ไขในครั้งเดียว</small>
+              </div>
+            <% } else if (!ff.notebook && isOwner && todo.length) { %>
               <div class="btn-row" style="margin-top:10px">
                 <button class="btn btn-primary" type="submit" data-need-checked="ids" data-confirm="ส่งบันทึกหลังแผนที่เลือกทั้งหมดให้ผู้ลงความเห็น" data-ok-label="ส่งทั้งหมด"><%- icon('send', 18) %> ส่งบันทึกที่เลือก (<span data-checked-count="ids">0</span>)</button>
                 <small class="muted">ร่างหรือรอแก้ไข <%= todo.length %> ฉบับ</small>
