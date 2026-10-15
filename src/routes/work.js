@@ -2,6 +2,7 @@
 const { pipeline } = require('stream/promises');
 const express = require('express');
 const { q, nowStr } = require('../db');
+const db = require('../db');
 const { todayStr } = require('../time');
 const auth = require('../auth');
 const wf = require('../workflow');
@@ -692,7 +693,10 @@ router.post('/upload/start', async (req, res) => {
 
 // ท่อนของไฟล์ (Content-Range) ไม่ผ่านตัวอ่าน body ส่งต่อเข้าที่เก็บไฟล์เป็นสตรีม
 router.put('/upload/:token', async (req, res) => {
-  const r = await up.putChunk(req.me.id, String(req.params.token).slice(0, 100), req.get('content-range'), req.get('content-length'), req);
+  // บน Workers เนื้อท่อนอยู่ใน box.reqBody (src/worker.mjs) ส่งต่อตรงเข้า Drive · บน Node อ่านจากคำขอตามเดิม
+  const box = db.outerBox();
+  const body = box && box.reqBody ? { web: box.reqBody } : req;
+  const r = await up.putChunk(req.me.id, String(req.params.token).slice(0, 100), req.get('content-range'), req.get('content-length'), body);
   res.json({ ok: true, ...r });
 });
 
@@ -710,10 +714,21 @@ async function sendStored(req, res, f, headers) {
     return;
   }
   res.status(r.status);
-  res.set({ ...headers, 'Accept-Ranges': 'bytes', 'Content-Length': String(r.length) });
+  res.set({ ...headers, 'Accept-Ranges': 'bytes' });
+  // ความยาวจากที่เก็บไฟล์ ถ้าไม่บอก (ส่งแบบบีบอัด) ใช้ขนาดในฐานเมื่อขอทั้งไฟล์ ไม่รู้ก็ไม่ใส่ (ห้ามใส่ 0 จะได้ไฟล์ว่าง)
+  const length = r.length || (r.status === 200 && f.size) || 0;
+  if (length) res.set('Content-Length', String(length));
   if (r.contentRange) res.set('Content-Range', r.contentRange);
   if (req.method === 'HEAD') {
-    r.stream.destroy();
+    if (r.web) r.web.cancel().catch(() => {});
+    else r.stream.destroy();
+    return res.end();
+  }
+  // บน Workers ส่งสตรีมจาก Drive ให้เบราว์เซอร์ตรง (src/worker.mjs) ไม่ผ่านสตรีมของ Node ซึ่งกิน CPU จนเกินโควตาแบบฟรี
+  // (ตอน 14 ไฟล์ 11 MB ถูกตัดกลางทาง) · ตอบหัวไปก่อน เนื้อไฟล์ worker ใส่แทน
+  const box = db.outerBox();
+  if (box && r.web) {
+    box.body = r.web;
     return res.end();
   }
   try {

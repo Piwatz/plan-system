@@ -37,9 +37,22 @@ export default {
     // บอกแอปว่าผู้ใช้เข้ามาทาง https หรือ http ตามที่อยู่จริง (cookie แบบ secure ต้องรู้) เขียนทับค่าที่ผู้ใช้ส่งมาเอง
     const headers = new Headers(request.headers);
     headers.set('x-forwarded-proto', new URL(request.url).protocol.replace(':', ''));
-    const forwarded = new Request(request, { headers });
+    const box = {};
+    let forwarded;
+    // ท่อนไฟล์ที่อัปโหลด (PUT /upload/...) ส่งต่อเข้า Drive ตรงจากสตรีมของ Cloudflare ไม่ผ่านสตรีมของ Node (กิน CPU เกินโควตาแบบฟรี)
+    // แอปได้คำขอที่ไม่มีเนื้อ ส่วนเนื้อฝากไว้ใน box.reqBody ให้เส้นทางหยิบไปส่งต่อ (ต้องแยกก่อนสร้างคำขอใหม่ ไม่อย่างนั้นเนื้อถูกยึดไป)
+    if (request.method === 'PUT' && new URL(request.url).pathname.startsWith('/upload/') && request.body) {
+      box.reqBody = request.body;
+      // ไม่มีเนื้อแล้วต้องไม่บอกความยาว (แอปจะรอเนื้อที่ไม่มา) ความยาวจริงตรวจด้วย FixedLengthStream ตอนส่งเข้า Drive
+      headers.delete('content-length');
+      forwarded = new Request(request.url, { method: 'PUT', headers });
+    } else forwarded = new Request(request, { headers });
     // งานปิดการเชื่อมต่อฐานหลังส่งคำตอบ ให้ Workers รอจนเสร็จ (db.requestScope เรียก)
-    return db.outerScope({ waitUntil: (p) => ctx.waitUntil(p) }, () => handleAsNodeRequest(PORT, forwarded));
+    // box.body = สตรีมไฟล์จาก Drive ที่เส้นทางฝากไว้ (sendStored) ส่งให้เบราว์เซอร์ตรงพร้อมหัวที่แอปตั้ง ไม่กิน CPU
+    const response = await db.outerScope({ waitUntil: (p) => ctx.waitUntil(p), box }, () => handleAsNodeRequest(PORT, forwarded));
+    if (!box.body) return response;
+    await response.body?.cancel();
+    return new Response(box.body, { status: response.status, headers: response.headers });
   },
 
   async scheduled(controller, _env, ctx) {

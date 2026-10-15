@@ -267,7 +267,7 @@ function gdriveBackend(env = process.env, { oauth = 'https://oauth2.googleapis.c
       const r = await fetch(session, {
         method: 'PUT',
         headers: { 'content-length': String(length), 'content-range': total === 0 ? 'bytes */0' : `bytes ${start}-${end}/${total}` },
-        body: length ? fixedLength(Readable.toWeb(stream), length) : null,
+        body: length ? fixedLength(stream.web || Readable.toWeb(stream), length) : null,
         duplex: 'half',
         signal: AbortSignal.timeout(10 * 60 * 1000),
       });
@@ -288,11 +288,23 @@ function gdriveBackend(env = process.env, { oauth = 'https://oauth2.googleapis.c
       await fetch(session, { method: 'DELETE', signal: AbortSignal.timeout(15000) }).catch(() => {});
     },
     async get(ref, { range } = {}) {
-      const r = await api(`${API}/${idOf(ref)}?alt=media`, { headers: range ? { range } : {} });
+      // ขอแบบไม่บีบอัด: บน Cloudflare จริง fetch ขอ gzip เองแล้วแตกให้ ทำให้ไม่มี content-length (ตอน 14 ดาวน์โหลดได้ 0 ไบต์)
+      const r = await api(`${API}/${idOf(ref)}?alt=media`, { headers: { 'accept-encoding': 'identity', ...(range ? { range } : {}) } });
       const length = Number(r.headers.get('content-length')) || 0;
       const contentRange = r.headers.get('content-range') || undefined;
       const size = contentRange ? Number(contentRange.split('/')[1]) || length : length;
-      return { status: r.status === 206 ? 206 : 200, size, length, contentRange, stream: Readable.fromWeb(r.body) };
+      // web = สตรีมดิบจาก Drive (Workers ส่งต่อให้เบราว์เซอร์ตรง ไม่กิน CPU) · stream = แปลงเป็นแบบ Node เมื่อเรียกใช้ครั้งแรก
+      let node = null;
+      return {
+        status: r.status === 206 ? 206 : 200,
+        size,
+        length,
+        contentRange,
+        web: r.body,
+        get stream() {
+          return (node = node || Readable.fromWeb(r.body));
+        },
+      };
     },
     async head(ref) {
       const j = await (await api(`${API}/${idOf(ref)}?fields=name,size,mimeType`)).json();

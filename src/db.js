@@ -41,8 +41,9 @@ function queryCount() {
 // middleware: เปิดขอบเขตใหม่ทุกคำขอ · โหมดทดลองแจ้งใน log เมื่อหน้าไหนใช้เกิน 15 คำสั่ง
 // บน Workers ปิดตัวต่อฐานของคำขอเมื่อส่งคำตอบเสร็จ (ส่งงานปิดให้ ctx.waitUntil ที่ src/worker.mjs ใส่ไว้ในขอบเขตชั้นนอก)
 function requestScope(req, res, next) {
-  const scope = { queries: 0, blobs: 0 };
   const outer = als.getStore();
+  // outer = ขอบเขตชั้นนอกที่ src/worker.mjs ตั้ง (มีเฉพาะบน Workers) ให้เส้นทางฝากสตรีมไว้ส่งตรง (db.outer)
+  const scope = { queries: 0, blobs: 0, outer: outer && outer.box ? outer : null };
   if (backend && backend.endScope) {
     let ended = false;
     const end = () => {
@@ -68,6 +69,12 @@ function requestScope(req, res, next) {
     };
   }
   als.run({ scope, tx: null }, next);
+}
+
+// กล่องของ src/worker.mjs สำหรับคำขอนี้ (มีเฉพาะบน Workers) · ไม่มีได้ null
+function outerBox() {
+  const o = ctx().scope.outer;
+  return o ? o.box : null;
 }
 
 // Workers: ขอบเขตชั้นนอกของคำขอ เก็บ waitUntil ของ Cloudflare ไว้ให้ requestScope ส่งงานปิดการเชื่อมต่อ
@@ -395,6 +402,7 @@ module.exports = {
   toPg,
   requestScope,
   outerScope,
+  outerBox,
   withScope,
   watchQueries,
   queryCount,
