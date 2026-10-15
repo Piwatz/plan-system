@@ -9,6 +9,7 @@
       <div class="field">
         <label for="full_name">ชื่อ สกุล <span class="req">*</span></label>
         <input type="text" id="full_name" name="full_name" value="<%= u.full_name || '' %>" placeholder="เช่น นางสาวตัวอย่าง ใจดี" required>
+        <% if (ff.namefix) { %><div class="hint">ใส่คำนำหน้าติดกับชื่อ เว้นวรรคเฉพาะระหว่างชื่อกับนามสกุล เช่น นายสมมติ ใจดี</div><% } %>
       </div>
       <div class="field">
         <label for="username">ชื่อผู้ใช้ หรือรหัสครู<%- isNew ? '' : ' <span class="req">*</span>' %></label>

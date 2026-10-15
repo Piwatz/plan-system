@@ -110,10 +110,11 @@ router.get('/users/new', async (req, res) => {
   });
 });
 
-function userFields(b) {
+function userFields(b, ff = {}) {
+  const name = String(b.full_name || '').trim();
   return {
     username: String(b.username || '').trim().slice(0, 50),
-    full_name: String(b.full_name || '').trim().slice(0, 150),
+    full_name: (ff.namefix ? util.fixName(name) : name).slice(0, 150),
     position: String(b.position || '').trim().slice(0, 150),
     department_id: util.idOrNull(b.department_id) || null,
     is_teacher: b.is_teacher ? 1 : 0,
@@ -176,7 +177,7 @@ async function setRoles(userId, roles) {
 
 router.post('/users', async (req, res) => {
   const b = req.body || {};
-  const f = userFields(b);
+  const f = userFields(b, req.ff);
   if (!f.full_name) return fail(req, res, '/admin/users/new', 'กรุณากรอกชื่อ สกุล');
   // เว้นช่องชื่อผู้ใช้ไว้ ระบบตั้งให้จากชื่อจริง
   if (!f.username) f.username = await autoUsername(f.full_name);
@@ -230,7 +231,7 @@ router.post('/users/:id', async (req, res) => {
   const id = util.idOrNull(req.params.id);
   const u = id === null ? undefined : await loadUser(id);
   if (!u) return fail(req, res, '/admin/users', 'ไม่พบผู้ใช้');
-  const f = userFields(req.body || {});
+  const f = userFields(req.body || {}, req.ff);
   const back = `/admin/users/${id}`;
   if (!f.username || !f.full_name) return fail(req, res, back, 'กรุณากรอกชื่อผู้ใช้และชื่อ สกุล');
   if (await usernameTaken(f.username, id)) return fail(req, res, back, `ชื่อผู้ใช้ ${f.username} มีอยู่แล้ว`);
@@ -390,6 +391,7 @@ router.post('/users-import', async (req, res) => {
       if (auto) cells = ['', ...cells];
       let [username, fullName, position = '', deptName = '', roleText = ''] = cells;
       fullName = String(fullName || '').trim();
+      if (req.ff.namefix) fullName = util.fixName(fullName);
       if (i === 0 && (auto ? /^ชื่อ/.test(fullName) : /ชื่อผู้ใช้|รหัส|username/i.test(username || ''))) continue;
       if (auto && fullName) {
         // นำเข้าซ้ำ: ชื่อ สกุลตรงกับคนที่มีอยู่ ใช้บัญชีเดิม ไม่สร้างซ้ำ
@@ -446,6 +448,8 @@ router.post('/users-import', async (req, res) => {
       }
     }
     await saveImported(users, hash);
+    // เตือนชื่อที่ยังไม่มีคำนำหน้า (ไม่บล็อก บางคนอาจใช้ยศหรือคำนำหน้าแบบอื่น)
+    result.noTitle = req.ff.namefix ? users.filter((u) => (u.fresh || u.changed) && !util.hasTitle(u.full_name)).map((u) => u.full_name) : [];
   });
   res.render('admin/users_import', { title: 'นำเข้ารายชื่อครู', result, departments: depts, steps: wf.allSteps() });
 });

@@ -110,7 +110,7 @@ test('to_int_lenient อ่านเลขแผนที่ครูพิม�
 
 test('ค่าตั้ง: ค่าเริ่มต้นครบ โลโก้เป็นที่อยู่ /media · setSetting ล้างข้อมูลอ้างอิง', async () => {
   const s = await db.getSettings();
-  assert.equal(Object.keys(s).length, 49);
+  assert.equal(Object.keys(s).length, 50); // 49 เดิม + ff_namefix
   assert.equal(s.school_logo, '');
   assert.equal(s.ff_pdfonly, '1');
   assert.match(s.academic_year, /^25\d\d$/);

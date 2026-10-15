@@ -1,7 +1,7 @@
 -- ค่าเริ่มต้นของระบบส่งแผนการสอน สร้างโดย scripts/make-seed-sql.js ห้ามแก้เอง
 -- รันซ้ำได้ ไม่ทับค่าที่ผู้ดูแลระบบตั้งไว้แล้ว
 
--- ค่าตั้ง 49 คีย์
+-- ค่าตั้ง 50 คีย์
 insert into settings (key, value) values
   ('school_name', 'โรงเรียนของเรา'),
   ('school_location', ''),
@@ -58,6 +58,7 @@ insert into settings (key, value) values
   ('ff_coverpreview', '1'),
   ('ff_namepick', '1'),
   ('ff_pin', '1'),
+  ('ff_namefix', '1'),
   ('ff_line', '0'),
   ('phrases_k', 'นักเรียนส่วนใหญ่อธิบาย [หัวข้อ] ได้ถูกต้อง
 นักเรียนร้อยละ [ ] ผ่านจุดประสงค์ด้านความรู้

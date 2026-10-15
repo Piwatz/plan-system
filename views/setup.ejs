@@ -20,6 +20,7 @@
       <div class="field">
         <label for="full_name">ชื่อ สกุล ของผู้ดูแลระบบ <span class="req">*</span></label>
         <input type="text" id="full_name" name="full_name" value="<%= form.full_name || '' %>" required>
+        <% if (ff.namefix) { %><div class="hint">ใส่คำนำหน้าติดกับชื่อ เว้นวรรคเฉพาะระหว่างชื่อกับนามสกุล เช่น นายสมมติ ใจดี</div><% } %>
       </div>
       <div class="field">
         <label for="username">ชื่อผู้ใช้สำหรับเข้าระบบ <span class="req">*</span></label>

@@ -170,4 +170,19 @@ function intOr(v, fallback) {
   return /^-?\d{1,10}$/.test(s) && Math.abs(Number(s)) <= MAX_INT ? Number(s) : fallback;
 }
 
-module.exports = { idParam, idOrNull, intOr, ago, daysUntil, SHORT_ROLE, initials, thaiDate, thaiDateTime, STATUS_CLASS, lines, parseJson, toCsv, parsePasted, fileSize, safeUrl, contentDisposition };
+// ชื่อ สกุล ในเอกสารราชการ: คำนำหน้าติดกับชื่อ เว้นวรรคเฉพาะระหว่างชื่อกับนามสกุล (ฟังก์ชันเสริม namefix)
+// ตัดวรรคหลัง นาย นาง นางสาว น.ส. และรวมวรรคซ้ำเหลือ 1 เช่น "นาย สมมติ  ใจดี" เป็น "นายสมมติ ใจดี"
+function fixName(s) {
+  return String(s || '')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .replace(/^(นางสาว|นาง|นาย|น\.ส\.) +/, '$1');
+}
+
+// มีคำนำหน้าชื่อหรือยศหรือไม่ (ใช้เตือนเท่านั้น ไม่บังคับ)
+const TITLE = /^(นางสาว|นาง|นาย|น\.ส\.|ว่าที่|ดร\.|ผศ\.|รศ\.|ศ\.|ร\.|ร้อย|พัน|จ\.|จ่า|สิบ|ส\.|พ\.|พล|นาวา|เรือ|ดาบ|พระ|คุณ|Mr|Mrs|Ms|Miss)/;
+function hasTitle(s) {
+  return TITLE.test(String(s || '').trim());
+}
+
+module.exports = { fixName, hasTitle, idParam, idOrNull, intOr, ago, daysUntil, SHORT_ROLE, initials, thaiDate, thaiDateTime, STATUS_CLASS, lines, parseJson, toCsv, parsePasted, fileSize, safeUrl, contentDisposition };

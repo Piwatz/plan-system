@@ -5,6 +5,7 @@ const db = require('../db');
 const { q, nowStr, setSetting } = db;
 const auth = require('../auth');
 const config = require('../config');
+const util = require('../util');
 
 const router = express.Router();
 
@@ -46,7 +47,8 @@ router.get('/setup', async (req, res) => {
 router.post('/setup', async (req, res) => {
   if (await hasUsers()) return res.redirect('/login');
   const b = req.body || {};
-  const form = { school_name: (b.school_name || '').trim(), username: (b.username || '').trim(), full_name: (b.full_name || '').trim() };
+  const name = (b.full_name || '').trim();
+  const form = { school_name: (b.school_name || '').trim(), username: (b.username || '').trim(), full_name: req.ff.namefix ? util.fixName(name) : name };
   let error = null;
   if (needSetupToken()) {
     // เดารหัสถูกนับเหมือนเข้าสู่ระบบผิด (ต่อเครื่อง 8 ครั้ง และรวมทุกเครื่อง 20 ครั้ง ใน 10 นาที)
