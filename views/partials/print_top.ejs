@@ -28,6 +28,9 @@
   .toolbar a { background: rgba(255,255,255,.18); color: #fff; }
   .toolbar label { display: inline-flex; align-items: center; gap: 6px; padding: 5px 12px; border-radius: 10px; background: rgba(255,255,255,.12); cursor: pointer; }
   .toolbar input { width: 18px; height: 18px; accent-color: #e3a21a; }
+  .toolbar .pv-warn { padding: 5px 12px; border-radius: 10px; background: #fff2da; color: #6b4500; font-weight: 700; }
+  .toolbar .pv-pick select { font: inherit; max-width: 72vw; padding: 5px 10px; border-radius: 10px; border: 0; background: rgba(255,255,255,.18); color: #fff; }
+  .toolbar .pv-pick option { color: #000; }
   .toolbar .mac-tip { flex-basis: 100%; text-align: center; font-size: 13px; color: #f6d58a; }
   .toolbar .mac-tip[hidden] { display: none; }
   .paper { position: relative; width: 210mm; min-height: 297mm; margin: 16px auto; background: #fff; padding: 12.5mm 18mm 12.5mm 22mm; box-shadow: 0 4px 24px rgba(0,0,0,.15); }
@@ -152,7 +155,20 @@
 </head>
 <body>
 <div class="toolbar">
+  <% if (locals.preview) { %>
+    <%# หน้าดูตัวอย่างการจัดหน้าลงนาม (ผู้ดูแลระบบ) ไม่เปลี่ยนค่าที่ทุกคนใช้ เลือกเล่มแล้วโหลดใหม่ %>
+    <span class="pv-warn">ตัวอย่างเท่านั้น ยังไม่ได้เปลี่ยนให้ทุกคน</span>
+    <% if (preview.books.length) { %>
+      <form method="get" action="/admin/notesign/preview" class="pv-pick">
+        <input type="hidden" name="<%= preview.kind %>" value="<%= preview.key %>">
+        <select name="book" aria-label="เลือกเล่มที่จะดู" onchange="this.form.submit()">
+          <% for (const b of preview.books) { %><option value="<%= b.id %>" <%= b.id === preview.book ? 'selected' : '' %>>เล่ม <%= b.subject_code %> <%= b.subject_name %> (<%= b.teacher_name %>) ลงนามครบ <%= b.done %>/<%= b.sheets %> แผ่น</option><% } %>
+        </select>
+      </form>
+    <% } %>
+  <% } else { %>
   <span>ตัวอย่างก่อนพิมพ์ ขนาด A4</span>
+  <% } %>
   <label><input type="checkbox" data-opt="noDates"> ไม่แสดงวันที่ใต้ลายเซ็น</label>
   <label><input type="checkbox" data-opt="noQr"> ไม่แสดง QR Code</label>
   <button type="button" onclick="window.print()">พิมพ์ หรือบันทึกเป็น PDF</button>

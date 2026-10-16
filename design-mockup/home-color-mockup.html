@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>สีปุ่มกดส่ง หน้าแรกครู</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai+Looped:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+  :root { --bg:#EEF2F7; --surface:#fff; --ink:#0F1E33; --muted:#4E5F78; --line:#D6DEE9; --primary:#1D3A66; --accent:#E3A21A; --ok:#1B7343; --ok-bg:#E4F4EA; --wait:#875700; --wait-bg:#FFF2DA; --back:#B0341F; --back-bg:#FDEAE4; --soft:#E4ECF7; }
+  * { box-sizing: border-box; }
+  body { margin: 0; padding: 20px 16px 40px; background: var(--bg); color: var(--ink); font-family: 'Noto Sans Thai Looped', Tahoma, sans-serif; }
+  h1 { font-size: 22px; margin: 0 0 4px; }
+  .lead { color: var(--muted); margin: 0 0 18px; font-size: 15px; }
+  .opt { margin-bottom: 28px; }
+  .cap { display: inline-block; font-weight: 700; font-size: 18px; margin-bottom: 8px; }
+  .cap small { font-weight: 400; color: var(--muted); font-size: 14px; margin-left: 6px; }
+  .pair { display: grid; grid-template-columns: minmax(0, 1fr) 300px; gap: 16px; align-items: start; }
+  .card { background: var(--surface); border-radius: 16px; box-shadow: 0 1px 2px rgba(15,30,51,.05), 0 4px 14px rgba(15,30,51,.05); overflow: hidden; }
+  .head, .row { display: grid; grid-template-columns: minmax(0,1.4fr) repeat(3, minmax(0,1fr)); gap: 10px; align-items: center; padding: 12px 18px; }
+  .head { background: rgba(15,30,51,.03); font-size: 13px; font-weight: 700; color: var(--muted); }
+  .row { border-top: 1px solid var(--line); }
+  .subj b { display: block; }
+  .subj span { font-size: 13px; color: var(--muted); display: block; }
+  .tag, .subj .tag { display: inline-block; margin-top: 4px; padding: 1px 8px; border-radius: 999px; font-size: 12px; font-weight: 700; background: var(--wait-bg); color: var(--wait); }
+  .btn { display: flex; justify-content: center; padding: 7px 8px; border-radius: 10px; font-size: 14px; font-weight: 700; white-space: nowrap; }
+  .off { color: var(--muted); opacity: .75; font-size: 14px; }
+  .badge { display: inline-block; padding: 3px 10px; border-radius: 999px; font-size: 13px; font-weight: 600; }
+  .b-blue { background: var(--soft); color: var(--primary); }
+  .b-green { background: var(--ok-bg); color: var(--ok); }
+  .red { background: var(--back); color: #fff; }
+  .navy { background: var(--primary); color: #fff; }
+  .gold { background: var(--accent); color: #1b1300; }
+  .light { background: var(--wait-bg); color: var(--wait); border: 2px solid var(--accent); }
+  .phone { background: var(--surface); border-radius: 16px; padding: 14px; box-shadow: 0 1px 2px rgba(15,30,51,.05), 0 4px 14px rgba(15,30,51,.05); }
+  .phone b.t { font-size: 15px; }
+  .tiles { display: grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap: 6px; margin-top: 8px; }
+  .tile { min-height: 74px; border-radius: 10px; padding: 8px; display: flex; flex-direction: column; justify-content: space-between; font-size: 12px; line-height: 1.3; }
+  .tile b { font-size: 13px; text-decoration: underline; text-underline-offset: 3px; }
+  .tile.o { border: 1px dashed var(--line); color: var(--muted); }
+  .tile.o b { text-decoration: none; }
+  .note { font-size: 14px; color: var(--muted); margin-top: 6px; }
+  @media (max-width: 760px) { .pair { grid-template-columns: 1fr; } .head { display: none; } .row { grid-template-columns: 1fr 1fr; } .subj { grid-column: 1 / -1; } }
+</style>
+</head>
+<body>
+<h1>สีปุ่ม กดส่ง ในตาราง รายวิชาของฉัน</h1>
+<p class="lead">ตัวอย่างใช้ชื่อวิชาสมมติ งานที่ยังไม่ส่งเป็นปุ่ม ปุ่มแดงกดแก้ไข ป้ายฟ้ารอตรวจ ป้ายเขียวผ่านแล้ว เหมือนเดิมทุกแบบ ต่างกันแค่สีปุ่มกดส่ง</p>
+
+<script>
+  // วาดตัวอย่างเดียวกันทั้ง 3 แบบ ต่างกันแค่ class ของปุ่มกดส่ง
+  const rows = [
+    { code: 'ว30204', name: 'ฟิสิกส์ 4 ม.5 (วิชาหลัก)', tag: 'ต้องทำ 2 อย่าง', cells: [['send', 'กดส่งแผน'], ['send', 'กดส่งคู่มือ'], ['off', 'ส่งแผนก่อน']] },
+    { code: 'ว30208', name: 'ฟิสิกส์ 2 ม.4', tag: 'ต้องทำ 1 อย่าง', cells: [['off', 'ไม่ต้องส่ง'], ['red', 'กดแก้ไข'], ['off', 'ไม่ต้องเขียน']] },
+    { code: 'ว32103', name: 'วิทยาศาสตร์กายภาพ ม.5', tag: '', cells: [['off', 'ไม่ต้องส่ง'], ['blue', 'รอ หัวหน้ากลุ่มสาระ'], ['off', 'ไม่ต้องเขียน']] },
+  ];
+  const labels = ['แผนการสอน', 'คู่มือรายวิชา', 'บันทึกหลังแผน'];
+  const opts = [
+    ['แบบเดิม', 'ที่ใช้อยู่ตอนนี้', 'navy', 'ปุ่มน้ำเงินเข้มสีเดียวกับเมนู ดูเรียบ ถ้ายังไม่ได้ส่งงานเลยทั้งตารางจะเป็นน้ำเงินทั้งหมด'],
+    ['แบบ ก', 'ปุ่มสีทอง (แนะนำ)', 'gold', 'สีทองเหมือนปุ่มพิมพ์ในหน้าพิมพ์ เด่นที่สุด ครูเห็นทันทีว่าต้องกดตรงไหน ตัวหนังสือสีเข้มอ่านง่าย'],
+    ['แบบ ข', 'พื้นทองอ่อน ขอบทอง', 'light', 'สดใสแต่นุ่มกว่าแบบ ก ไม่แย่งสายตากับปุ่มแดง กดแก้ไข'],
+  ];
+  const cellHtml = ([k, t]) => k === 'send' ? `<span class="btn CLS">${t}</span>` : k === 'red' ? `<span class="btn red">${t}</span>` : k === 'blue' ? `<span><span class="badge b-blue">${t}</span></span>` : `<span class="off">${t}</span>`;
+  const tileHtml = ([k, t], i) => {
+    const c = k === 'send' ? 'CLS' : k === 'red' ? 'red' : k === 'blue' ? 'b-blue' : 'o';
+    return `<div class="tile ${c}"><span>${labels[i]}</span><b>${t}</b></div>`;
+  };
+  for (const [name, sub, cls, note] of opts) {
+    const table = rows.map((r) => `<div class="row"><div class="subj"><b>${r.code}</b><span>${r.name}</span>${r.tag ? `<span class="tag">${r.tag}</span>` : ''}</div>${r.cells.map(cellHtml).join('')}</div>`).join('');
+    const r = rows[0];
+    const phone = `<div class="phone"><b class="t">${r.code} ${r.name}</b><br><span class="tag">${r.tag}</span><div class="tiles">${r.cells.map(tileHtml).join('')}</div>
+      <div style="height:10px"></div><b class="t">${rows[1].code} ${rows[1].name}</b><div class="tiles">${rows[1].cells.map(tileHtml).join('')}</div></div>`;
+    document.write(`<section class="opt"><span class="cap">${name}<small>${sub}</small></span>
+      <div class="pair"><div class="card"><div class="head"><span>รายวิชา</span>${labels.map((l) => `<span>${l}</span>`).join('')}</div>${table}</div>${phone}</div>
+      <div class="note">${note}</div></section>`.replaceAll('CLS', cls));
+  }
+</script>
+</body>
+</html>

@@ -333,3 +333,30 @@ test('จัดหน้าลงนามบันทึกหลังแผ�
   await admin.post('/admin/features/notesign', { on: '1' });
   await admin.post('/admin/notesign', { web: 'form', pdf: 'bar' });
 });
+
+test('ดูตัวอย่างจัดหน้าลงนามจากเล่มจริง ไม่เปลี่ยนค่าที่ทุกคนใช้ เฉพาะผู้ดูแลระบบ', async () => {
+  const t = await as('teacher');
+  const admin = await as('admin');
+  const planId = await planOf('ว30203');
+  const setting = async (k) => (await db.q.get('SELECT value FROM settings WHERE key = ?', k) || {}).value;
+  const before = [await setting('note_sign_web'), await setting('note_sign_pdf')];
+  assert.match((await admin.get('/admin/features')).text, /href="\/admin\/notesign\/preview\?web=bar"/);
+
+  const bar = (await admin.get(`/admin/notesign/preview?web=bar&book=${planId}`)).text;
+  assert.match(bar, /ตัวอย่างเท่านั้น ยังไม่ได้เปลี่ยนให้ทุกคน/);
+  assert.match(bar, /class="strip"/);
+  assert.match(bar, new RegExp(`<option value="${planId}" selected>`));
+  const sum = (await admin.get(`/admin/notesign/preview?web=summary&book=${planId}`)).text;
+  assert.match(sum, /หน้ารวมลงนาม<\/h2>/);
+  // แบบแผ่น PDF เลือกเฉพาะเล่มที่มีแผ่นแนบไฟล์
+  const pdf = (await admin.get('/admin/notesign/preview?pdf=summary')).text;
+  assert.match(pdf, /data-pdf-sheet/);
+  assert.doesNotMatch(pdf, new RegExp(`<option value="${planId}"`));
+
+  // ค่าที่ทุกคนใช้ไม่เปลี่ยน หน้าพิมพ์ของครูยังเป็นฟอร์มเดิม
+  assert.deepEqual([await setting('note_sign_web'), await setting('note_sign_pdf')], before);
+  assert.match((await t.get(`/s/${planId}/print-notes`)).text, /class="box note"/);
+  // ครูเปิดหน้าตัวอย่างไม่ได้ · แบบที่ไม่รู้จักพากลับ
+  assert.notEqual((await t.get('/admin/notesign/preview?web=bar')).status, 200);
+  assert.equal((await admin.get('/admin/notesign/preview?web=zzz')).status, 302);
+});

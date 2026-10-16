@@ -829,7 +829,8 @@ function deptFull(name) {
 
 // ข้อมูลหน้าพิมพ์ของงานหลายชิ้น ใช้ไม่เกิน 3 คำสั่งไม่ว่ากี่ชิ้น: ประวัติการตรวจ (รูปลายเซ็นเฉพาะการลงนามเห็นชอบ)
 // · ผู้ตรวจที่กำลังรอ (ถ้ามีงานรอตรวจ) · ไฟล์ของบันทึกหลังแผน · subs ต้องดึงพร้อม teacher_signature (subSelect(true))
-async function printDataMany(subs) {
+// sign = ค่าจัดหน้าลงนามที่ใช้แทนค่าที่ตั้งไว้ (หน้าดูตัวอย่างของผู้ดูแลระบบ) เช่น { web: 'bar' }
+async function printDataMany(subs, { sign = null } = {}) {
   if (!subs.length) return [];
   const reviews = await wf.reviewsMany(subs.map((s) => s.id), { signatures: 'approve' });
   const steps = await wf.progressMany(subs, { reviews });
@@ -838,7 +839,7 @@ async function printDataMany(subs) {
   if (noteIds.length) {
     for (const f of await q.all('SELECT * FROM files WHERE submission_id = ANY(?) AND is_current = 1 ORDER BY id', noteIds)) files.get(f.submission_id).push(f);
   }
-  const ns = features.noteSign(null);
+  const ns = features.noteSign(null) && { ...features.noteSign(null), ...(sign || {}) };
   return subs.map((sub, i) => {
     const revs = reviews.get(sub.id) || [];
     // การจัดหน้าลงนามของบันทึกหลังแผน (ฟังก์ชันเสริม notesign): form ฟอร์มเดิม · bar แถบท้ายแผ่น · summary หน้ารวมลงนาม
@@ -1130,5 +1131,6 @@ module.exports.gradeFull = gradeFull;
 module.exports.deptFull = deptFull;
 module.exports.printData = printData;
 module.exports.printDataMany = printDataMany;
+module.exports.subSelect = subSelect;
 module.exports.subjectChoices = subjectChoices;
 module.exports.methodsOf = methodsOf;

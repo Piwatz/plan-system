@@ -1,0 +1,102 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ปุ่มดูตัวอย่างจัดหน้าลงนาม</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai+Looped:wght@400;600;700&family=Sarabun:wght@400;700&display=swap" rel="stylesheet">
+<style>
+  :root { --bg:#EEF2F7; --surface:#fff; --ink:#0F1E33; --muted:#4E5F78; --line:#D6DEE9; --primary:#1D3A66; --soft:#E4ECF7; --accent:#E3A21A; --wait:#875700; --wait-bg:#FFF2DA; }
+  * { box-sizing: border-box; }
+  body { margin: 0; padding: 20px 16px 40px; background: var(--bg); color: var(--ink); font-family: 'Noto Sans Thai Looped', Tahoma, sans-serif; }
+  h1 { font-size: 22px; margin: 0 0 4px; }
+  .lead { color: var(--muted); margin: 0 0 20px; font-size: 15px; }
+  .wrap { display: grid; grid-template-columns: 380px minmax(0, 1fr); gap: 24px; align-items: start; }
+  .step { font-weight: 700; margin-bottom: 8px; }
+  .step span { display: inline-grid; place-items: center; width: 26px; height: 26px; border-radius: 50%; background: var(--primary); color: #fff; font-size: 14px; margin-right: 6px; }
+  .card { background: var(--surface); border-radius: 16px; padding: 18px; box-shadow: 0 1px 2px rgba(15,30,51,.05), 0 4px 14px rgba(15,30,51,.05); }
+  .card h2 { font-size: 18px; margin: 0 0 6px; }
+  .small { font-size: 13px; color: var(--muted); }
+  legend { font-weight: 700; margin: 14px 0 4px; }
+  .opt { display: flex; align-items: center; gap: 8px; padding: 8px 10px; border: 1px solid var(--line); border-radius: 10px; margin-top: 6px; }
+  .opt.on { background: var(--soft); border-color: var(--primary); }
+  .opt label { flex: 1; font-size: 14px; line-height: 1.35; }
+  .look { flex: none; font: inherit; font-size: 13px; font-weight: 600; padding: 5px 10px; border-radius: 8px; border: 1px solid var(--primary); background: #fff; color: var(--primary); }
+  .look.hot { outline: 3px solid var(--accent); outline-offset: 2px; }
+  .save { margin-top: 14px; font: inherit; font-weight: 700; padding: 9px 16px; border: 0; border-radius: 10px; background: var(--primary); color: #fff; }
+  .tabbar { display: flex; gap: 6px; align-items: center; background: #dfe3ea; border-radius: 10px 10px 0 0; padding: 6px 8px; font-size: 13px; }
+  .tabbar b { background: #fff; padding: 4px 12px; border-radius: 8px 8px 0 0; }
+  .bar { background: #1b3762; color: #fff; padding: 8px 12px; font-size: 13px; display: flex; flex-wrap: wrap; gap: 8px; align-items: center; justify-content: center; }
+  .bar .warn { background: var(--wait-bg); color: var(--wait); padding: 3px 10px; border-radius: 8px; font-weight: 700; }
+  .bar .btn { background: var(--accent); color: #1b1300; padding: 3px 10px; border-radius: 8px; }
+  .bar .pick { background: rgba(255,255,255,.18); padding: 3px 10px; border-radius: 8px; }
+  .stage { background: #e9e7ef; padding: 16px; border-radius: 0 0 10px 10px; }
+  .a4 { width: 100%; max-width: 420px; aspect-ratio: 210/297; margin: 0 auto; background: #fff; box-shadow: 0 4px 20px rgba(0,0,0,.15); padding: 22px 26px; font-family: 'Sarabun', serif; font-size: 10px; color: #000; position: relative; }
+  .a4 h3 { text-align: center; font-size: 12px; margin: 0 0 6px; }
+  .ln { border-bottom: 1px dotted #555; height: 13px; }
+  .hand { font-family: 'Sarabun'; color: #1f3d8a; }
+  .qr { position: absolute; top: 12px; right: 12px; width: 30px; height: 30px; background: repeating-linear-gradient(45deg,#000 0 3px,#fff 3px 6px); }
+  .strip { position: absolute; left: 26px; right: 26px; bottom: 22px; border-top: 1px solid #000; padding-top: 6px; display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; text-align: center; font-size: 8.5px; }
+  .sig { font-family: 'Brush Script MT', cursive; font-size: 14px; color: #1f3d8a; height: 18px; }
+  .note { font-size: 14px; color: var(--muted); margin-top: 10px; }
+  @media (max-width: 860px) { .wrap { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+<h1>ปุ่ม ดูตัวอย่าง ข้างตัวเลือกจัดหน้าลงนาม</h1>
+<p class="lead">ตัวอย่างใช้ชื่อสมมติ ลายเซ็นเป็นตัวอย่าง</p>
+
+<div class="wrap">
+  <div>
+    <div class="step"><span>1</span>หน้าฟังก์ชันเสริม (ผู้ดูแลระบบ)</div>
+    <div class="card">
+      <h2>จัดหน้าลงนามบันทึกหลังแผน</h2>
+      <div class="small">กด ดูตัวอย่าง เพื่อเปิดหน้าพิมพ์แบบนั้นจากเล่มจริงในระบบ ดูอย่างเดียว ยังไม่เปลี่ยนของใคร</div>
+      <legend>แผ่นที่ครูพิมพ์ในเว็บ</legend>
+      <div class="opt on"><input type="radio" checked><label>ฟอร์มเดิม ช่องลงนามเรียงลงมา</label><button class="look">ดูตัวอย่าง</button></div>
+      <div class="opt"><input type="radio"><label>แถบลงนาม 3 ช่องแนวนอนท้ายแผ่น</label><button class="look hot">ดูตัวอย่าง</button></div>
+      <div class="opt"><input type="radio"><label>หน้ารวมลงนาม แผ่นเดียวหน้าแรกของเล่ม</label><button class="look">ดูตัวอย่าง</button></div>
+      <legend>แผ่น PDF ที่ครูแนบ</legend>
+      <div class="opt on"><input type="radio" checked><label>ย่อแผ่นของครูแล้วเติมแถบลงนามด้านล่าง</label><button class="look">ดูตัวอย่าง</button></div>
+      <div class="opt"><input type="radio"><label>หน้ารวมลงนาม แผ่นเดียวหน้าแรกของเล่ม</label><button class="look">ดูตัวอย่าง</button></div>
+      <button class="save">บันทึกการจัดหน้า</button>
+    </div>
+    <p class="note">ปุ่มที่มีกรอบสีทอง คือปุ่มที่กดแล้วได้หน้าในข้อ 2</p>
+  </div>
+
+  <div>
+    <div class="step"><span>2</span>เปิดแท็บใหม่ เป็นหน้าพิมพ์ตัวอย่าง</div>
+    <div class="tabbar"><b>ตัวอย่าง แถบลงนามท้ายแผ่น</b></div>
+    <div class="bar">
+      <span class="warn">ตัวอย่างเท่านั้น ยังไม่ได้เปลี่ยนให้ทุกคน</span>
+      <span class="pick">เล่ม ว30203 ฟิสิกส์เพิ่มเติม 3 (นายสมชาย ใจดี) ▾</span>
+      <span class="btn">พิมพ์ลองดู</span>
+    </div>
+    <div class="stage">
+      <div class="a4">
+        <div class="qr"></div>
+        <h3>บันทึกหลังแผนการจัดการเรียนรู้</h3>
+        <div>แผนการจัดการเรียนรู้ที่ 3 เรื่อง การเคลื่อนที่แนวตรง</div>
+        <div>รายวิชา ฟิสิกส์เพิ่มเติม 3 รหัสวิชา ว30203 ชั้น ม.5</div>
+        <div style="margin-top:6px"><b>ด้านความรู้ (K)</b></div>
+        <div class="ln hand">นักเรียนอธิบายการกระจัดและระยะทางได้ถูกต้อง</div><div class="ln"></div>
+        <div style="margin-top:6px"><b>ด้านทักษะ / กระบวนการ (P)</b></div>
+        <div class="ln hand">ทำกิจกรรมวัดความเร็วรถทดลองได้</div><div class="ln"></div>
+        <div style="margin-top:6px"><b>ด้านคุณลักษณะ (A)</b></div>
+        <div class="ln hand">ตั้งใจเรียน ช่วยเหลือกันในกลุ่ม</div>
+        <div style="margin-top:6px"><b>ปัญหา / อุปสรรค / แนวทางแก้ไข</b></div>
+        <div class="ln hand">เวลาไม่พอ คาบหน้าแบ่งกลุ่มให้เร็วขึ้น</div>
+        <div style="text-align:right;margin-top:10px">ลงชื่อ <span class="sig" style="display:inline">Somchai</span> ครูผู้สอน<br>(นายสมชาย ใจดี)</div>
+        <div class="strip">
+          <div><b>ความเห็นของหัวหน้ากลุ่มสาระฯ</b><div>รับทราบ</div><div class="sig">Malee</div>(นางมาลี ตัวอย่าง)</div>
+          <div><b>ความเห็นของรองผู้อำนวยการฯ</b><div>รับทราบ</div><div class="sig">Wichai</div>(นายวิชัย ทดลอง)</div>
+          <div><b>ความเห็นของผู้อำนวยการ</b><div>รับทราบ</div><div class="sig">Prasert</div>(นายประเสริฐ สมมติ)</div>
+        </div>
+      </div>
+    </div>
+    <p class="note"><b>เลือกเล่มได้</b> จากรายการด้านบน (เล่มที่ส่งแล้วในภาคนี้) ระบบเลือกเล่มที่ลงนามมากที่สุดให้ก่อน จะได้เห็นลายเซ็นครบ<br>
+      <b>ถ้ายังไม่มีเล่มไหนส่งเลย</b> ขึ้นข้อความว่า ยังไม่มีบันทึกหลังแผนที่ส่งแล้ว ลองอีกครั้งเมื่อครูส่งเล่มแรก</p>
+  </div>
+</div>
+</body>
+</html>

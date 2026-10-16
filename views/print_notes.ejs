@@ -1,6 +1,6 @@
 <%- include('partials/print_top') %>
 <% if (!items.length) { %>
-  <div class="paper"><p style="text-align:center">ยังไม่มีบันทึกหลังแผนที่ส่งแล้วในเล่มนี้</p></div>
+  <div class="paper"><p style="text-align:center"><%= locals.preview ? 'ยังไม่มีบันทึกหลังแผนที่ส่งแล้ว' + (preview.kind === 'pdf' ? 'แบบแนบไฟล์' : '') + ' ลองอีกครั้งเมื่อครูส่งเล่มแรก' : 'ยังไม่มีบันทึกหลังแผนที่ส่งแล้วในเล่มนี้' %></p></div>
 <% } %>
 <%- include('partials/note_pages', { items }) %>
 </body>

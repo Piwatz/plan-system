@@ -34,13 +34,16 @@
     <% if (noteSign) { %>
       <section class="card" id="notesign">
         <h2>จัดหน้าลงนามบันทึกหลังแผน</h2>
-        <p class="muted small">มีผลตอนพิมพ์ทุกครั้ง ทั้งพิมพ์ทีละฉบับ ทั้งเล่ม และแฟ้ม PA เปลี่ยนเมื่อไรก็ได้ งานที่ลงนามแล้วไม่ต้องลงนามใหม่ ถ้ามีแผ่นใดใช้หน้ารวมลงนาม ระบบใส่หน้ารวมไว้หน้าแรกของเล่ม ตารางแสดงครบทุกแผน</p>
+        <p class="muted small">กด ดูตัวอย่าง เพื่อเปิดหน้าพิมพ์แบบนั้นจากเล่มจริงในระบบ ดูอย่างเดียว ยังไม่เปลี่ยนของใคร · มีผลตอนพิมพ์ทุกครั้ง ทั้งพิมพ์ทีละฉบับ ทั้งเล่ม และแฟ้ม PA เปลี่ยนเมื่อไรก็ได้ งานที่ลงนามแล้วไม่ต้องลงนามใหม่ ถ้ามีแผ่นใดใช้หน้ารวมลงนาม ระบบใส่หน้ารวมไว้หน้าแรกของเล่ม ตารางแสดงครบทุกแผน</p>
         <form method="post" action="/admin/notesign" data-confirm="เปลี่ยนการจัดหน้าลงนามบันทึกหลังแผน มีผลกับการพิมพ์ครั้งต่อไปของทุกคน" data-ok-label="บันทึก">
           <% for (const [kind, head] of [['web', 'แผ่นที่ครูพิมพ์ในเว็บ'], ['pdf', 'แผ่น PDF ที่ครูแนบ']]) { %>
             <fieldset class="field" style="border:0;padding:0;margin:0 0 12px">
               <legend class="label" style="font-weight:700"><%= head %></legend>
               <% for (const o of noteSignOpts[kind]) { %>
-                <label class="check" style="margin-top:6px"><input type="radio" name="<%= kind %>" value="<%= o.key %>" <%= noteSign[kind] === o.key ? 'checked' : '' %>> <%= o.label %></label>
+                <div class="ns-opt">
+                  <label class="check"><input type="radio" name="<%= kind %>" value="<%= o.key %>" <%= noteSign[kind] === o.key ? 'checked' : '' %>> <%= o.label %></label>
+                  <a class="btn btn-sm btn-ghost" href="/admin/notesign/preview?<%= kind %>=<%= o.key %>" target="_blank" rel="noopener"><%- icon('eye', 16) %> ดูตัวอย่าง</a>
+                </div>
               <% } %>
             </fieldset>
           <% } %>

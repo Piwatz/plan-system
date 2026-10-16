@@ -195,6 +195,9 @@ a.stat:hover { text-decoration: none; border-color: var(--primary); }
 .rows-item .cell-label { display: none; }
 /* ปุ่มลงมือในช่อง (ฟังก์ชันเสริม homeact) ช่องที่ไม่ต้องส่งเป็นตัวจางเรียบ ป้ายต้องทำใต้รหัสวิชา */
 .rows-head.rows-act, .rows-item.rows-act { grid-template-columns: minmax(0, 1.4fr) repeat(3, minmax(0, 1fr)); }
+.ns-opt { display: flex; align-items: center; gap: 8px; margin-top: 6px; }
+.ns-opt .check { flex: 1; margin: 0; }
+.ns-opt .btn { flex: none; }
 .cell-more { display: flex; align-items: center; gap: 3px; margin-top: 6px; font-size: 0.8rem; }
 .rows-item .cell-act { width: 100%; justify-content: center; white-space: nowrap; }
 .cell-off { color: var(--muted); opacity: .75; font-size: 0.875rem; }

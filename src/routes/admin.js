@@ -729,6 +729,39 @@ router.post('/notesign', async (req, res) => {
   done(req, res, '/admin/features#notesign', changed.length ? 'บันทึกการจัดหน้าลงนามเรียบร้อย' : 'ไม่มีอะไรเปลี่ยน');
 });
 
+// ดูตัวอย่างการจัดหน้าลงนามแบบหนึ่งจากเล่มจริง ไม่เปลี่ยนค่าที่ทุกคนใช้ ?web=bar หรือ ?pdf=summary · book = รหัสแผน (เล่ม)
+// เล่มให้เลือก: เล่มที่มีบันทึกส่งแล้ว เรียงเล่มที่ลงนามครบมากสุดก่อน (เห็นลายเซ็นครบ) · ดูแบบแผ่น PDF เลือกเฉพาะเล่มที่มีแผ่นแนบไฟล์
+router.get('/notesign/preview', async (req, res) => {
+  if (!req.ff.notesign) return fail(req, res, '/admin/features', 'เปิดฟังก์ชันจัดหน้าลงนามบันทึกหลังแผนก่อน');
+  const kind = req.query.pdf ? 'pdf' : 'web';
+  const opt = features.NOTE_SIGN[kind].find((o) => o.key === req.query[kind]);
+  if (!opt) return fail(req, res, '/admin/features#notesign', 'ไม่พบแบบที่เลือก');
+  const books = await q.all(
+    `SELECT p.id, p.subject_code, p.subject_name, u.full_name AS teacher_name, COUNT(*) AS sheets,
+       SUM(CASE WHEN n.status = 'approved' THEN 1 ELSE 0 END) AS done,
+       SUM(CASE WHEN n.note_mode = 'file' THEN 1 ELSE 0 END) AS files
+     FROM submissions n JOIN submissions p ON p.id = n.parent_id JOIN users u ON u.id = p.teacher_id
+     WHERE n.doc_type = 'note' AND n.status != 'draft'
+     GROUP BY p.id, p.subject_code, p.subject_name, u.full_name
+     HAVING ?::text = 'web' OR SUM(CASE WHEN n.note_mode = 'file' THEN 1 ELSE 0 END) > 0
+     ORDER BY done DESC, sheets DESC, p.id DESC LIMIT 40`,
+    kind
+  );
+  const book = books.find((b) => String(b.id) === String(req.query.book)) || books[0];
+  const { printDataMany, subSelect } = require('./work');
+  const notes = book
+    ? await q.all(`${subSelect(true)} WHERE s.parent_id = ? AND s.doc_type = 'note' AND s.status != 'draft' ORDER BY to_int_lenient(s.plan_no), s.id`, book.id)
+    : [];
+  const data = await printDataMany(notes, { sign: { [kind]: opt.key } });
+  const items = [];
+  for (let i = 0; i < notes.length; i++) items.push({ ...data[i], qr: await require('./verify').qrSvg(req, notes[i]) });
+  res.render('print_notes', {
+    title: `ตัวอย่าง ${opt.label}`,
+    items,
+    preview: { kind, key: opt.key, label: opt.label, books, book: book ? book.id : null },
+  });
+});
+
 router.post('/phrases', async (req, res) => {
   const b = req.body || {};
   const g = features.PHRASE_GROUPS.find((x) => x.key === b.group);
