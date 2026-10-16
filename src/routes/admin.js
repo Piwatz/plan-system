@@ -57,8 +57,24 @@ router.get('/', async (req, res) => {
     dataDir: config.DATA_DIR,
     fileStore: config.FILE_STORE,
     filesDir: config.FILES_DIR,
+    backupInfo: await backupInfo(req),
   });
 });
+
+// สถานะสำรอง 3 ชนิด สำหรับกล่องสำรองข้อมูล
+async function backupInfo(req) {
+  const s = req.settings;
+  return {
+    problem: await require('../jobs').backupStatus(),
+    okAt: s.backup_ok_at || '',
+    monthAt: s.backup_month_at || '',
+    monthN: Number(s.backup_month_n) || 0,
+    termAt: s.backup_term_at || '',
+    termLabel: s.backup_term_label || '',
+    termN: Number(s.backup_term_n) || 0,
+    term: `${s.semester}/${s.academic_year}`,
+  };
+}
 
 // ---------- ผู้ใช้ ----------
 
@@ -822,6 +838,17 @@ router.get('/backup', async (req, res) => {
   res.set('Content-Disposition', util.contentDisposition(name));
   res.set('Cache-Control', 'no-store');
   res.send(text);
+});
+
+// เก็บสำรองฉบับปิดภาค ไว้ถาวรในโฟลเดอร์ สำรองปิดภาคเรียน (ฟังก์ชันเสริม backupkeep) บันทึกใน audit_log
+router.post('/backup/term', async (req, res) => {
+  if (!req.ff.backupkeep) return fail(req, res, '/admin', 'ฟังก์ชันสำรองข้อมูลแบบเก็บถาวรปิดอยู่');
+  try {
+    const name = await require('../jobs').termBackup(req.me);
+    done(req, res, '/admin', `เก็บสำรองฉบับปิดภาคเรียบร้อย ไฟล์ ${name}`);
+  } catch (e) {
+    fail(req, res, '/admin', `เก็บสำรองไม่สำเร็จ ${e.message}`);
+  }
 });
 
 module.exports = router;

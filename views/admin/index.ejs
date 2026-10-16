@@ -31,12 +31,26 @@
   </div>
   <div class="card">
     <h3>สำรองข้อมูล</h3>
-<% if (fileStore === 'gdrive') { %>
-    <p class="muted small">กดปุ่มด้านล่างเพื่อดาวน์โหลดข้อมูลในระบบทั้งหมดเป็นไฟล์เดียว<br>ระบบสำรองให้เองทุกคืนตอนตีสอง เก็บไว้ในโฟลเดอร์ สำรองข้อมูล ของ Google Drive โรงเรียน ย้อนหลัง 30 วัน<br>ไฟล์งานที่ครูส่งเก็บอยู่ใน Google Drive โรงเรียน โฟลเดอร์ ระบบส่งแผนการสอน</p>
-<% } else { %>
-    <p class="muted small">กดปุ่มด้านล่างเพื่อดาวน์โหลดข้อมูลในระบบทั้งหมดเป็นไฟล์เดียว<br>ระบบสำรองให้เองทุกคืนตอนตีสอง เก็บไว้ในโฟลเดอร์ สำรองข้อมูล ย้อนหลัง 30 วัน<br>ไฟล์งานที่ครูส่งเก็บอยู่ในโฟลเดอร์<br><code style="overflow-wrap:anywhere"><%= filesDir %></code></p>
+<% const b = backupInfo; const where = fileStore === 'gdrive' ? 'ของ Google Drive โรงเรียน' : 'ในที่เก็บไฟล์ของระบบ'; %>
+    <div class="bk-row"><span class="bk-dot <%= b.problem ? 'bad' : b.okAt ? 'ok' : 'wait' %>"></span><div><b>สำรองทุกคืน</b>
+      <span><% if (b.problem && b.problem.kind === 'fail') { %>คืนล่าสุดไม่สำเร็จ <%= util.thaiDateTime(b.problem.at) %><% if (b.problem.msg) { %> สาเหตุ <%= b.problem.msg %><% } %><% } else if (b.okAt) { %>สำเร็จล่าสุด <%= util.thaiDateTime(b.okAt) %><% } else { %>ยังไม่มีบันทึกการสำรอง ระบบสำรองให้เองทุกคืนตอนตีสอง<% } %> เก็บ 30 คืนล่าสุด โฟลเดอร์ สำรองข้อมูล <%= where %></span></div></div>
+<% if (ff.backupkeep) { %>
+    <div class="bk-row"><span class="bk-dot <%= b.monthAt ? 'ok' : 'wait' %>"></span><div><b>สำรองรายเดือน เก็บถาวร</b>
+      <span><% if (b.monthAt) { %>ฉบับวันที่ <%= util.thaiDate(b.monthAt, true) %> มีทั้งหมด <%= b.monthN %> ฉบับ<% } else { %>ระบบเก็บเองคืนแรกของเดือนที่สำรองสำเร็จ<% } %> โฟลเดอร์ สำรองรายเดือน</span></div></div>
+    <div class="bk-row"><span class="bk-dot <%= b.termAt ? 'ok' : 'wait' %>"></span><div><b>สำรองปิดภาคเรียน เก็บถาวร</b>
+      <span><% if (b.termAt) { %>ล่าสุดภาค <%= b.termLabel %> เมื่อ <%= util.thaiDateTime(b.termAt) %> มีทั้งหมด <%= b.termN %> ฉบับ<% } else { %>ยังไม่เคยเก็บ กดปุ่มด้านล่างตอนปิดภาคเรียน<% } %> โฟลเดอร์ สำรองปิดภาคเรียน</span></div></div>
 <% } %>
-    <a class="btn btn-primary" href="/admin/backup">ดาวน์โหลดสำรองฐานข้อมูล</a>
+    <div class="bk-btns">
+      <a class="btn btn-primary" href="/admin/backup">ดาวน์โหลดสำรองฐานข้อมูล</a>
+<% if (ff.backupkeep) { %>
+      <form method="post" action="/admin/backup/term" data-confirm="เก็บสำรองข้อมูลฉบับปิดภาคเรียนที่ <%= b.term %> ไว้ถาวรในโฟลเดอร์ สำรองปิดภาคเรียน ใช่ไหม ระบบไม่ลบไฟล์นี้ทิ้ง กดซ้ำได้ จะได้อีกฉบับตามวันที่กด"><button class="btn" type="submit">เก็บสำรองฉบับปิดภาค <%= b.term %></button></form>
+<% } %>
+    </div>
+<% if (fileStore === 'gdrive') { %>
+    <div class="muted small" style="margin-top:8px">ไฟล์งานที่ครูส่งเก็บอยู่ใน Google Drive โรงเรียน โฟลเดอร์ ระบบส่งแผนการสอน ไม่อยู่ในไฟล์สำรอง</div>
+<% } else { %>
+    <div class="muted small" style="margin-top:8px">ไฟล์งานที่ครูส่งเก็บอยู่ในโฟลเดอร์ ไม่อยู่ในไฟล์สำรอง<br><code style="overflow-wrap:anywhere"><%= filesDir %></code></div>
+<% } %>
     <div class="muted small" style="margin-top:6px">งานที่ส่งแล้วทั้งหมด <%= counts.submissions %> รายการ</div>
   </div>
 </div>

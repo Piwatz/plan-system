@@ -27,6 +27,17 @@
   </div>
 <% } %>
 
+<% if (backupProblem) { const bp = backupProblem; %>
+  <div class="alert alert-error alert-urgent"><%- icon('backup') %>
+<% if (bp.kind === 'fail') { %>
+    <div><b>สำรองข้อมูลเมื่อคืนไม่สำเร็จ</b><br><%= util.thaiDateTime(bp.at) %><% if (bp.msg) { %> สาเหตุ <%= bp.msg %><% } %> ระบบจะลองใหม่คืนนี้ ถ้ากังวลกดดาวน์โหลดสำรองเก็บไว้เองได้เลย</div>
+<% } else { %>
+    <div><b>ไม่ได้สำรองข้อมูลมา <%= bp.days %> วันแล้ว</b><br><% if (bp.at) { %>สำรองสำเร็จครั้งล่าสุด <%= util.thaiDateTime(bp.at) %> <% } %>ระบบงานตามเวลาอาจหยุดทำงาน แจ้งผู้ดูแลเว็บ และกดดาวน์โหลดสำรองเก็บไว้ก่อน</div>
+<% } %>
+    <a class="btn btn-sm btn-ghost" href="/admin/backup">ดาวน์โหลดสำรองตอนนี้</a>
+  </div>
+<% } %>
+
 <% for (const a of alerts) { %>
   <div class="alert alert-warn"><%- icon('bell') %>
     <div><b><%= a.from_name || 'ระบบ' %></b> <span class="muted small"><%= util.ago(a.created_at) %></span><div class="pre"><%= a.text %></div></div>

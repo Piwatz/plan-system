@@ -218,6 +218,8 @@ router.get('/', async (req, res) => {
   }
   const lastReturn = (id) => returnComments.get(id) || '';
   const warnings = me.is_admin ? await setupWarnings() : [];
+  // สำรองข้อมูลไม่สำเร็จ หรือไม่ได้สำรองเกิน 2 วัน (ฟังก์ชันเสริม backupalert เฉพาะผู้ดูแลระบบ)
+  const backupProblem = me.is_admin && req.ff.backupalert ? await require('../jobs').backupStatus() : null;
   // สิ่งที่ยังค้าง: ถูกส่งกลับ ยังเป็นร่าง หรือยังไม่ได้ส่งอีกชิ้น
   const todo = [];
   if (mainMissing) todo.push('แผนวิชาหลัก ยังไม่ได้เลือกวิชาหลัก');
@@ -287,6 +289,7 @@ router.get('/', async (req, res) => {
   }
   res.render('home', {
     title: 'หน้าหลัก',
+    backupProblem,
     term: t,
     subjects,
     stats: {

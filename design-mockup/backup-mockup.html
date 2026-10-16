@@ -1,0 +1,124 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>สำรองข้อมูล ภาพตัวอย่าง</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai+Looped:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+  :root { --bg:#EEF2F7; --surface:#fff; --ink:#0F1E33; --muted:#4E5F78; --line:#D6DEE9; --primary:#1D3A66; --accent:#E3A21A; --ok:#1B7343; --ok-bg:#E5F4EA; --soft:#E4ECF7; --warn-bg:#FFF6E0; --warn:#8A5A00; --bad:#B42318; --bad-bg:#FDECEA; }
+  * { box-sizing: border-box; }
+  body { margin: 0; padding: 20px 16px 48px; background: var(--bg); color: var(--ink); font-family: 'Noto Sans Thai Looped', Tahoma, sans-serif; font-size: 15px; }
+  h1 { font-size: 22px; margin: 0 0 4px; }
+  .lead { color: var(--muted); margin: 0 0 22px; }
+  .opt { margin-bottom: 36px; max-width: 900px; }
+  .cap { font-weight: 700; font-size: 19px; margin-bottom: 4px; }
+  .cap .tag { display: inline-block; font-size: 13px; font-weight: 600; padding: 2px 10px; border-radius: 999px; background: var(--soft); color: var(--primary); margin-left: 6px; vertical-align: 2px; }
+  .why { font-size: 14px; color: var(--muted); margin: 0 0 10px; }
+  .sec { font-size: 15px; font-weight: 700; color: var(--primary); margin: 30px 0 10px; padding-top: 14px; border-top: 2px solid var(--line); max-width: 900px; }
+  .card { background: var(--surface); border-radius: 16px; box-shadow: 0 1px 2px rgba(15,30,51,.05), 0 4px 14px rgba(15,30,51,.05); padding: 18px; }
+  .card h3 { margin: 0 0 8px; font-size: 17px; }
+  .muted { color: var(--muted); } .small { font-size: 13.5px; }
+  .alert { display: flex; gap: 12px; align-items: flex-start; border-radius: 12px; padding: 12px 14px; margin-bottom: 10px; }
+  .alert .ic { width: 22px; height: 22px; flex: none; margin-top: 2px; }
+  .alert-warn { background: var(--warn-bg); color: var(--warn); }
+  .alert-bad { background: var(--bad-bg); color: var(--bad); border-left: 5px solid var(--bad); }
+  .alert b { color: inherit; }
+  .alert .grow { flex: 1; }
+  .btn { display: inline-block; border-radius: 10px; padding: 8px 14px; font: inherit; font-weight: 600; border: 1px solid var(--line); background: var(--surface); color: var(--ink); cursor: pointer; text-decoration: none; }
+  .btn-sm { padding: 5px 11px; font-size: 14px; }
+  .btn-primary { background: var(--primary); color: #fff; border-color: var(--primary); }
+  .btn-ghost { background: transparent; }
+  .row { display: flex; gap: 10px; align-items: center; padding: 9px 0; border-bottom: 1px solid var(--line); }
+  .row:last-of-type { border-bottom: 0; }
+  .dot { width: 11px; height: 11px; border-radius: 50%; flex: none; }
+  .dot.ok { background: var(--ok); } .dot.bad { background: var(--bad); } .dot.wait { background: var(--accent); }
+  .row .t { flex: 1; } .row .t span { display: block; font-size: 13.5px; color: var(--muted); }
+  .btns { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 12px; }
+  table { width: 100%; border-collapse: collapse; font-size: 14.5px; }
+  th, td { text-align: left; padding: 8px 6px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  th { font-size: 13px; color: var(--muted); font-weight: 600; }
+  .pill { display: inline-block; font-size: 12.5px; font-weight: 600; padding: 1px 9px; border-radius: 999px; }
+  .pill.ok { background: var(--ok-bg); color: var(--ok); } .pill.bad { background: var(--bad-bg); color: var(--bad); } .pill.keep { background: var(--soft); color: var(--primary); }
+  .new { outline: 2px dashed var(--accent); outline-offset: 3px; border-radius: 8px; }
+  .dlg { max-width: 420px; background: var(--surface); border-radius: 16px; box-shadow: 0 10px 40px rgba(15,30,51,.25); padding: 20px; }
+  .dlg p { margin: 0 0 16px; line-height: 1.6; }
+  .pair { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  @media (max-width: 720px) { .pair { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+<h1>สำรองข้อมูลแบบเก็บยาว และแจ้งเตือนเมื่อสำรองไม่สำเร็จ</h1>
+<p class="lead">ภาพตัวอย่าง ข้อมูลสมมติ กรอบเส้นประสีส้ม = ส่วนที่เพิ่มใหม่ ของเดิม (สำรองทุกคืนตีสอง เก็บ 30 คืน ปุ่มดาวน์โหลด) ยังอยู่ครบ</p>
+
+<div class="sec">ส่วนที่ 1 แจ้งเตือนในหน้าแรก (เห็นเฉพาะผู้ดูแลระบบ ครูไม่เห็น)</div>
+
+<div class="opt">
+  <div class="cap">แบบ ก <span class="tag">แถบแดงเด่น</span></div>
+  <p class="why">สีแดงต่างจากแจ้งเตือนอื่นที่เป็นสีเหลือง เห็นชัดทันทีว่าเรื่องสำคัญ หายไปเองเมื่อคืนถัดไปสำรองสำเร็จ</p>
+  <div class="alert alert-bad new">
+    <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v12m0 0-4-4m4 4 4-4M4 17v3h16v-3"/></svg>
+    <div class="grow"><b>สำรองข้อมูลเมื่อคืนไม่สำเร็จ</b><br>คืนวันที่ 16 ต.ค. 2569 ตีสอง สาเหตุ เชื่อมต่อ Google Drive ไม่ได้ ระบบจะลองใหม่คืนนี้ ถ้ากังวลกดดาวน์โหลดสำรองเก็บไว้เองได้เลย</div>
+    <a class="btn btn-sm btn-ghost" href="#">ดาวน์โหลดสำรองตอนนี้</a>
+  </div>
+  <div class="alert alert-bad new">
+    <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v12m0 0-4-4m4 4 4-4M4 17v3h16v-3"/></svg>
+    <div class="grow"><b>ไม่ได้สำรองข้อมูลมา 3 วันแล้ว</b><br>สำรองสำเร็จครั้งล่าสุด 13 ต.ค. 2569 ตีสอง ระบบงานตามเวลาอาจหยุดทำงาน แจ้งผู้ดูแลเว็บ และกดดาวน์โหลดสำรองเก็บไว้ก่อน</div>
+    <a class="btn btn-sm btn-ghost" href="#">ดาวน์โหลดสำรองตอนนี้</a>
+  </div>
+</div>
+
+<div class="opt">
+  <div class="cap">แบบ ข <span class="tag">แถบเหลืองเรียบ</span></div>
+  <p class="why">สีเดียวกับแจ้งเตือนอื่นในหน้าแรก ไม่ตกใจ แต่อาจกลืนกับข้อความอื่น ปุ่มพาไปหน้าผู้ดูแลระบบเพื่อดูรายละเอียด</p>
+  <div class="alert alert-warn new">
+    <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v12m0 0-4-4m4 4 4-4M4 17v3h16v-3"/></svg>
+    <div class="grow"><b>สำรองข้อมูลเมื่อคืนไม่สำเร็จ</b> <span class="small">16 ต.ค. 2569 ตีสอง</span></div>
+    <a class="btn btn-sm btn-ghost" href="#">ดูรายละเอียด</a>
+  </div>
+</div>
+
+<div class="sec">ส่วนที่ 2 กล่องสำรองข้อมูล ในหน้าผู้ดูแลระบบ</div>
+
+<div class="pair">
+<div class="opt">
+  <div class="cap">แบบ ก <span class="tag">รายการ 3 บรรทัด</span></div>
+  <p class="why">จุดสีบอกสถานะ อ่านง่าย ปุ่มเรียงด้านล่าง</p>
+  <div class="card">
+    <h3>สำรองข้อมูล</h3>
+    <div class="row new"><span class="dot ok"></span><div class="t"><b>สำรองทุกคืน</b><span>สำเร็จล่าสุด 16 ต.ค. 2569 ตีสอง เก็บ 30 คืนล่าสุด โฟลเดอร์ สำรองข้อมูล</span></div></div>
+    <div class="row new"><span class="dot ok"></span><div class="t"><b>สำรองรายเดือน เก็บถาวร</b><span>ฉบับวันที่ 1 ต.ค. 2569 มีทั้งหมด 3 ฉบับ โฟลเดอร์ สำรองรายเดือน</span></div></div>
+    <div class="row new"><span class="dot wait"></span><div class="t"><b>สำรองปิดภาคเรียน เก็บถาวร</b><span>ยังไม่เคยเก็บ กดปุ่มด้านล่างตอนปิดภาคเรียน โฟลเดอร์ สำรองปิดภาคเรียน</span></div></div>
+    <div class="btns">
+      <a class="btn btn-primary" href="#">ดาวน์โหลดสำรองฐานข้อมูล</a>
+      <button class="btn new" onclick="document.getElementById('dlg').scrollIntoView({behavior:'smooth'})">เก็บสำรองฉบับปิดภาค 1/2569</button>
+    </div>
+    <div class="muted small" style="margin-top:8px">ไฟล์งานที่ครูส่งเก็บอยู่ใน Google Drive โรงเรียน โฟลเดอร์ ระบบส่งแผนการสอน ไม่อยู่ในไฟล์สำรอง</div>
+  </div>
+</div>
+
+<div class="opt">
+  <div class="cap">แบบ ข <span class="tag">ตาราง</span></div>
+  <p class="why">ดูเป็นตาราง มีป้ายสถานะ ปุ่มเก็บปิดภาคอยู่ในแถวของตัวเอง</p>
+  <div class="card">
+    <h3>สำรองข้อมูล</h3>
+    <table class="new">
+      <tr><th>ชนิด</th><th>ล่าสุด</th><th>เก็บ</th></tr>
+      <tr><td><b>ทุกคืน</b></td><td>16 ต.ค. 2569 <span class="pill ok">สำเร็จ</span></td><td>30 คืน</td></tr>
+      <tr><td><b>รายเดือน</b></td><td>1 ต.ค. 2569 <span class="pill ok">สำเร็จ</span></td><td><span class="pill keep">ถาวร</span> 3 ฉบับ</td></tr>
+      <tr><td><b>ปิดภาคเรียน</b></td><td>ยังไม่เคยเก็บ<br><button class="btn btn-sm" style="margin-top:6px">เก็บฉบับปิดภาค 1/2569</button></td><td><span class="pill keep">ถาวร</span></td></tr>
+    </table>
+    <div class="btns"><a class="btn btn-primary" href="#">ดาวน์โหลดสำรองฐานข้อมูล</a></div>
+  </div>
+</div>
+</div>
+
+<div class="sec">ป๊อปถามยืนยัน ตอนกดเก็บสำรองฉบับปิดภาค (เหมือนกันทั้ง 2 แบบ)</div>
+<div class="dlg" id="dlg">
+  <p>เก็บสำรองข้อมูลฉบับปิดภาคเรียนที่ 1/2569 ไว้ถาวรในโฟลเดอร์ สำรองปิดภาคเรียน ใช่ไหม<br><span class="muted small">ไฟล์นี้ระบบไม่ลบทิ้ง กดซ้ำได้ จะได้อีกฉบับตามวันที่กด</span></p>
+  <div class="btns" style="justify-content:flex-end"><button class="btn">ยกเลิก</button><button class="btn btn-primary">ตกลง</button></div>
+</div>
+
+<p class="muted small" style="margin-top:28px;max-width:900px">หมายเหตุ ฉบับรายเดือน ระบบเก็บเองคืนแรกของเดือนที่สำรองสำเร็จ ปกติคือวันที่ 1 ถ้าคืนวันที่ 1 สำรองไม่สำเร็จ จะเก็บคืนถัดไปแทน จึงไม่มีเดือนไหนขาด ทุกครั้งที่กดเก็บฉบับปิดภาค บันทึกไว้ในประวัติที่ลบไม่ได้</p>
+</body>
+</html>

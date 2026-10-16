@@ -1,13 +1,19 @@
 // งานตามเวลา: ทุกชั่วโมงทิ้งไฟล์ที่ส่งค้างไว้เกิน 1 วัน และล้างตัวนับรหัสผ่านผิดที่หมดอายุ · ทุกคืนตีสองสำรองข้อมูลเข้าที่เก็บไฟล์ เก็บ 30 ฉบับล่าสุด
+// ฟังก์ชันเสริม backupkeep: ฉบับแรกของทุกเดือนเก็บถาวรอีกชุด + ปุ่มเก็บฉบับปิดภาค · backupalert: แจ้งผู้ดูแลในหน้าแรกเมื่อสำรองไม่สำเร็จ
 // บน Node เรียก tick ทุกนาที (start) · บน Workers เรียก runCron จาก Cron Trigger (src/worker.mjs)
 const db = require('./db');
 const { q, nowStr, getSettings, setSetting } = db;
 const storage = require('./storage');
 const backup = require('./backup');
+const features = require('./features');
 
 const BACKUP_FOLDER = 'สำรองข้อมูล';
+const MONTHLY_FOLDER = 'สำรองรายเดือน';
+const TERM_FOLDER = 'สำรองปิดภาคเรียน';
 const KEEP_BACKUPS = 30;
 const DAY = 24 * 60 * 60 * 1000;
+// ไม่ได้สำรองสำเร็จนานกว่านี้ ถือว่างานตามเวลาหยุดทำงาน (2 วัน เผื่องานตามเวลาช้า 1 ชั่วโมง)
+const STALE_MS = 2 * DAY + 60 * 60 * 1000;
 
 // ไฟล์ที่เริ่มส่งแล้วไม่ได้ผูกกับงานภายใน 1 วัน (ปิดหน้าไปกลางทาง บันทึกไม่สำเร็จ) ย้ายไปถังขยะ
 async function cleanupPending() {
@@ -30,13 +36,68 @@ async function cleanupPending() {
 }
 
 // สำรองข้อมูลเข้าโฟลเดอร์ สำรองข้อมูล แล้วย้ายฉบับที่เก่ากว่า 30 ฉบับล่าสุดไปถังขยะ
+// เปิด backupkeep: ฉบับแรกที่สำเร็จของเดือน (ปกติวันที่ 1) เก็บอีกชุดในโฟลเดอร์ สำรองรายเดือน ไม่หมุนทิ้ง
+// จำเวลาที่สำเร็จหรือไม่สำเร็จไว้ในค่าตั้ง ให้หน้าแรกของผู้ดูแลแจ้งเตือน
 async function nightlyBackup() {
-  const store = storage.current();
-  const { name, text } = await backup.build();
-  await store.putFile(BACKUP_FOLDER, name, 'application/json', Buffer.from(text, 'utf8'));
-  const list = await store.list(BACKUP_FOLDER);
-  for (const old of list.slice(KEEP_BACKUPS)) await storage.trash(old.ref);
+  try {
+    const store = storage.current();
+    const { name, text } = await backup.build();
+    const body = Buffer.from(text, 'utf8');
+    await store.putFile(BACKUP_FOLDER, name, 'application/json', body);
+    const list = await store.list(BACKUP_FOLDER);
+    for (const old of list.slice(KEEP_BACKUPS)) await storage.trash(old.ref);
+    const s = await getSettings();
+    const now = nowStr();
+    if (features.isOn(s, 'backupkeep') && s.backup_month !== now.slice(0, 7)) {
+      await store.putFile(MONTHLY_FOLDER, name, 'application/json', body);
+      await setSetting('backup_month', now.slice(0, 7));
+      await setSetting('backup_month_at', now);
+      await setSetting('backup_month_n', (Number(s.backup_month_n) || 0) + 1);
+    }
+    await setSetting('backup_ok_at', now);
+    // สำเร็จแล้ว ล้างบันทึกคืนที่ไม่สำเร็จ แถบเตือนหายเอง
+    if (s.backup_fail_at) await setSetting('backup_fail_at', '');
+    return name;
+  } catch (e) {
+    await setSetting('backup_fail_at', nowStr()).catch(() => {});
+    await setSetting('backup_fail_msg', String((e && e.message) || e).slice(0, 200)).catch(() => {});
+    throw e;
+  }
+}
+
+// ปุ่ม เก็บสำรองฉบับปิดภาค ในหน้าผู้ดูแลระบบ เก็บถาวรในโฟลเดอร์ สำรองปิดภาคเรียน (กดซ้ำได้ ได้อีกฉบับ)
+async function termBackup(actor) {
+  const s = await getSettings();
+  const label = `${s.semester}-${s.academic_year}`;
+  const { text } = await backup.build();
+  const now = nowStr();
+  const name = `สำรองปิดภาค_${label}_${now.slice(0, 10)}_${now.slice(11, 16).replace(':', '')}.json`;
+  await storage.current().putFile(TERM_FOLDER, name, 'application/json', Buffer.from(text, 'utf8'));
+  await setSetting('backup_term_at', now);
+  await setSetting('backup_term_label', `${s.semester}/${s.academic_year}`);
+  await setSetting('backup_term_n', (Number(s.backup_term_n) || 0) + 1);
+  await features.audit(actor, `เก็บสำรองข้อมูลฉบับปิดภาค ${s.semester}/${s.academic_year}`, `${TERM_FOLDER}/${name}`);
   return name;
+}
+
+const toMs = (str) => Date.parse(String(str).replace(' ', 'T') + '+07:00');
+
+// สถานะสำรองสำหรับแจ้งผู้ดูแล: null = ปกติ · { kind: 'fail', at, msg } · { kind: 'stale', at, days }
+// ยังไม่เคยสำรองสำเร็จเลย (เพิ่งเปิดใช้) เริ่มนับจากครั้งแรกที่ผู้ดูแลเปิดหน้าแรก
+async function backupStatus(now = new Date()) {
+  const s = await getSettings();
+  if (s.backup_fail_at) return { kind: 'fail', at: s.backup_fail_at, msg: s.backup_fail_msg || '' };
+  let since = s.backup_ok_at;
+  if (!since) {
+    since = s.backup_watch_from;
+    if (!since) {
+      await setSetting('backup_watch_from', nowStr(now));
+      return null;
+    }
+  }
+  const age = now.getTime() - toMs(since);
+  if (age > STALE_MS) return { kind: 'stale', at: s.backup_ok_at || '', days: Math.floor(age / DAY) };
+  return null;
 }
 
 async function hourly() {
@@ -102,4 +163,4 @@ async function runCron(cron) {
   }
 }
 
-module.exports = { BACKUP_FOLDER, KEEP_BACKUPS, CRONS, cleanupPending, nightlyBackup, hourly, nightly, tick, start, runCron };
+module.exports = { BACKUP_FOLDER, MONTHLY_FOLDER, TERM_FOLDER, KEEP_BACKUPS, STALE_MS, CRONS, cleanupPending, nightlyBackup, termBackup, backupStatus, hourly, nightly, tick, start, runCron };

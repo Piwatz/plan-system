@@ -361,6 +361,98 @@ test('งานตามเวลา: ทิ้งไฟล์ที่ส่ง
   assert.equal(Object.keys(JSON.parse(fs.readFileSync(path.join(dir, name), 'utf8')).tables).length, 13);
 });
 
+test('สำรองเก็บถาวร: ฉบับรายเดือน ปุ่มเก็บฉบับปิดภาค และแจ้งผู้ดูแลเมื่อสำรองไม่สำเร็จ', async () => {
+  const jobs = require('../src/jobs');
+  const admin = await as('admin');
+  const t = await as('teacher');
+  const setting = async (k) => (await db.q.get('SELECT value FROM settings WHERE key = ?', k) || {}).value;
+  const month = db.nowStr().slice(0, 7);
+  const monthDir = path.join(FILES, 'สำรองรายเดือน');
+
+  // ฉบับแรกของเดือนเก็บในโฟลเดอร์ สำรองรายเดือน คืนถัดไปของเดือนเดียวกันไม่เก็บซ้ำ
+  await db.setSetting('backup_month', '2000-01');
+  await db.setSetting('backup_month_n', '0');
+  const name = await jobs.nightly();
+  assert.ok(fs.existsSync(path.join(monthDir, name)));
+  assert.equal(await setting('backup_month'), month);
+  assert.equal(await setting('backup_month_n'), '1');
+  await jobs.nightly();
+  assert.equal(await setting('backup_month_n'), '1', 'เดือนเดียวกันไม่เก็บซ้ำ');
+  assert.ok(await setting('backup_ok_at'));
+
+  // ปิดฟังก์ชัน: สำรองทุกคืนยังทำ แต่ไม่เก็บรายเดือน ไม่มีปุ่มปิดภาค
+  await admin.post('/admin/features/backupkeep', { on: '0' });
+  await db.setSetting('backup_month', '2000-01');
+  await jobs.nightly();
+  assert.equal(await setting('backup_month'), '2000-01');
+  assert.doesNotMatch((await admin.get('/admin')).text, /เก็บสำรองฉบับปิดภาค/);
+  assert.equal((await admin.post('/admin/backup/term', {})).status, 302);
+  assert.equal(fs.existsSync(path.join(FILES, 'สำรองปิดภาคเรียน')), false);
+  await admin.post('/admin/features/backupkeep', { on: '1' });
+
+  // ปุ่มเก็บสำรองฉบับปิดภาค: เฉพาะผู้ดูแลระบบ ไฟล์อยู่ในโฟลเดอร์ สำรองปิดภาคเรียน บันทึก audit_log
+  assert.equal((await t.post('/admin/backup/term', {})).status, 403);
+  const page = (await admin.get('/admin')).text;
+  assert.match(page, /เก็บสำรองฉบับปิดภาค 2\/2569/);
+  assert.match(page, /action="\/admin\/backup\/term" data-confirm=/);
+  assert.match(page, /สำรองรายเดือน เก็บถาวร/);
+  assert.equal((await admin.post('/admin/backup/term', {})).status, 302);
+  const term = fs.readdirSync(path.join(FILES, 'สำรองปิดภาคเรียน'));
+  assert.equal(term.length, 1);
+  assert.match(term[0], /^สำรองปิดภาค_2-2569_\d{4}-\d{2}-\d{2}_\d{4}\.json$/);
+  assert.equal(Object.keys(JSON.parse(fs.readFileSync(path.join(FILES, 'สำรองปิดภาคเรียน', term[0]), 'utf8')).tables).length, 13);
+  const log = await db.q.get('SELECT * FROM audit_log ORDER BY id DESC LIMIT 1');
+  assert.equal(log.action, 'เก็บสำรองข้อมูลฉบับปิดภาค 2/2569');
+  assert.match((await admin.get('/admin')).text, /ล่าสุดภาค 2\/2569/);
+
+  // สำรองสำเร็จเมื่อคืน: ไม่มีแถบเตือน
+  assert.equal(await jobs.backupStatus(), null);
+  assert.doesNotMatch((await admin.get('/')).text, /alert-urgent/);
+
+  // สำรองไม่สำเร็จ: จำเวลาและสาเหตุ หน้าแรกผู้ดูแลมีแถบแดง ครูไม่เห็น
+  const store = storage.current();
+  const put = store.putFile;
+  store.putFile = async () => {
+    throw new Error('เชื่อมต่อที่เก็บไฟล์ไม่ได้');
+  };
+  await assert.rejects(jobs.nightly());
+  store.putFile = put;
+  assert.equal((await jobs.backupStatus()).kind, 'fail');
+  const home = (await admin.get('/')).text;
+  assert.match(home, /alert-urgent/);
+  assert.match(home, /สำรองข้อมูลเมื่อคืนไม่สำเร็จ/);
+  assert.match(home, /เชื่อมต่อที่เก็บไฟล์ไม่ได้/);
+  assert.doesNotMatch((await t.get('/')).text, /alert-urgent/);
+  assert.match((await admin.get('/admin')).text, /คืนล่าสุดไม่สำเร็จ/);
+
+  // ปิดสวิตช์แจ้งเตือน: ไม่มีแถบ
+  await admin.post('/admin/features/backupalert', { on: '0' });
+  assert.doesNotMatch((await admin.get('/')).text, /alert-urgent/);
+  await admin.post('/admin/features/backupalert', { on: '1' });
+
+  // คืนถัดไปสำเร็จ แถบหายเอง
+  await jobs.nightly();
+  assert.equal(await jobs.backupStatus(), null);
+
+  // ไม่ได้สำรองเกิน 2 วัน
+  await db.setSetting('backup_ok_at', db.nowStr(new Date(Date.now() - 3 * 24 * 3600 * 1000)));
+  const st = await jobs.backupStatus();
+  assert.equal(st.kind, 'stale');
+  assert.equal(st.days, 3);
+  assert.match((await admin.get('/')).text, /ไม่ได้สำรองข้อมูลมา 3 วันแล้ว/);
+  await db.setSetting('backup_ok_at', db.nowStr(new Date(Date.now() - 47 * 3600 * 1000)));
+  assert.equal(await jobs.backupStatus(), null, 'ไม่ถึง 2 วันยังไม่เตือน');
+
+  // ยังไม่เคยสำรองเลย (เพิ่งเปิดใช้): เริ่มนับจากครั้งแรกที่ดูสถานะ
+  await db.q.run("DELETE FROM settings WHERE key IN ('backup_ok_at', 'backup_fail_at', 'backup_watch_from')");
+  db.clearRefs && db.clearRefs();
+  assert.equal(await jobs.backupStatus(), null);
+  assert.ok(await setting('backup_watch_from'));
+  await db.setSetting('backup_watch_from', '2000-01-01 00:00:00');
+  assert.equal((await jobs.backupStatus()).kind, 'stale');
+  await jobs.nightly();
+});
+
 // ---------- Google Drive จำลอง ----------
 // ทำตามเอกสาร Drive API v3: token · ค้นและสร้างโฟลเดอร์ · resumable upload (308 + Range) · multipart · alt=media + Range · trashed
 function fakeDrive() {
