@@ -61,10 +61,11 @@ function noteSign(settings) {
 }
 
 // มุมมองของหน้าคลังงาน (ฟังก์ชันเสริม library) ผู้ใช้สลับเองได้ เครื่องจำแบบที่เลือกไว้ · ค่าว่าง = จอคอมเริ่มชั้นวาง มือถือเริ่มรายการ
-// เพิ่มมุมมองใหม่ที่นี่ แล้วเพิ่มหน้าตาใน views/library.ejs และ public/css/app.css (.lib-<key>)
+// เพิ่มมุมมองใหม่ที่นี่ แล้วเพิ่มหน้าตาใน public/css/app.css (.lib[data-view="<key>"]) ทุกมุมมองใช้ HTML ชุดเดียว (views/partials/lib_books.ejs)
 const LIBRARY_VIEWS = [
   { key: 'shelf', label: 'ชั้นวาง', icon: 'grid' },
   { key: 'list', label: 'รายการ', icon: 'list' },
+  { key: 'group', label: 'ตามกลุ่มสาระ', icon: 'rows' },
 ];
 
 // แบบเริ่มต้นที่ผู้ดูแลตั้งไว้ ค่าว่างถ้าไม่ได้ตั้ง (ใช้ตามขนาดจอ)

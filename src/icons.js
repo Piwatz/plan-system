@@ -46,6 +46,7 @@ const PATHS = {
   lock: 'M6 11h12v10H6zM8.5 11V7.5a3.5 3.5 0 0 1 7 0V11',
   grid: 'M4 4h6v7H4zM14 4h6v7h-6zM4 15h16M4 20h16',
   list: 'M4 5h4v4H4zM4 15h4v4H4zM11 7h9M11 17h9',
+  rows: 'M3 4h18M3 7h4v4H3zM10 7h4v4h-4zM17 7h4v4h-4zM3 14h18M3 17h4v4H3zM10 17h4v4h-4zM17 17h4v4h-4z',
 };
 
 function icon(name, size = 20, extra = '') {

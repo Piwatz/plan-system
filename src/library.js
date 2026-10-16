@@ -1,5 +1,5 @@
 // คลังงานการจัดการเรียนรู้ (ฟังก์ชันเสริม library): งานที่ผ่านครบทุกระดับ จัดเป็นชั้น 1 ชั้นต่อ 1 ชนิดงาน
-// ทุกมุมมอง (ชั้นวาง รายการ) ใช้คำสั่งชุดเดียวกันนี้ ต่างกันแค่หน้าตาใน views/library.ejs
+// ทุกมุมมอง (ชั้นวาง รายการ ตามกลุ่มสาระ) ใช้คำสั่งชุดเดียวกันนี้ ต่างกันแค่หน้าตาใน views/library.ejs
 // ปกเป็นรูป JPEG เล็กใน Drive (submissions.cover_ref) เบราว์เซอร์ของครูทำให้ตอนส่งงาน ไม่มีรูปใช้ปกที่ระบบวาดจากชื่อวิชาและชื่อครู
 const crypto = require('crypto');
 const { q } = require('./db');
@@ -74,7 +74,12 @@ async function page(shelfKey, { term, department, offset = 0 } = {}) {
     PAGE,
     Math.max(0, offset)
   );
-  return { shelf, rows, total: rows.length ? rows[0].total : 0 };
+  // จำนวนเล่มของแต่ละกลุ่มสาระ (หัวแถวในมุมมองตามกลุ่มสาระ ดูทั้งหมด N เล่ม)
+  const byDept = {};
+  if (rows.length) {
+    for (const r of await q.all(`SELECT x.department_id, COUNT(*)::int AS n FROM (${sql}) x GROUP BY x.department_id`, ...params)) byDept[r.department_id || ''] = r.n;
+  }
+  return { shelf, rows, total: rows.length ? rows[0].total : 0, byDept };
 }
 
 // เล่มใหม่ล่าสุดทุกชั้นทุกภาคเรียน (แถบในหน้าแรก)

@@ -29,14 +29,16 @@ router.get('/library', async (req, res) => {
   const department = util.idOrNull(req.query.department) || null;
   const shelfKey = library.SHELF[req.query.shelf] ? req.query.shelf : library.SHELVES[0].key;
   const offset = Math.max(0, util.intOr(req.query.offset, 0));
-  const { shelf, rows, total } = await library.page(shelfKey, { term, department, offset });
+  const { shelf, rows, total, byDept } = await library.page(shelfKey, { term, department, offset });
   const books = library.decorate(rows, req.me, req.ff);
   const query = { shelf: shelf.key, year: term.year, semester: term.semester, ...(department ? { department } : {}) };
+  // หัวแถวกลุ่มสาระ: ลิงก์ ดูทั้งหมด = กรองกลุ่มสาระนั้น (ภาคและชั้นเดิม)
+  const groups = { byDept, base: new URLSearchParams({ shelf: shelf.key, year: term.year, semester: term.semester }).toString(), one: !!department };
   const more = offset + rows.length < total ? `/library?${new URLSearchParams({ ...query, offset: String(offset + rows.length) })}` : '';
   // โหลดเพิ่ม: หน้าเว็บขอเฉพาะเล่มชุดถัดไปมาต่อท้าย
   if (req.query.part === '1') {
     res.set({ 'X-Lib-Next': more, 'X-Lib-Left': String(Math.max(0, total - offset - rows.length)), 'Cache-Control': 'private, no-store' });
-    return res.render('partials/lib_books', { books });
+    return res.render('partials/lib_books', { books, groups });
   }
   // งานเดิมที่ยังไม่มีรูปปก (ผู้ดูแลระบบกดสร้างได้)
   const noCover = req.me.is_admin
@@ -47,6 +49,7 @@ router.get('/library', async (req, res) => {
     shelves: library.SHELVES,
     shelf,
     books,
+    groups,
     total,
     offset,
     more,

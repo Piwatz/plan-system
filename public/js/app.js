@@ -478,7 +478,15 @@
           if (!res.ok) throw new Error('load');
           const tpl = document.createElement('template');
           tpl.innerHTML = await res.text();
-          lib.querySelector('[data-lib-books]').appendChild(tpl.content);
+          // ชุดใหม่เริ่มด้วยกลุ่มสาระเดียวกับเล่มสุดท้าย ต่อแถวเดิม ไม่ขึ้นหัวกลุ่มซ้ำ
+          const box = lib.querySelector('[data-lib-books]');
+          const last = box.querySelector('.lib-grp:last-of-type');
+          const first = tpl.content.querySelector('.lib-grp');
+          if (last && first && last.dataset.dept === first.dataset.dept) {
+            last.querySelector('[data-lib-row]').append(...first.querySelector('[data-lib-row]').children);
+            first.remove();
+          }
+          box.appendChild(tpl.content);
           const next = res.headers.get('X-Lib-Next');
           const left = Number(res.headers.get('X-Lib-Left')) || 0;
           if (next) {

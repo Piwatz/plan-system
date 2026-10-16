@@ -1,5 +1,11 @@
 <%# เล่มในคลังงาน 1 ชุด ใช้ทั้งตอนเปิดหน้าและตอนกดโหลดเพิ่ม · หน้าตาแต่ละมุมมองต่างกันที่ CSS (.lib[data-view]) %>
-<% for (const b of books) { %>
+<%# เล่มเรียงตามกลุ่มสาระอยู่แล้ว จึงห่อเป็นกลุ่มละ 1 แถว (.lib-grp) มุมมองชั้นวางและรายการไม่เห็นกลุ่ม (display: contents) %>
+<% const grps = []; for (const b of books) { const k = b.department_id || ''; if (!grps.length || grps[grps.length - 1].key !== k) grps.push({ key: k, name: b.dept_name || 'ไม่ระบุกลุ่มสาระ', books: [] }); grps[grps.length - 1].books.push(b); } %>
+<% for (const g of grps) { %>
+<section class="lib-grp" data-dept="<%= g.key %>">
+  <h2 class="lib-grp-h"><span><%= g.name %></span><% if (g.key && !groups.one) { %> <a href="/library?<%= groups.base %>&amp;department=<%= g.key %>">ดูทั้งหมด <%= groups.byDept[g.key] || g.books.length %> เล่ม</a><% } %></h2>
+  <div class="lib-row" data-lib-row>
+<% for (const b of g.books) { %>
   <article class="lib-book">
     <% if (b.open) { %><a class="lib-cv" href="<%= b.href %>" aria-label="เปิดอ่าน <%= b.subject_code %> <%= b.subject_name %>"><%- include('lib_cover', { b }) %></a><% } else { %><span class="lib-cv"><%- include('lib_cover', { b }) %></span><% } %>
     <div class="lib-meta">
@@ -12,4 +18,7 @@
       <% if (b.open) { %><a class="btn btn-sm btn-primary" href="<%= b.href %>"><%- icon('eye', 16) %> เปิดอ่าน</a><% } else { %><span class="btn btn-sm btn-ghost lib-off"><%- icon('lock', 16) %> <span class="lib-off-long">เปิดอ่านได้เฉพาะเจ้าของ</span><span class="lib-off-short">เฉพาะเจ้าของ</span></span><% } %>
     </div>
   </article>
+<% } %>
+  </div>
+</section>
 <% } %>

@@ -202,6 +202,55 @@ test('โหลดทีละ 24 เล่ม ปุ่มโหลดเพิ
   assert.match(part.text, /ค90029/);
 });
 
+test('มุมมองตามกลุ่มสาระ: กลุ่มละ 1 แถว หัวแถวมีลิงก์ ดูทั้งหมด N เล่ม = กรองกลุ่มสาระนั้น', async () => {
+  const features = require('../src/features');
+  assert.ok(features.LIBRARY_VIEWS.some((v) => v.key === 'group'));
+  const t = await as('teacher');
+  const page = (await t.get('/library?shelf=manual')).text;
+  assert.match(page, /data-lib-view="group"/);
+  assert.match(page, /'shelf','list','group'/, 'สคริปต์เลือกมุมมองรู้จักแบบใหม่');
+  const s = (await db.q.get("SELECT value FROM settings WHERE key = 'academic_year'")).value;
+  const sem = (await db.q.get("SELECT value FROM settings WHERE key = 'semester'")).value;
+  const counts = await db.q.all(
+    "SELECT department_id, COUNT(*)::int AS n FROM submissions WHERE doc_type = 'manual' AND status = 'approved' AND academic_year = ? AND semester = ? GROUP BY department_id",
+    s,
+    sem
+  );
+  assert.ok(counts.length >= 2, 'ข้อมูลทดลองมีหลายกลุ่มสาระ');
+  const heads = [...page.matchAll(/<section class="lib-grp" data-dept="(\d*)">/g)].map((m) => m[1]);
+  assert.equal(heads.length, counts.length, 'กลุ่มสาระละ 1 แถว');
+  assert.equal(new Set(heads).size, heads.length, 'ไม่มีกลุ่มซ้ำ');
+  for (const c of counts) {
+    if (!c.department_id) continue;
+    const m = new RegExp(String.raw`href="/library\?shelf=manual&amp;year=${s}&amp;semester=${sem}&amp;department=${c.department_id}">ดูทั้งหมด (\d+) เล่ม`).exec(page);
+    assert.ok(m, `มีลิงก์ดูทั้งหมดของกลุ่ม ${c.department_id}`);
+    assert.equal(Number(m[1]), c.n);
+  }
+  // กรองกลุ่มเดียวแล้ว: ไม่มีลิงก์ดูทั้งหมดซ้ำ แถวขึ้นบรรทัดใหม่ (data-one)
+  const one = (await t.get(`/library?shelf=manual&department=${counts.find((c) => c.department_id).department_id}`)).text;
+  assert.match(one, /data-lib data-default="[^"]*" data-view="shelf" data-one>/);
+  assert.doesNotMatch(one, /ดูทั้งหมด \d+ เล่ม/);
+  assert.equal((one.match(/<section class="lib-grp"/g) || []).length, 1);
+  assert.doesNotMatch(page, /data-one/);
+});
+
+test('มุมมองตามกลุ่มสาระ: โหลดเพิ่มกลุ่มเดิมนับจำนวนทั้งกลุ่ม ผู้ดูแลตั้งเป็นแบบเริ่มต้นได้', async () => {
+  const t = await as('teacher');
+  const page = (await t.get('/library?shelf=plan&year=2568&semester=2')).text;
+  const dept = (await db.q.get("SELECT department_id FROM users WHERE username = 'math2'")).department_id;
+  assert.match(page, new RegExp(`department=${dept}">ดูทั้งหมด 30 เล่ม`), 'นับทั้งกลุ่ม ไม่ใช่เฉพาะหน้านี้');
+  const href = /href="([^"]+)" data-lib-more/.exec(page)[1].replace(/&amp;/g, '&');
+  const part = (await t.get(href + '&part=1')).text;
+  assert.match(part, new RegExp(`<section class="lib-grp" data-dept="${dept}">`), 'ชุดถัดไปบอกกลุ่มสาระ หน้าเว็บต่อแถวเดิมได้');
+  assert.match(part, /data-lib-row/);
+  const admin = await as('admin');
+  assert.match((await admin.get('/admin/features')).text, /name="view" value="group"/);
+  await admin.post('/admin/libview', { view: 'group' });
+  assert.ok(await db.q.get("SELECT 1 AS x FROM audit_log WHERE action = 'ตั้งมุมมองเริ่มต้นของคลังงาน ตามกลุ่มสาระ'"));
+  assert.match((await t.get('/library?shelf=manual')).text, /data-default="group"/);
+  await admin.post('/admin/libview', { view: '' });
+});
+
 test('ปกเล็กตอนครูส่งงาน: เก็บที่ช่องอ้างอิง เห็นในคลังเมื่อผ่านครบ เบราว์เซอร์จำรูปได้นาน', async () => {
   const t = await as('teacher');
   const { res } = await sendWithCover(t, 'ว31101', jpg());
