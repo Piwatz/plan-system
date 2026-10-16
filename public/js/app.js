@@ -103,10 +103,17 @@
         } catch {
           res = null;
         }
-        if (xhr.status >= 200 && xhr.status < 300 && res) resolve(res);
-        else reject(new SendError((res && res.error) || 'บันทึกไม่สำเร็จ ลองใหม่อีกครั้ง'));
+        if (xhr.status >= 200 && xhr.status < 300 && res) return resolve(res);
+        const e = new SendError((res && res.error) || 'บันทึกไม่สำเร็จ ลองใหม่อีกครั้ง');
+        // เซิร์ฟเวอร์ปลายทางไม่ตอบ (Cloudflare ตอบหน้าข้อผิดพลาดแทน) ถือว่าเชื่อมต่อไม่ได้ ลองใหม่ได้
+        e.net = xhr.status >= 500 && !res;
+        reject(e);
       };
-      xhr.onerror = () => reject(new SendError(NET_ERROR));
+      xhr.onerror = () => {
+        const e = new SendError(NET_ERROR);
+        e.net = true;
+        reject(e);
+      };
       xhr.send(body);
     });
   }
@@ -204,6 +211,102 @@
     return jobs;
   }
 
+  // ---------- ส่งต่อเมื่อเน็ตหลุด (ฟังก์ชันเสริม resume) ----------
+  // ท่อนส่งไม่สำเร็จ: ถามระบบว่าได้รับถึงไหน (GET /upload/token) แล้วส่งต่อจากตรงนั้น ไม่ต้องเริ่มใหม่ทั้งไฟล์
+  // ระหว่างเน็ตหลุด แถบเป็นสีเหลือง ลองใหม่เองเรื่อย ๆ (และทันทีที่เครื่องต่อเน็ตได้) รอเกิน 2 นาทีขึ้นปุ่มส่งต่อจากที่ค้างให้กดเอง
+  const RESUME = Boolean(busy && busy.hasAttribute('data-resume'));
+  const AUTO_WAIT_MS = 2 * 60 * 1000;
+  const CANCELLED = 'ยกเลิกการส่งแล้ว ไฟล์ยังไม่ได้ส่ง กดบันทึกอีกครั้งเมื่อพร้อม';
+
+  function showPaused(on, manual) {
+    if (!RESUME) return;
+    const box = busy.querySelector('.overlay-box');
+    box.classList.toggle('paused', on);
+    busy.querySelector('[data-net]').hidden = !on;
+    busy.querySelector('[data-net-btns]').hidden = !on;
+    busy.querySelector('[data-resume-now]').hidden = !manual;
+    if (!on) return;
+    busy.querySelector('[data-net-title]').textContent = manual ? 'ยังเชื่อมต่อไม่ได้' : 'อินเทอร์เน็ตหลุด กำลังรอเชื่อมต่อใหม่';
+    busy.querySelector('[data-net-text]').textContent = manual
+      ? 'ตรวจ Wi-Fi แล้วกดส่งต่อ ระบบส่งต่อจากส่วนที่ค้าง ไม่ต้องเริ่มใหม่'
+      : 'ไม่ต้องปิดหน้านี้ เน็ตกลับมาแล้วระบบส่งต่อจากส่วนที่ค้างให้เอง';
+  }
+
+  // รอ ms มิลลิวินาที หรือจนเครื่องต่อเน็ตได้ หรือกดส่งต่อ · กดยกเลิกแล้วโยนข้อผิดพลาด
+  function pauseFor(ms) {
+    return new Promise((resolve, reject) => {
+      const go = busy.querySelector('[data-resume-now]');
+      const stop = busy.querySelector('[data-cancel-send]');
+      const timer = ms ? setTimeout(done, ms) : null;
+      function off() {
+        clearTimeout(timer);
+        window.removeEventListener('online', done);
+        go.removeEventListener('click', done);
+        stop.removeEventListener('click', cancel);
+      }
+      function done() {
+        off();
+        resolve();
+      }
+      function cancel() {
+        off();
+        reject(new SendError(CANCELLED));
+      }
+      window.addEventListener('online', done);
+      go.addEventListener('click', done);
+      stop.addEventListener('click', cancel);
+    });
+  }
+
+  // ถามระบบว่าไฟล์นี้ได้รับถึงไหน รอจนกว่าจะถามได้ · ระบบตอบว่าใช้ไม่ได้แล้ว (หมดเวลา) โยนข้อความนั้น
+  async function askWhere(token, quiet) {
+    const t0 = Date.now();
+    let delay = 1000;
+    for (let first = true; ; first = false) {
+      if (!first) {
+        const manual = !quiet && Date.now() - t0 > AUTO_WAIT_MS;
+        if (!quiet) showPaused(true, manual);
+        if (quiet && Date.now() - t0 > AUTO_WAIT_MS) throw new SendError(NET_ERROR);
+        await pauseFor(manual ? 0 : delay);
+        delay = Math.min(delay * 2, 10000);
+      }
+      try {
+        const st = await request('GET', '/upload/' + encodeURIComponent(token) + '?t=' + Date.now());
+        showPaused(false);
+        return st;
+      } catch (err) {
+        if (!err.net) {
+          showPaused(false);
+          throw err;
+        }
+      }
+    }
+  }
+
+  // ส่งไฟล์ 1 ก้อนทีละท่อนจนครบ · onBytes(ไบต์ที่ส่งแล้วของก้อนนี้) · quiet = ทำเบื้องหลัง (รูปปก) ไม่ขึ้นแถบรอเน็ต
+  async function sendChunks(token, blob, chunk, onBytes, quiet) {
+    const size = blob.size;
+    let pos = 0;
+    let fails = 0;
+    do {
+      const end = Math.min(pos + chunk, size);
+      const range = size ? 'bytes ' + pos + '-' + (end - 1) + '/' + size : 'bytes */0';
+      const from = pos;
+      try {
+        await request('PUT', '/upload/' + encodeURIComponent(token), blob.slice(pos, end), { 'Content-Type': 'application/octet-stream', 'Content-Range': range }, onBytes && ((n) => onBytes(from + n)));
+        pos = end;
+        fails = 0;
+      } catch (err) {
+        // ระบบตอบกลับได้แต่ส่งท่อนเดิมไม่ผ่านซ้ำหลายรอบ เลิกแล้วบอกข้อความเดิม
+        if (!RESUME || ++fails > 5) throw err;
+        const st = await askWhere(token, quiet);
+        if (st.done) return;
+        pos = st.received;
+        if (onBytes) onBytes(pos);
+      }
+    } while (pos < size);
+  }
+
   async function sendWithProgress(form, submitter) {
     // ใช้ getAttribute เพราะปุ่มชื่อ action จะบัง form.action
     const url = form.getAttribute('action') || window.location.pathname;
@@ -222,18 +325,9 @@
         if (j.merged) info.set('merged', String(j.merged));
         ['doc_type', 'subject_code', 'subject_name', 'plan_id'].forEach((k) => data.has(k) && info.set(k, data.get(k)));
         const start = await request('POST', '/upload/start', info, { 'Content-Type': 'application/x-www-form-urlencoded' });
-        const size = j.blob.size;
-        let pos = 0;
-        do {
-          const end = Math.min(pos + start.chunk, size);
-          const range = size ? 'bytes ' + pos + '-' + (end - 1) + '/' + size : 'bytes */0';
-          const base = sent + pos;
-          await request('PUT', '/upload/' + encodeURIComponent(start.token), j.blob.slice(pos, end), { 'Content-Type': 'application/octet-stream', 'Content-Range': range }, (n) =>
-            setProgress(Math.min(99, Math.round(((base + n) / total) * 100)))
-          );
-          pos = end;
-        } while (pos < size);
-        sent += size;
+        const base = sent;
+        await sendChunks(start.token, j.blob, start.chunk, (n) => setProgress(Math.min(99, Math.round(((base + n) / total) * 100))));
+        sent += j.blob.size;
         data.append('upload_' + j.field, start.token);
         if (j.merged) {
           data.set('upload_merged', String(j.merged));
@@ -249,6 +343,7 @@
       hideBusy();
       tell('บันทึกไม่สำเร็จ ลองใหม่อีกครั้ง');
     } catch (err) {
+      showPaused(false);
       hideBusy();
       tell((err && err.userMessage) || NET_ERROR);
     }
@@ -257,12 +352,7 @@
   // ส่งไฟล์ 1 ก้อนเข้าที่เก็บไฟล์ทีละท่อน คืน token · info = ข้อมูลฟอร์มสำหรับ /upload/start
   async function uploadBlob(blob, info) {
     const start = await request('POST', '/upload/start', new URLSearchParams({ ...info, size: String(blob.size) }), { 'Content-Type': 'application/x-www-form-urlencoded' });
-    let pos = 0;
-    do {
-      const end = Math.min(pos + start.chunk, blob.size);
-      await request('PUT', '/upload/' + encodeURIComponent(start.token), blob.slice(pos, end), { 'Content-Type': 'application/octet-stream', 'Content-Range': 'bytes ' + pos + '-' + (end - 1) + '/' + blob.size });
-      pos = end;
-    } while (pos < blob.size);
+    await sendChunks(start.token, blob, start.chunk, null, true);
     return start.token;
   }
 

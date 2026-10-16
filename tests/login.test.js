@@ -151,3 +151,39 @@ test('นำเข้ารายชื่อแบบสร้างชื่�
   await a.post('/admin/users', { full_name: 'นายสมศักดิ์ คนที่สาม', password: '5678', is_teacher: '1', is_active: '1' });
   assert.equal((await name('นายสมศักดิ์ คนที่สาม')), 'สมศักดิ์3');
 });
+
+test('ผู้ดูแลระบบเห็นชื่อที่ถูกใส่รหัสผิด กดปลดล็อกแล้วเข้าได้ทันที บันทึกใน audit_log ปิดสวิตช์แล้วไม่มีกล่อง', async () => {
+  const who = await db.q.get("SELECT id, username, full_name FROM users WHERE username = 'eng2'");
+  assert.ok(who, 'มีครูทดลองชื่อ eng2');
+  for (let i = 0; i < 8; i++) await new Client().post('/login', { username: who.username, password: 'ผิด' });
+  const locked = await new Client().post('/login', { username: who.username, password: seed.DEMO_PASSWORD });
+  assert.equal(locked.status, 401);
+  assert.match(locked.text, /ใส่รหัสผ่านผิดหลายครั้ง/);
+
+  const a = (await login('admin')).c;
+  const page = (await a.get('/admin')).text;
+  assert.match(page, /id="accounts"/);
+  assert.match(page, new RegExp(String.raw`<b>${who.full_name}</b>\s*<span>ใส่รหัสผิด 8 ครั้ง ล็อกถึง \d\d:\d\d น\.`));
+  assert.match(page, new RegExp(`action="/admin/users/${who.id}/unlock" data-confirm="ปลดล็อกบัญชีของ`));
+  assert.match(page, /ยังไม่เคยเข้าระบบ \d+ คน/);
+
+  // ปิดสวิตช์: ไม่มีกล่อง และกดปลดล็อกไม่ได้
+  await db.setSetting('ff_unlock', '0');
+  assert.doesNotMatch((await a.get('/admin')).text, /id="accounts"/);
+  await a.post(`/admin/users/${who.id}/unlock`, {});
+  assert.equal((await login(who.username)).ok, false, 'ปิดสวิตช์แล้วยังล็อกอยู่');
+  await db.setSetting('ff_unlock', '1');
+
+  const r = await a.post(`/admin/users/${who.id}/unlock`, {});
+  assert.equal(r.status, 302);
+  assert.equal(r.location, '/admin#accounts');
+  assert.ok((await login(who.username)).ok, 'ปลดล็อกแล้วเข้าได้ทันที');
+  const log = await db.q.get("SELECT action, detail FROM audit_log WHERE action LIKE 'ปลดล็อกบัญชี%' ORDER BY id DESC LIMIT 1");
+  assert.equal(log.action, `ปลดล็อกบัญชีของ ${who.full_name}`);
+  assert.match(log.detail, /ใส่รหัสผิด 8 ครั้ง/);
+  assert.doesNotMatch((await a.get('/admin')).text, new RegExp(`/admin/users/${who.id}/unlock`));
+  // ล้างเฉพาะตัวนับของชื่อนี้ ชื่ออื่นที่ลงท้ายเหมือนกันไม่ถูกล้าง
+  await auth.recordFail(auth.userKey('xeng2'), '1.2.3.4|xeng2');
+  await auth.unlockUser('eng2');
+  assert.equal((await db.q.get("SELECT COUNT(*)::int AS n FROM login_attempts WHERE key LIKE '%xeng2'")).n, 2);
+});

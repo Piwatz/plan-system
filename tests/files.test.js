@@ -484,7 +484,7 @@ function fakeDrive() {
       if (m && Number(m[1]) !== s.data.length) return json(400, {});
       s.data = Buffer.concat([s.data, body]);
       if (s.data.length < s.size) {
-        res.writeHead(308, { range: `bytes=0-${s.data.length - 1}` });
+        res.writeHead(308, s.data.length ? { range: `bytes=0-${s.data.length - 1}` } : {});
         return res.end();
       }
       const id = 'f' + ++n;
@@ -621,6 +621,97 @@ test('ตัวต่อ Google Drive (Drive จำลอง): สร้าง�
     assert.ok(backup);
     assert.equal(fake.files.get(backup.parents[0]).name, 'สำรองข้อมูล');
     assert.equal(Object.keys(JSON.parse(backup.data.toString('utf8')).tables).length, 13);
+  } finally {
+    storage._set('local', null);
+    storage._set('gdrive', null);
+    fake.srv.close();
+  }
+});
+
+// ---------- ส่งต่อเมื่อเน็ตหลุด (ฟังก์ชันเสริม resume) ----------
+async function startUpload(t, size) {
+  const r = await t.req('POST', '/upload/start', new URLSearchParams({ form: '/works', field: 'main_files', doc_type: 'manual', subject_code: 'ว30122', name: 'ต่อ.pdf', size: String(size) }), XHR);
+  assert.equal(r.status, 200, r.text);
+  return JSON.parse(r.text).token;
+}
+const putPart = (t, token, buf, from, to) => t.req('PUT', '/upload/' + token, buf.subarray(from, to + 1), { ...XHR, 'content-range': `bytes ${from}-${to}/${buf.length}` });
+const where = async (t, token) => {
+  const r = await t.req('GET', '/upload/' + token, undefined, XHR);
+  return { status: r.status, body: JSON.parse(r.text) };
+};
+
+test('เน็ตหลุดกลางทาง: ถามระบบว่าได้ถึงไหน แล้วส่งต่อจากท่อนที่ค้าง ไฟล์ครบตรงทุกไบต์', async () => {
+  const t = await as('sci2');
+  const data = bigPdf(1024 * 1024);
+  const token = await startUpload(t, data.length);
+  assert.equal((await putPart(t, token, data, 0, 262143)).status, 200);
+
+  // ระหว่างส่งท่อนที่ 2 เน็ตหลุด แถวค้างเป็น sending ส่งท่อนถัดไปตรง ๆ ไม่ผ่าน
+  await db.q.run("UPDATE pending_uploads SET status = 'sending' WHERE token = ?", token);
+  assert.equal((await putPart(t, token, data, 262144, 524287)).status, 400);
+  let w = await where(t, token);
+  assert.equal(w.status, 200);
+  assert.deepEqual(w.body, { ok: true, done: false, received: 262144 });
+
+  // ท่อนที่ 2 ถึงที่เก็บแล้วแต่คำตอบหาย (ฐานยังจำว่าได้แค่ท่อนแรก): ระบบถามที่เก็บ ได้ตำแหน่งจริง
+  assert.equal((await putPart(t, token, data, 262144, 524287)).status, 200);
+  await db.q.run("UPDATE pending_uploads SET status = 'sending', received = 262144 WHERE token = ?", token);
+  w = await where(t, token);
+  assert.equal(w.body.received, 524288);
+  const last = await putPart(t, token, data, 524288, data.length - 1);
+  assert.equal(last.status, 200, last.text);
+  assert.equal(JSON.parse(last.text).done, true);
+  w = await where(t, token);
+  assert.deepEqual(w.body, { ok: true, done: true, received: data.length });
+  const row = await db.q.get('SELECT status, drive_file_id FROM pending_uploads WHERE token = ?', token);
+  assert.equal(row.status, 'done');
+  assert.equal(sha(fs.readFileSync(localPath(row.drive_file_id))), sha(data));
+
+  // ท่อนสุดท้ายถึงที่เก็บแล้วแต่คำตอบหาย: ถามแล้วได้ว่าครบ พร้อมไฟล์
+  const token2 = await startUpload(t, 300000);
+  const d2 = bigPdf(300000);
+  assert.equal((await putPart(t, token2, d2, 0, 299999)).status, 200);
+  await db.q.run("UPDATE pending_uploads SET status = 'sending', received = 0, drive_file_id = NULL WHERE token = ?", token2);
+  w = await where(t, token2);
+  assert.deepEqual(w.body, { ok: true, done: true, received: 300000 });
+  const row2 = await db.q.get('SELECT status, drive_file_id FROM pending_uploads WHERE token = ?', token2);
+  assert.equal(row2.status, 'done');
+  assert.equal(sha(fs.readFileSync(localPath(row2.drive_file_id))), sha(d2));
+
+  // คนอื่นถามไม่ได้ · token ใช้แล้วหรือไม่มีจริง ได้ข้อความให้แนบใหม่
+  assert.equal((await where(await as('teacher'), token)).status, 400);
+  const gone = await where(t, 'ไม่มีจริง');
+  assert.equal(gone.status, 400);
+  assert.match(gone.body.error, /แนบไฟล์ใหม่/);
+
+  // ปิดสวิตช์: ถามไม่ได้ ต้องส่งใหม่ทั้งไฟล์เหมือนเดิม
+  await db.setSetting('ff_resume', '0');
+  assert.equal((await where(t, token)).status, 400);
+  await db.setSetting('ff_resume', '1');
+});
+
+test('ส่งต่อเมื่อเน็ตหลุดกับ Google Drive (Drive จำลอง): ถามตำแหน่งจาก Drive ด้วย bytes */ขนาด', async () => {
+  const fake = fakeDrive();
+  await new Promise((r) => fake.srv.listen(0, '127.0.0.1', r));
+  const at = `http://127.0.0.1:${fake.srv.address().port}`;
+  const gd = storage.gdriveBackend({ GDRIVE_CLIENT_ID: 'id', GDRIVE_CLIENT_SECRET: 'secret', GDRIVE_REFRESH_TOKEN: 'refresh' }, { oauth: at, base: at });
+  storage._set('local', gd);
+  storage._set('gdrive', gd);
+  try {
+    const t = await as('sci2');
+    const data = bigPdf(700000);
+    const token = await startUpload(t, data.length);
+    // ยังไม่ได้รับอะไรเลย
+    assert.equal((await where(t, token)).body.received, 0);
+    assert.equal((await putPart(t, token, data, 0, 262143)).status, 200);
+    await db.q.run("UPDATE pending_uploads SET status = 'sending', received = 0 WHERE token = ?", token);
+    const w = await where(t, token);
+    assert.deepEqual(w.body, { ok: true, done: false, received: 262144 });
+    assert.ok(fake.chunks.some((c) => c.range === 'bytes */700000' && c.length === 0), 'ถาม Drive แบบไม่ส่งเนื้อไฟล์');
+    const last = await putPart(t, token, data, 262144, data.length - 1);
+    assert.equal(JSON.parse(last.text).done, true);
+    const row = await db.q.get('SELECT drive_file_id FROM pending_uploads WHERE token = ?', token);
+    assert.equal(sha(fake.files.get(row.drive_file_id.replace(/^gdrive:/, '')).data), sha(data));
   } finally {
     storage._set('local', null);
     storage._set('gdrive', null);

@@ -88,6 +88,13 @@ function localBackend(root = config.FILES_DIR) {
       fs.renameSync(part, dest);
       return { done: true, received: total, ref: 'local:' + s.target };
     },
+    // ถามว่าที่ปลายทางได้รับไปแล้วกี่ไบต์ (ส่งต่อหลังเน็ตหลุด) ไฟล์ครบแล้วได้ ref กลับมาด้วย
+    async status(session) {
+      const sess = JSON.parse(session);
+      if (fs.existsSync(abs(sess.part))) return { done: false, received: fs.statSync(abs(sess.part)).size };
+      if (fs.existsSync(abs(sess.target))) return { done: true, received: fs.statSync(abs(sess.target)).size, ref: 'local:' + sess.target };
+      throw new StorageError('ไม่พบไฟล์ที่ส่งค้าง');
+    },
     // เลิกส่งกลางทาง (ไฟล์ที่ยังไม่ครบ) ลบไฟล์ชั่วคราวได้ เพราะยังไม่ใช่งานของใคร
     async abort(session) {
       try {
@@ -277,6 +284,24 @@ function gdriveBackend(env = process.env, { oauth = 'https://oauth2.googleapis.c
         const received = m ? Number(m[1]) + 1 : 0;
         if (received !== start + length) throw new StorageError(`Drive ได้รับ ${received} ไบต์ ไม่ตรงกับที่ส่ง ${start + length}`);
         return { done: false, received };
+      }
+      if (r.ok) {
+        const j = await r.json();
+        return { done: true, received: total, ref: 'gdrive:' + j.id };
+      }
+      throw new StorageError(`Google Drive ตอบ ${r.status} ${(await r.text().catch(() => '')).slice(0, 200)}`);
+    },
+    // ถาม Drive ว่าได้รับไปแล้วกี่ไบต์ (ส่งต่อหลังเน็ตหลุด) · 308 = ยังไม่ครบ หัว Range บอกช่วงที่ได้ ไม่มีหัว = ยังไม่ได้เลย
+    async status(session, total) {
+      const r = await fetch(session, {
+        method: 'PUT',
+        headers: { 'content-length': '0', 'content-range': `bytes */${total}` },
+        signal: AbortSignal.timeout(30000),
+      });
+      if (r.status === 308) {
+        await r.arrayBuffer().catch(() => {});
+        const m = /bytes=0-(\d+)/.exec(r.headers.get('range') || '');
+        return { done: false, received: m ? Number(m[1]) + 1 : 0 };
       }
       if (r.ok) {
         const j = await r.json();

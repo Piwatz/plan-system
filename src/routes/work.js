@@ -778,6 +778,13 @@ router.put('/upload/:token', async (req, res) => {
   res.json({ ok: true, ...r });
 });
 
+// ถามว่าส่งถึงไหนแล้ว หลังเน็ตหลุดกลางทาง (ฟังก์ชันเสริม resume) เบราว์เซอร์ส่งต่อจาก received
+router.get('/upload/:token', async (req, res) => {
+  if (!req.ff.resume) throw new UserError('ส่งไฟล์ไม่สำเร็จ ลองใหม่อีกครั้ง');
+  res.set('Cache-Control', 'no-store');
+  res.json({ ok: true, ...(await up.resume(req.me.id, String(req.params.token).slice(0, 100))) });
+});
+
 // ---------- ไฟล์ ----------
 
 // ส่งไฟล์จากที่เก็บไฟล์ต่อเป็นสตรีม (ไม่โหลดทั้งไฟล์ ไม่คำนวณ ETag) รองรับขอบางช่วง (Range) แบบเดียวกับเดิม

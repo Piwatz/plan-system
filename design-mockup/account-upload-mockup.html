@@ -1,0 +1,124 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>บัญชีและการส่งไฟล์ ภาพตัวอย่าง</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai+Looped:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+  /* สีธีม I ของระบบจริง กลางวัน และกลางคืน */
+  .day { --bg:#EEF2F7; --surface:#FFFFFF; --ink:#0F1E33; --muted:#4E5F78; --line:#D6DEE9; --primary:#1D3A66; --soft:#E4ECF7; --link:#1D3A66; --ok:#1B7343; --ok-bg:#E4F4EA; --wait:#875700; --wait-bg:#FFF2DA; --shadow:0 1px 2px rgba(15,30,51,.05), 0 4px 14px rgba(15,30,51,.05); }
+  .night { --bg:#0C1626; --surface:#142139; --ink:#E9EFF8; --muted:#A3B3CA; --line:#25344F; --primary:#3D6BC0; --soft:#1B2D4D; --link:#8FB5F6; --ok:#7FD4A2; --ok-bg:#163828; --wait:#F2C46B; --wait-bg:#3A2E12; --shadow:0 1px 0 rgba(255,255,255,.03), 0 10px 26px rgba(0,0,0,.4); }
+  * { box-sizing: border-box; }
+  body { margin: 0; padding: 20px 16px 48px; background: #E6EAF0; color: #0F1E33; font-family: 'Noto Sans Thai Looped', Tahoma, sans-serif; font-size: 15px; }
+  h1 { font-size: 22px; margin: 0 0 4px; }
+  .lead { color: #4E5F78; margin: 0 0 18px; }
+  .sec { font-size: 17px; font-weight: 700; color: #1D3A66; margin: 30px 0 4px; padding-top: 14px; border-top: 2px solid #C9D3E1; }
+  .opt { margin: 18px 0 8px; }
+  .cap { font-weight: 700; font-size: 18px; }
+  .cap .tag { display: inline-block; font-size: 13px; font-weight: 600; padding: 2px 10px; border-radius: 999px; background: #E4ECF7; color: #1D3A66; margin-left: 6px; vertical-align: 2px; }
+  .why { font-size: 14px; color: #4E5F78; margin: 2px 0 8px; }
+  .pair { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  @media (max-width: 760px) { .pair { grid-template-columns: 1fr; } }
+  .scr { background: var(--bg); color: var(--ink); border-radius: 14px; padding: 14px; }
+  .scr .lbl { font-size: 12px; color: var(--muted); margin-bottom: 8px; }
+  .card { background: var(--surface); border-radius: 14px; box-shadow: var(--shadow); padding: 14px; }
+  .card h3 { margin: 0 0 6px; font-size: 16px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+  .muted { color: var(--muted); } .small { font-size: 13px; }
+  .ic { width: 20px; height: 20px; flex: none; }
+  .btn { display: inline-block; border-radius: 10px; padding: 5px 11px; font: inherit; font-size: 13.5px; font-weight: 600; border: 1px solid var(--line); background: var(--surface); color: var(--ink); white-space: nowrap; }
+  .btn-primary { background: var(--primary); color: #fff; border-color: var(--primary); }
+  .btn-sm { padding: 3px 9px; font-size: 13px; }
+  .bar { display: flex; gap: 10px; align-items: center; border-radius: 10px; padding: 10px 12px; border: 1px solid; flex-wrap: wrap; background: var(--wait-bg); color: var(--wait); border-color: color-mix(in srgb, var(--wait) 30%, transparent); margin-bottom: 10px; }
+  .bar .t { flex: 1; min-width: 160px; }
+  .chip { display: inline-flex; gap: 6px; align-items: center; font-size: 12.5px; font-weight: 600; padding: 2px 10px; border-radius: 999px; background: var(--wait-bg); color: var(--wait); }
+  .chip.soft { background: var(--soft); color: var(--link); }
+  .row { display: flex; gap: 10px; align-items: center; padding: 8px 0; border-bottom: 1px solid var(--line); flex-wrap: wrap; }
+  .row:last-child { border-bottom: 0; }
+  .row .who { flex: 1; min-width: 150px; }
+  .row .who span { display: block; font-size: 13px; color: var(--muted); }
+  .dot { width: 10px; height: 10px; border-radius: 50%; flex: none; background: var(--wait); }
+  .dot.ok { background: var(--ok); }
+  .sub { font-weight: 700; font-size: 14px; margin: 12px 0 2px; }
+  details { border-top: 1px solid var(--line); padding: 8px 0 0; margin-top: 8px; }
+  summary { cursor: pointer; font-weight: 600; font-size: 14px; color: var(--link); }
+  .names { font-size: 13.5px; margin: 6px 0 0; line-height: 1.9; }
+  .names .dept { color: var(--muted); font-size: 12.5px; display: block; margin-top: 4px; }
+  .tabs { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 8px; }
+  .tabs .btn.on { background: var(--soft); color: var(--link); border-color: transparent; }
+  table { width: 100%; border-collapse: collapse; font-size: 13.5px; }
+  th, td { text-align: left; padding: 7px 5px; border-bottom: 1px solid var(--line); vertical-align: middle; }
+  th { font-size: 12px; color: var(--muted); font-weight: 600; }
+  /* ส่งไฟล์ */
+  .busy { background: var(--surface); border-radius: 16px; box-shadow: var(--shadow); padding: 18px; text-align: center; max-width: 360px; margin: 6px auto; }
+  .busy b { display: block; font-size: 16px; margin-bottom: 8px; }
+  .prog { height: 10px; border-radius: 999px; background: var(--soft); overflow: hidden; margin: 8px 0 6px; }
+  .prog > div { height: 100%; width: 60%; background: var(--primary); border-radius: 999px; }
+  .prog.paused > div { background: var(--wait); }
+  .note { font-size: 13.5px; border-radius: 10px; padding: 8px 10px; margin-top: 10px; background: var(--wait-bg); color: var(--wait); text-align: left; display: flex; gap: 8px; align-items: flex-start; }
+  .note .ic { width: 18px; height: 18px; margin-top: 2px; }
+  .spin { display: inline-block; width: 14px; height: 14px; border: 2px solid currentColor; border-right-color: transparent; border-radius: 50%; vertical-align: -2px; margin-right: 4px; }
+  .btns { display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; margin-top: 12px; }
+  .steps { font-size: 13px; color: #4E5F78; margin: 4px 0 8px 18px; padding: 0; }
+</style>
+</head>
+<body>
+<h1>บัญชีผู้ใช้ และการส่งไฟล์ต่อเมื่อเน็ตหลุด ภาพตัวอย่าง</h1>
+<p class="lead">ข้อมูลสมมติ ชื่อครูทั้งหมดเป็นชื่อสมมติ ทุกแบบมีโหมดกลางวันและกลางคืนคู่กัน ใช้สีเหลืองนุ่มแบบเดียวกับแจ้งเตือนสำรองข้อมูล ไม่มีสีแดง</p>
+
+<div class="sec">ส่วนที่ 1 บัญชีที่ถูกล็อก และครูที่ยังไม่เข้าระบบ (เห็นเฉพาะผู้ดูแลระบบ)</div>
+<p class="why">ตอนนี้ถ้าใส่รหัสผิดเกิน 20 ครั้งใน 10 นาที ชื่อนั้นถูกล็อก 10 นาที ครูต้องรอเอง ฟังก์ชันใหม่ให้ผู้ดูแลกดปลดล็อกได้ทันที (มีป๊อปถามยืนยัน และจดในประวัติการใช้งาน) และเห็นว่าใครยังไม่เคยเข้าระบบ หรือยังใช้รหัสที่ผู้ดูแลตั้งให้</p>
+
+<template id="t-a1"><div class="card"><h3>บัญชีผู้ใช้ <span class="chip">ถูกล็อก 1 คน</span></h3>
+  <div class="row"><span class="dot"></span><div class="who"><b>นางสาวสมใจ ใจดี</b><span>ใส่รหัสผิด 21 ครั้ง ล็อกถึง 10:42 น.</span></div><span class="btn btn-sm btn-primary">ปลดล็อก</span></div>
+  <div class="row"><span class="dot"></span><div class="who"><b>นายมานะ ขยันยิ่ง</b><span>ใส่รหัสผิด 6 ครั้ง ใน 10 นาทีที่ผ่านมา ยังไม่ล็อก</span></div><span class="btn btn-sm">ล้างตัวนับ</span></div>
+  <details open><summary>ยังไม่เคยเข้าระบบ 4 คน</summary><div class="names"><span class="dept">กลุ่มสาระคณิตศาสตร์</span>นายสมชาย รักเรียน · นางมาลี สวนงาม<span class="dept">กลุ่มสาระภาษาไทย</span>นางสาวพิมพ์ใจ อ่านเก่ง · นายวิชัย ชัยชนะ</div></details>
+  <details><summary>ยังใช้รหัสที่ผู้ดูแลตั้งให้ 7 คน</summary></details>
+</div></template>
+
+<template id="t-a2"><div class="bar"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg><div class="t"><b>มีบัญชีถูกล็อก 1 คน</b> <span class="small">นางสาวสมใจ ใจดี</span></div><span class="btn">ดูและปลดล็อก</span></div>
+  <div class="card"><h3>ตรวจบัญชีผู้ใช้</h3>
+  <div class="tabs"><span class="btn btn-sm on">ถูกล็อก 1</span><span class="btn btn-sm">ถูกเดารหัส 1</span><span class="btn btn-sm">ไม่เคยเข้า 4</span><span class="btn btn-sm">ยังใช้รหัสเดิม 7</span></div>
+  <div class="row"><span class="dot"></span><div class="who"><b>นางสาวสมใจ ใจดี</b><span>ผิด 21 ครั้ง ล็อกถึง 10:42 น.</span></div><span class="btn btn-sm btn-primary">ปลดล็อก</span></div>
+</div></template>
+
+<template id="t-a3"><div class="card"><h3>รายชื่อครูและผู้ตรวจ</h3>
+  <div class="tabs"><span class="btn btn-sm">ทั้งหมด 69</span><span class="btn btn-sm on">ถูกล็อก 1</span><span class="btn btn-sm">ไม่เคยเข้า 4</span><span class="btn btn-sm">ยังใช้รหัสเดิม 7</span></div>
+  <table><tr><th>ชื่อ</th><th>เข้าระบบล่าสุด</th><th></th></tr>
+  <tr><td><b>นางสาวสมใจ ใจดี</b> <span class="chip">ถูกล็อก</span><div class="small muted">ผิด 21 ครั้ง ล็อกถึง 10:42 น.</div></td><td>15 ต.ค. 2569</td><td><span class="btn btn-sm btn-primary">ปลดล็อก</span></td></tr>
+  <tr><td><b>นายสมชาย รักเรียน</b> <span class="chip soft">ไม่เคยเข้า</span></td><td class="muted">ยังไม่เคย</td><td><span class="btn btn-sm">ตั้งรหัสใหม่</span></td></tr>
+  </table></div></template>
+
+<div class="opt"><div class="cap">แบบ ก <span class="tag">กล่องเดียวในหน้าผู้ดูแลระบบ</span></div><p class="why">กล่องใหม่ บัญชีผู้ใช้ ในหน้าผู้ดูแลระบบ (ที่เดียวกับกล่องสำรองข้อมูล) บนสุดเป็นชื่อที่ถูกล็อกหรือถูกเดารหัส ปุ่มปลดล็อกอยู่ข้างชื่อ ด้านล่างเป็นรายชื่อที่กดเปิดดูได้ แยกตามกลุ่มสาระ กดน้อยที่สุด ถ้าไม่มีใครถูกล็อก ส่วนบนหายไปเอง</p><div class="pair" data-t="t-a1"></div></div>
+<div class="opt"><div class="cap">แบบ ข <span class="tag">แถบเหลืองหน้าแรก + หน้าตรวจบัญชี</span></div><p class="why">เมื่อมีคนถูกล็อก หน้าแรกของผู้ดูแลขึ้นแถบเหลือง (แบบเดียวกับแจ้งสำรองข้อมูล) กดแล้วไปหน้าตรวจบัญชีที่มีแท็บ 4 แบบ รู้ตัวเร็วที่สุด แต่มีแถบเพิ่มอีกแถบในหน้าแรก</p><div class="pair" data-t="t-a2"></div></div>
+<div class="opt"><div class="cap">แบบ ค <span class="tag">ตัวกรองในหน้ารายชื่อครูเดิม</span></div><p class="why">ไม่มีกล่องใหม่ เพิ่มปุ่มกรองในหน้ารายชื่อครูและผู้ตรวจที่มีอยู่ ป้ายเล็กข้างชื่อ ปุ่มตั้งรหัสใหม่อยู่ในแถวเลย เหมาะถ้าอยากจัดการทุกอย่างของครูในหน้าเดียว แต่ต้องเข้าเมนูก่อนถึงจะเห็น</p><div class="pair" data-t="t-a3"></div></div>
+
+<div class="sec">ส่วนที่ 2 ส่งไฟล์ต่อเมื่อเน็ตหลุดกลางทาง</div>
+<p class="why">ตอนนี้ถ้าเน็ตหลุดตอนส่งไฟล์ ครูเห็นข้อความ เชื่อมต่อระบบไม่ได้ แล้วต้องกดบันทึกใหม่ ส่งไฟล์ใหม่ตั้งแต่ต้น ของใหม่จำไว้ว่าส่งถึงท่อนไหนแล้ว (ส่งทีละ 5 MB) เน็ตกลับมาเมื่อไหร่ส่งต่อจากท่อนที่ค้าง ไฟล์ 20 MB ที่ส่งไปแล้ว 60% ไม่ต้องส่งซ้ำ</p>
+
+<template id="t-b1"><div class="busy"><b>กำลังส่งงาน</b><div class="prog paused"><div></div></div><div class="small muted">อัปโหลดแล้ว 60%</div>
+  <div class="note"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 8.8a15 15 0 0 1 20 0M5 12.5a10 10 0 0 1 14 0M8.5 16a5 5 0 0 1 7 0"/><path d="M3 3l18 18"/></svg><div><span class="spin"></span><b style="display:inline;font-size:13.5px">อินเทอร์เน็ตหลุด กำลังรอเชื่อมต่อใหม่</b><br>ไม่ต้องปิดหน้านี้ เน็ตกลับมาแล้วระบบส่งต่อจาก 60% ให้เอง</div></div>
+  <div class="btns"><span class="btn">ยกเลิกการส่ง</span></div></div></template>
+
+<template id="t-b2"><div class="busy"><b>ส่งงานยังไม่เสร็จ</b><div class="prog paused"><div></div></div><div class="small muted">อัปโหลดแล้ว 60%</div>
+  <div class="note"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 8.8a15 15 0 0 1 20 0M5 12.5a10 10 0 0 1 14 0M8.5 16a5 5 0 0 1 7 0"/><path d="M3 3l18 18"/></svg><div>อินเทอร์เน็ตหลุด ตรวจ Wi-Fi แล้วกดส่งต่อ ระบบส่งต่อจาก 60% ไม่ต้องเริ่มใหม่</div></div>
+  <div class="btns"><span class="btn btn-primary">ส่งต่อจากที่ค้าง</span><span class="btn">ยกเลิก</span></div></div></template>
+
+<div class="opt"><div class="cap">แบบ ก <span class="tag">ส่งต่อเอง ไม่ต้องกด</span></div><p class="why">แถบเปลี่ยนเป็นสีเหลือง บอกว่ากำลังรอเน็ต ครูไม่ต้องทำอะไร เน็ตกลับมาแล้วแถบกลับเป็นสีปกติและวิ่งต่อเอง ลองใหม่ทุกไม่กี่วินาที ถ้ารอนานเกิน 2 นาทีจะเปลี่ยนเป็นแบบ ข ให้กดเอง</p><div class="pair" data-t="t-b1"></div></div>
+<div class="opt"><div class="cap">แบบ ข <span class="tag">หยุดรอ ให้ครูกดส่งต่อ</span></div><p class="why">หยุดทันทีที่เน็ตหลุด มีปุ่มใหญ่ ส่งต่อจากที่ค้าง ครูรู้ชัดว่าเกิดอะไรขึ้น แต่ต้องกดเอง 1 ครั้ง</p><div class="pair" data-t="t-b2"></div></div>
+<p class="why">ทั้งสองแบบ: ถ้าครูปิดหน้าไปแล้ว หรือหายไปเกิน 1 วัน ต้องเลือกไฟล์และส่งใหม่ตามเดิม (ระบบล้างไฟล์ที่ส่งค้างทุก 1 วัน)</p>
+
+<script>
+  for (const el of document.querySelectorAll('[data-t]')) {
+    const tpl = document.getElementById(el.dataset.t);
+    for (const [cls, name] of [['day', 'โหมดกลางวัน'], ['night', 'โหมดกลางคืน']]) {
+      const scr = document.createElement('div');
+      scr.className = 'scr ' + cls;
+      scr.innerHTML = '<div class="lbl">' + name + '</div>';
+      scr.appendChild(tpl.content.cloneNode(true));
+      el.appendChild(scr);
+    }
+  }
+</script>
+</body>
+</html>

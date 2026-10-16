@@ -44,12 +44,16 @@
     </div>
   </form>
 </dialog>
-<div class="overlay" id="busy">
+<div class="overlay" id="busy"<%- ff.resume ? ' data-resume' : '' %>>
   <div class="overlay-box">
     <div class="spinner"></div>
     <b data-title>กำลังบันทึก</b>
     <div class="progress" data-bar hidden><div></div></div>
     <small class="muted" data-pct></small>
+<% if (ff.resume) { %>
+    <div class="busy-net" data-net hidden><%- icon('wifioff', 18) %><div><b data-net-title></b><span data-net-text></span></div></div>
+    <div class="busy-btns" data-net-btns hidden><button type="button" class="btn btn-primary" data-resume-now hidden>ส่งต่อจากที่ค้าง</button><button type="button" class="btn" data-cancel-send>ยกเลิกการส่ง</button></div>
+<% } %>
   </div>
 </div>
 <script src="/static/js/app.js?v=<%= assetVersion %>"></script>

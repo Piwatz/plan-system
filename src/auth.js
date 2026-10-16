@@ -82,6 +82,43 @@ async function cleanupAttempts() {
   await q.run('DELETE FROM login_attempts WHERE first_at <= ?', Date.now() - WINDOW_MS);
 }
 
+// ผู้ดูแลระบบดูว่าชื่อไหนถูกใส่รหัสผิดใน 10 นาทีล่าสุด (ฟังก์ชันเสริม unlock) เรียงคนที่ถูกล็อกก่อน
+// นับจากตัวนับต่อชื่อ (user|ชื่อ) · ล็อกเมื่อตัวนับต่อชื่อครบ 20 หรือเครื่องใดเครื่องหนึ่งผิดครบ 8 กับชื่อนี้ · แสดงเฉพาะชื่อที่มีในระบบ
+const WATCH_FROM = 5;
+async function failedLogins() {
+  // กุญแจเป็น user|ชื่อ หรือ IP|ชื่อ (IP ไม่มีตัว |) ชื่อคือส่วนหลัง | ตัวแรก
+  const rows = (await q.all('SELECT key, count, first_at FROM login_attempts WHERE first_at > ?', Date.now() - WINDOW_MS)).map((r) => ({
+    ...r,
+    name: r.key.slice(r.key.indexOf('|') + 1),
+  }));
+  if (!rows.length) return [];
+  const users = await q.all('SELECT id, full_name, lower(username) AS name FROM users WHERE is_active = 1 AND lower(username) = ANY(?)', [...new Set(rows.map((r) => r.name))]);
+  const byName = new Map(users.map((u) => [u.name, { id: u.id, full_name: u.full_name, count: 0, locked: false, until: 0 }]));
+  for (const r of rows) {
+    const it = byName.get(r.name);
+    if (!it) continue;
+    it.count = Math.max(it.count, r.count);
+    if (r.count >= limitOf(r.key)) {
+      it.locked = true;
+      it.until = Math.max(it.until, Number(r.first_at) + WINDOW_MS);
+    }
+  }
+  return [...byName.values()].filter((u) => u.locked || u.count >= WATCH_FROM).sort((a, b) => b.locked - a.locked || b.count - a.count);
+}
+
+// ปลดล็อก: ล้างตัวนับทุกตัวของชื่อนี้ (ต่อชื่อ และต่อเครื่อง) คืนจำนวนครั้งที่ผิดมากที่สุด
+async function unlockUser(username) {
+  const u = String(username).toLowerCase();
+  const rows = await q.all(
+    "DELETE FROM login_attempts WHERE key = ? OR (length(key) > ? AND substr(key, length(key) - ? + 1) = ?) RETURNING count",
+    userKey(u),
+    u.length + 1,
+    u.length + 1,
+    '|' + u
+  );
+  return rows.reduce((m, r) => Math.max(m, r.count), 0);
+}
+
 // ความยาวรหัสผ่านขั้นต่ำ: ครูใช้รหัสตัวเลข 4 หลักได้ (ฟังก์ชันเสริม pin)
 // ผู้ดูแลระบบ ผู้อำนวยการ และรองผู้อำนวยการต้อง 6 ตัวขึ้นไปเสมอ เพราะลงนามเอกสารราชการและคุมทั้งระบบ
 const STRONG_ROLES = ['director', 'deputy_academic'];
@@ -135,6 +172,8 @@ module.exports = {
   recordFail,
   clearFails,
   cleanupAttempts,
+  failedLogins,
+  unlockUser,
   loadUser,
   signatureOf,
   requireLogin,

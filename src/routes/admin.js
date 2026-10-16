@@ -58,8 +58,33 @@ router.get('/', async (req, res) => {
     fileStore: config.FILE_STORE,
     filesDir: config.FILES_DIR,
     backupInfo: await backupInfo(req),
+    accounts: req.ff.unlock ? await accountInfo() : null,
   });
 });
+
+// กล่องบัญชีผู้ใช้ (ฟังก์ชันเสริม unlock): ชื่อที่ถูกใส่รหัสผิด · ยังไม่เคยเข้าระบบ · เข้าแล้วแต่ยังไม่เปลี่ยนรหัสที่ผู้ดูแลตั้งให้
+async function accountInfo() {
+  const rows = await q.all(
+    `SELECT u.id, u.full_name, u.last_login_at, u.must_change_password, d.name AS dept
+     FROM users u LEFT JOIN departments d ON d.id = u.department_id
+     WHERE u.is_active = 1 AND (u.last_login_at IS NULL OR u.must_change_password = 1)
+     ORDER BY d.sort IS NULL, d.sort, u.full_name`
+  );
+  const group = (list) => {
+    const m = new Map();
+    for (const u of list) {
+      const label = u.dept ? `กลุ่มสาระ${u.dept}` : 'ผู้บริหารและผู้ดูแลระบบ';
+      if (!m.has(label)) m.set(label, []);
+      m.get(label).push(u);
+    }
+    return { n: list.length, groups: [...m].map(([label, users]) => ({ label, users })) };
+  };
+  return {
+    failed: (await auth.failedLogins()).map((f) => ({ ...f, untilText: f.locked ? nowStr(new Date(f.until)).slice(11, 16) : '' })),
+    never: group(rows.filter((u) => !u.last_login_at)),
+    oldPw: group(rows.filter((u) => u.last_login_at && u.must_change_password)),
+  };
+}
 
 // สถานะสำรอง 3 ชนิด สำหรับกล่องสำรองข้อมูล
 async function backupInfo(req) {
@@ -77,6 +102,17 @@ async function backupInfo(req) {
 }
 
 // ---------- ผู้ใช้ ----------
+
+// ปลดล็อกบัญชีที่ใส่รหัสผิดหลายครั้ง (ฟังก์ชันเสริม unlock) ล้างตัวนับทุกเครื่องของชื่อนี้ บันทึกใน audit_log
+router.post('/users/:id/unlock', async (req, res) => {
+  if (!req.ff.unlock) return fail(req, res, '/admin', 'ฟังก์ชันปลดล็อกบัญชีปิดอยู่');
+  const id = util.idOrNull(req.params.id);
+  const u = id === null ? undefined : await q.get('SELECT id, username, full_name FROM users WHERE id = ?', id);
+  if (!u) return fail(req, res, '/admin#accounts', 'ไม่พบผู้ใช้');
+  const n = await auth.unlockUser(u.username);
+  await features.audit(req.me, `ปลดล็อกบัญชีของ ${u.full_name}`, `user ${id} ใส่รหัสผิด ${n} ครั้ง`);
+  done(req, res, '/admin#accounts', `ปลดล็อกบัญชีของ ${u.full_name} เรียบร้อย เข้าสู่ระบบได้ทันที`);
+});
 
 function departments() {
   return q.all('SELECT * FROM departments ORDER BY sort, name');

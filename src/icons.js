@@ -43,6 +43,7 @@ const PATHS = {
   shield: 'M12 3 4 6v6c0 5 3.5 8 8 9 4.5-1 8-4 8-9V6z',
   text: 'M5 6h14M12 6v13M8 19h8',
   search: 'M11 18a7 7 0 1 0 0-14 7 7 0 0 0 0 14zM20 20l-4-4',
+  wifioff: 'M2 8.8a15 15 0 0 1 20 0M5 12.5a10 10 0 0 1 14 0M8.5 16a5 5 0 0 1 7 0M12 19.5h.01M3 3l18 18',
   lock: 'M6 11h12v10H6zM8.5 11V7.5a3.5 3.5 0 0 1 7 0V11',
   grid: 'M4 4h6v7H4zM14 4h6v7h-6zM4 15h16M4 20h16',
   list: 'M4 5h4v4H4zM4 15h4v4H4zM11 7h9M11 17h9',

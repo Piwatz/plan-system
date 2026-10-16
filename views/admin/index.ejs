@@ -53,5 +53,24 @@
 <% } %>
     <div class="muted small" style="margin-top:6px">งานที่ส่งแล้วทั้งหมด <%= counts.submissions %> รายการ</div>
   </div>
+<% if (accounts) { const a = accounts; const nLocked = a.failed.filter((f) => f.locked).length; %>
+  <div class="card" id="accounts">
+    <h3 class="acct-head">บัญชีผู้ใช้<% if (nLocked) { %> <span class="acct-chip">ถูกล็อก <%= nLocked %> คน</span><% } %></h3>
+<% if (a.failed.length) { for (const f of a.failed) { %>
+    <div class="bk-row acct-row"><span class="bk-dot bad"></span><div><b><%= f.full_name %></b>
+      <span>ใส่รหัสผิด <%= f.count %> ครั้ง<% if (f.locked) { %> ล็อกถึง <%= f.untilText %> น.<% } else { %> ใน 10 นาทีที่ผ่านมา ยังไม่ล็อก<% } %></span></div>
+      <form method="post" action="/admin/users/<%= f.id %>/unlock" data-confirm="<%= f.locked ? 'ปลดล็อกบัญชีของ ' + f.full_name + ' ใช่ไหม เข้าสู่ระบบได้ทันทีไม่ต้องรอ 10 นาที ถ้าไม่ใช่เจ้าของบัญชีลองเดารหัส ควรตั้งรหัสใหม่ให้ด้วย' : 'ล้างตัวนับรหัสผิดของ ' + f.full_name + ' ใช่ไหม' %>" data-ok-label="<%= f.locked ? 'ปลดล็อก' : 'ล้างตัวนับ' %>"><button class="btn btn-sm<%= f.locked ? ' btn-primary' : '' %>" type="submit"><%= f.locked ? 'ปลดล็อก' : 'ล้างตัวนับ' %></button></form></div>
+<% } } else { %>
+    <div class="bk-row"><span class="bk-dot ok"></span><div><b>ไม่มีบัญชีถูกล็อก</b><span>ชื่อที่ใส่รหัสผิดตั้งแต่ 5 ครั้งใน 10 นาที จะขึ้นที่นี่ พร้อมปุ่มปลดล็อก</span></div></div>
+<% } %>
+<% for (const [list, title] of [[a.never, 'ยังไม่เคยเข้าระบบ'], [a.oldPw, 'เข้าแล้ว แต่ยังไม่ได้เปลี่ยนรหัสที่ผู้ดูแลตั้งให้']]) { %>
+    <details class="acct-list"<%= list === a.never && list.n && list.n <= 12 ? ' open' : '' %>><summary><%= title %> <%= list.n %> คน</summary>
+<% if (list.n) { for (const g of list.groups) { %>
+      <div class="acct-dept"><%= g.label %></div><div class="acct-names"><% g.users.forEach((u, i) => { %><a href="/admin/users/<%= u.id %>"><%= u.full_name %></a><% }) %></div>
+<% } } else { %><div class="muted small">ไม่มี</div><% } %>
+    </details>
+<% } %>
+  </div>
+<% } %>
 </div>
 <%- include('../partials/bottom') %>

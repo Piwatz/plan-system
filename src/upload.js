@@ -115,6 +115,32 @@ async function putChunk(userId, token, contentRange, contentLength, stream) {
   return { done: r.done, received: r.received };
 }
 
+// ส่งต่อหลังเน็ตหลุด (ฟังก์ชันเสริม resume): ถามที่เก็บไฟล์ว่าได้รับไปแล้วกี่ไบต์ แล้วตั้งแถวให้ตรง เบราว์เซอร์ส่งท่อนถัดไปจากตรงนั้น
+// แถวที่ค้างเป็น sending (เน็ตหลุดตอนส่งท่อน) ปลดกลับเป็น uploading · ท่อนสุดท้ายถึงปลายทางแล้วแต่คำตอบหาย ได้ done พร้อมไฟล์
+async function resume(userId, token) {
+  const row = await q.get("SELECT session_uri, size, status, received FROM pending_uploads WHERE token = ? AND user_id = ? AND status IN ('uploading', 'sending', 'done')", token, userId);
+  if (!row) throw new UploadError(EXPIRED);
+  if (row.status === 'done') return { done: true, received: Number(row.size) };
+  let r;
+  try {
+    r = await storage.current().status(row.session_uri, Number(row.size));
+  } catch (e) {
+    if (!(e instanceof storage.StorageError)) throw e;
+    console.error('ถามสถานะไฟล์ที่ส่งค้างไม่สำเร็จ', e.message);
+    throw new UploadError(EXPIRED);
+  }
+  // ส่งต่อได้เฉพาะตำแหน่งที่เป็นทวีคูณของ 256 KB (กติกาของ Drive) ไม่งั้นเริ่มส่งใหม่
+  if (!r.done && r.received % storage.CHUNK_UNIT) throw new UploadError(EXPIRED);
+  await q.run(
+    "UPDATE pending_uploads SET status = ?, received = ?, drive_file_id = coalesce(?, drive_file_id) WHERE token = ? AND status IN ('uploading', 'sending')",
+    r.done ? 'done' : 'uploading',
+    r.received,
+    r.ref || null,
+    token
+  );
+  return { done: r.done, received: r.received };
+}
+
 // token จากฟอร์ม (ช่อง upload_<field>) เป็นแถวที่ส่งครบแล้วของผู้ใช้คนนี้ เรียงตามลำดับในฟอร์ม
 async function take(req, field) {
   const raw = (req.body || {})['upload_' + field];
@@ -242,4 +268,4 @@ async function trashAll(refs) {
   }
 }
 
-module.exports = { DRAWN, ALLOWED, MAX_FILES, EXPIRED, UploadError, fixName, checkNew, start, putChunk, parseContentRange, take, badFiles, attach, takeCover, useCover, discard, trashAll };
+module.exports = { DRAWN, ALLOWED, MAX_FILES, EXPIRED, UploadError, fixName, checkNew, start, putChunk, resume, parseContentRange, take, badFiles, attach, takeCover, useCover, discard, trashAll };
