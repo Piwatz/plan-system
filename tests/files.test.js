@@ -407,7 +407,7 @@ test('สำรองเก็บถาวร: ฉบับรายเดือ
 
   // สำรองสำเร็จเมื่อคืน: ไม่มีแถบเตือน
   assert.equal(await jobs.backupStatus(), null);
-  assert.doesNotMatch((await admin.get('/')).text, /alert-urgent/);
+  assert.doesNotMatch((await admin.get('/')).text, /alert-backup/);
 
   // สำรองไม่สำเร็จ: จำเวลาและสาเหตุ หน้าแรกผู้ดูแลมีแถบแดง ครูไม่เห็น
   const store = storage.current();
@@ -419,15 +419,15 @@ test('สำรองเก็บถาวร: ฉบับรายเดือ
   store.putFile = put;
   assert.equal((await jobs.backupStatus()).kind, 'fail');
   const home = (await admin.get('/')).text;
-  assert.match(home, /alert-urgent/);
+  assert.match(home, /alert-backup/);
   assert.match(home, /สำรองข้อมูลเมื่อคืนไม่สำเร็จ/);
-  assert.match(home, /เชื่อมต่อที่เก็บไฟล์ไม่ได้/);
-  assert.doesNotMatch((await t.get('/')).text, /alert-urgent/);
+  assert.match(home, /href="\/admin#backup"/);
+  assert.doesNotMatch((await t.get('/')).text, /alert-backup/);
   assert.match((await admin.get('/admin')).text, /คืนล่าสุดไม่สำเร็จ/);
 
   // ปิดสวิตช์แจ้งเตือน: ไม่มีแถบ
   await admin.post('/admin/features/backupalert', { on: '0' });
-  assert.doesNotMatch((await admin.get('/')).text, /alert-urgent/);
+  assert.doesNotMatch((await admin.get('/')).text, /alert-backup/);
   await admin.post('/admin/features/backupalert', { on: '1' });
 
   // คืนถัดไปสำเร็จ แถบหายเอง

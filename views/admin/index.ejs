@@ -29,7 +29,7 @@
     <% if (addresses.length) { for (const a of addresses) { %><div style="font-size:1.15rem"><b>http://<%= a %>:<%= port %></b></div><% } } else { %><div class="muted">ไม่พบการเชื่อมต่อเครือข่าย</div><% } %>
 <% } %>
   </div>
-  <div class="card">
+  <div class="card" id="backup">
     <h3>สำรองข้อมูล</h3>
 <% const b = backupInfo; const where = fileStore === 'gdrive' ? 'ของ Google Drive โรงเรียน' : 'ในที่เก็บไฟล์ของระบบ'; %>
     <div class="bk-row"><span class="bk-dot <%= b.problem ? 'bad' : b.okAt ? 'ok' : 'wait' %>"></span><div><b>สำรองทุกคืน</b>
