@@ -1,0 +1,135 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>คลังงานการจัดการเรียนรู้ ภาพตัวอย่าง</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai+Looped:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+  :root { --bg:#EEF2F7; --surface:#fff; --ink:#0F1E33; --muted:#4E5F78; --line:#D6DEE9; --primary:#1D3A66; --side:#1D3A66; --accent:#E3A21A; --ok:#1B7343; --ok-bg:#E4F4EA; --soft:#E4ECF7; --wood:#C9B79C; }
+  * { box-sizing: border-box; }
+  body { margin: 0; padding: 20px 16px 48px; background: var(--bg); color: var(--ink); font-family: 'Noto Sans Thai Looped', Tahoma, sans-serif; }
+  h1 { font-size: 22px; margin: 0 0 4px; }
+  .lead { color: var(--muted); margin: 0 0 20px; font-size: 15px; }
+  .opt { margin-bottom: 40px; }
+  .cap { font-weight: 700; font-size: 19px; margin-bottom: 4px; }
+  .cap small { font-weight: 400; color: var(--muted); font-size: 14px; margin-left: 6px; }
+  .why { font-size: 14px; color: var(--muted); margin: 0 0 10px; }
+  .pair { display: grid; grid-template-columns: minmax(0,1fr) 320px; gap: 16px; align-items: start; }
+  .card { background: var(--surface); border-radius: 16px; box-shadow: 0 1px 2px rgba(15,30,51,.05), 0 4px 14px rgba(15,30,51,.05); padding: 18px; overflow: hidden; }
+  .phone { padding: 14px; }
+  .ttl { font-size: 18px; font-weight: 700; margin: 0 0 12px; }
+  /* แถบเลือกชั้น */
+  .shelves { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 10px; }
+  .shelves span { padding: 7px 14px; border-radius: 999px; background: var(--soft); color: var(--primary); font-weight: 600; font-size: 14px; }
+  .shelves span.on { background: var(--primary); color: #fff; }
+  .shelves span.soon { background: none; border: 1px dashed var(--line); color: var(--muted); font-weight: 400; }
+  .filters { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 14px; }
+  .sel { border: 1px solid var(--line); border-radius: 10px; padding: 6px 12px; font-size: 14px; background: var(--surface); }
+  .sel::after { content: ' \25BE'; color: var(--muted); }
+  .count { font-size: 13px; color: var(--muted); margin-left: auto; align-self: center; }
+  /* ปก */
+  .cover { position: relative; aspect-ratio: 210/297; background: #fff; border: 1px solid var(--line); border-radius: 4px; box-shadow: 2px 3px 6px rgba(15,30,51,.15); padding: 9% 9%; display: flex; flex-direction: column; align-items: center; gap: 5%; overflow: hidden; }
+  .cover .logo { width: 26%; aspect-ratio: 1; border-radius: 50%; border: 2px solid #b33; background: #fbecec; }
+  .cover .l { height: 4%; width: 80%; background: #c9d2de; border-radius: 2px; }
+  .cover .l.s { width: 55%; }
+  .cover .l.t { height: 6%; width: 90%; background: #5b6f8c; }
+  .cover .l.b { margin-top: auto; }
+  .cover.drawn { background: var(--primary); border: 0; color: #fff; text-align: center; justify-content: center; font-size: 11px; line-height: 1.35; }
+  .cover.drawn b { font-size: 13px; display: block; }
+  .cover.drawn .bar { width: 40%; height: 3px; background: var(--accent); }
+  .lock { position: absolute; right: 6px; bottom: 6px; width: 26px; height: 26px; border-radius: 50%; background: rgba(15,30,51,.75); display: grid; place-items: center; }
+  .lock svg { width: 14px; height: 14px; fill: #fff; }
+  .meta { font-size: 13px; line-height: 1.35; margin-top: 7px; }
+  .meta b { display: block; font-size: 14px; }
+  .meta span { color: var(--muted); display: block; }
+  .meta .pill { display: inline-block; width: auto; font-size: 11px; padding: 1px 7px; border-radius: 999px; background: var(--ok-bg); color: var(--ok); font-weight: 600; margin-top: 3px; }
+  .mine { background: var(--soft); color: var(--primary); }
+  /* แบบ ก ชั้นวาง */
+  .rack { display: grid; grid-template-columns: repeat(auto-fill, minmax(118px, 1fr)); gap: 18px 16px; padding: 14px 12px 10px; background: linear-gradient(to bottom, transparent calc(100% - 12px), var(--wood) calc(100% - 12px)); border-radius: 8px; margin-bottom: 14px; }
+  .phone .rack { grid-template-columns: repeat(2, 1fr); gap: 14px 12px; }
+  /* แบบ ข รายการ */
+  .list .it { display: grid; grid-template-columns: 54px minmax(0,1fr) auto; gap: 12px; align-items: center; padding: 10px 0; border-top: 1px solid var(--line); }
+  .list .it:first-child { border-top: 0; }
+  .list .it .meta { margin: 0; }
+  .btn { padding: 7px 14px; border-radius: 10px; font-size: 14px; font-weight: 700; background: var(--primary); color: #fff; white-space: nowrap; }
+  .btn.off { background: none; color: var(--muted); border: 1px solid var(--line); font-weight: 400; }
+  /* แบบ ค ตามกลุ่มสาระ */
+  .grp { margin-bottom: 16px; }
+  .grp h3 { font-size: 15px; margin: 0 0 8px; display: flex; justify-content: space-between; }
+  .grp h3 a { font-size: 13px; color: var(--primary); font-weight: 600; }
+  .strip { display: flex; gap: 12px; overflow-x: auto; padding-bottom: 6px; }
+  .strip > div { flex: 0 0 104px; }
+  .phone .strip > div { flex-basis: 96px; }
+  /* แถบหน้าแรก */
+  .home { margin-top: 10px; }
+  .home .strip > div { flex-basis: 70px; }
+  .home .meta { font-size: 11px; }
+  .home .meta b { font-size: 12px; }
+  .more { display: grid; place-items: center; text-align: center; font-size: 13px; color: var(--primary); font-weight: 700; }
+  .note { font-size: 14px; color: var(--muted); margin-top: 10px; }
+  .pager { text-align: center; margin-top: 8px; }
+  @media (max-width: 800px) { .pair { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+<h1>คลังงานการจัดการเรียนรู้ ภาพตัวอย่าง 3 แบบ</h1>
+<p class="lead">ข้อมูลสมมติ ทุกแบบมีปุ่มเลือกชั้น (แผน คู่มือ บันทึกหลังแผน) ตัวกรองกลุ่มสาระและภาคเรียน · รูปกุญแจ คือเห็นปกแต่เปิดอ่านไม่ได้ (สวิตช์ อ่านงานของคนอื่นได้ ปิดอยู่) · ปกสีกรมท่า คือปกที่ระบบวาดให้บันทึกหลังแผนแบบพิมพ์</p>
+
+<div id="out"></div>
+
+<div class="opt">
+  <div class="cap">แถบเล็กในหน้าแรก <small>ใช้ได้กับทุกแบบ</small></div>
+  <p class="why">เล่มใหม่ล่าสุด 6 เล่ม กดแล้วไปหน้าคลัง</p>
+  <div class="card home" style="max-width:620px">
+    <div class="grp" style="margin:0"><h3>เล่มใหม่ในคลัง <a>ดูทั้งหมด</a></h3><div class="strip" id="homestrip"></div></div>
+  </div>
+</div>
+
+<script>
+const LOCK = '<span class="lock"><svg viewBox="0 0 24 24"><path d="M17 9h-1V7a4 4 0 0 0-8 0v2H7a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-9a2 2 0 0 0-2-2zm-7-2a2 2 0 0 1 4 0v2h-4V7z"/></svg></span>';
+const B = [
+  ['ฟิสิกส์ 3', 'ว32203', 'ครูสมมติ ใจดี', 'วิทยาศาสตร์', 1],
+  ['เคมี 1', 'ว31221', 'ครูทดลอง มีสุข', 'วิทยาศาสตร์', 0],
+  ['คณิตศาสตร์ 2', 'ค21102', 'ครูตัวอย่าง รักเรียน', 'คณิตศาสตร์', 0],
+  ['ภาษาไทย 3', 'ท22101', 'ครูสมชาย ตั้งใจ', 'ภาษาไทย', 0],
+  ['ภาษาอังกฤษ 1', 'อ31101', 'ครูสมหญิง ขยัน', 'ภาษาต่างประเทศ', 0],
+  ['ชีววิทยา 2', 'ว32242', 'ครูมานี มีนา', 'วิทยาศาสตร์', 0],
+  ['ประวัติศาสตร์', 'ส21103', 'ครูปิติ ชูใจ', 'สังคมศึกษา', 0],
+  ['สุขศึกษา', 'พ22101', 'ครูวีระ แข็งแรง', 'สุขศึกษาและพลศึกษา', 0],
+];
+function cover(b, drawn, lock) {
+  if (drawn) return `<div class="cover drawn"><span class="bar"></span><b>บันทึกหลังแผน</b>${b[0]}<br>${b[1]}<br><span style="opacity:.8">${b[2]}</span><span class="bar"></span>${lock ? LOCK : ''}</div>`;
+  return `<div class="cover"><span class="logo"></span><span class="l t"></span><span class="l"></span><span class="l s"></span><span class="l b"></span><span class="l s"></span>${lock ? LOCK : ''}</div>`;
+}
+const meta = (b, small) => `<div class="meta"><b>${b[0]}</b><span>${b[1]}</span><span>${b[2]}</span>${b[4] ? '<span class="pill mine">งานของฉัน</span>' : (small ? '' : '<span class="pill">ผ่านครบ</span>')}</div>`;
+const book = (b, i, small, drawn) => `<div>${cover(b, drawn && i % 3 === 2, !b[4])}${meta(b, small)}</div>`;
+const head = (phone) => `
+  <div class="ttl">คลังงานการจัดการเรียนรู้</div>
+  <div class="shelves"><span class="on">แผนการจัดการเรียนรู้</span><span>คู่มือรายวิชา</span><span>บันทึกหลังแผน</span>${phone ? '' : '<span class="soon">ชั้นใหม่ เพิ่มภายหลัง</span>'}</div>
+  <div class="filters"><span class="sel">ทุกกลุ่มสาระ</span><span class="sel">ภาคเรียน 2/2569</span><span class="count">${phone ? '' : 'ทั้งหมด 248 เล่ม'}</span></div>`;
+
+function optA(phone) {
+  const n = phone ? 4 : 8;
+  return head(phone) + `<div class="rack">${B.slice(0, phone ? 2 : 4).map((b, i) => book(b, i)).join('')}</div>` +
+    `<div class="rack">${B.slice(phone ? 2 : 4, n).map((b, i) => book(b, i + 1)).join('')}</div><div class="pager"><span class="btn off">โหลดเพิ่มอีก 24 เล่ม</span></div>`;
+}
+function optB(phone) {
+  return head(phone) + `<div class="list">${B.slice(0, phone ? 5 : 6).map((b, i) => `<div class="it">${cover(b, false, false)}${meta(b, phone).replace('<span>' + b[1] + '</span>', '<span>' + b[1] + ' · ' + b[3] + '</span>')}${b[4] ? '<span class="btn">เปิดอ่าน</span>' : '<span class="btn off">' + (phone ? 'ล็อก' : 'เปิดอ่านได้เฉพาะเจ้าของ') + '</span>'}</div>`).join('')}</div>`;
+}
+function optC(phone) {
+  const g = [['วิทยาศาสตร์', [0, 1, 5, 0, 1]], ['คณิตศาสตร์', [2, 2, 2, 2]], ['ภาษาไทย', [3, 3, 3, 3]]];
+  return head(phone) + g.map(([name, ix]) => `<div class="grp"><h3>${name} <a>ดูทั้งหมด ${ix.length * 6} เล่ม</a></h3><div class="strip">${ix.map((k, i) => book(B[k], i, true)).join('')}</div></div>`).join('');
+}
+const OPTS = [
+  ['แบบ ก ชั้นวางหนังสือ', 'ปกใหญ่เรียงบนชั้นไม้ เหมือนตู้หนังสือในห้องสมุด', 'ดูสวย เห็นปกชัด เหมาะเปิดโชว์ตอนกรรมการมาดูงาน · หน้าจอหนึ่งเห็นราว 8 ถึง 12 เล่ม', optA],
+  ['แบบ ข รายการ ปกเล็ก', 'ปกเล็กด้านซ้าย ชื่อวิชา ครู กลุ่มสาระ ปุ่มเปิดอ่านด้านขวา', 'ค้นหาเร็ว อ่านง่ายบนมือถือ บอกชัดว่าเล่มไหนเปิดได้ · ปกไม่เด่นเท่าแบบ ก', optB],
+  ['แบบ ค แยกแถวตามกลุ่มสาระ', 'แต่ละกลุ่มสาระเป็นแถว เลื่อนซ้ายขวาได้ เหมือนแอปดูหนัง', 'เห็นภาพรวมทุกกลุ่มสาระในหน้าเดียว · ถ้าอยากดูทั้งกลุ่มต้องกด ดูทั้งหมด อีกครั้ง', optC],
+];
+document.getElementById('out').innerHTML = OPTS.map(([c, s, w, f]) => `
+  <div class="opt"><div class="cap">${c} <small>${s}</small></div><p class="why">${w}</p>
+  <div class="pair"><div class="card">${f(false)}</div><div class="card phone">${f(true)}</div></div></div>`).join('');
+document.getElementById('homestrip').innerHTML = B.slice(0, 6).map((b, i) => book(b, i, true, true)).join('') + '<div class="more">ไปที่คลัง</div>';
+</script>
+</body>
+</html>
