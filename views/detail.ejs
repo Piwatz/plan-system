@@ -141,8 +141,8 @@
         <% if (me.signature) { %>
           <div class="btn-row"><span class="sig-box"><img class="sig-preview" src="<%= me.signature %>" alt="ลายเซ็นของคุณ"></span> <small class="muted">ใช้ลายเซ็นที่บันทึกไว้ <a href="/profile">เปลี่ยนลายเซ็น</a></small></div>
         <% } else { %>
-          <%- include('partials/sigpad') %>
-          <div class="hint">ระบบจะจำลายเซ็นนี้ไว้ ครั้งต่อไปไม่ต้องเซ็นใหม่</div>
+          <%- include('partials/sigpad', { remember: true }) %>
+          <% if (!ff.resign) { %><div class="hint">ระบบจะจำลายเซ็นนี้ไว้ ครั้งต่อไปไม่ต้องเซ็นใหม่</div><% } %>
         <% } %>
       </div>
       <div class="qs-actions">
@@ -328,6 +328,13 @@
 
     <div class="card">
       <h3>ประวัติ</h3>
+      <% if (oldSig) { %>
+        <div class="resign-box">
+          <div class="small muted">คุณลงนามงานนี้ด้วยลายเซ็นเดิม</div>
+          <div class="btn-row"><span class="sig-box sig-old"><img src="<%= oldSig %>" alt="ลายเซ็นเดิม"></span>
+            <form method="post" action="/s/<%= sub.id %>/resign" data-confirm="ใช้ลายเซ็นปัจจุบันในข้อมูลส่วนตัวแทนลายเซ็นเดิมในงานนี้ ใช่ไหม เอกสารที่พิมพ์จากนี้จะเป็นลายเซ็นใหม่" data-ok-label="ใช้ลายเซ็นใหม่"><button class="btn btn-sm" type="submit">ใช้ลายเซ็นใหม่ของฉันในงานนี้</button></form></div>
+        </div>
+      <% } %>
       <% if (!reviews.length) { %><div class="muted">ยังไม่มีความเคลื่อนไหว</div><% } %>
       <ul class="timeline">
         <% for (const r of [...reviews].reverse()) { %>

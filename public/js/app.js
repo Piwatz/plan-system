@@ -926,24 +926,204 @@
       dirty = false;
       save();
     });
+    // วาดรูปลงกรอบให้พอดี · margin = ขอบว่างรอบรูป (สัดส่วนของกรอบ)
+    function drawFit(src, margin) {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      const mw = canvas.width * (1 - 2 * margin);
+      const mh = canvas.height * (1 - 2 * margin);
+      const scale = Math.min(mw / src.width, mh / src.height);
+      const w = src.width * scale;
+      const h = src.height * scale;
+      ctx.drawImage(src, (canvas.width - w) / 2, (canvas.height - h) / 2, w, h);
+      dirty = true;
+      save();
+    }
+    // ปรับรูปลายเซ็นอัตโนมัติ (ฟังก์ชันเสริม sigclean): มีป้ายบอก และกดสลับใช้รูปเดิมได้
+    const note = pad.querySelector('[data-clean-note]');
+    const toggle = pad.querySelector('[data-clean-toggle]');
+    let pic = null;
+    let usingClean = false;
+    function showPic() {
+      if (!pic) return;
+      if (usingClean) drawFit(pic.clean, 0.06);
+      else drawFit(pic.img, 0);
+      if (note) {
+        note.hidden = !pic.clean;
+        note.querySelector('[data-clean-text]').textContent = usingClean ? 'ปรับรูปให้แล้ว ตัดขอบว่าง ลบพื้นกระดาษ' : 'ใช้รูปเดิมอยู่';
+        toggle.textContent = usingClean ? 'ใช้รูปเดิมแทน' : 'ใช้แบบปรับแล้ว';
+      }
+    }
+    if (toggle) {
+      toggle.addEventListener('click', () => {
+        usingClean = !usingClean;
+        showPic();
+      });
+    }
+    canvas.addEventListener('pointerdown', () => {
+      // เซ็นทับรูป: ไม่สลับรูปอีก
+      pic = null;
+      if (note) note.hidden = true;
+    });
     const file = pad.querySelector('[data-file]');
     file.addEventListener('change', () => {
       const f = file.files[0];
       if (!f) return;
       const img = new Image();
       img.onload = () => {
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-        const scale = Math.min(canvas.width / img.width, canvas.height / img.height);
-        const w = img.width * scale;
-        const h = img.height * scale;
-        ctx.drawImage(img, (canvas.width - w) / 2, (canvas.height - h) / 2, w, h);
-        dirty = true;
-        save();
+        let clean = null;
+        if (pad.hasAttribute('data-clean')) {
+          try {
+            clean = cleanSignature(img);
+          } catch {
+            clean = null;
+          }
+        }
+        pic = { img, clean };
+        usingClean = Boolean(clean);
+        showPic();
         URL.revokeObjectURL(img.src);
+        file.value = '';
       };
       img.src = URL.createObjectURL(f);
     });
+    pad.querySelector('[data-clear]').addEventListener('click', () => {
+      pic = null;
+      if (note) note.hidden = true;
+    });
+    // ดูตัวอย่างบนเอกสาร: ลายเซ็นในกรอบ (ถ้าเซ็นแล้ว) หรือลายเซ็นที่บันทึกไว้
+    const prevBtn = pad.querySelector('[data-sig-preview]');
+    const dlg = document.getElementById('sig-doc');
+    if (prevBtn && dlg) {
+      prevBtn.addEventListener('click', () => {
+        const src = out.value || dlg.dataset.current || '';
+        dlg.querySelectorAll('[data-sig-img]').forEach((im) => (src ? im.setAttribute('src', src) : im.removeAttribute('src')));
+        dlg.querySelector('[data-sig-empty]').hidden = Boolean(src);
+        if (typeof dlg.showModal === 'function') dlg.showModal();
+        else dlg.setAttribute('open', '');
+      });
+      dlg.querySelector('[data-sig-close]').addEventListener('click', () => (typeof dlg.close === 'function' ? dlg.close() : dlg.removeAttribute('open')));
+    }
   });
+
+  // ปรับรูปถ่ายลายเซ็น: ลบพื้นกระดาษให้ใส ทำเส้นเข้ม ตัดขอบว่าง ทำในเครื่องนี้ทั้งหมด
+  // ความสว่างของกระดาษดูเป็นช่อง ๆ (รูปถ่ายมีเงาและแสงไม่เท่ากัน) จุดที่มืดกว่ากระดาษรอบ ๆ ชัดเจนนับเป็นหมึก
+  // ได้ผืนผ้าใบที่ตัดขอบแล้ว หรือ null ถ้าไม่เหมือนรูปลายเซ็น (ใช้รูปเดิม)
+  function cleanSignature(img) {
+    const max = 1600;
+    const k = Math.min(1, max / Math.max(img.width, img.height));
+    const W = Math.max(1, Math.round(img.width * k));
+    const H = Math.max(1, Math.round(img.height * k));
+    const c = document.createElement('canvas');
+    c.width = W;
+    c.height = H;
+    const g = c.getContext('2d');
+    g.drawImage(img, 0, 0, W, H);
+    const im = g.getImageData(0, 0, W, H);
+    const d = im.data;
+    const n = W * H;
+    const lum = new Float32Array(n);
+    for (let i = 0; i < n; i++) {
+      const a = d[i * 4 + 3] / 255;
+      // ส่วนที่โปร่งใสอยู่แล้วนับเป็นกระดาษขาว
+      lum[i] = (0.299 * d[i * 4] + 0.587 * d[i * 4 + 1] + 0.114 * d[i * 4 + 2]) * a + 255 * (1 - a);
+    }
+    // ความสว่างกระดาษของแต่ละช่อง = ค่าที่สว่างรองลงมา (กันจุดสว่างเดี่ยว) แล้วเกลี่ยระหว่างช่อง
+    const B = Math.max(16, Math.round(Math.min(W, H) / 12));
+    const gw = Math.ceil(W / B);
+    const gh = Math.ceil(H / B);
+    const grid = new Float32Array(gw * gh);
+    for (let by = 0; by < gh; by++) {
+      for (let bx = 0; bx < gw; bx++) {
+        const vals = [];
+        for (let y = by * B; y < Math.min(H, (by + 1) * B); y += 2) for (let x = bx * B; x < Math.min(W, (bx + 1) * B); x += 2) vals.push(lum[y * W + x]);
+        vals.sort((p, q) => p - q);
+        grid[by * gw + bx] = Math.max(40, vals[Math.floor(vals.length * 0.9)] || 255);
+      }
+    }
+    const bgAt = (x, y) => {
+      const fx = Math.min(gw - 1, Math.max(0, x / B - 0.5));
+      const fy = Math.min(gh - 1, Math.max(0, y / B - 0.5));
+      const x0 = Math.floor(fx);
+      const y0 = Math.floor(fy);
+      const x1 = Math.min(gw - 1, x0 + 1);
+      const y1 = Math.min(gh - 1, y0 + 1);
+      const tx = fx - x0;
+      const ty = fy - y0;
+      const top = grid[y0 * gw + x0] * (1 - tx) + grid[y0 * gw + x1] * tx;
+      const bot = grid[y1 * gw + x0] * (1 - tx) + grid[y1 * gw + x1] * tx;
+      return top * (1 - ty) + bot * ty;
+    };
+    // ความทึบของหมึก: มืดกว่ากระดาษรอบ ๆ ไม่ถึง 20% = กระดาษ · มืดกว่า 40% ขึ้นไป = หมึกเต็ม
+    const alpha = new Float32Array(n);
+    for (let y = 0; y < H; y++) {
+      for (let x = 0; x < W; x++) {
+        const i = y * W + x;
+        const r = lum[i] / bgAt(x, y);
+        alpha[i] = Math.max(0, Math.min(1, (0.8 - r) / 0.2));
+      }
+    }
+    // ตัดจุดฝุ่น: จุดหมึกที่รอบตัวแทบไม่มีหมึก
+    let ink = 0;
+    let x0 = W;
+    let y0 = H;
+    let x1 = -1;
+    let y1 = -1;
+    const rows = new Uint32Array(H);
+    const cols = new Uint32Array(W);
+    for (let y = 0; y < H; y++) {
+      for (let x = 0; x < W; x++) {
+        const i = y * W + x;
+        let a = alpha[i];
+        if (a > 0) {
+          let near = 0;
+          for (let dy = -1; dy <= 1; dy++) {
+            for (let dx = -1; dx <= 1; dx++) {
+              const xx = x + dx;
+              const yy = y + dy;
+              if ((dx || dy) && xx >= 0 && yy >= 0 && xx < W && yy < H && alpha[yy * W + xx] > 0.3) near++;
+            }
+          }
+          if (near < 3) a = 0;
+        }
+        d[i * 4] = 13;
+        d[i * 4 + 1] = 27;
+        d[i * 4 + 2] = 76;
+        d[i * 4 + 3] = Math.round(a * 255);
+        if (a > 0.5) {
+          ink++;
+          rows[y]++;
+          cols[x]++;
+        }
+      }
+    }
+    // หมึกน้อยเกินไปหรือมากเกินไป (รูปถ่ายทั่วไป ไม่ใช่ลายเซ็นบนกระดาษ) ไม่ปรับ
+    if (ink < 30 || ink > n * 0.35) return null;
+    // ขอบของลายเซ็น: ข้ามแถวและคอลัมน์ที่มีจุดหมึกน้อยมาก (ฝุ่น เงา)
+    const minRow = Math.max(1, W * 0.002);
+    const minCol = Math.max(1, H * 0.004);
+    for (let y = 0; y < H; y++) {
+      if (rows[y] < minRow) continue;
+      y0 = Math.min(y0, y);
+      y1 = y;
+    }
+    for (let x = 0; x < W; x++) {
+      if (cols[x] < minCol) continue;
+      x0 = Math.min(x0, x);
+      x1 = x;
+    }
+    if (x1 < x0 || y1 < y0) return null;
+    g.putImageData(im, 0, 0);
+    const pad = Math.round(Math.max(x1 - x0, y1 - y0) * 0.03);
+    x0 = Math.max(0, x0 - pad);
+    y0 = Math.max(0, y0 - pad);
+    x1 = Math.min(W - 1, x1 + pad);
+    y1 = Math.min(H - 1, y1 + pad);
+    const out = document.createElement('canvas');
+    out.width = x1 - x0 + 1;
+    out.height = y1 - y0 + 1;
+    out.getContext('2d').drawImage(c, x0, y0, out.width, out.height, 0, 0, out.width, out.height);
+    return out;
+  }
 
   // ---------- รวมคะแนนแบบประเมิน ----------
   document.querySelectorAll('[data-rubric]').forEach((box) => {

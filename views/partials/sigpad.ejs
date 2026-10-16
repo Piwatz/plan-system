@@ -1,9 +1,20 @@
-<div class="sigpad" data-sigpad>
+<%# ช่องเซ็นชื่อ · preview = ปุ่มดูตัวอย่างบนเอกสาร (หน้าข้อมูลส่วนตัว) · remember = ช่องติ๊กจำลายเซ็น (กรอบเซ็นตอนลงนาม) %>
+<div class="sigpad" data-sigpad<%- ff.sigclean ? ' data-clean' : '' %>>
   <canvas width="960" height="320" aria-label="ช่องเซ็นชื่อ"></canvas>
+<% if (ff.sigclean) { %>
+  <div class="sig-note" data-clean-note hidden><span data-clean-text>ปรับรูปให้แล้ว ตัดขอบว่าง ลบพื้นกระดาษ</span> <button type="button" class="linkish" data-clean-toggle>ใช้รูปเดิมแทน</button></div>
+<% } %>
   <div class="btn-row" style="margin-top:8px">
     <button type="button" class="btn btn-ghost btn-sm" data-clear>ล้าง</button>
     <label class="btn btn-ghost btn-sm">ใช้รูปลายเซ็นจากไฟล์<input type="file" accept="image/png,image/jpeg" hidden data-file></label>
+<% if (ff.sigclean && locals.preview) { %>
+    <button type="button" class="btn btn-ghost btn-sm" data-sig-preview>ดูตัวอย่างบนเอกสาร</button>
+<% } %>
     <small class="muted">เซ็นด้วยนิ้วหรือเมาส์ในกรอบ</small>
   </div>
+<% if (ff.resign && locals.remember) { %>
+  <input type="hidden" name="sig_choice" value="1">
+  <label class="check" style="margin-top:8px"><input type="checkbox" name="remember_signature" value="1" checked> จำลายเซ็นนี้ไว้ใช้ครั้งต่อไป</label>
+<% } %>
   <input type="hidden" name="signature" value="">
 </div>

@@ -1,6 +1,12 @@
 <%- include('partials/top') %>
 <div class="narrow">
   <div class="page-head"><div><h1>ข้อมูลส่วนตัวและลายเซ็น</h1><div class="sub">ชื่อ ตำแหน่ง และลายเซ็นนี้จะใช้ในบันทึกข้อความและเอกสารที่พิมพ์จากระบบ</div></div></div>
+<% if (stale) { %>
+  <div class="alert alert-info resign-bar">
+    <div class="t"><b>มีงานที่ลงนามด้วยลายเซ็นเดิม <%= stale %> งาน</b><div class="small">กดเพื่อใช้ลายเซ็นปัจจุบันในทุกงานนั้น หรือเปลี่ยนทีละงานในหน้างาน</div></div>
+    <form method="post" action="/profile/resign-all" data-confirm="ใช้ลายเซ็นปัจจุบันแทนลายเซ็นเดิมในงานที่ลงนามหรือส่งไปแล้วทั้ง <%= stale %> งาน ใช่ไหม เอกสารที่พิมพ์จากนี้จะเป็นลายเซ็นใหม่" data-ok-label="ใช้ลายเซ็นใหม่"><button class="btn btn-primary btn-sm" type="submit">ใช้ลายเซ็นใหม่ทั้ง <%= stale %> งาน</button></form>
+  </div>
+<% } %>
   <form class="card" method="post" action="/profile">
     <dl class="info" style="margin-bottom:14px">
       <div><dt>ชื่อ สกุล</dt><dd><%= me.full_name %></dd></div>
@@ -22,11 +28,31 @@
         </div>
         <p class="muted small">ถ้าต้องการเปลี่ยน ให้เซ็นใหม่ในกรอบด้านล่าง</p>
       <% } %>
-      <%- include('partials/sigpad') %>
+      <%- include('partials/sigpad', { preview: true }) %>
       <div class="hint">เซ็นบนมือถือด้วยนิ้วได้ หรือถ่ายรูปลายเซ็นบนกระดาษขาวแล้วกดใช้รูปจากไฟล์</div>
     </div>
     <button class="btn btn-primary" type="submit" data-confirm="บันทึกข้อมูลส่วนตัวและลายเซ็น">บันทึก</button>
     <a class="btn btn-ghost" href="/password">เปลี่ยนรหัสผ่าน</a>
   </form>
+<% if (ff.sigclean) { %>
+  <dialog class="modal sig-doc-dialog" id="sig-doc"<% if (me.signature) { %> data-current="<%= me.signature %>"<% } %>>
+    <h3>ตัวอย่างบนเอกสาร ขนาดเท่าตอนพิมพ์</h3>
+    <div class="sig-paper">
+      <div class="sp-line">จึงเรียนมาเพื่อโปรดพิจารณา</div>
+      <div class="sp-sign">
+        <div class="sp-sig sp-teacher"><img alt="ลายเซ็น" data-sig-img></div>
+        <div>(<%= me.full_name %>)</div>
+        <div><%= me.position || 'ครู' %></div>
+      </div>
+      <div class="sp-box">
+        <div>ความเห็นของผู้ตรวจ</div>
+        <div class="sp-row">ลงชื่อ <span class="sp-dots"><span class="sp-sig sp-review"><img alt="ลายเซ็น" data-sig-img></span></span></div>
+        <div>(<%= me.full_name %>)</div>
+      </div>
+    </div>
+    <p class="muted small" data-sig-empty hidden>ยังไม่มีลายเซ็น เซ็นในกรอบหรือเลือกรูปก่อน</p>
+    <div class="modal-actions"><button type="button" class="btn btn-primary btn-lg" data-sig-close>ปิด</button></div>
+  </dialog>
+<% } %>
 </div>
 <%- include('partials/bottom') %>

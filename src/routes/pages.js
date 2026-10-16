@@ -519,8 +519,26 @@ router.get('/stats', async (req, res) => {
   });
 });
 
-router.get('/profile', (req, res) => {
-  res.render('profile', { title: 'ข้อมูลส่วนตัว' });
+router.get('/profile', async (req, res) => {
+  // งานที่ยังใช้ลายเซ็นเดิมของฉัน (ฟังก์ชันเสริม resign) มีปุ่มเปลี่ยนทั้งหมดครั้งเดียว
+  const stale = req.ff.resign && req.me.signature ? (await require('../resign').staleWorks(req.me.id)).length : 0;
+  res.render('profile', { title: 'ข้อมูลส่วนตัว', stale });
+});
+
+// ใช้ลายเซ็นใหม่ในทุกงานที่ลงนามหรือส่งด้วยลายเซ็นเดิม (ฟังก์ชันเสริม resign) บันทึก audit_log
+router.post('/profile/resign-all', async (req, res) => {
+  if (!req.ff.resign) {
+    req.flash('error', 'ฟังก์ชันใช้ลายเซ็นใหม่ปิดอยู่');
+    return res.redirect('/profile');
+  }
+  if (!req.me.signature) {
+    req.flash('error', 'กรุณาบันทึกลายเซ็นก่อน');
+    return res.redirect('/profile');
+  }
+  const n = await require('../resign').apply(req.me.id);
+  if (n) await require('../features').audit(req.me, `ใช้ลายเซ็นใหม่ในงานที่ลงนามแล้วทั้งหมด ${n} งาน`, `user ${req.me.id}`);
+  req.flash('success', n ? `เปลี่ยนเป็นลายเซ็นใหม่ใน ${n} งานเรียบร้อย เอกสารที่พิมพ์จากนี้ใช้ลายเซ็นใหม่` : 'ทุกงานใช้ลายเซ็นปัจจุบันอยู่แล้ว');
+  res.redirect('/profile');
 });
 
 router.post('/profile', async (req, res) => {

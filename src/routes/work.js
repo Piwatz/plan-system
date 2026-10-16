@@ -11,6 +11,7 @@ const up = require('../upload');
 const storage = require('../storage');
 const drivepath = require('../drivepath');
 const features = require('../features');
+const resign = require('../resign');
 const teaching = require('../teaching');
 const { qrSvg } = require('./verify');
 const library = require('../library');
@@ -562,7 +563,20 @@ router.get('/s/:id', async (req, res) => {
     isOwner: wf.isOwner(req.me, sub),
     canPlan: !req.ff.onemain || !(await teaching.planBlocked(req.me, Number(req.settings.academic_year), Number(req.settings.semester))),
     approveLabel: approveLabel(sub),
+    // ลายเซ็นเดิมของฉันในงานนี้ (ฟังก์ชันเสริม resign) มีปุ่มใช้ลายเซ็นใหม่
+    oldSig: req.ff.resign && req.me.signature ? await resign.oldSignature(req.me.id, sub.id) : null,
   });
+});
+
+// ใช้ลายเซ็นใหม่ของฉันในงานนี้ (ฟังก์ชันเสริม resign) ไม่จำกัดเวลา เฉพาะลายเซ็นของตัวเอง บันทึก audit_log
+router.post('/s/:id/resign', async (req, res) => {
+  if (!req.ff.resign) throw new UserError('ฟังก์ชันใช้ลายเซ็นใหม่ปิดอยู่');
+  const sub = await viewable(req, req.params.id);
+  if (!sub) throw new UserError('ไม่พบงานนี้');
+  if (!req.me.signature) throw new UserError('กรุณาบันทึกลายเซ็นในหน้าข้อมูลส่วนตัวก่อน');
+  const n = await resign.apply(req.me.id, sub.id);
+  if (n) await features.audit(req.me, `ใช้ลายเซ็นใหม่ใน${wf.DOC_TYPES[sub.doc_type].label} ${sub.subject_code} ของ ${sub.teacher_name}`, `submission ${sub.id}`);
+  respond(req, res, `/s/${sub.id}`, 'success', n ? 'เปลี่ยนเป็นลายเซ็นใหม่ในงานนี้เรียบร้อย เอกสารที่พิมพ์จากนี้ใช้ลายเซ็นใหม่' : 'งานนี้ใช้ลายเซ็นปัจจุบันอยู่แล้ว');
 });
 
 router.get('/s/:id/edit', async (req, res) => {
@@ -1088,10 +1102,13 @@ function collectScores(b) {
   return out;
 }
 
+// ลายเซ็นที่เซ็นในกรอบตอนลงนาม (ยังไม่มีลายเซ็นในข้อมูลส่วนตัว)
+// ฟอร์มที่มีช่องติ๊ก จำลายเซ็นนี้ไว้ (sig_choice, ฟังก์ชันเสริม resign) ไม่ติ๊ก = ใช้กับการลงนามครั้งนี้อย่างเดียว ไม่เก็บทับข้อมูลส่วนตัว
 async function applySignature(req) {
   const b = req.body || {};
   if (b.signature && validSignature(b.signature)) {
-    await q.run('UPDATE users SET signature = ? WHERE id = ?', b.signature, req.me.id);
+    const keep = !(req.ff.resign && b.sig_choice === '1') || b.remember_signature === '1';
+    if (keep) await q.run('UPDATE users SET signature = ? WHERE id = ?', b.signature, req.me.id);
     req.me.signature = b.signature;
   }
 }

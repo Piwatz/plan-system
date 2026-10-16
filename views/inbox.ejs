@@ -71,7 +71,7 @@
         <input type="text" id="bulk-comment" name="comment" placeholder="เช่น เห็นชอบ หรือ รับทราบ">
       </div>
       <% if (!me.signature) { %>
-        <div class="field"><span class="label">ลายเซ็น</span><%- include('partials/sigpad') %></div>
+        <div class="field"><span class="label">ลายเซ็น</span><%- include('partials/sigpad', { remember: true }) %></div>
       <% } %>
       <button class="btn btn-success btn-lg" type="submit" data-need-checked="ids"
         <% if (!me.signature) { %>data-require-field="signature" data-require-message="กรุณาเซ็นชื่อในกรอบก่อน"<% } %>

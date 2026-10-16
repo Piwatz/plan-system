@@ -1,0 +1,143 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ลายเซ็น ภาพตัวอย่าง</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai+Looped:wght@400;600;700&family=Sarabun:wght@400;700&display=swap" rel="stylesheet">
+<style>
+  .day { --bg:#EEF2F7; --surface:#FFFFFF; --ink:#0F1E33; --muted:#4E5F78; --line:#D6DEE9; --primary:#1D3A66; --soft:#E4ECF7; --link:#1D3A66; --ok:#1B7343; --ok-bg:#E4F4EA; --wait:#875700; --wait-bg:#FFF2DA; --shadow:0 1px 2px rgba(15,30,51,.05), 0 4px 14px rgba(15,30,51,.05); }
+  .night { --bg:#0C1626; --surface:#142139; --ink:#E9EFF8; --muted:#A3B3CA; --line:#25344F; --primary:#3D6BC0; --soft:#1B2D4D; --link:#8FB5F6; --ok:#7FD4A2; --ok-bg:#163828; --wait:#F2C46B; --wait-bg:#3A2E12; --shadow:0 1px 0 rgba(255,255,255,.03), 0 10px 26px rgba(0,0,0,.4); }
+  * { box-sizing: border-box; }
+  body { margin: 0; padding: 20px 16px 48px; background: #E6EAF0; color: #0F1E33; font-family: 'Noto Sans Thai Looped', Tahoma, sans-serif; font-size: 15px; }
+  h1 { font-size: 22px; margin: 0 0 4px; }
+  .lead { color: #4E5F78; margin: 0 0 18px; }
+  .sec { font-size: 17px; font-weight: 700; color: #1D3A66; margin: 30px 0 4px; padding-top: 14px; border-top: 2px solid #C9D3E1; }
+  .opt { margin: 18px 0 8px; }
+  .cap { font-weight: 700; font-size: 18px; }
+  .cap .tag { display: inline-block; font-size: 13px; font-weight: 600; padding: 2px 10px; border-radius: 999px; background: #E4ECF7; color: #1D3A66; margin-left: 6px; vertical-align: 2px; }
+  .why { font-size: 14px; color: #4E5F78; margin: 2px 0 8px; }
+  .pair { display: grid; grid-template-columns: minmax(0,1fr) minmax(0,1fr); gap: 12px; }
+  .pair > *, .two > * { min-width: 0; }
+  .sig.big { max-width: 100%; }
+  @media (max-width: 760px) { .pair { grid-template-columns: 1fr; } }
+  .scr { background: var(--bg); color: var(--ink); border-radius: 14px; padding: 14px; }
+  .scr .lbl { font-size: 12px; color: var(--muted); margin-bottom: 8px; }
+  .card { background: var(--surface); border-radius: 14px; box-shadow: var(--shadow); padding: 14px; }
+  .card h3 { margin: 0 0 8px; font-size: 16px; }
+  .muted { color: var(--muted); } .small { font-size: 13px; }
+  .btn { display: inline-block; border-radius: 10px; padding: 6px 12px; font: inherit; font-size: 13.5px; font-weight: 600; border: 1px solid var(--line); background: var(--surface); color: var(--ink); white-space: nowrap; }
+  .btn-primary { background: var(--primary); color: #fff; border-color: var(--primary); }
+  .btns { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px; align-items: center; }
+  .sigbox { border: 1.5px dashed var(--line); border-radius: 10px; height: 96px; display: grid; place-items: center; position: relative; overflow: hidden; }
+  .sigbox.photo { background: linear-gradient(135deg, #c9c4b8, #b3ad9f); }
+  .sigbox.white { background: #fff; }
+  .sig { width: 120px; height: 40px; }
+  .sig.big { width: 230px; height: 76px; }
+  .sig path { fill: none; stroke: #0d1b4c; stroke-width: 2.6; stroke-linecap: round; stroke-linejoin: round; }
+  .sig.faint path { stroke: #4a4f63; stroke-width: 1.6; }
+  .two { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .two .t { font-size: 12.5px; color: var(--muted); margin-bottom: 4px; }
+  .pick { border: 2px solid var(--primary); border-radius: 12px; padding: 6px; }
+  .nopick { border: 2px solid transparent; border-radius: 12px; padding: 6px; }
+  .okline { font-size: 13px; color: var(--ok); margin-top: 6px; }
+  /* เอกสารจำลอง */
+  .paper { background: #fff; color: #000; font-family: 'Sarabun', serif; font-size: 13px; padding: 14px 18px; border-radius: 4px; box-shadow: 0 2px 10px rgba(0,0,0,.25); }
+  .paper .c { text-align: center; line-height: 1.5; }
+  .paper .dots { border-bottom: 1px dotted #000; display: inline-block; width: 150px; height: 30px; position: relative; vertical-align: bottom; }
+  .paper .dots svg { position: absolute; left: 15px; bottom: 2px; width: 120px; height: 36px; }
+  .paper .dots svg path { fill: none; stroke: #0d1b4c; stroke-width: 2.6; stroke-linecap: round; }
+  .modal { background: var(--surface); border-radius: 14px; box-shadow: 0 10px 40px rgba(0,0,0,.35); padding: 14px; }
+  .modal h4 { margin: 0 0 8px; font-size: 15px; }
+  .mini { margin-top: 10px; }
+  .mini .paper { transform-origin: top left; }
+  .timeline { list-style: none; padding: 0; margin: 0; }
+  .timeline li { border-left: 3px solid var(--line); padding: 4px 0 10px 12px; }
+  .timeline li.me { border-left-color: var(--primary); }
+  .timeline .when { font-size: 12.5px; color: var(--muted); }
+  .oldsig { display: inline-flex; align-items: center; gap: 8px; margin-top: 6px; background: #fff; border-radius: 8px; padding: 2px 8px; border: 1px solid var(--line); }
+  .bar { display: flex; gap: 10px; align-items: center; border-radius: 10px; padding: 10px 12px; flex-wrap: wrap; background: var(--soft); color: var(--ink); margin-top: 10px; }
+  .bar .t { flex: 1; min-width: 180px; }
+  .check { display: flex; gap: 8px; align-items: center; margin-top: 8px; font-size: 14px; }
+  .check i { width: 18px; height: 18px; border-radius: 4px; background: var(--primary); display: inline-grid; place-items: center; color: #fff; font-style: normal; font-size: 12px; }
+</style>
+</head>
+<body>
+<h1>ลายเซ็น ภาพตัวอย่าง (แชท I)</h1>
+<p class="lead">ข้อมูลสมมติ ทุกแบบมีโหมดกลางวันและกลางคืนคู่กัน</p>
+
+<svg width="0" height="0" style="position:absolute"><defs><path id="sg" fill="none" stroke="#0d1b4c" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" d="M6 30c8-22 14-26 16-12s-6 18 2 8 10-20 14-6 4 12 10 2 8-10 12 0 6 8 14-4 10-6 14 4 8 4 16-6M40 34c20-4 40-6 70-8"/></defs></svg>
+
+<div class="sec">ส่วนที่ 1 ใช้รูปถ่ายลายเซ็น (หน้าข้อมูลส่วนตัว)</div>
+<p class="why">ตอนนี้ถ้าถ่ายรูปลายเซ็นบนกระดาษ รูปจะมีพื้นเทาของกระดาษติดมา และลายเซ็นตัวเล็กเพราะมีขอบว่างเยอะ ของใหม่ระบบตัดขอบว่างทิ้ง ลบพื้นกระดาษให้ใส และทำเส้นให้เข้มขึ้น ทำในเครื่องของครูเอง ไม่ส่งรูปเดิมขึ้นระบบ</p>
+
+<template id="t-a1"><div class="card"><h3>ลายเซ็น</h3>
+  <div class="two">
+    <div class="nopick"><div class="t">รูปเดิม</div><div class="sigbox photo"><svg class="sig faint" viewBox="0 0 130 44" style="opacity:.55"><path fill="none" stroke="#0d1b4c" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" d="M6 30c8-22 14-26 16-12s-6 18 2 8 10-20 14-6 4 12 10 2 8-10 12 0 6 8 14-4 10-6 14 4 8 4 16-6M40 34c20-4 40-6 70-8"/></svg></div></div>
+    <div class="pick"><div class="t">ปรับแล้ว (เลือกอยู่)</div><div class="sigbox white"><svg class="sig big" viewBox="0 0 130 44"><path fill="none" stroke="#0d1b4c" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" d="M6 30c8-22 14-26 16-12s-6 18 2 8 10-20 14-6 4 12 10 2 8-10 12 0 6 8 14-4 10-6 14 4 8 4 16-6M40 34c20-4 40-6 70-8"/></svg></div></div>
+  </div>
+  <div class="btns"><span class="btn btn-primary">ใช้แบบปรับแล้ว</span><span class="btn">ใช้รูปเดิม</span><span class="btn">ดูตัวอย่างบนเอกสาร</span></div>
+</div></template>
+
+<template id="t-a2"><div class="card"><h3>ลายเซ็น</h3>
+  <div class="sigbox white"><svg class="sig big" viewBox="0 0 130 44"><path fill="none" stroke="#0d1b4c" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" d="M6 30c8-22 14-26 16-12s-6 18 2 8 10-20 14-6 4 12 10 2 8-10 12 0 6 8 14-4 10-6 14 4 8 4 16-6M40 34c20-4 40-6 70-8"/></svg></div>
+  <div class="okline">ปรับรูปให้แล้ว ตัดขอบว่าง ลบพื้นกระดาษ <u>ใช้รูปเดิมแทน</u></div>
+  <div class="btns"><span class="btn">ล้าง</span><span class="btn">ใช้รูปลายเซ็นจากไฟล์</span><span class="btn">ดูตัวอย่างบนเอกสาร</span></div>
+</div></template>
+
+<div class="opt"><div class="cap">แบบ ก <span class="tag">เห็นก่อนและหลังคู่กัน</span></div><p class="why">หลังเลือกรูป เห็นรูปเดิมกับรูปที่ปรับแล้วคู่กัน ระบบเลือกแบบปรับแล้วไว้ให้ กดสลับได้ ชัดเจนว่าระบบทำอะไรกับรูป</p><div class="pair" data-t="t-a1"></div></div>
+<div class="opt"><div class="cap">แบบ ข <span class="tag">ปรับให้เลย มีปุ่มย้อนเล็ก ๆ</span></div><p class="why">หลังเลือกรูป ในกรอบเป็นแบบปรับแล้วทันที ไม่ต้องเลือกอะไร มีลิงก์ใช้รูปเดิมแทนเผื่อปรับแล้วไม่สวย กดน้อยที่สุด</p><div class="pair" data-t="t-a2"></div></div>
+
+<div class="sec">ส่วนที่ 2 ดูตัวอย่างบนเอกสาร</div>
+<p class="why">เห็นลายเซ็นบนบันทึกข้อความจำลองขนาดเท่าของจริงตอนพิมพ์ (ช่องลายเซ็นกว้าง 5 ซม.) ก่อนกดบันทึก รู้ทันทีว่าเล็กไปหรือจางไป</p>
+
+<template id="t-b1"><div class="modal"><h4>ตัวอย่างบนเอกสาร ขนาดเท่าของจริงตอนพิมพ์</h4>
+  <div class="paper"><div class="c">จึงเรียนมาเพื่อโปรดพิจารณา</div><br><div class="c">ลงชื่อ <span class="dots"><svg viewBox="0 0 130 44"><path fill="none" stroke="#0d1b4c" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" d="M6 30c8-22 14-26 16-12s-6 18 2 8 10-20 14-6 4 12 10 2 8-10 12 0 6 8 14-4 10-6 14 4 8 4 16-6M40 34c20-4 40-6 70-8"/></svg></span><br>(นางสาวสมใจ ใจดี)<br>ครู</div></div>
+  <div class="btns"><span class="btn btn-primary">ปิด</span></div></div></template>
+
+<template id="t-b2"><div class="card"><h3>ลายเซ็น</h3>
+  <div class="sigbox white"><svg class="sig big" viewBox="0 0 130 44"><path fill="none" stroke="#0d1b4c" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" d="M6 30c8-22 14-26 16-12s-6 18 2 8 10-20 14-6 4 12 10 2 8-10 12 0 6 8 14-4 10-6 14 4 8 4 16-6M40 34c20-4 40-6 70-8"/></svg></div>
+  <div class="mini"><div class="small muted" style="margin-bottom:4px">ตัวอย่างบนเอกสาร</div><div class="paper"><div class="c">ลงชื่อ <span class="dots"><svg viewBox="0 0 130 44"><path fill="none" stroke="#0d1b4c" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" d="M6 30c8-22 14-26 16-12s-6 18 2 8 10-20 14-6 4 12 10 2 8-10 12 0 6 8 14-4 10-6 14 4 8 4 16-6M40 34c20-4 40-6 70-8"/></svg></span><br>(นางสาวสมใจ ใจดี)</div></div></div>
+</div></template>
+
+<div class="opt"><div class="cap">แบบ ก <span class="tag">ปุ่มเปิดดู</span></div><p class="why">กดปุ่ม ดูตัวอย่างบนเอกสาร แล้วหน้าต่างขึ้นมา เห็นท้ายบันทึกข้อความพร้อมชื่อของตัวเอง หน้าจอไม่รก</p><div class="pair" data-t="t-b1"></div></div>
+<div class="opt"><div class="cap">แบบ ข <span class="tag">ขึ้นใต้กรอบเซ็นตลอด</span></div><p class="why">ไม่ต้องกด เซ็นหรือเลือกรูปแล้วตัวอย่างเปลี่ยนตามทันที แต่หน้าข้อมูลส่วนตัวยาวขึ้น</p><div class="pair" data-t="t-b2"></div></div>
+
+<div class="sec">ส่วนที่ 3 ใช้ลายเซ็นใหม่ในงานที่ลงนามไปแล้ว</div>
+<p class="why">ลายเซ็นถูกเก็บไว้ตอนลงนาม เปลี่ยนลายเซ็นทีหลัง งานเดิมยังเป็นลายเซ็นเก่า ปุ่มใหม่ให้เจ้าของลายเซ็นเปลี่ยนเป็นลายเซ็นปัจจุบันได้ทุกเมื่อ (ไม่จำกัดเวลา) เฉพาะลายเซ็นของตัวเอง มีป๊อปยืนยัน และจดในประวัติการใช้งาน ครูใช้กับลายเซ็นตอนส่งงานของตัวเองได้ด้วย</p>
+
+<template id="t-c1"><div class="card"><h3>ประวัติ</h3><ul class="timeline">
+  <li class="me"><div><b>นายมานะ ขยันยิ่ง</b> <span class="muted">หัวหน้ากลุ่มสาระ</span></div><div>ลงนามเห็นชอบ คะแนน 92/100</div><div class="when">10 ต.ค. 2569 14:20 น.</div>
+    <div class="oldsig"><svg class="sig faint" viewBox="0 0 130 44" style="width:80px;height:26px"><path fill="none" stroke="#0d1b4c" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" d="M6 30c8-22 14-26 16-12s-6 18 2 8 10-20 14-6 4 12 10 2 8-10 12 0 6 8 14-4 10-6 14 4 8 4 16-6M40 34c20-4 40-6 70-8"/></svg><span class="small muted">ลายเซ็นเดิม</span></div>
+    <div class="btns"><span class="btn">ใช้ลายเซ็นใหม่ของฉันในงานนี้</span></div></li>
+  <li><div><b>นางสาวสมใจ ใจดี</b> <span class="muted">ครูผู้สอน</span></div><div>ส่งงาน</div><div class="when">9 ต.ค. 2569 09:05 น.</div></li>
+</ul></div></template>
+
+<template id="t-c2"><div class="card"><h3>ลายเซ็น</h3>
+  <div class="sigbox white"><svg class="sig big" viewBox="0 0 130 44"><path fill="none" stroke="#0d1b4c" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" d="M6 30c8-22 14-26 16-12s-6 18 2 8 10-20 14-6 4 12 10 2 8-10 12 0 6 8 14-4 10-6 14 4 8 4 16-6M40 34c20-4 40-6 70-8"/></svg></div>
+  <div class="bar"><div class="t"><b>ลายเซ็นใหม่บันทึกแล้ว</b><div class="small muted">มีงานที่ลงนามด้วยลายเซ็นเดิม 12 งาน</div></div><span class="btn btn-primary">ใช้ลายเซ็นใหม่ทั้ง 12 งาน</span></div>
+</div></template>
+
+<div class="opt"><div class="cap">แบบ ก <span class="tag">ปุ่มทีละงาน ในหน้างาน</span></div><p class="why">ในกล่องประวัติของงาน แถวที่ตัวเองลงนาม มีรูปลายเซ็นเดิมเล็ก ๆ กับปุ่ม ใช้ลายเซ็นใหม่ของฉันในงานนี้ ตามที่ครูเต้ยเลือกไว้</p><div class="pair" data-t="t-c1"></div></div>
+<div class="opt"><div class="cap">แบบ ข <span class="tag">แบบ ก + เปลี่ยนทุกงานจากหน้าข้อมูลส่วนตัว</span></div><p class="why">มีปุ่มทีละงานเหมือนแบบ ก และหลังบันทึกลายเซ็นใหม่ในหน้าข้อมูลส่วนตัว ขึ้นแถบบอกว่ามีกี่งานที่ใช้ลายเซ็นเดิม กดครั้งเดียวเปลี่ยนทั้งหมด เหมาะกับผู้บริหารที่ลงนามไว้หลายสิบงาน</p><div class="pair" data-t="t-c2"></div></div>
+
+<div class="sec">ส่วนที่ 4 แก้ปัญหาเดิม (ไม่ต้องเลือก)</div>
+<p class="why">ตอนนี้ถ้ายังไม่มีลายเซ็น แล้วเซ็นในกรอบตอนลงนาม ระบบเก็บลายเซ็นนั้นเป็นลายเซ็นประจำตัวทันที เซ็นพลาดก็ติดไปทุกงาน ของใหม่มีช่องติ๊ก จำลายเซ็นนี้ไว้ใช้ครั้งต่อไป (ติ๊กไว้ให้) และถ้ามีลายเซ็นอยู่แล้ว การลงนามจะไม่ไปทับลายเซ็นในข้อมูลส่วนตัว</p>
+<template id="t-d1"><div class="card"><div class="small muted">ลายเซ็น</div><div class="sigbox white"><svg class="sig big" viewBox="0 0 130 44"><path fill="none" stroke="#0d1b4c" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" d="M6 30c8-22 14-26 16-12s-6 18 2 8 10-20 14-6 4 12 10 2 8-10 12 0 6 8 14-4 10-6 14 4 8 4 16-6M40 34c20-4 40-6 70-8"/></svg></div>
+  <div class="check"><i>✓</i> จำลายเซ็นนี้ไว้ใช้ครั้งต่อไป</div></div></template>
+<div class="opt"><div class="pair" data-t="t-d1"></div></div>
+
+<script>
+  for (const el of document.querySelectorAll('[data-t]')) {
+    const tpl = document.getElementById(el.dataset.t);
+    for (const [cls, name] of [['day', 'โหมดกลางวัน'], ['night', 'โหมดกลางคืน']]) {
+      const scr = document.createElement('div');
+      scr.className = 'scr ' + cls;
+      scr.innerHTML = '<div class="lbl">' + name + '</div>';
+      scr.appendChild(tpl.content.cloneNode(true));
+      el.appendChild(scr);
+    }
+  }
+</script>
+</body>
+</html>

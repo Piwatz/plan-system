@@ -74,8 +74,8 @@
         <% if (me.signature) { %>
           <div class="btn-row"><span class="sig-box"><img class="sig-preview" src="<%= me.signature %>" alt="ลายเซ็นของคุณ"></span> <small class="muted">ใช้ลายเซ็นที่บันทึกไว้ ขึ้นทุกแผ่น <a href="/profile">เปลี่ยนลายเซ็น</a></small></div>
         <% } else { %>
-          <%- include('partials/sigpad') %>
-          <div class="hint">ระบบจะจำลายเซ็นนี้ไว้ ครั้งต่อไปไม่ต้องเซ็นใหม่</div>
+          <%- include('partials/sigpad', { remember: true }) %>
+          <% if (!ff.resign) { %><div class="hint">ระบบจะจำลายเซ็นนี้ไว้ ครั้งต่อไปไม่ต้องเซ็นใหม่</div><% } %>
         <% } %>
       </div>
       <div class="qs-actions">
