@@ -185,6 +185,36 @@ async function attach(subId, list, kind, names = {}) {
   }
 }
 
+// รูปปกเล็กของแผนและคู่มือ (คลังงาน) จากช่อง upload_cover_thumb · รูปใช้ไม่ได้ก็ทิ้งเงียบ ๆ ไม่ให้การส่งงานล้ม (ระบบวาดปกให้แทน)
+async function takeCover(req, maxSize) {
+  let list;
+  try {
+    list = await take(req, 'cover_thumb');
+  } catch {
+    return null;
+  }
+  if (!list.length) return null;
+  const f = list[0];
+  if (list.length === 1 && f.ext === '.jpg' && Number(f.size) > 0 && Number(f.size) <= maxSize && !(await badFiles([f])).length) return f;
+  await discard(req.me.id, list.map((x) => x.token));
+  return null;
+}
+
+// ใช้รูปปกกับงาน (เรียกใน transaction) คืนที่อยู่รูปเดิมให้ย้ายไปถังขยะหลัง transaction
+// คำสั่งเดียว: ปิด token ว่าใช้แล้ว อ่านรูปเดิม และใส่รูปใหม่ (token ถูกใช้ไปแล้วไม่ได้แถวกลับ)
+async function useCover(subId, f) {
+  const r = await q.get(
+    `WITH u AS (UPDATE pending_uploads SET status = 'used' WHERE token = ? AND status = 'done' RETURNING drive_file_id),
+          o AS (SELECT cover_ref AS old FROM submissions WHERE id = ?)
+     UPDATE submissions s SET cover_ref = u.drive_file_id FROM u, o WHERE s.id = ? RETURNING o.old`,
+    f.token,
+    subId,
+    subId
+  );
+  if (!r) throw new UploadError(EXPIRED);
+  return r.old || null;
+}
+
 // ทิ้งไฟล์ที่ส่งมาแต่ไม่ได้ใช้ (ตรวจไม่ผ่าน หรือ transaction ล้ม) ย้ายไปถังขยะ · เรียกหลัง transaction เท่านั้น
 // ทิ้งเฉพาะที่ยังไม่ถูกใช้ (กดส่งสองครั้งพร้อมกัน คำขอแรกใช้ไฟล์ไปแล้ว ต้องไม่ทิ้งของคำขอแรก)
 async function discard(userId, tokens) {
@@ -209,4 +239,4 @@ async function trashAll(refs) {
   }
 }
 
-module.exports = { ALLOWED, MAX_FILES, EXPIRED, UploadError, fixName, checkNew, start, putChunk, parseContentRange, take, badFiles, attach, discard, trashAll };
+module.exports = { ALLOWED, MAX_FILES, EXPIRED, UploadError, fixName, checkNew, start, putChunk, parseContentRange, take, badFiles, attach, takeCover, useCover, discard, trashAll };

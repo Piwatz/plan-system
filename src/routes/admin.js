@@ -692,6 +692,8 @@ router.get('/features', async (req, res) => {
     lineReady: Boolean(req.settings.line_token && req.settings.line_to),
     noteSignOpts: features.NOTE_SIGN,
     noteSign: features.noteSign(req.settings),
+    libViews: features.LIBRARY_VIEWS,
+    libView: features.libraryView(req.settings),
     ready: Object.fromEntries(Object.entries(NEEDS).map(([k, [ok]]) => [k, Boolean(ok(req.settings))])),
   });
 });
@@ -727,6 +729,20 @@ router.post('/notesign', async (req, res) => {
     if (changed.length) await features.audit(req.me, `เปลี่ยนการจัดหน้าลงนามบันทึกหลังแผน ${changed.join(' และ ')}`, 'note_sign');
   });
   done(req, res, '/admin/features#notesign', changed.length ? 'บันทึกการจัดหน้าลงนามเรียบร้อย' : 'ไม่มีอะไรเปลี่ยน');
+});
+
+// มุมมองเริ่มต้นของหน้าคลังงาน (ฟังก์ชันเสริม library) ค่าว่าง = ตามขนาดจอ · เครื่องที่ผู้ใช้เคยสลับเองยังใช้แบบที่เลือกไว้
+router.post('/libview', async (req, res) => {
+  if (!req.ff.library) return fail(req, res, '/admin/features', 'เปิดฟังก์ชันคลังงานการจัดการเรียนรู้ก่อน');
+  const want = String((req.body || {}).view || '');
+  const opt = features.LIBRARY_VIEWS.find((v) => v.key === want);
+  if (want && !opt) return fail(req, res, '/admin/features#libview', 'ไม่พบมุมมองที่เลือก');
+  if (want === features.libraryView(req.settings)) return done(req, res, '/admin/features#libview', 'ไม่มีอะไรเปลี่ยน');
+  await q.tx(async () => {
+    await setSetting('library_view', want);
+    await features.audit(req.me, `ตั้งมุมมองเริ่มต้นของคลังงาน ${opt ? opt.label : 'ตามขนาดจอ'}`, 'library_view');
+  });
+  done(req, res, '/admin/features#libview', 'บันทึกมุมมองเริ่มต้นของคลังงานเรียบร้อย');
 });
 
 // ดูตัวอย่างการจัดหน้าลงนามแบบหนึ่งจากเล่มจริง ไม่เปลี่ยนค่าที่ทุกคนใช้ ?web=bar หรือ ?pdf=summary · book = รหัสแผน (เล่ม)

@@ -6,6 +6,7 @@ const wf = require('../workflow');
 const util = require('../util');
 const teaching = require('../teaching');
 const { submitWindow } = require('./work');
+const library = require('../library');
 
 const router = express.Router();
 router.use(auth.requireLogin);
@@ -311,6 +312,8 @@ router.get('/', async (req, res) => {
     window: submitWindow(req.settings),
     daysLeft: util.daysUntil(req.settings.submit_end),
     warnings,
+    // แถบเล่มใหม่ในคลังงาน (ฟังก์ชันเสริม library)
+    libRecent: req.ff.library ? library.decorate(await library.recent(6), me, req.ff) : [],
   });
 });
 

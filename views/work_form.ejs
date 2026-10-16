@@ -80,7 +80,7 @@
           <p class="hint">แนบไฟล์ใหม่ด้านล่างเมื่อต้องการเปลี่ยน ไฟล์เดิมจะเก็บไว้ในประวัติ</p>
         <% } %>
       <% } %>
-      <label class="dropzone" data-dropzone data-accept="pdf" <%= ff.pdfmerge ? 'data-sortable' : 'data-single' %> <%= ff.filecheck ? 'data-filecheck' : '' %> data-max-mb="<%= settings.max_upload_mb %>">
+      <label class="dropzone" data-dropzone data-accept="pdf" <%= ff.pdfmerge ? 'data-sortable' : 'data-single' %> <%= ff.library ? 'data-thumb' : '' %> <%= ff.filecheck ? 'data-filecheck' : '' %> data-max-mb="<%= settings.max_upload_mb %>">
         <span class="dz-icon"><%- icon('send', 34) %></span>
         <b>ลากไฟล์ PDF มาวางที่นี่ หรือกดเพื่อเลือกไฟล์</b><br>
         <small class="muted">เฉพาะ PDF ไม่เกิน <%= settings.max_upload_mb %> MB ต่อไฟล์<%= ff.pdfmerge ? ' เลือกได้หลายไฟล์ ระบบรวมให้' : '' %></small>
@@ -113,7 +113,7 @@
           <% } %>
         </ul>
       <% } %>
-      <label class="dropzone" data-dropzone <%= ff.filecheck ? 'data-filecheck' : '' %> data-max-mb="<%= settings.max_upload_mb %>">
+      <label class="dropzone" data-dropzone <%= ff.library ? 'data-thumb' : '' %> <%= ff.filecheck ? 'data-filecheck' : '' %> data-max-mb="<%= settings.max_upload_mb %>">
         <span class="dz-icon"><%- icon('send', 34) %></span>
         <b>ลากไฟล์มาวางที่นี่ หรือกดเพื่อเลือกไฟล์</b><br>
         <small class="muted">PDF Word Excel PowerPoint หรือรูปภาพ ไม่เกิน <%= settings.max_upload_mb %> MB ต่อไฟล์ เลือกได้หลายไฟล์</small>

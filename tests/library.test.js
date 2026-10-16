@@ -1,0 +1,308 @@
+// ทดสอบคลังงานการจัดการเรียนรู้ (ฟังก์ชันเสริม library และ libread) ปกเล็ก โหลดทีละหน้า มุมมองเริ่มต้น แถบหน้าแรก
+// ใช้ข้อมูลทดลองในโฟลเดอร์ชั่วคราว ไม่แตะข้อมูลจริง
+const test = require('node:test');
+const assert = require('node:assert/strict');
+const fs = require('fs');
+const os = require('os');
+const path = require('path');
+
+const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'plan-lib-'));
+process.env.DATA_DIR = path.join(tmp, 'data-demo');
+process.env.DEMO = '1';
+
+const seed = require('../scripts/seed-demo');
+const { formWithFiles, uploadOne, XHR } = require('./upload-client');
+const db = require('../src/db');
+const wf = require('../src/workflow');
+
+let base;
+let server;
+
+test.before(async () => {
+  await seed.main({ target: ':memory:', keepOpen: true });
+  const { createApp } = require('../src/app');
+  server = createApp().listen(0);
+  await new Promise((r) => server.once('listening', r));
+  base = `http://127.0.0.1:${server.address().port}`;
+});
+
+test.after(async () => {
+  server.close();
+  await db.close();
+  fs.rmSync(tmp, { recursive: true, force: true });
+});
+
+class Client {
+  constructor() {
+    this.cookies = {};
+  }
+  header() {
+    return Object.entries(this.cookies)
+      .map(([k, v]) => `${k}=${v}`)
+      .join('; ');
+  }
+  async raw(method, url, body, headers = {}) {
+    const res = await fetch(base + url, { method, body, redirect: 'manual', headers: { cookie: this.header(), ...headers } });
+    for (const c of res.headers.getSetCookie()) {
+      const [kv] = c.split(';');
+      const i = kv.indexOf('=');
+      this.cookies[kv.slice(0, i)] = kv.slice(i + 1);
+    }
+    return res;
+  }
+  async req(method, url, body, headers = {}) {
+    const res = await this.raw(method, url, body, headers);
+    return { status: res.status, location: res.headers.get('location'), headers: res.headers, text: await res.text() };
+  }
+  get(url) {
+    return this.req('GET', url);
+  }
+  post(url, fields, headers) {
+    return this.req('POST', url, new URLSearchParams(fields), headers);
+  }
+}
+
+async function as(username) {
+  const c = new Client();
+  const r = await c.post('/login', { username, password: seed.DEMO_PASSWORD });
+  assert.equal(r.status, 302, `เข้าสู่ระบบ ${username} ไม่สำเร็จ`);
+  return c;
+}
+
+const subOf = (type, code, teacher) =>
+  db.q.get('SELECT s.* FROM submissions s JOIN users u ON u.id = s.teacher_id WHERE s.doc_type = ? AND s.subject_code = ? AND u.username = ?', type, code, teacher);
+const fileOf = async (id) => (await db.q.get('SELECT id FROM files WHERE submission_id = ? AND is_current = 1 ORDER BY id LIMIT 1', id)).id;
+const pdf = () => new Blob(['%PDF-1.4\n1 0 obj << /Type /Page >> endobj\n'], { type: 'application/pdf' });
+const jpg = (n = 2000) => new Blob([Buffer.concat([Buffer.from([0xff, 0xd8, 0xff, 0xe0]), Buffer.alloc(n, 7)])]);
+const setFlag = (admin, key, on) => admin.post(`/admin/features/${key}`, { on: on ? '1' : '0' });
+
+// ส่งคู่มือใหม่พร้อมรูปปกเล็ก แบบเดียวกับหน้าเว็บ (ช่อง upload_cover_thumb)
+async function sendWithCover(client, code, cover, coverName = 'cover.jpg') {
+  const fields = { doc_type: 'manual', subject_code: code, subject_name: 'ทดสอบคลัง', grade_level: 'ม.4', action: 'draft' };
+  const r = await formWithFiles(client, '/works', fields, [[pdf(), 'คู่มือ.pdf']]);
+  const token = await uploadOne(client, cover, coverName, { form: '/works', field: 'cover_thumb', doc_type: 'manual', subject_code: code });
+  if (typeof token === 'string') r.fields.append('upload_cover_thumb', token);
+  return { res: await client.req('POST', '/works', r.fields, XHR), token };
+}
+
+// ให้งานผ่านครบทุกระดับ (ข้ามขั้นตอนตรวจ ทดสอบเฉพาะคลัง)
+const finish = (id) => db.q.run("UPDATE submissions SET status = 'approved', \"current_role\" = NULL, completed_at = '2569-10-16 10:00:00' WHERE id = ?", id);
+
+test('ค่าเริ่มต้น: เปิดคลังงาน ปิดอ่านงานของคนอื่น มีเมนูทุกคน', async () => {
+  const features = require('../src/features');
+  assert.equal(features.BY_KEY.library.on, true);
+  assert.equal(features.BY_KEY.libread.on, false);
+  const t = await as('teacher');
+  const home = (await t.get('/')).text;
+  assert.match(home, /href="\/library"/);
+  assert.match(home, /คลังงานการจัดการเรียนรู้/);
+  const page = await t.get('/library?shelf=manual');
+  assert.equal(page.status, 200);
+  assert.match(page.text, /data-lib-view="shelf"/);
+  assert.match(page.text, /data-lib-view="list"/);
+});
+
+test('คลังแสดงเฉพาะงานที่ผ่านครบ เปิดอ่านได้เฉพาะงานตัวเอง ผู้ตรวจเปิดตามสิทธิ์เดิม', async () => {
+  const mine = await subOf('manual', 'ว30203', 'teacher');
+  const other = await subOf('manual', 'ท21101', 'thai2');
+  const pending = await subOf('manual', 'ว30207', 'teacher');
+  assert.equal(mine.status, 'approved');
+  assert.equal(other.status, 'approved');
+  const t = await as('teacher');
+  const page = (await t.get('/library?shelf=manual')).text;
+  assert.match(page, /ว30203/);
+  assert.match(page, /ท21101/);
+  assert.doesNotMatch(page, /ว30207/, 'งานที่ยังไม่ผ่านครบไม่อยู่ในคลัง');
+  assert.match(page, /ทั้งหมด <b>2<\/b> เล่ม/);
+  assert.match(page, new RegExp(`href="/f/${await fileOf(mine.id)}/view"`), 'งานตัวเองเปิดอ่านได้');
+  assert.doesNotMatch(page, new RegExp(`href="/f/${await fileOf(other.id)}/view"`), 'งานคนอื่นไม่มีลิงก์เปิดอ่าน');
+  assert.match(page, /เปิดอ่านได้เฉพาะเจ้าของ/);
+  // เปิดไฟล์ตรง ๆ ก็ไม่ได้
+  assert.equal((await t.get(`/f/${await fileOf(other.id)}/view`)).status, 404);
+  // หัวหน้ากลุ่มสาระภาษาไทยเปิดงานในกลุ่มตัวเองได้ งานกลุ่มอื่นไม่ได้
+  const head = await as('thaihead');
+  const hp = (await head.get('/library?shelf=manual')).text;
+  assert.match(hp, new RegExp(`href="/f/${await fileOf(other.id)}/view"`));
+  assert.doesNotMatch(hp, new RegExp(`href="/f/${await fileOf(mine.id)}/view"`));
+  // ผู้ตรวจระดับโรงเรียนเปิดได้ทุกเล่ม
+  const dir = (await (await as('director')).get('/library?shelf=manual')).text;
+  assert.doesNotMatch(dir, /เปิดอ่านได้เฉพาะเจ้าของ/);
+  // ตัวกรองกลุ่มสาระและภาคเรียน
+  const thai = await db.q.get("SELECT id FROM departments WHERE name LIKE 'ภาษาไทย%'");
+  const f = (await t.get(`/library?shelf=manual&department=${thai.id}`)).text;
+  assert.match(f, /ท21101/);
+  assert.doesNotMatch(f, /ว30203/);
+  assert.match((await t.get('/library?shelf=manual&year=2568&semester=1')).text, /ยังไม่มีคู่มือรายวิชาที่ผ่านครบในภาคเรียนนี้/);
+});
+
+test('เปิดสวิตช์อ่านงานของคนอื่นได้: ทุกคนเปิดอ่านงานในคลังได้ แต่งานที่ยังไม่ผ่านยังเปิดไม่ได้', async () => {
+  const admin = await as('admin');
+  const other = await subOf('manual', 'ท21101', 'thai2');
+  const pending = await subOf('manual', 'อ21101', 'eng2');
+  const t = await as('teacher');
+  await setFlag(admin, 'libread', true);
+  try {
+    const page = (await t.get('/library?shelf=manual')).text;
+    assert.doesNotMatch(page, /เปิดอ่านได้เฉพาะเจ้าของ/);
+    assert.equal((await t.get(`/f/${await fileOf(other.id)}/view`)).status, 200);
+    assert.equal((await t.raw('GET', `/f/${await fileOf(other.id)}/raw`)).status, 200);
+    assert.equal((await t.get(`/f/${await fileOf(pending.id)}/view`)).status, 404, 'งานที่ยังไม่ผ่านครบเปิดไม่ได้');
+    assert.equal((await t.get(`/s/${other.id}`)).status, 404, 'หน้ารายละเอียดและคะแนนยังเปิดไม่ได้');
+  } finally {
+    await setFlag(admin, 'libread', false);
+  }
+  assert.equal((await t.get(`/f/${await fileOf(other.id)}/view`)).status, 404);
+});
+
+test('ชั้นบันทึกหลังแผน: 1 เล่มต่อวิชา เข้าคลังเมื่อทุกฉบับที่ส่งแล้วผ่านครบ', async () => {
+  const plan = await subOf('plan', 'ว21101', 'sci2');
+  const t = await as('teacher');
+  const before = (await t.get('/library?shelf=note')).text;
+  assert.doesNotMatch(before, /ว21101/, 'มีฉบับที่ยังรอตรวจ ยังไม่เข้าคลัง');
+  await db.q.run("UPDATE submissions SET status = 'approved', completed_at = '2569-10-16 11:00:00' WHERE parent_id = ? AND doc_type = 'note' AND status != 'draft'", plan.id);
+  const page = (await t.get('/library?shelf=note')).text;
+  assert.match(page, /ว21101/);
+  assert.match(page, /1 แผ่น/);
+  assert.match(page, /lib-cover drawn/, 'บันทึกหลังแผนใช้ปกที่ระบบวาด');
+  // ครูเจ้าของเปิดทั้งเล่มได้ ครูคนอื่นเปิดได้เมื่อเปิดสวิตช์อ่านงานของคนอื่น
+  const owner = await as('sci2');
+  assert.match((await owner.get('/library?shelf=note')).text, new RegExp(`href="/s/${plan.id}/print-notes"`));
+  assert.equal((await t.get(`/s/${plan.id}/print-notes`)).status, 404);
+  const admin = await as('admin');
+  await setFlag(admin, 'libread', true);
+  try {
+    assert.equal((await t.get(`/s/${plan.id}/print-notes`)).status, 200);
+  } finally {
+    await setFlag(admin, 'libread', false);
+  }
+});
+
+test('โหลดทีละ 24 เล่ม ปุ่มโหลดเพิ่มได้เฉพาะเล่มชุดถัดไป', async () => {
+  const u = await db.q.get("SELECT id, department_id FROM users WHERE username = 'math2'");
+  for (let i = 0; i < 30; i++) {
+    await db.q.run(
+      `INSERT INTO submissions (doc_type, teacher_id, department_id, academic_year, semester, subject_code, subject_name, status, created_at, updated_at, completed_at)
+       VALUES ('plan', ?, ?, 2568, 2, ?, 'วิชาทดลองคลัง', 'approved', '2568-10-01 00:00:00', '2568-10-01 00:00:00', '2568-10-01 00:00:00')`,
+      u.id,
+      u.department_id,
+      `ค9${String(i).padStart(4, '0')}`
+    );
+  }
+  const t = await as('teacher');
+  const page = (await t.get('/library?shelf=plan&year=2568&semester=2')).text;
+  assert.equal((page.match(/<article class="lib-book">/g) || []).length, 24);
+  assert.match(page, /ทั้งหมด <b>30<\/b> เล่ม/);
+  assert.match(page, /โหลดเพิ่มอีก 6 เล่ม/);
+  const href = /href="([^"]+)" data-lib-more/.exec(page)[1].replace(/&amp;/g, '&');
+  const part = await t.get(href + '&part=1');
+  assert.equal(part.status, 200);
+  assert.equal((part.text.match(/<article class="lib-book">/g) || []).length, 6);
+  assert.doesNotMatch(part.text, /<html/, 'ส่งกลับเฉพาะเล่มชุดถัดไป');
+  assert.equal(part.headers.get('x-lib-next'), '');
+  assert.match(part.text, /ค90029/);
+});
+
+test('ปกเล็กตอนครูส่งงาน: เก็บที่ช่องอ้างอิง เห็นในคลังเมื่อผ่านครบ เบราว์เซอร์จำรูปได้นาน', async () => {
+  const t = await as('teacher');
+  const { res } = await sendWithCover(t, 'ว31101', jpg());
+  assert.equal(res.status, 200, res.text);
+  const sub = await subOf('manual', 'ว31101', 'teacher');
+  assert.ok(sub.cover_ref, 'มีรูปปก');
+  assert.equal((await db.q.get('SELECT COUNT(*)::int AS n FROM files WHERE submission_id = ?', sub.id)).n, 1, 'รูปปกไม่ปนกับไฟล์งาน');
+  // ยังไม่ผ่านครบ ยังไม่เห็นในคลังและเปิดรูปไม่ได้
+  assert.equal((await t.raw('GET', `/library/cover/${sub.id}`)).status, 404);
+  await finish(sub.id);
+  const page = (await t.get('/library?shelf=manual')).text;
+  const src = new RegExp(`src="(/library/cover/${sub.id}\\?v=[0-9a-f]{8})" alt="" loading="lazy"`).exec(page);
+  assert.ok(src, 'รูปปกโหลดเมื่อเลื่อนถึง');
+  const other = await as('eng2');
+  const img = await other.raw('GET', src[1]);
+  assert.equal(img.status, 200, 'ทุกคนเห็นปก');
+  assert.equal(img.headers.get('content-type'), 'image/jpeg');
+  assert.match(img.headers.get('cache-control'), /max-age=31536000/);
+});
+
+test('ปกเล็กใช้ไม่ได้ (ไม่ใช่ JPEG หรือใหญ่เกิน) ระบบไม่รับรูป แต่ส่งงานได้ตามปกติ', async () => {
+  const t = await as('teacher');
+  const fake = await sendWithCover(t, 'ว22201', new Blob(['%PDF-1.4 ไม่ใช่รูป']), 'cover.jpg');
+  assert.equal(fake.res.status, 200, fake.res.text);
+  const sub = await subOf('manual', 'ว22201', 'teacher');
+  assert.ok(sub, 'ส่งงานได้');
+  assert.equal(sub.cover_ref, null);
+  const big = await uploadOne(t, jpg(400 * 1024), 'cover.jpg', { form: '/works', field: 'cover_thumb', doc_type: 'manual', subject_code: 'ว22202' });
+  assert.equal(big.status, 400, 'รูปปกใหญ่เกิน 300 KB ไม่รับตั้งแต่เริ่มส่ง');
+});
+
+test('ผู้ดูแลระบบสร้างปกงานเดิม: รายการงานที่ยังไม่มีปก ส่งรูปทีละเล่ม จดประวัติ', async () => {
+  const t = await as('teacher');
+  assert.equal((await t.get('/library/covers/todo')).status, 403);
+  const admin = await as('admin');
+  const page = (await admin.get('/library?shelf=manual')).text;
+  assert.match(page, /สร้างปกงานเดิม \d+ เล่ม/);
+  assert.match(page, /data-covers data-confirm=/);
+  const todo = JSON.parse((await admin.get('/library/covers/todo')).text).items;
+  const other = await subOf('manual', 'ท21101', 'thai2');
+  const it = todo.find((x) => x.id === other.id);
+  assert.ok(it && it.file, 'งานเดิมที่ยังไม่มีปกอยู่ในรายการพร้อมไฟล์ PDF');
+  const url = `/library/cover/${other.id}`;
+  const token = await uploadOne(admin, jpg(), 'cover.jpg', { form: url, field: 'cover_thumb' });
+  assert.equal(typeof token, 'string');
+  // ครูส่งรูปแทนผู้ดูแลไม่ได้
+  assert.equal((await uploadOne(t, jpg(), 'cover.jpg', { form: url, field: 'cover_thumb' })).status, 400);
+  const r = await admin.post(url, { upload_cover_thumb: token }, XHR);
+  assert.equal(r.status, 200, r.text);
+  assert.ok((await db.q.get('SELECT cover_ref FROM submissions WHERE id = ?', other.id)).cover_ref);
+  assert.ok(!JSON.parse((await admin.get('/library/covers/todo')).text).items.some((x) => x.id === other.id));
+  await admin.post('/library/covers/done', { n: '1' }, XHR);
+  assert.ok(await db.q.get("SELECT 1 AS x FROM audit_log WHERE action = 'สร้างปกงานเดิมในคลังงาน 1 เล่ม'"));
+});
+
+test('ตั้งมุมมองเริ่มต้นของคลังในหน้าฟังก์ชันเสริม บันทึกประวัติ เฉพาะผู้ดูแลระบบ', async () => {
+  const admin = await as('admin');
+  const fp = (await admin.get('/admin/features')).text;
+  assert.match(fp, /id="libview"/);
+  assert.match(fp, /action="\/admin\/libview" data-confirm=/);
+  await admin.post('/admin/libview', { view: 'list' });
+  assert.equal((await db.q.get("SELECT value FROM settings WHERE key = 'library_view'")).value, 'list');
+  assert.ok(await db.q.get("SELECT 1 AS x FROM audit_log WHERE action = 'ตั้งมุมมองเริ่มต้นของคลังงาน รายการ'"));
+  const t = await as('teacher');
+  assert.match((await t.get('/library?shelf=manual')).text, /data-default="list"/);
+  await admin.post('/admin/libview', { view: 'bogus' });
+  assert.equal((await db.q.get("SELECT value FROM settings WHERE key = 'library_view'")).value, 'list', 'ค่าที่ไม่รู้จักไม่บันทึก');
+  const no = await t.post('/admin/libview', { view: 'shelf' });
+  assert.notEqual(no.status, 200);
+  assert.equal((await db.q.get("SELECT value FROM settings WHERE key = 'library_view'")).value, 'list');
+  await admin.post('/admin/libview', { view: '' });
+  assert.match((await t.get('/library?shelf=manual')).text, /data-default=""/);
+});
+
+test('หน้าแรกมีแถบเล่มใหม่ในคลัง และปิดคลังแล้วไม่มีเมนู หน้า แถบ และรูปปกตอนส่งงาน', async () => {
+  const t = await as('teacher');
+  const home = (await t.get('/')).text;
+  assert.match(home, /เล่มใหม่ในคลัง/);
+  assert.ok((home.match(/class="lib-mini"/g) || []).length <= 6);
+  assert.match((await t.get('/works/new?type=manual')).text, /data-thumb/);
+  const admin = await as('admin');
+  await setFlag(admin, 'library', false);
+  try {
+    assert.equal((await t.get('/library')).status, 404);
+    const off = (await t.get('/')).text;
+    assert.doesNotMatch(off, /href="\/library"/);
+    assert.doesNotMatch(off, /เล่มใหม่ในคลัง/);
+    assert.doesNotMatch((await t.get('/works/new?type=manual')).text, /data-thumb/);
+    const sub = await subOf('manual', 'ว30203', 'teacher');
+    assert.equal((await t.raw('GET', `/library/cover/${sub.id}`)).status, 404);
+  } finally {
+    await setFlag(admin, 'library', true);
+  }
+});
+
+test('คำสั่งของคลัง: ทุกชั้นคืนคอลัมน์ชุดเดียวกัน เล่มใหม่ล่าสุดรวมทุกชั้น', async () => {
+  const library = require('../src/library');
+  await db.ensureRefs();
+  const rows = await library.recent(6);
+  assert.ok(rows.length > 0 && rows.length <= 6);
+  for (let i = 1; i < rows.length; i++) assert.ok(String(rows[i - 1].done_at || '') >= String(rows[i].done_at || ''), 'เรียงใหม่ก่อน');
+  assert.deepEqual(library.SHELVES.map((s) => s.key), ['plan', 'manual', 'note']);
+  assert.equal(wf.DOC_TYPES.plan.label, library.SHELF.plan.label);
+});

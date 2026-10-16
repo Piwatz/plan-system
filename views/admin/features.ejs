@@ -1,6 +1,6 @@
 <%- include('../partials/top') %>
 <%
-  const ICON = { mobilesheet: 'eye', chips: 'chips', notefile: 'file', counts: 'chart', quicksign: 'cards', voice: 'mic', filecheck: 'check', board: 'board', results: 'chart', pa: 'folder', qr: 'qr', prefs: 'moon', line: 'chat', teachlist: 'books', onemain: 'star', pdfonly: 'file', pdfmerge: 'copy', selfsign: 'edit', noactivity: 'close', ttimport: 'download', coverpreview: 'eye', namepick: 'users', pin: 'shield', namefix: 'edit', methodother: 'edit', notebook: 'books', notepdf: 'file', notesign: 'edit', homeact: 'check' };
+  const ICON = { mobilesheet: 'eye', chips: 'chips', notefile: 'file', counts: 'chart', quicksign: 'cards', voice: 'mic', filecheck: 'check', board: 'board', results: 'chart', pa: 'folder', qr: 'qr', prefs: 'moon', line: 'chat', teachlist: 'books', onemain: 'star', pdfonly: 'file', pdfmerge: 'copy', selfsign: 'edit', noactivity: 'close', ttimport: 'download', coverpreview: 'eye', namepick: 'users', pin: 'shield', namefix: 'edit', methodother: 'edit', notebook: 'books', notepdf: 'file', notesign: 'edit', homeact: 'check', library: 'books', libread: 'eye' };
 %>
 <div class="page-head">
   <div>
@@ -48,6 +48,22 @@
             </fieldset>
           <% } %>
           <button class="btn btn-primary" type="submit">บันทึกการจัดหน้า</button>
+        </form>
+      </section>
+    <% } %>
+
+    <% if (ff.library) { %>
+      <section class="card" id="libview">
+        <h2>มุมมองเริ่มต้นของคลังงาน</h2>
+        <p class="muted small">แบบที่ทุกคนเห็นเมื่อเปิดคลังงานครั้งแรก ผู้ใช้กดสลับมุมมองเองได้ที่มุมขวาบนของหน้าคลัง เครื่องจะจำแบบที่เลือกไว้</p>
+        <form method="post" action="/admin/libview" data-confirm="เปลี่ยนมุมมองเริ่มต้นของคลังงาน มีผลกับผู้ที่ยังไม่เคยสลับมุมมองเอง" data-ok-label="บันทึก">
+          <div class="field">
+            <label class="check"><input type="radio" name="view" value="" <%= !libView ? 'checked' : '' %>> ตามขนาดจอ จอคอมเป็นชั้นวาง มือถือเป็นรายการ</label>
+            <% for (const v of libViews) { %>
+              <label class="check"><input type="radio" name="view" value="<%= v.key %>" <%= libView === v.key ? 'checked' : '' %>> <%= v.label %> ทุกเครื่อง</label>
+            <% } %>
+          </div>
+          <button class="btn btn-primary" type="submit">บันทึกมุมมอง</button>
         </form>
       </section>
     <% } %>

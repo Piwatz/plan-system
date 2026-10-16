@@ -1,0 +1,15 @@
+<%# เล่มในคลังงาน 1 ชุด ใช้ทั้งตอนเปิดหน้าและตอนกดโหลดเพิ่ม · หน้าตาแต่ละมุมมองต่างกันที่ CSS (.lib[data-view]) %>
+<% for (const b of books) { %>
+  <article class="lib-book">
+    <% if (b.open) { %><a class="lib-cv" href="<%= b.href %>" aria-label="เปิดอ่าน <%= b.subject_code %> <%= b.subject_name %>"><%- include('lib_cover', { b }) %></a><% } else { %><span class="lib-cv"><%- include('lib_cover', { b }) %></span><% } %>
+    <div class="lib-meta">
+      <b><%= b.subject_name || b.subject_code %></b>
+      <span><%= b.subject_code %><span class="lib-dept"> <%= b.dept_name || '' %></span></span>
+      <span><%= b.teacher_name %></span>
+      <span class="lib-tags"><% if (b.mine) { %><span class="badge badge-blue">งานของฉัน</span><% } else { %><span class="badge badge-green">ผ่านครบ</span><% } %><% if (b.kind === 'note') { %><span class="badge badge-gray"><%= b.sheets %> แผ่น</span><% } %></span>
+    </div>
+    <div class="lib-act">
+      <% if (b.open) { %><a class="btn btn-sm btn-primary" href="<%= b.href %>"><%- icon('eye', 16) %> เปิดอ่าน</a><% } else { %><span class="btn btn-sm btn-ghost lib-off"><%- icon('lock', 16) %> <span class="lib-off-long">เปิดอ่านได้เฉพาะเจ้าของ</span><span class="lib-off-short">เฉพาะเจ้าของ</span></span><% } %>
+    </div>
+  </article>
+<% } %>

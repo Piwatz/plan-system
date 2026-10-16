@@ -174,6 +174,7 @@ function createApp(options = {}) {
   app.use(require('./routes/pages'));
   app.use(require('./routes/extras'));
   app.use(require('./routes/teaching'));
+  app.use(require('./routes/library'));
   app.use(require('./routes/work'));
   app.use('/admin', require('./routes/ttimport'));
   app.use('/admin', require('./routes/admin'));

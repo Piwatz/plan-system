@@ -866,3 +866,61 @@ body:has(.viewer.is-full) { overflow: hidden; }
 .alert > span, .alert > div { overflow-wrap: anywhere; }
 .btn[data-fill] { white-space: normal; overflow-wrap: anywhere; text-align: left; height: auto; }
 .pick-name { font-size: 1.1rem; min-height: 48px; }
+
+/* ---------- คลังงานการจัดการเรียนรู้ (ฟังก์ชันเสริม library) มุมมองต่างกันที่ .lib[data-view] ข้อมูลชุดเดียวกัน ---------- */
+.lib { --wood: color-mix(in srgb, var(--accent) 38%, var(--line)); }
+.page-head .lib-views { justify-content: flex-end; }
+.lib-views .btn[aria-pressed="true"] { background: var(--primary); border-color: var(--primary); color: #fff; }
+.lib-shelves { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 12px; }
+.lib-shelves a { padding: 8px 16px; border-radius: 999px; background: var(--soft); color: var(--link); font-weight: 600; }
+.lib-shelves a:hover { text-decoration: none; }
+.lib-shelves a.on { background: var(--primary); color: #fff; }
+.lib-filters { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin-bottom: 14px; }
+.lib-filters select { width: auto; max-width: 100%; }
+.lib-count { margin-left: auto; color: var(--muted); }
+.lib-cover { position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; width: 100%; aspect-ratio: 210 / 297; background: var(--surface); border: 1px solid var(--line); border-radius: 4px; box-shadow: 2px 3px 6px rgba(15, 30, 51, 0.18); overflow: hidden; }
+.lib-cover img { display: block; width: 100%; height: 100%; object-fit: cover; }
+.lib-cover.drawn { background: var(--primary); border-color: transparent; color: #fff; text-align: center; gap: 5%; padding: 10%; font-size: 0.78rem; line-height: 1.35; overflow-wrap: anywhere; }
+.lib-cover .c-bar { width: 40%; height: 3px; flex: none; border-radius: 2px; background: var(--accent); }
+.lib-cover .c-shelf { font-size: 0.95em; }
+.lib-cover .c-name { font-weight: 600; }
+.lib-cover .c-teacher { opacity: 0.85; font-size: 0.92em; }
+.lib-lock { position: absolute; right: 6px; bottom: 6px; width: 26px; height: 26px; border-radius: 50%; display: grid; place-items: center; background: color-mix(in srgb, var(--ink) 78%, transparent); color: var(--surface); }
+.lib-cv { display: block; color: inherit; }
+.lib-cv:hover { text-decoration: none; }
+a.lib-cv:hover .lib-cover { box-shadow: 0 0 0 3px var(--primary); }
+.lib-meta { display: flex; flex-direction: column; min-width: 0; line-height: 1.35; font-size: 0.9rem; }
+.lib-meta b { font-size: 0.95rem; }
+.lib-meta > span { color: var(--muted); }
+.lib-tags { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 4px; }
+.lib-tags .badge { font-size: 0.75rem; padding: 1px 8px; }
+.lib-off { color: var(--muted); cursor: default; }
+.lib-off-short { display: none; }
+.lib-more { text-align: center; margin-top: 18px; }
+/* แบบ ก ชั้นวาง: ปกยืนบนแผ่นไม้ ช่องติดกันแผ่นไม้จึงต่อเป็นแนวเดียว */
+.lib[data-view="shelf"] .lib-books { display: grid; grid-template-columns: repeat(auto-fill, minmax(132px, 1fr)); gap: 24px 0; }
+.lib[data-view="shelf"] .lib-cv { padding: 0 12px 12px; background: linear-gradient(to top, var(--wood) 0 10px, transparent 10px); }
+.lib[data-view="shelf"] .lib-meta { padding: 8px 12px 0; }
+.lib[data-view="shelf"] .lib-act, .lib[data-view="shelf"] .lib-dept { display: none; }
+/* แบบ ข รายการ: ปกเล็กซ้าย ชื่อกลาง ปุ่มขวา */
+.lib[data-view="list"] .lib-book { display: grid; grid-template-columns: 56px minmax(0, 1fr) auto; gap: 12px; align-items: center; padding: 10px 0; border-top: 1px solid var(--line); }
+.lib[data-view="list"] .lib-book:first-child { border-top: 0; padding-top: 0; }
+.lib[data-view="list"] .lib-cover { box-shadow: 1px 2px 4px rgba(15, 30, 51, 0.15); }
+.lib[data-view="list"] .lib-cover.drawn > :not(.c-bar) { display: none; }
+.lib[data-view="list"] .lib-lock { right: 3px; bottom: 3px; width: 20px; height: 20px; }
+.lib[data-view="list"] .lib-lock .ic { width: 11px; height: 11px; }
+@media (max-width: 600px) {
+  .lib[data-view="list"] .lib-book { grid-template-columns: 48px minmax(0, 1fr) auto; gap: 10px; }
+  .lib-off-long { display: none; }
+  .lib-off-short { display: inline; }
+  .lib-count { margin-left: 0; width: 100%; }
+}
+/* แถบเล่มใหม่ในคลัง หน้าแรก */
+.lib-strip { margin-top: 18px; }
+.lib-strip-row { display: flex; gap: 14px; overflow-x: auto; padding: 2px 2px 8px; }
+.lib-mini { flex: 0 0 96px; width: 96px; min-width: 0; color: var(--ink); font-size: 0.8rem; overflow-wrap: anywhere; }
+.lib-mini:hover { text-decoration: none; }
+.lib-mini .lib-cover.drawn { font-size: 0.6rem; }
+.lib-mini .lib-lock { display: none; }
+.lib-mini-t { display: flex; flex-direction: column; margin-top: 6px; line-height: 1.3; }
+.lib-mini-t span { color: var(--muted); }

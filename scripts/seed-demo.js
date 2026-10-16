@@ -81,7 +81,7 @@ function makePdf(title) {
 
 // target: ':memory:' สำหรับชุดทดสอบ (ไม่ใส่ = PGlite ที่ data-demo/pg เสมอ ไม่ใช้ DATABASE_URL กันข้อมูลทดลองหลุดเข้าฐานจริง)
 // keepOpen: ชุดทดสอบใช้ฐานเดิมต่อ ไม่ปิด
-async function main({ target, keepOpen = false } = {}) {
+async function main({ target, keepOpen = false, library = false } = {}) {
   process.env.DATA_DIR = process.env.DATA_DIR || 'data-demo';
   const config = require('../src/config');
   // ลบเฉพาะโฟลเดอร์ข้อมูลทดลอง ไม่แตะข้อมูลจริงเด็ดขาด
@@ -366,6 +366,28 @@ async function main({ target, keepOpen = false } = {}) {
   await up(m8, 'enghead', { scores: scores('manual', [3, 4]) });
   await up(m8, 'section', {});
 
+  // คลังงานการจัดการเรียนรู้ (เฉพาะตอนเปิดโหมดทดลอง ชุดทดสอบไม่ใช้ส่วนนี้): งานที่ผ่านครบหลายกลุ่มสาระ เล่มบันทึกหลังแผนที่ผ่านครบ
+  // และภาคเรียน 1/2569 มีมากกว่า 24 เล่ม ลองปุ่มโหลดเพิ่มได้
+  if (library) {
+    await up(p7, 'director', {});
+    for (const id of (await q.all("SELECT id FROM submissions WHERE teacher_id = ? AND doc_type IN ('manual', 'plan') ORDER BY id", P.math2.id)).map((r) => r.id)) {
+      for (const who of ['section', 'acad', 'deputy', 'director']) await up(id, who, {});
+    }
+    for (const who of ['acad', 'deputy', 'director']) await up(m8, who, {});
+    for (let i = 0; i < 3; i++) {
+      const id = await note(p7, i);
+      await q.run("UPDATE submissions SET topic = ?, unit_name = 'การอ่านจับใจความ', class_room = 'ม.1/2' WHERE id = ?", ['การอ่านจับใจความสำคัญ', 'การเขียนสรุปความ', 'การพูดนำเสนอ'][i], id);
+      await wf.submit(id, P.thai2);
+      for (const who of ['thaihead', 'deputy', 'director']) await up(id, who, { comment: 'รับทราบ' });
+    }
+    const old = [['teacher', 'ว30207'], ['sci2', 'ว21101'], ['math2', 'ค21101'], ['thai2', 'ท21101'], ['eng2', 'อ21101'], ['soc1', 'ส21101'], ['scihead', 'ว31101'], ['section', 'ว22201']];
+    for (let i = 0; i < 52; i++) {
+      const [who, code] = old[i % old.length];
+      const id = await work(who, i % 2 ? 'plan' : 'manual', code);
+      await q.run("UPDATE submissions SET semester = 1, status = 'approved', submitted_at = ?, completed_at = ? WHERE id = ?", nowStr(), nowStr(), id);
+    }
+  }
+
   // รายวิชาที่สอน: ทุกวิชาที่มีงาน (วิชาที่ส่งแผนคือวิชาหลัก) และวิชาที่ยังไม่ได้ส่งคู่มือ
   const teaching = require('../src/teaching');
   for (const s of await q.all("SELECT * FROM submissions WHERE doc_type IN ('manual', 'plan') ORDER BY doc_type DESC, id")) {
@@ -384,7 +406,7 @@ async function main({ target, keepOpen = false } = {}) {
 
 module.exports.main = main;
 if (require.main === module)
-  main().catch((e) => {
+  main({ library: true }).catch((e) => {
     console.error(e);
     process.exit(1);
   });

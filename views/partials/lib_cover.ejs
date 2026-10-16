@@ -1,0 +1,7 @@
+<%# ปกของเล่มในคลังงาน: รูปปกเล็กจาก Drive (โหลดเมื่อเลื่อนถึง) หรือปกที่ระบบวาดจากชื่อวิชาและชื่อครู · กุญแจ = เห็นปกแต่เปิดอ่านไม่ได้ %>
+<span class="lib-cover<%= b.cover ? '' : ' drawn' %>">
+  <% if (b.cover) { %><img src="<%= b.cover %>" alt="" loading="lazy" decoding="async" width="300" height="424"><% } else { %>
+    <span class="c-bar"></span><b class="c-shelf"><%= b.shelfLabel %></b><span class="c-code"><%= b.subject_code %></span><span class="c-name"><%= b.subject_name %></span><span class="c-teacher"><%= b.teacher_name %></span><span class="c-bar"></span>
+  <% } %>
+  <% if (!b.open) { %><span class="lib-lock" title="เปิดอ่านได้เฉพาะเจ้าของ"><%- icon('lock', 14) %></span><% } %>
+</span>

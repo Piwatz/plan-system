@@ -38,6 +38,7 @@
     groups.push({ label: 'งานตรวจ', items: rv });
   }
   const more = [{ href: '/stats', icon: 'chart', label: 'สถิติโรงเรียน', active: p.startsWith('/stats') }];
+  if (ff.library) more.unshift({ href: '/library', icon: 'books', label: 'คลังงานการจัดการเรียนรู้', active: p.startsWith('/library') });
   if (me.is_admin) {
     more.push({ href: '/admin', icon: 'school', label: 'ผู้ดูแลระบบ', active: p.startsWith('/admin') && !p.startsWith('/admin/features') });
     more.push({ href: '/admin/features', icon: 'toggle', label: 'ฟังก์ชันเสริม', active: p.startsWith('/admin/features') });

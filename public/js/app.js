@@ -121,6 +121,56 @@
     });
   }
 
+  // วาดหน้าแรกของ PDF ลงผืนผ้าใบด้วย PDF.js ที่มากับระบบ · width = ความกว้างเป็นพิกเซลบนจอ · คืน { canvas, pages } หรือ null ถ้าถูกยกเลิก
+  async function renderFirstPage(data, width, dpr, alive) {
+    const pdfjs = await import('/vendor/pdfjs/legacy/build/pdf.min.mjs');
+    pdfjs.GlobalWorkerOptions.workerSrc = '/vendor/pdfjs/legacy/build/pdf.worker.min.mjs';
+    const task = pdfjs.getDocument({
+      data,
+      cMapUrl: '/vendor/pdfjs/cmaps/',
+      cMapPacked: true,
+      standardFontDataUrl: '/vendor/pdfjs/standard_fonts/',
+      wasmUrl: '/vendor/pdfjs/wasm/',
+      iccUrl: '/vendor/pdfjs/iccs/',
+    });
+    try {
+      const doc = await task.promise;
+      const page = await doc.getPage(1);
+      if (alive && !alive()) return null;
+      const base = page.getViewport({ scale: 1 });
+      const vp = page.getViewport({ scale: width / base.width });
+      const canvas = document.createElement('canvas');
+      canvas.width = Math.floor(vp.width * dpr);
+      canvas.height = Math.floor(vp.height * dpr);
+      canvas.style.width = Math.floor(vp.width) + 'px';
+      canvas.style.height = Math.floor(vp.height) + 'px';
+      const ctx = canvas.getContext('2d');
+      // พื้นขาวก่อนวาด รูป JPEG จึงไม่เป็นพื้นดำตรงที่โปร่งใส
+      ctx.fillStyle = '#fff';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      await page.render({ canvas, canvasContext: ctx, viewport: vp, transform: dpr !== 1 ? [dpr, 0, 0, dpr, 0, 0] : undefined }).promise;
+      return { canvas, pages: doc.numPages };
+    } finally {
+      task.destroy().catch(() => {});
+    }
+  }
+
+  // รูปปกเล็กสำหรับคลังงาน: กว้าง 300 px JPEG ราว 20 ถึง 40 KB ใหญ่เกินลดคุณภาพลง · ทำไม่ได้คืน null (ระบบวาดปกให้แทน)
+  const THUMB_MAX = 40 * 1024;
+  async function makeThumb(data) {
+    try {
+      const r = await renderFirstPage(data, 300, 1);
+      let blob = null;
+      for (const quality of [0.75, 0.6, 0.45, 0.32]) {
+        blob = await new Promise((res) => r.canvas.toBlob(res, 'image/jpeg', quality));
+        if (!blob || blob.size <= THUMB_MAX) break;
+      }
+      return blob && blob.size <= 300 * 1024 ? blob : null;
+    } catch {
+      return null;
+    }
+  }
+
   async function mergeInBrowser(files) {
     if (!window.PDFLib) await loadScript('/vendor/pdf-lib/pdf-lib.min.js');
     if (!window.PdfMerge) await loadScript('/static/js/pdfmerge.js');
@@ -143,6 +193,12 @@
         jobs.push({ field: input.name, blob: new Blob([m.bytes], { type: 'application/pdf' }), name: 'merged.pdf', merged: files.length, pages: m.pages });
       } else {
         files.forEach((f, i) => jobs.push({ field: input.name, blob: f, name: f.name, idx: i, count: files.length }));
+      }
+      // คลังงาน: รูปปกเล็กจากหน้าแรกของไฟล์แรก (ปกของไฟล์ที่รวมแล้ว)
+      if (zone && zone.hasAttribute('data-thumb') && /\.pdf$/i.test(files[0].name)) {
+        showBusy('กำลังทำรูปปก', false);
+        const thumb = await makeThumb(new Uint8Array(await files[0].arrayBuffer()));
+        if (thumb) jobs.push({ field: 'cover_thumb', blob: thumb, name: 'cover.jpg' });
       }
     }
     return jobs;
@@ -198,9 +254,60 @@
     }
   }
 
+  // ส่งไฟล์ 1 ก้อนเข้าที่เก็บไฟล์ทีละท่อน คืน token · info = ข้อมูลฟอร์มสำหรับ /upload/start
+  async function uploadBlob(blob, info) {
+    const start = await request('POST', '/upload/start', new URLSearchParams({ ...info, size: String(blob.size) }), { 'Content-Type': 'application/x-www-form-urlencoded' });
+    let pos = 0;
+    do {
+      const end = Math.min(pos + start.chunk, blob.size);
+      await request('PUT', '/upload/' + encodeURIComponent(start.token), blob.slice(pos, end), { 'Content-Type': 'application/octet-stream', 'Content-Range': 'bytes ' + pos + '-' + (end - 1) + '/' + blob.size });
+      pos = end;
+    } while (pos < blob.size);
+    return start.token;
+  }
+
+  // ผู้ดูแลระบบ สร้างปกงานเดิมในคลังงาน: เปิด PDF ทีละเล่มในเครื่องนี้ ทำรูปปกเล็ก แล้วส่งเข้าระบบทีละรูป
+  async function buildCovers(form) {
+    const FORM = { 'Content-Type': 'application/x-www-form-urlencoded' };
+    let made = 0;
+    let failed = 0;
+    try {
+      showBusy('กำลังสร้างปก', true);
+      setProgress(0);
+      const res = await fetch('/library/covers/todo', { headers: { 'X-Requested-With': 'XMLHttpRequest' } });
+      const items = res.ok ? (await res.json()).items : [];
+      for (let i = 0; i < items.length; i++) {
+        const it = items[i];
+        busy.querySelector('[data-pct]').textContent = 'เล่มที่ ' + (i + 1) + ' จาก ' + items.length;
+        busy.querySelector('[data-bar] > div').style.width = Math.round((i / items.length) * 100) + '%';
+        try {
+          const pdf = await fetch('/f/' + it.file + '/raw');
+          const thumb = pdf.ok ? await makeThumb(new Uint8Array(await pdf.arrayBuffer())) : null;
+          if (!thumb) throw new Error('no thumb');
+          const url = '/library/cover/' + it.id;
+          const token = await uploadBlob(thumb, { form: url, field: 'cover_thumb', name: 'cover.jpg' });
+          await request('POST', url, new URLSearchParams({ upload_cover_thumb: token }), FORM);
+          made++;
+        } catch {
+          failed++;
+        }
+      }
+      await request('POST', form.getAttribute('action'), new URLSearchParams({ n: String(made) }), FORM);
+      hideBusy();
+      await tell('สร้างปกเรียบร้อย ' + made + ' เล่ม' + (failed ? ' ทำไม่ได้ ' + failed + ' เล่ม (ไฟล์เปิดไม่ได้ ระบบใช้ปกที่วาดให้แทน)' : ''), 'ok');
+      window.location.reload();
+    } catch (err) {
+      hideBusy();
+      tell((err && err.userMessage) || NET_ERROR);
+    }
+  }
+
   // ส่งต่อจริง: ฟอร์มมีไฟล์ใช้ XHR พร้อมแถบความคืบหน้า ฟอร์มอื่นปล่อยเบราว์เซอร์ส่งตามปกติ
   function proceed(e, form, submitter) {
-    if (form.classList.contains('js-upload')) {
+    if (form.hasAttribute('data-covers')) {
+      e.preventDefault();
+      buildCovers(form);
+    } else if (form.classList.contains('js-upload')) {
       e.preventDefault();
       sendWithProgress(form, submitter);
     } else if (!form.hasAttribute('data-nobusy') && form.method.toLowerCase() === 'post') {
@@ -340,6 +447,55 @@
     });
   });
 
+  // ---------- คลังงานการจัดการเรียนรู้: สลับมุมมอง (เครื่องจำไว้) และโหลดเพิ่มทีละชุด ----------
+  const lib = document.querySelector('[data-lib]');
+  if (lib) {
+    const LIBVIEW = 'plan-libview';
+    const viewBtns = document.querySelectorAll('[data-lib-view]');
+    const mark = () => viewBtns.forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.libView === lib.getAttribute('data-view'))));
+    mark();
+    viewBtns.forEach((b) =>
+      b.addEventListener('click', () => {
+        lib.setAttribute('data-view', b.dataset.libView);
+        mark();
+        try {
+          localStorage.setItem(LIBVIEW, b.dataset.libView);
+        } catch {
+          // เครื่องนี้ไม่ให้จำ ไม่เป็นไร
+        }
+      })
+    );
+    const more = lib.querySelector('[data-lib-more]');
+    if (more) {
+      more.addEventListener('click', async (e) => {
+        e.preventDefault();
+        if (more.getAttribute('aria-busy') === 'true') return;
+        more.setAttribute('aria-busy', 'true');
+        const label = more.textContent;
+        more.textContent = 'กำลังโหลด';
+        try {
+          const res = await fetch(more.getAttribute('href') + '&part=1', { headers: { 'X-Requested-With': 'XMLHttpRequest' } });
+          if (!res.ok) throw new Error('load');
+          const tpl = document.createElement('template');
+          tpl.innerHTML = await res.text();
+          lib.querySelector('[data-lib-books]').appendChild(tpl.content);
+          const next = res.headers.get('X-Lib-Next');
+          const left = Number(res.headers.get('X-Lib-Left')) || 0;
+          if (next) {
+            more.setAttribute('href', next);
+            more.textContent = 'โหลดเพิ่มอีก ' + Math.min(24, left) + ' เล่ม';
+          } else {
+            more.parentElement.remove();
+          }
+        } catch {
+          more.textContent = label;
+          tell(NET_ERROR);
+        }
+        more.removeAttribute('aria-busy');
+      });
+    }
+  }
+
   // ---------- เลือกภาคเรียนแล้วเปลี่ยนหน้าเลย ----------
   document.querySelectorAll('[data-term]').forEach((sel) => {
     sel.addEventListener('change', () => {
@@ -428,36 +584,13 @@
         return;
       }
       try {
-        const pdfjs = await import('/vendor/pdfjs/legacy/build/pdf.min.mjs');
-        pdfjs.GlobalWorkerOptions.workerSrc = '/vendor/pdfjs/legacy/build/pdf.worker.min.mjs';
-        const task = pdfjs.getDocument({
-          data: new Uint8Array(await file.arrayBuffer()),
-          cMapUrl: '/vendor/pdfjs/cmaps/',
-          cMapPacked: true,
-          standardFontDataUrl: '/vendor/pdfjs/standard_fonts/',
-          wasmUrl: '/vendor/pdfjs/wasm/',
-          iccUrl: '/vendor/pdfjs/iccs/',
-        });
-        const close = () => task.destroy().catch(() => {});
-        const doc = await task.promise;
-        const page = await doc.getPage(1);
-        if (token !== coverToken) return close();
-        const dpr = window.devicePixelRatio || 1;
-        const base = page.getViewport({ scale: 1 });
-        const vp = page.getViewport({ scale: 200 / base.width });
-        const canvas = document.createElement('canvas');
-        canvas.width = Math.floor(vp.width * dpr);
-        canvas.height = Math.floor(vp.height * dpr);
-        canvas.style.width = Math.floor(vp.width) + 'px';
-        canvas.style.height = Math.floor(vp.height) + 'px';
-        await page.render({ canvas, canvasContext: canvas.getContext('2d'), viewport: vp, transform: dpr !== 1 ? [dpr, 0, 0, dpr, 0, 0] : undefined }).promise;
-        if (token !== coverToken) return close();
+        const r = await renderFirstPage(new Uint8Array(await file.arrayBuffer()), 200, window.devicePixelRatio || 1, () => token === coverToken);
+        if (!r || token !== coverToken) return;
         const box = cover.querySelector('[data-cover-img]');
         box.innerHTML = '';
-        box.appendChild(canvas);
-        cover.querySelector('[data-cover-info]').textContent = 'หน้าแรกของไฟล์ ' + file.name + (dt.files.length > 1 ? ' (หน้าปกของไฟล์ที่รวมแล้ว)' : ' ทั้งไฟล์ ' + doc.numPages + ' หน้า');
+        box.appendChild(r.canvas);
+        cover.querySelector('[data-cover-info]').textContent = 'หน้าแรกของไฟล์ ' + file.name + (dt.files.length > 1 ? ' (หน้าปกของไฟล์ที่รวมแล้ว)' : ' ทั้งไฟล์ ' + r.pages + ' หน้า');
         cover.hidden = false;
-        close();
       } catch {
         if (token === coverToken) cover.hidden = true;
       }

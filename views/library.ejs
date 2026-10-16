@@ -1,0 +1,52 @@
+<%- include('partials/top') %>
+<% const qs = (extra) => new URLSearchParams({ ...query, ...extra }).toString(); %>
+<div class="page-head">
+  <div>
+    <h1>คลังงานการจัดการเรียนรู้</h1>
+    <div class="sub">งานที่ผ่านการตรวจครบทุกระดับแล้ว<%= ff.libread ? ' เปิดอ่านได้ทุกเล่ม' : ' ทุกคนเห็นปกและชื่อ เปิดอ่านได้เฉพาะงานของตัวเอง' %></div>
+  </div>
+  <div class="actions lib-views" role="group" aria-label="เลือกมุมมอง">
+    <% for (const v of views) { %>
+      <button type="button" class="btn btn-ghost" data-lib-view="<%= v.key %>" aria-pressed="false"><%- icon(v.icon, 18) %> <%= v.label %></button>
+    <% } %>
+  </div>
+</div>
+
+<nav class="lib-shelves" aria-label="เลือกชั้น">
+  <% for (const s of shelves) { %>
+    <a class="<%= s.key === shelf.key ? 'on' : '' %>" href="/library?<%= qs({ shelf: s.key }) %>"<%- s.key === shelf.key ? ' aria-current="page"' : '' %>><%= s.label %></a>
+  <% } %>
+</nav>
+
+<form method="get" action="/library" class="lib-filters" data-autosubmit>
+  <input type="hidden" name="shelf" value="<%= shelf.key %>">
+  <select id="lib-dept" name="department" aria-label="กลุ่มสาระ">
+    <option value="">ทุกกลุ่มสาระ</option>
+    <% for (const d of departments) { %><option value="<%= d.id %>" <%= department === d.id ? 'selected' : '' %>><%= d.name %></option><% } %>
+  </select>
+  <select id="lib-term" name="term" data-term aria-label="ภาคเรียน">
+    <% for (const t of terms) { %><option value="<%= t.year %>-<%= t.semester %>" <%= t.year === term.year && t.semester === term.semester ? 'selected' : '' %>>ภาคเรียน <%= t.semester %>/<%= t.year %></option><% } %>
+  </select>
+  <input type="hidden" name="year" value="<%= term.year %>"><input type="hidden" name="semester" value="<%= term.semester %>">
+  <span class="lib-count">ทั้งหมด <b><%= total %></b> เล่ม</span>
+  <% if (noCover) { %>
+    <button type="submit" class="btn btn-sm btn-ghost" form="lib-covers"><%- icon('copy', 16) %> สร้างปกงานเดิม <%= noCover %> เล่ม</button>
+  <% } %>
+</form>
+<% if (noCover) { %>
+  <form id="lib-covers" method="post" action="/library/covers/done" data-covers data-confirm="สร้างรูปปกให้งานเดิมที่ผ่านครบแล้ว <%= noCover %> เล่ม
+เครื่องนี้จะเปิดไฟล์ PDF ทีละเล่มแล้วทำรูปปกเล็ก อาจใช้เวลาหลายนาที ห้ามปิดหน้านี้จนกว่าจะเสร็จ" data-ok-label="สร้างปก"></form>
+<% } %>
+
+<% if (!books.length) { %>
+  <div class="card"><div class="empty"><span class="big"><%- icon('books', 40) %></span><p>ยังไม่มี<%= shelf.label %>ที่ผ่านครบในภาคเรียนนี้<%= department ? ' ของกลุ่มสาระนี้' : '' %></p></div></div>
+<% } else { %>
+  <div class="card lib" data-lib data-default="<%= defaultView %>" data-view="shelf">
+    <script>(function(){var b=document.querySelector('[data-lib]'),k=['<%- views.map((v) => v.key).join("','") %>'],v='';try{v=localStorage.getItem('plan-libview')||''}catch(e){}if(k.indexOf(v)<0)v=b.getAttribute('data-default');if(k.indexOf(v)<0)v=window.matchMedia('(max-width: 760px)').matches?'list':'shelf';b.setAttribute('data-view',v)})()</script>
+    <div class="lib-books" data-lib-books><%- include('partials/lib_books', { books }) %></div>
+    <% if (more) { %>
+      <div class="lib-more"><a class="btn btn-ghost" href="<%= more %>" data-lib-more>โหลดเพิ่มอีก <%= Math.min(24, total - offset - books.length) %> เล่ม</a></div>
+    <% } %>
+  </div>
+<% } %>
+<%- include('partials/bottom') %>

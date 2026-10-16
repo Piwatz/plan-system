@@ -13,6 +13,7 @@ const drivepath = require('../drivepath');
 const features = require('../features');
 const teaching = require('../teaching');
 const { qrSvg } = require('./verify');
+const library = require('../library');
 
 const router = express.Router();
 router.use(auth.requireLogin);
@@ -121,6 +122,14 @@ async function viewable(req, id, opts) {
   const sub = await loadSub(id, opts);
   if (!sub || !(await wf.canView(req.me, sub))) return null;
   return sub;
+}
+
+// เปิดอ่านได้: สิทธิ์เดิม หรืองานในคลังงานเมื่อเปิดสวิตช์อ่านงานของคนอื่นได้ (libread) ใช้กับไฟล์งานและหน้าพิมพ์ทั้งเล่มเท่านั้น
+async function readable(req, id, { book = false, ...opts } = {}) {
+  const sub = await loadSub(id, opts);
+  if (!sub) return null;
+  if ((await wf.canView(req.me, sub)) || (await library.readable(req.ff, sub, { book }))) return sub;
+  return null;
 }
 
 async function loadFile(id) {
@@ -330,6 +339,8 @@ router.post('/works', async (req, res) => {
   const sem = Number(req.settings.semester);
   const f = type ? workFields(b, type, req.ff) : null;
   const files = await up.take(req, 'main_files');
+  // รูปปกเล็กสำหรับคลังงาน (ฟังก์ชันเสริม library) เบราว์เซอร์ทำจากหน้าแรกของ PDF
+  const cover = type && req.ff.library ? await up.takeCover(req, library.COVER_MAX) : null;
   let id;
   let mergedMsg;
   try {
@@ -370,11 +381,12 @@ router.post('/works', async (req, res) => {
         now
       );
       await up.attach(r.id, files, 'main');
+      if (cover) await up.useCover(r.id, cover);
       await rememberSubject(req, { teacher_id: req.me.id, doc_type: type, academic_year: year, semester: sem }, f);
       return r.id;
     });
   } catch (e) {
-    await dropFiles(req, files);
+    await dropFiles(req, cover ? [...files, cover] : files);
     throw e;
   }
   await finishSave(req, res, id, b.action === 'submit', `บันทึกร่างเรียบร้อย${mergedMsg} ยังไม่ได้ส่งให้ผู้ตรวจ`);
@@ -574,8 +586,8 @@ router.get('/s/:id/edit', async (req, res) => {
 });
 
 // บันทึกการแก้ไขลงฐาน (ทั้งหมดใน transaction เดียว)
-async function saveEdit(req, sub, b, now, files) {
-  await q.tx(async () => {
+async function saveEdit(req, sub, b, now, files, cover = null) {
+  return q.tx(async () => {
     if (sub.doc_type === 'note') {
       const f = noteFields(b, req.ff);
       await q.run(
@@ -626,7 +638,10 @@ async function saveEdit(req, sub, b, now, files) {
         await q.run('UPDATE files SET is_current = 0 WHERE submission_id = ? AND is_current = 1', sub.id);
       }
       await up.attach(sub.id, files, 'main');
+      // ปกใหม่แทนปกเดิม คืนที่อยู่รูปเดิมให้ย้ายไปถังขยะ
+      if (cover) return up.useCover(sub.id, cover);
     }
+    return null;
   });
 }
 
@@ -635,16 +650,19 @@ router.post('/s/:id', async (req, res) => {
   if (!editable(req, sub)) throw new UserError('แก้ไขได้เฉพาะงานของตนเองที่เป็นฉบับร่างหรือถูกส่งกลับ');
   const b = req.body || {};
   const files = await up.take(req, sub.doc_type === 'note' ? 'attach_files' : 'main_files');
+  const cover = sub.doc_type !== 'note' && req.ff.library ? await up.takeCover(req, library.COVER_MAX) : null;
   let mergedMsg = '';
+  let oldCover = null;
   try {
     if (sub.doc_type === 'note') checkNotePdf(req, files);
     await rejectBadFiles(req, files);
     if (sub.doc_type !== 'note') mergedMsg = checkPdf(req, sub.doc_type, files);
-    await saveEdit(req, sub, b, nowStr(), files);
+    oldCover = await saveEdit(req, sub, b, nowStr(), files, cover);
   } catch (e) {
-    await dropFiles(req, files);
+    await dropFiles(req, cover ? [...files, cover] : files);
     throw e;
   }
+  if (oldCover) await up.trashAll([oldCover]);
   if (bookMode(req, sub)) return respond(req, res, `/s/${sub.parent_id}#notes`, 'success', 'บันทึกการแก้ไขเรียบร้อย แก้ครบแล้วกด ส่งทั้งเล่ม');
   await finishSave(req, res, sub.id, b.action === 'submit', `บันทึกการแก้ไขเรียบร้อย${mergedMsg} ยังไม่ได้ส่งให้ผู้ตรวจ`);
 });
@@ -693,6 +711,13 @@ router.post('/s/:id/delete', async (req, res) => {
 // form = ที่อยู่ของฟอร์ม: /works (งานใหม่) · /notes (บันทึกใหม่ ต้องมี plan_id) · /s/<id> (แก้ไขงานเดิม)
 async function uploadTarget(req, b) {
   const form = String(b.form || '');
+  // ผู้ดูแลระบบสร้างปกให้งานเดิมในคลัง (หน้า /library)
+  const lc = /^\/library\/cover\/(\d+)$/.exec(form);
+  if (lc) {
+    const sub = await loadSub(lc[1]);
+    if (!req.me.is_admin || !req.ff.library || !sub || !WORK_TYPES.includes(sub.doc_type)) throw new UserError('สร้างปกได้เฉพาะผู้ดูแลระบบ');
+    return sub;
+  }
   const m = /^\/s\/(\d+)$/.exec(form);
   if (m) {
     const sub = await viewable(req, m[1]);
@@ -721,8 +746,17 @@ async function uploadTarget(req, b) {
 
 router.post('/upload/start', async (req, res) => {
   const b = req.body || {};
-  const field = b.field === 'attach_files' ? 'attach_files' : 'main_files';
+  const field = ['attach_files', 'cover_thumb'].includes(b.field) ? b.field : 'main_files';
   const target = await uploadTarget(req, b);
+  // รูปปกเล็ก (คลังงาน) เก็บแยกโฟลเดอร์ ปกคลังงาน/ภาคเรียน ไม่ปนกับไฟล์งานของครู
+  if (field === 'cover_thumb') {
+    if (!req.ff.library || target.doc_type === 'note') throw new UserError('ส่งรูปปกไม่ได้');
+    if (Number(b.size) > library.COVER_MAX) throw new UserError('รูปปกใหญ่เกินไป');
+    const name = drivepath.safeName(`ปก ${wf.DOC_TYPES[target.doc_type].label} ${target.subject_code || ''} ${target.teacher_name || ''}`, 'ปก') + '.jpg';
+    const folderPath = `ปกคลังงาน/ภาคเรียน ${target.semester}-${target.academic_year}`;
+    const token = await up.start(req.me.id, { name, size: Number(b.size), folderPath, settings: req.settings });
+    return res.json({ token, chunk: storage.CHUNK });
+  }
   let name = str(b.name, 200) || 'file';
   // ไฟล์ที่เบราว์เซอร์รวมจากหลายไฟล์ ตั้งชื่อแบบเดิมของระบบ เช่น คู่มือรายวิชา ว31101.pdf
   if (field === 'main_files' && intOrNull(b.merged) > 1) name = `${wf.DOC_TYPES[target.doc_type].label} ${target.subject_code || ''}`.trim() + '.pdf';
@@ -784,7 +818,7 @@ async function sendStored(req, res, f, headers) {
 
 router.get('/f/:id', async (req, res) => {
   const f = await loadFile(req.params.id);
-  const sub = f && (await viewable(req, f.submission_id));
+  const sub = f && (await readable(req, f.submission_id));
   if (!sub) return res.status(404).render('error', { title: 'ไม่พบไฟล์', message: 'ไม่พบไฟล์ หรือคุณไม่มีสิทธิ์เปิดดู' });
   const inline = !req.query.dl && /^(application\/pdf|image\/)/.test(f.mime);
   await sendStored(req, res, f, {
@@ -798,7 +832,7 @@ router.get('/f/:id', async (req, res) => {
 // เพื่อไม่ให้โปรแกรมช่วยดาวน์โหลด (เช่น Internet Download Manager) ดักไปดาวน์โหลดแทนการแสดงผล
 router.get('/f/:id/raw', async (req, res) => {
   const f = await loadFile(req.params.id);
-  const sub = f && (await viewable(req, f.submission_id));
+  const sub = f && (await readable(req, f.submission_id));
   if (!sub) return res.status(404).end();
   await sendStored(req, res, f, { 'Content-Type': 'application/x-lesson-file', 'Cache-Control': 'private, no-store' });
 });
@@ -806,7 +840,7 @@ router.get('/f/:id/raw', async (req, res) => {
 // หน้าเปิดอ่านไฟล์ในเว็บ (PDF ทุกหน้า หรือรูป) ไม่ขึ้นกับการตั้งค่าเบราว์เซอร์ที่สั่งให้ดาวน์โหลด
 router.get('/f/:id/view', async (req, res) => {
   const f = await loadFile(req.params.id);
-  const sub = f && (await viewable(req, f.submission_id));
+  const sub = f && (await readable(req, f.submission_id));
   if (!sub) return res.status(404).render('error', { title: 'ไม่พบไฟล์', message: 'ไม่พบไฟล์ หรือคุณไม่มีสิทธิ์เปิดดู' });
   if (!/^(application\/pdf|image\/)/.test(f.mime)) return res.redirect(`/f/${f.id}?dl=1`);
   res.render('file_view', { title: f.original_name, file: f, sub });
@@ -883,7 +917,7 @@ router.get('/s/:id/print', async (req, res) => {
 
 // พิมพ์บันทึกหลังแผนทั้งเล่ม (เฉพาะฉบับที่ส่งแล้ว)
 router.get('/s/:id/print-notes', async (req, res) => {
-  const plan = await viewable(req, req.params.id);
+  const plan = await readable(req, req.params.id, { book: true });
   if (!plan || plan.doc_type !== 'plan') return res.status(404).render('error', { title: 'ไม่พบงานนี้', message: 'ไม่พบแผนนี้' });
   // บันทึกทุกฉบับของเล่มในคำสั่งเดียว (เดิมถามทีละฉบับ)
   const notes = await q.all(
@@ -1134,3 +1168,4 @@ module.exports.printDataMany = printDataMany;
 module.exports.subSelect = subSelect;
 module.exports.subjectChoices = subjectChoices;
 module.exports.methodsOf = methodsOf;
+module.exports.sendStored = sendStored;
