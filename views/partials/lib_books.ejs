@@ -7,7 +7,18 @@
   <div class="lib-row" data-lib-row>
 <% for (const b of g.books) { %>
   <article class="lib-book">
+    <div class="lib-cvw">
     <% if (b.open) { %><a class="lib-cv" href="<%= b.href %>" aria-label="เปิดอ่าน <%= b.subject_code %> <%= b.subject_name %>"><%- include('lib_cover', { b }) %></a><% } else { %><span class="lib-cv"><%- include('lib_cover', { b }) %></span><% } %>
+    <% if (b.swap) { const who = b.subject_code + ' ' + (b.subject_name || '') + ' ของ' + b.teacher_name; %>
+      <%# ผู้ดูแลระบบ (coverswap) ปุ่มบนปกทีละเล่ม หรือช่องติ๊กในโหมดเลือกหลายเล่ม หน้าเว็บสลับด้วย .lib[data-swap] %>
+      <% if (b.swap === 'img') { %>
+        <button type="submit" class="lib-swap" form="lib-drawn1" name="ids" value="<%= b.id %>" data-confirm="เปลี่ยนเล่ม <%= who %> เป็นปกที่ระบบวาดจากชื่อวิชาและชื่อครู แทนรูปหน้าแรกของไฟล์ ไฟล์งานไม่เปลี่ยน กดกลับไปใช้รูปจากไฟล์ได้ภายหลัง" data-ok-label="เปลี่ยนปก" title="ใช้ปกที่ระบบวาด"><%- icon('copy', 13) %><span>ใช้ปกระบบ</span></button>
+      <% } else { %>
+        <button type="button" class="lib-swap" data-cover-file="<%= b.id %>" data-file="<%= b.file_id || '' %>" data-code="<%= b.subject_code %>" data-who="<%= who %>" title="ใช้รูปจากไฟล์"><%- icon('file', 13) %><span>ใช้รูปจากไฟล์</span></button>
+      <% } %>
+      <label class="lib-ck" title="เลือกเล่มนี้"><input type="checkbox" name="ids" value="<%= b.id %>" form="lib-drawn" data-file="<%= b.file_id || '' %>" data-code="<%= b.subject_code %>" data-is="<%= b.swap %>" aria-label="เลือก <%= who %>"></label>
+    <% } %>
+    </div>
     <div class="lib-meta">
       <b><%= b.subject_name || b.subject_code %></b>
       <span><%= b.subject_code %><span class="lib-dept"> <%= b.dept_name || '' %></span></span>

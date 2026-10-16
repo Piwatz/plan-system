@@ -266,9 +266,49 @@
     return start.token;
   }
 
+  // ทำรูปปกจากหน้าแรกของไฟล์ PDF ในเครื่องนี้ แล้วส่งเข้าระบบ 1 เล่ม · it = { id: งาน, file: ไฟล์ } สำเร็จคืน true
+  async function coverFromFile(it) {
+    try {
+      const pdf = await fetch('/f/' + it.file + '/raw');
+      const thumb = pdf.ok ? await makeThumb(new Uint8Array(await pdf.arrayBuffer())) : null;
+      if (!thumb) return false;
+      const url = '/library/cover/' + it.id;
+      const token = await uploadBlob(thumb, { form: url, field: 'cover_thumb', name: 'cover.jpg' });
+      await request('POST', url, new URLSearchParams({ upload_cover_thumb: token }), { 'Content-Type': 'application/x-www-form-urlencoded' });
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
+  // ผู้ดูแลระบบ (coverswap) เปลี่ยนเล่มที่เลือกปกระบบไว้ กลับไปใช้รูปจากไฟล์ · items = [{ id, file, code }]
+  async function coversBackToFile(items) {
+    let made = 0;
+    const codes = [];
+    try {
+      showBusy('กำลังทำรูปปกจากไฟล์', true);
+      setProgress(0);
+      for (let i = 0; i < items.length; i++) {
+        busy.querySelector('[data-pct]').textContent = 'เล่มที่ ' + (i + 1) + ' จาก ' + items.length;
+        busy.querySelector('[data-bar] > div').style.width = Math.round((i / items.length) * 100) + '%';
+        if (items[i].file && (await coverFromFile(items[i]))) {
+          made++;
+          codes.push(items[i].code);
+        }
+      }
+      if (made) await request('POST', '/library/covers/done', new URLSearchParams({ n: String(made), what: 'file', codes: codes.sort().join(', ') }), { 'Content-Type': 'application/x-www-form-urlencoded' });
+      hideBusy();
+      const failed = items.length - made;
+      await tell('ใช้รูปจากไฟล์แล้ว ' + made + ' เล่ม' + (failed ? ' ทำไม่ได้ ' + failed + ' เล่ม (ไฟล์ไม่ใช่ PDF หรือเปิดไม่ได้ ยังเป็นปกที่ระบบวาด)' : ''), made ? 'ok' : 'warn');
+      window.location.reload();
+    } catch (err) {
+      hideBusy();
+      tell((err && err.userMessage) || NET_ERROR);
+    }
+  }
+
   // ผู้ดูแลระบบ สร้างปกงานเดิมในคลังงาน: เปิด PDF ทีละเล่มในเครื่องนี้ ทำรูปปกเล็ก แล้วส่งเข้าระบบทีละรูป
   async function buildCovers(form) {
-    const FORM = { 'Content-Type': 'application/x-www-form-urlencoded' };
     let made = 0;
     let failed = 0;
     try {
@@ -280,19 +320,10 @@
         const it = items[i];
         busy.querySelector('[data-pct]').textContent = 'เล่มที่ ' + (i + 1) + ' จาก ' + items.length;
         busy.querySelector('[data-bar] > div').style.width = Math.round((i / items.length) * 100) + '%';
-        try {
-          const pdf = await fetch('/f/' + it.file + '/raw');
-          const thumb = pdf.ok ? await makeThumb(new Uint8Array(await pdf.arrayBuffer())) : null;
-          if (!thumb) throw new Error('no thumb');
-          const url = '/library/cover/' + it.id;
-          const token = await uploadBlob(thumb, { form: url, field: 'cover_thumb', name: 'cover.jpg' });
-          await request('POST', url, new URLSearchParams({ upload_cover_thumb: token }), FORM);
-          made++;
-        } catch {
-          failed++;
-        }
+        if (await coverFromFile(it)) made++;
+        else failed++;
       }
-      await request('POST', form.getAttribute('action'), new URLSearchParams({ n: String(made) }), FORM);
+      await request('POST', form.getAttribute('action'), new URLSearchParams({ n: String(made) }), { 'Content-Type': 'application/x-www-form-urlencoded' });
       hideBusy();
       await tell('สร้างปกเรียบร้อย ' + made + ' เล่ม' + (failed ? ' ทำไม่ได้ ' + failed + ' เล่ม (ไฟล์เปิดไม่ได้ ระบบใช้ปกที่วาดให้แทน)' : ''), 'ok');
       window.location.reload();
@@ -500,6 +531,71 @@
           tell(NET_ERROR);
         }
         more.removeAttribute('aria-busy');
+      });
+    }
+
+    // ผู้ดูแลระบบเปลี่ยนปก (coverswap): โหมด one ปุ่มบนปก · many เลือกหลายเล่ม เครื่องจำโหมดไว้
+    const bar = document.querySelector('[data-swapbar]');
+    if (bar && lib.hasAttribute('data-swap')) {
+      const SWAP = 'plan-libswap';
+      const modeBtns = bar.querySelectorAll('[data-swap-mode]');
+      const checks = () => Array.from(document.querySelectorAll('.lib-ck input:checked'));
+      const count = () => {
+        const on = checks();
+        bar.querySelector('[data-swap-count]').textContent = on.length ? 'เลือกแล้ว ' + on.length + ' เล่ม' : 'กดที่ปกเพื่อเลือกเล่ม';
+        bar.querySelector('[data-swap-go="drawn"]').disabled = !on.some((c) => c.dataset.is !== 'drawn');
+        bar.querySelector('[data-swap-go="file"]').disabled = !on.some((c) => c.dataset.is !== 'img');
+      };
+      const setMode = (m, save) => {
+        lib.setAttribute('data-swap', m);
+        bar.setAttribute('data-swap', m);
+        modeBtns.forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.swapMode === m)));
+        if (m !== 'many') document.querySelectorAll('.lib-ck input').forEach((c) => (c.checked = false));
+        count();
+        if (save) {
+          try {
+            localStorage.setItem(SWAP, m);
+          } catch {
+            // เครื่องนี้ไม่ให้จำ ไม่เป็นไร
+          }
+        }
+      };
+      let saved = '';
+      try {
+        saved = localStorage.getItem(SWAP) || '';
+      } catch {
+        // ใช้ค่าเริ่มต้น
+      }
+      setMode(saved === 'many' ? 'many' : 'one', false);
+      modeBtns.forEach((b) => b.addEventListener('click', () => setMode(b.dataset.swapMode, true)));
+      lib.addEventListener('change', (e) => e.target.closest('.lib-ck') && count());
+      // โหมดเลือกหลายเล่ม: กดที่ปกหรือชื่อ = เลือก ไม่เปิดไฟล์ (เล่มที่โหลดเพิ่มก็ใช้ได้)
+      lib.addEventListener('click', (e) => {
+        if (lib.getAttribute('data-swap') !== 'many' || e.target.closest('.lib-ck, .lib-more')) return;
+        const book = e.target.closest('.lib-book');
+        const box = book && book.querySelector('.lib-ck input');
+        if (!box) return;
+        e.preventDefault();
+        box.checked = !box.checked;
+        count();
+      });
+      // ปุ่มบนปก ใช้รูปจากไฟล์ (เล่มเดียว)
+      lib.addEventListener('click', async (e) => {
+        const b = e.target.closest('[data-cover-file]');
+        if (!b || lib.getAttribute('data-swap') !== 'one') return;
+        e.preventDefault();
+        if (!b.dataset.file) return tell('เล่มนี้ไม่มีไฟล์ PDF ให้ทำรูปปก');
+        const ok = await ask('เปลี่ยนเล่ม ' + b.dataset.who + ' กลับไปใช้รูปหน้าแรกของไฟล์เป็นปก เครื่องนี้จะเปิดไฟล์แล้วทำรูปปกใหม่', { ok: 'ใช้รูปจากไฟล์' });
+        if (ok) coversBackToFile([{ id: b.dataset.coverFile, file: b.dataset.file, code: b.dataset.code }]);
+      });
+      // แถบโหมดเลือกหลายเล่ม ใช้รูปจากไฟล์ (เฉพาะเล่มที่ยังไม่ใช่รูปจากไฟล์)
+      bar.querySelector('[data-swap-go="file"]').addEventListener('click', async () => {
+        const items = checks()
+          .filter((c) => c.dataset.is !== 'img')
+          .map((c) => ({ id: c.value, file: c.dataset.file, code: c.dataset.code }));
+        if (!items.length) return;
+        const ok = await ask('เปลี่ยนเล่มที่เลือก ' + items.length + ' เล่ม กลับไปใช้รูปหน้าแรกของไฟล์เป็นปก เครื่องนี้จะเปิดไฟล์ทีละเล่มแล้วทำรูปปกใหม่ ห้ามปิดหน้านี้จนกว่าจะเสร็จ', { ok: 'ใช้รูปจากไฟล์' });
+        if (ok) coversBackToFile(items);
       });
     }
   }

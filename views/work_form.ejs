@@ -66,7 +66,8 @@
 
     <h2 style="margin-top:18px">ไฟล์<%= T.label %></h2>
     <% if (ff.pdfonly) { const oldOk = files.length === 1 && files[0].mime === 'application/pdf'; %>
-      <p class="hint" style="margin-top:0">ส่งเป็น <b>PDF ไฟล์เดียว</b> ที่มีทั้งปกและเนื้อหา<%= ff.pdfmerge ? ' ถ้ามีหลายไฟล์ เช่น ปกกับเนื้อหา เลือกพร้อมกันได้เลย เรียงลำดับด้วยปุ่มขึ้นลง ระบบจะรวมเป็นไฟล์เดียวให้' : '' %></p>
+      <%# หมายเหตุเหนือช่องเลือกไฟล์: ต้องมีปกและเนื้อหา หน้าแรกจะเป็นปกในคลังงาน (ฟังก์ชันเสริม library) %>
+      <div class="alert alert-info lib-filenote"><%- icon('file') %><span>ไฟล์ต้องมี<b>หน้าปกและเนื้อหา</b> <%= ff.pdfmerge ? 'รวมเป็น PDF ไฟล์เดียวมาเอง หรือเลือกหลายไฟล์ เช่น ปกกับเนื้อหา แล้วเรียงด้วยปุ่มขึ้นลง เว็บจะรวมให้ก็ได้' : 'รวมเป็น PDF ไฟล์เดียวก่อนแนบ' %><% if (ff.library) { %> <b>หน้าแรกจะเป็นปกในคลังงาน</b><% } %></span></div>
       <% if (files.length) { %>
         <ul class="file-list" style="margin-bottom:10px">
           <% for (const f of files) { %>
@@ -91,7 +92,7 @@
       <% if (ff.coverpreview) { %>
         <div class="cover-preview" data-cover hidden>
           <div data-cover-img></div>
-          <div><b>หน้าปกที่จะส่ง</b><br><small class="muted" data-cover-info></small><br><small class="muted">ถ้าหน้านี้ไม่ใช่ปก ให้เลื่อนไฟล์ปกขึ้นไว้บนสุด หรือเลือกไฟล์ใหม่</small></div>
+          <div><b>หน้าปกที่จะส่ง</b><br><small class="muted" data-cover-info></small><br><% if (ff.library) { %><small><b>ภาพนี้จะเป็นปกในคลังงาน</b></small><br><% } %><small class="muted">ถ้าหน้านี้ไม่ใช่ปก ให้เลื่อนไฟล์ปกขึ้นไว้บนสุด หรือเลือกไฟล์ใหม่</small></div>
         </div>
       <% } %>
       <details class="howto">
@@ -113,6 +114,7 @@
           <% } %>
         </ul>
       <% } %>
+      <div class="alert alert-info lib-filenote"><%- icon('file') %><span>ไฟล์ต้องมี<b>หน้าปกและเนื้อหา</b><% if (ff.library) { %> <b>หน้าแรกของไฟล์ PDF ไฟล์แรกจะเป็นปกในคลังงาน</b><% } %></span></div>
       <label class="dropzone" data-dropzone <%= ff.library ? 'data-thumb' : '' %> <%= ff.filecheck ? 'data-filecheck' : '' %> data-max-mb="<%= settings.max_upload_mb %>">
         <span class="dz-icon"><%- icon('send', 34) %></span>
         <b>ลากไฟล์มาวางที่นี่ หรือกดเพื่อเลือกไฟล์</b><br>

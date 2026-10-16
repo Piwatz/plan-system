@@ -38,10 +38,29 @@
 เครื่องนี้จะเปิดไฟล์ PDF ทีละเล่มแล้วทำรูปปกเล็ก อาจใช้เวลาหลายนาที ห้ามปิดหน้านี้จนกว่าจะเสร็จ" data-ok-label="สร้างปก"></form>
 <% } %>
 
+<% const swap = books.some((b) => b.swap); %>
+<% if (swap) { const back = '/library?' + qs({}); %>
+  <%# ผู้ดูแลระบบเปลี่ยนปก (coverswap): 2 โหมด สลับได้ เครื่องจำไว้ ปุ่มบนปกทีละเล่ม หรือเลือกหลายเล่มพร้อมกัน %>
+  <div class="lib-swapbar" data-swapbar>
+    <span class="lib-swap-mode" role="group" aria-label="วิธีเปลี่ยนปก">
+      <b>เปลี่ยนปก</b>
+      <button type="button" class="btn btn-sm btn-ghost" data-swap-mode="one" aria-pressed="true"><%- icon('copy', 16) %> ปุ่มบนปก</button>
+      <button type="button" class="btn btn-sm btn-ghost" data-swap-mode="many" aria-pressed="false"><%- icon('check', 16) %> เลือกหลายเล่ม</button>
+    </span>
+    <span class="lib-swap-many">
+      <span data-swap-count>ยังไม่ได้เลือก</span>
+      <button type="submit" class="btn btn-sm btn-primary" form="lib-drawn" data-swap-go="drawn" data-confirm="เปลี่ยนเล่มที่เลือกเป็นปกที่ระบบวาดจากชื่อวิชาและชื่อครู แทนรูปหน้าแรกของไฟล์ ไฟล์งานไม่เปลี่ยน กดกลับไปใช้รูปจากไฟล์ได้ภายหลัง" data-ok-label="เปลี่ยนปก" disabled><%- icon('copy', 16) %> ใช้ปกระบบ</button>
+      <button type="button" class="btn btn-sm btn-ghost" data-swap-go="file" disabled><%- icon('file', 16) %> ใช้รูปจากไฟล์</button>
+    </span>
+  </div>
+  <form id="lib-drawn1" method="post" action="/library/covers/drawn"><input type="hidden" name="back" value="<%= back %>"></form>
+  <form id="lib-drawn" method="post" action="/library/covers/drawn"><input type="hidden" name="back" value="<%= back %>"></form>
+<% } %>
+
 <% if (!books.length) { %>
   <div class="card"><div class="empty"><span class="big"><%- icon('books', 40) %></span><p>ยังไม่มี<%= shelf.label %>ที่ผ่านครบในภาคเรียนนี้<%= department ? ' ของกลุ่มสาระนี้' : '' %></p></div></div>
 <% } else { %>
-  <div class="card lib" data-lib data-default="<%= defaultView %>" data-view="shelf"<%- department ? ' data-one' : '' %>>
+  <div class="card lib" data-lib data-default="<%= defaultView %>" data-view="shelf"<%- department ? ' data-one' : '' %><%- swap ? ' data-swap="one"' : '' %>>
     <script>(function(){var b=document.querySelector('[data-lib]'),k=['<%- views.map((v) => v.key).join("','") %>'],v='';try{v=localStorage.getItem('plan-libview')||''}catch(e){}if(k.indexOf(v)<0)v=b.getAttribute('data-default');if(k.indexOf(v)<0)v=window.matchMedia('(max-width: 760px)').matches?'list':'shelf';b.setAttribute('data-view',v)})()</script>
     <div class="lib-books" data-lib-books><%- include('partials/lib_books', { books, groups }) %></div>
     <% if (more) { %>

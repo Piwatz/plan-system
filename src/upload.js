@@ -228,9 +228,12 @@ async function discard(userId, tokens) {
 }
 
 // ย้ายไฟล์ไปถังขยะ ไม่ให้งานหลักล้มเพราะที่เก็บไฟล์มีปัญหา
+// DRAWN ในช่อง cover_ref = ผู้ดูแลระบบเลือกใช้ปกที่ระบบวาด (ฟังก์ชันเสริม coverswap) ไม่ใช่ไฟล์ จึงไม่ต้องย้ายไปถังขยะ
+const DRAWN = 'drawn';
+
 async function trashAll(refs) {
   for (const ref of refs) {
-    if (!ref) continue;
+    if (!ref || ref === DRAWN) continue;
     try {
       await storage.trash(ref);
     } catch (e) {
@@ -239,4 +242,4 @@ async function trashAll(refs) {
   }
 }
 
-module.exports = { ALLOWED, MAX_FILES, EXPIRED, UploadError, fixName, checkNew, start, putChunk, parseContentRange, take, badFiles, attach, takeCover, useCover, discard, trashAll };
+module.exports = { DRAWN, ALLOWED, MAX_FILES, EXPIRED, UploadError, fixName, checkNew, start, putChunk, parseContentRange, take, badFiles, attach, takeCover, useCover, discard, trashAll };

@@ -355,3 +355,85 @@ test('คำสั่งของคลัง: ทุกชั้นคืนค
   assert.deepEqual(library.SHELVES.map((s) => s.key), ['plan', 'manual', 'note']);
   assert.equal(wf.DOC_TYPES.plan.label, library.SHELF.plan.label);
 });
+
+test('ผู้ดูแลระบบเปลี่ยนเล่มเป็นปกที่ระบบวาด ทีละเล่มหรือหลายเล่ม แล้วกลับไปใช้รูปจากไฟล์ได้ (coverswap)', async () => {
+  const admin = await as('admin');
+  const t = await as('teacher');
+  // 2 เล่มแรกในชั้นคู่มือของภาคปัจจุบัน (อยู่ในหน้าแรกของคลังแน่นอน)
+  const library = require('../src/library');
+  await db.ensureRefs();
+  const cur = await db.q.all("SELECT key, value FROM settings WHERE key IN ('academic_year', 'semester')");
+  const term = Object.fromEntries(cur.map((r) => [r.key === 'academic_year' ? 'year' : 'semester', Number(r.value)]));
+  const subs = (await library.page('manual', { term })).rows.slice(0, 2).map((r) => ({ ...r, academic_year: term.year, semester: term.semester }));
+  assert.equal(subs.length, 2);
+  const [a, b] = subs;
+  // ใส่รูปปกจากไฟล์ให้เล่ม a ก่อน (แบบปุ่ม สร้างปกงานเดิม)
+  const put = async (id) => {
+    const url = `/library/cover/${id}`;
+    const token = await uploadOne(admin, jpg(), 'cover.jpg', { form: url, field: 'cover_thumb' });
+    assert.equal((await admin.post(url, { upload_cover_thumb: token }, XHR)).status, 200);
+  };
+  await put(a.id);
+  const qs = `shelf=manual&year=${a.academic_year}&semester=${a.semester}`;
+  const page = (await admin.get(`/library?${qs}`)).text;
+  assert.match(page, /data-swapbar/);
+  assert.match(page, /data-swap="one"/);
+  assert.match(page, new RegExp(`form="lib-drawn1" name="ids" value="${a.id}" data-confirm=`));
+  assert.match(page, /id="lib-drawn" method="post" action="\/library\/covers\/drawn"/);
+  assert.match(page, /data-swap-go="drawn" data-confirm=/);
+  assert.match(page, new RegExp(`/library/cover/${a.id}\\?v=`));
+  // ครูไม่เห็นปุ่ม และเปลี่ยนเองไม่ได้
+  const tp = (await t.get(`/library?${qs}`)).text;
+  assert.doesNotMatch(tp, /data-swapbar|lib-swap|lib-ck/);
+  await t.post('/library/covers/drawn', { ids: String(a.id) });
+  const keep = (await db.q.get('SELECT cover_ref FROM submissions WHERE id = ?', a.id)).cover_ref;
+  assert.ok(keep && keep !== 'drawn');
+  // ทีละเล่ม: ปกระบบวาด รูปปกเดิมเปิดไม่ได้แล้ว ไม่อยู่ในรายการสร้างปกงานเดิม
+  const back = `/library?${qs}`;
+  const r = await admin.post('/library/covers/drawn', { ids: String(a.id), back });
+  assert.equal(r.status, 302);
+  assert.equal(r.location, back);
+  assert.equal((await db.q.get('SELECT cover_ref FROM submissions WHERE id = ?', a.id)).cover_ref, 'drawn');
+  assert.equal((await admin.raw('GET', `/library/cover/${a.id}`)).status, 404);
+  assert.ok(!JSON.parse((await admin.get('/library/covers/todo')).text).items.some((x) => x.id === a.id));
+  assert.ok(await db.q.get("SELECT 1 AS x FROM audit_log WHERE action = 'เปลี่ยนปกในคลังงานเป็นปกที่ระบบวาด 1 เล่ม' AND detail = ?", a.subject_code));
+  const after = (await admin.get(`/library?${qs}`)).text;
+  assert.doesNotMatch(after, new RegExp(`/library/cover/${a.id}\\?v=`));
+  assert.match(after, new RegExp(`data-cover-file="${a.id}" data-file="\\d+"`));
+  // หลายเล่มพร้อมกัน: a เป็นปกระบบอยู่แล้วไม่นับซ้ำ งานที่ไม่ใช่แผนหรือคู่มือไม่เปลี่ยน
+  const note = await db.q.get("SELECT id, cover_ref FROM submissions WHERE doc_type = 'note' LIMIT 1");
+  await admin.req('POST', '/library/covers/drawn', new URLSearchParams([['ids', String(a.id)], ['ids', String(b.id)], ...(note ? [['ids', String(note.id)]] : []), ['back', 'https://evil.example/']]));
+  assert.equal((await db.q.get('SELECT cover_ref FROM submissions WHERE id = ?', b.id)).cover_ref, 'drawn');
+  if (note) assert.equal((await db.q.get('SELECT cover_ref FROM submissions WHERE id = ?', note.id)).cover_ref, note.cover_ref);
+  assert.ok(await db.q.get("SELECT 1 AS x FROM audit_log WHERE action = 'เปลี่ยนปกในคลังงานเป็นปกที่ระบบวาด 1 เล่ม' AND detail = ?", b.subject_code));
+  // กลับไปใช้รูปจากไฟล์: เครื่องผู้ดูแลส่งรูปใหม่เข้ามา แล้วจดประวัติ
+  await put(a.id);
+  const ref = (await db.q.get('SELECT cover_ref FROM submissions WHERE id = ?', a.id)).cover_ref;
+  assert.ok(ref && ref !== 'drawn');
+  await admin.post('/library/covers/done', { n: '1', what: 'file', codes: a.subject_code }, XHR);
+  assert.ok(await db.q.get("SELECT 1 AS x FROM audit_log WHERE action = 'เปลี่ยนปกในคลังงานกลับเป็นรูปจากไฟล์ 1 เล่ม' AND detail = ?", a.subject_code));
+  assert.equal((await admin.raw('GET', `/library/cover/${a.id}`)).status, 200);
+  // ปิดสวิตช์: ไม่มีปุ่ม เปลี่ยนไม่ได้ เล่มที่เปลี่ยนไว้ยังเป็นปกระบบ
+  await setFlag(admin, 'coverswap', false);
+  try {
+    assert.doesNotMatch((await admin.get(`/library?${qs}`)).text, /data-swapbar|lib-swap/);
+    await admin.post('/library/covers/drawn', { ids: String(a.id) });
+    assert.notEqual((await db.q.get('SELECT cover_ref FROM submissions WHERE id = ?', a.id)).cover_ref, 'drawn');
+    assert.equal((await db.q.get('SELECT cover_ref FROM submissions WHERE id = ?', b.id)).cover_ref, 'drawn');
+  } finally {
+    await setFlag(admin, 'coverswap', true);
+  }
+});
+
+test('หน้าส่งแผนและคู่มือมีหมายเหตุ ต้องมีหน้าปกและเนื้อหา หน้าแรกจะเป็นปกในคลังงาน', async () => {
+  // หน้าแก้ไขงานฉบับร่างหรือถูกส่งกลับ ใช้ฟอร์มเดียวกับหน้าส่งงานใหม่
+  for (const type of ['plan', 'manual']) {
+    const s = await db.q.get("SELECT s.id, u.username FROM submissions s JOIN users u ON u.id = s.teacher_id WHERE s.doc_type = ? AND s.status IN ('draft', 'returned') ORDER BY s.id LIMIT 1", type);
+    assert.ok(s, `มี${type}ฉบับร่างในข้อมูลทดลอง`);
+    const html = (await (await as(s.username)).get(`/s/${s.id}/edit`)).text;
+    assert.match(html, /ไฟล์ต้องมี<b>หน้าปกและเนื้อหา<\/b>/, type);
+    assert.match(html, /หน้าแรกจะเป็นปกในคลังงาน/, type);
+    assert.match(html, /ภาพนี้จะเป็นปกในคลังงาน/, type);
+    assert.doesNotMatch(html, /ใช้ปกระบบ|ใช้ปกที่ระบบวาด/, 'ครูไม่มีตัวเลือกใช้ปกที่ระบบวาด');
+  }
+});

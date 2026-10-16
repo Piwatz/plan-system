@@ -101,12 +101,51 @@ router.post('/library/cover/:id', async (req, res) => {
   res.json({ ok: true });
 });
 
-// จดประวัติหลังสร้างปกครบชุด (1 แถวต่อการกด 1 ครั้ง)
+// จดประวัติหลังสร้างปกครบชุด (1 แถวต่อการกด 1 ครั้ง) · what=file คือปุ่ม ใช้รูปจากไฟล์ (ฟังก์ชันเสริม coverswap)
 router.post('/library/covers/done', async (req, res) => {
   if (!adminOnly(req, res)) return;
-  const n = Math.max(0, util.intOr((req.body || {}).n, 0));
-  await features.audit(req.me, `สร้างปกงานเดิมในคลังงาน ${n} เล่ม`, 'library_cover');
+  const b = req.body || {};
+  const n = Math.max(0, util.intOr(b.n, 0));
+  if (b.what === 'file') await features.audit(req.me, `เปลี่ยนปกในคลังงานกลับเป็นรูปจากไฟล์ ${n} เล่ม`, codesOf(b.codes));
+  else await features.audit(req.me, `สร้างปกงานเดิมในคลังงาน ${n} เล่ม`, 'library_cover');
   res.json({ ok: true });
+});
+
+// รหัสวิชาที่หน้าเว็บส่งมาให้จดในประวัติ (ตัดให้สั้น)
+function codesOf(v) {
+  return String(v || '').replace(/[^\p{L}\p{M}\p{N}\s,]/gu, '').slice(0, 500);
+}
+
+// ---------- ผู้ดูแลระบบ เปลี่ยนเล่มเป็นปกที่ระบบวาด (ฟังก์ชันเสริม coverswap) ----------
+// ใช้กับแผนและคู่มือที่ผ่านครบ ช่อง cover_ref เป็น DRAWN รูปเดิมย้ายไปถังขยะ · กลับไปใช้รูปจากไฟล์ = เครื่องผู้ดูแลทำรูปใหม่ส่งเข้า /library/cover/:id
+// ids มาจากปุ่มบนปก (ทีละเล่ม) หรือช่องติ๊กในโหมดเลือกหลายเล่ม
+router.post('/library/covers/drawn', async (req, res) => {
+  const b = req.body || {};
+  const back = typeof b.back === 'string' && b.back.startsWith('/library?') ? b.back : '/library';
+  if (!req.me.is_admin || !req.ff.library || !req.ff.coverswap) {
+    req.flash('error', 'เฉพาะผู้ดูแลระบบ');
+    return res.redirect(back);
+  }
+  const ids = [...new Set([].concat(b.ids || []).map((x) => util.idOrNull(x)).filter(Boolean))].slice(0, 500);
+  // คำสั่งเดียว: อ่านรูปเดิมและใส่ DRAWN (กดซ้ำพร้อมกันได้แถวเดียว)
+  const rows = ids.length
+    ? await q.all(
+        `WITH o AS (SELECT id, subject_code, cover_ref AS old FROM submissions
+                    WHERE id = ANY(?) AND doc_type IN ('plan', 'manual') AND status = 'approved' AND (cover_ref IS NULL OR cover_ref != ?))
+         UPDATE submissions s SET cover_ref = ? FROM o WHERE s.id = o.id RETURNING o.id, o.subject_code, o.old`,
+        ids,
+        up.DRAWN,
+        up.DRAWN
+      )
+    : [];
+  if (!rows.length) {
+    req.flash('error', 'ยังไม่ได้เลือกเล่ม หรือเล่มที่เลือกใช้ปกที่ระบบวาดอยู่แล้ว');
+    return res.redirect(back);
+  }
+  await up.trashAll(rows.map((r) => r.old));
+  await features.audit(req.me, `เปลี่ยนปกในคลังงานเป็นปกที่ระบบวาด ${rows.length} เล่ม`, rows.map((r) => r.subject_code).sort().join(', ').slice(0, 500));
+  req.flash('success', `เปลี่ยนเป็นปกที่ระบบวาดแล้ว ${rows.length} เล่ม`);
+  res.redirect(back);
 });
 
 module.exports = router;

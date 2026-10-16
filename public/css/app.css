@@ -930,6 +930,26 @@ a.lib-cv:hover .lib-cover { box-shadow: 0 0 0 3px var(--primary); }
   .lib[data-view="group"] .lib-book { flex-basis: 100px; width: 100px; }
   .lib[data-view="group"] .lib-row { gap: 12px; }
 }
+/* ผู้ดูแลระบบเปลี่ยนปก (coverswap) โหมด one = ปุ่มเล็กบนปก · many = ช่องติ๊กมุมซ้ายบนของปก แล้วกดปุ่มในแถบด้านบน */
+.lib-swapbar { display: flex; flex-wrap: wrap; gap: 8px 14px; align-items: center; margin-bottom: 12px; padding: 8px 12px; border: 1px dashed var(--line); border-radius: 12px; }
+.lib-swap-mode { display: inline-flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.lib-swap-mode .btn[aria-pressed="true"] { background: var(--primary); border-color: var(--primary); color: #fff; }
+.lib-swap-many { display: none; flex-wrap: wrap; gap: 6px; align-items: center; }
+.lib-swapbar[data-swap="many"] .lib-swap-many { display: inline-flex; }
+.lib-swap-many [data-swap-count] { color: var(--muted); }
+.lib-cvw { position: relative; }
+.lib-swap, .lib-ck { display: none; }
+.lib[data-swap="one"] .lib-swap { position: absolute; top: 5px; right: 5px; display: inline-flex; align-items: center; gap: 4px; max-width: calc(100% - 10px); padding: 3px 8px; border: 0; border-radius: 999px; background: color-mix(in srgb, var(--ink) 80%, transparent); color: var(--surface); font: inherit; font-size: 0.72rem; font-weight: 600; line-height: 1.3; cursor: pointer; white-space: nowrap; }
+.lib-swap:hover, .lib-swap:focus-visible { background: var(--primary); }
+.lib[data-swap="many"] .lib-ck { position: absolute; top: 5px; left: 5px; display: grid; place-items: center; width: 30px; height: 30px; border-radius: 8px; background: var(--surface); box-shadow: 0 1px 3px rgba(15, 30, 51, 0.35); cursor: pointer; }
+.lib-ck input { width: 20px; height: 20px; margin: 0; accent-color: var(--primary); cursor: pointer; }
+.lib[data-swap="many"] .lib-book:has(.lib-ck input:checked) .lib-cover { outline: 3px solid var(--accent); outline-offset: 2px; }
+.lib[data-view="shelf"] .lib-swap { right: 17px; }
+.lib[data-view="shelf"] .lib-ck { left: 17px; }
+/* รายการ ปกกว้าง 56 px: ปุ่มเหลือแต่ไอคอน */
+.lib[data-view="list"] .lib-swap { top: 2px; right: 2px; padding: 4px; }
+.lib[data-view="list"] .lib-swap span { display: none; }
+.lib[data-view="list"] .lib-ck { top: 2px; left: 2px; width: 26px; height: 26px; }
 /* แถบเล่มใหม่ในคลัง หน้าแรก */
 .lib-strip { margin-top: 18px; }
 .lib-strip-row { display: flex; gap: 14px; overflow-x: auto; padding: 2px 2px 8px; }

@@ -1,0 +1,115 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ปกคลังงาน ภาพตัวอย่าง</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai+Looped:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+  :root { --bg:#EEF2F7; --surface:#fff; --ink:#0F1E33; --muted:#4E5F78; --line:#D6DEE9; --primary:#1D3A66; --accent:#E3A21A; --ok:#1B7343; --soft:#E4ECF7; --warn-bg:#FFF6E0; --warn:#8A5A00; }
+  * { box-sizing: border-box; }
+  body { margin: 0; padding: 20px 16px 48px; background: var(--bg); color: var(--ink); font-family: 'Noto Sans Thai Looped', Tahoma, sans-serif; font-size: 15px; }
+  h1 { font-size: 22px; margin: 0 0 4px; }
+  .lead { color: var(--muted); margin: 0 0 22px; }
+  .opt { margin-bottom: 36px; max-width: 980px; }
+  .cap { font-weight: 700; font-size: 19px; margin-bottom: 4px; }
+  .cap .tag { display: inline-block; font-size: 13px; font-weight: 600; padding: 2px 10px; border-radius: 999px; background: var(--soft); color: var(--primary); margin-left: 6px; vertical-align: 2px; }
+  .why { font-size: 14px; color: var(--muted); margin: 0 0 10px; }
+  .card { background: var(--surface); border-radius: 16px; box-shadow: 0 1px 2px rgba(15,30,51,.05), 0 4px 14px rgba(15,30,51,.05); padding: 18px; }
+  .hint { color: var(--muted); font-size: 14px; margin: 4px 0 10px; }
+  .note { display: flex; gap: 10px; align-items: flex-start; background: var(--soft); border-radius: 10px; padding: 10px 12px; font-size: 14px; margin: 0 0 12px; }
+  .note b { color: var(--primary); }
+  .new { outline: 2px dashed var(--accent); outline-offset: 3px; border-radius: 8px; }
+  .drop { border: 2px dashed var(--line); border-radius: 12px; padding: 18px; text-align: center; color: var(--muted); }
+  .drop b { color: var(--ink); }
+  .files { list-style: none; padding: 0; margin: 10px 0; }
+  .files li { display: flex; gap: 8px; align-items: center; padding: 6px 0; border-bottom: 1px solid var(--line); font-size: 14px; }
+  .files li .b { margin-left: auto; font-size: 12px; border: 1px solid var(--line); border-radius: 8px; padding: 2px 8px; color: var(--muted); }
+  .pv { display: flex; gap: 14px; align-items: center; background: var(--bg); border-radius: 12px; padding: 12px; }
+  .cover { position: relative; width: 100%; aspect-ratio: 210/297; background: #fff; border: 1px solid var(--line); border-radius: 4px; box-shadow: 2px 3px 6px rgba(15,30,51,.15); padding: 10%; display: flex; flex-direction: column; align-items: center; gap: 8px; overflow: hidden; }
+  .cover .logo { width: 28%; aspect-ratio: 1; flex: none; border-radius: 50%; border: 2px solid #b33; background: #fbecec; }
+  .cover .l { height: 6px; flex: none; width: 80%; background: #c9d2de; border-radius: 2px; }
+  .cover .l.s { width: 55%; } .cover .l.t { height: 9px; width: 90%; background: #5b6f8c; }
+  .cover.text { align-items: stretch; gap: 3%; } .cover.text .l { width: 100%; height: 4px; } .cover.text .l.s { width: 70%; }
+  .cover.drawn { background: var(--primary); border: 0; color: #fff; text-align: center; justify-content: center; gap: 6%; font-size: 11px; line-height: 1.35; }
+  .cover.drawn .bar { width: 40%; height: 3px; background: var(--accent); border-radius: 2px; }
+  .pv .cover { width: 92px; height: 130px; flex: none; }
+  .row { display: grid; grid-template-columns: repeat(auto-fill, minmax(118px, 1fr)); gap: 18px 16px; }
+  .book .m { font-size: 13px; margin-top: 6px; line-height: 1.35; } .book .m span { color: var(--muted); display: block; }
+  .chip { position: absolute; right: 5px; top: 5px; display: flex; align-items: center; gap: 4px; font-size: 11px; font-weight: 600; padding: 3px 8px; border-radius: 999px; background: rgba(15,30,51,.8); color: #fff; border: 0; cursor: pointer; font-family: inherit; }
+  .chip svg { width: 12px; height: 12px; }
+  .bar2 { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin-bottom: 14px; }
+  .btn { display: inline-flex; gap: 6px; align-items: center; border-radius: 10px; padding: 7px 14px; font-weight: 600; font-size: 14px; border: 1px solid var(--line); background: var(--surface); color: var(--primary); font-family: inherit; }
+  .btn.p { background: var(--primary); color: #fff; border-color: var(--primary); }
+  .btn.sm { padding: 4px 10px; font-size: 12px; border-radius: 8px; }
+  .pick .cover { outline: 3px solid var(--accent); outline-offset: 2px; }
+  .ck { position: absolute; left: 6px; top: 6px; width: 22px; height: 22px; border-radius: 6px; background: #fff; border: 2px solid var(--primary); display: grid; place-items: center; color: var(--primary); font-weight: 700; font-size: 14px; }
+  .pick .ck { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .modal { max-width: 420px; border: 1px solid var(--line); border-radius: 14px; padding: 16px; background: var(--surface); box-shadow: 0 10px 30px rgba(15,30,51,.18); }
+  .modal .act { display: flex; gap: 8px; justify-content: flex-end; margin-top: 12px; }
+  .two { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  @media (max-width: 760px) { .two { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+<h1>ปกในคลังงาน ภาพตัวอย่าง</h1>
+<p class="lead">ข้อมูลสมมติ กรอบเส้นประสีเหลือง คือส่วนที่เพิ่มใหม่ เลือกแบบปุ่มผู้ดูแลระบบ (ข้อ 2) 1 แบบ แล้วตอบว่าอยากให้กลับไปใช้รูปจากไฟล์ได้ไหม</p>
+
+<div class="opt">
+  <div class="cap">ข้อ 1 และ 3 หน้าส่งแผนและคู่มือ <span class="tag">มีแบบเดียว</span></div>
+  <p class="why">หมายเหตุสั้น ๆ เหนือช่องเลือกไฟล์ และคำบอกใต้ภาพปกว่าภาพนี้จะเป็นปกในคลังงาน ครูดูได้อย่างเดียว ไม่มีปุ่มเปลี่ยนเป็นปกที่ระบบวาด</p>
+  <div class="card" style="max-width:560px">
+    <b style="font-size:17px">ไฟล์แผนการจัดการเรียนรู้</b>
+    <div class="note new"><span>&#9432;</span><span>ไฟล์ต้องมี<b>หน้าปกและเนื้อหา</b> รวมเป็นไฟล์เดียวมาเอง หรือเลือกหลายไฟล์ให้เว็บรวมให้ก็ได้ <b>หน้าแรกจะเป็นปกในคลังงาน</b></span></div>
+    <div class="drop"><b>ลากไฟล์ PDF มาวางที่นี่ หรือกดเพื่อเลือกไฟล์</b><br><small>เฉพาะ PDF ไม่เกิน 20 MB ต่อไฟล์ เลือกได้หลายไฟล์ ระบบรวมให้</small></div>
+    <ul class="files"><li>1. ปกแผน ว22202.pdf <span class="b">ลง</span><span class="b">เอาออก</span></li><li>2. เนื้อหาแผน ว22202.pdf <span class="b">ขึ้น</span><span class="b">เอาออก</span></li></ul>
+    <div class="pv">
+      <div class="cover"><div class="logo"></div><div class="l t"></div><div class="l"></div><div class="l s"></div></div>
+      <div><b>หน้าปกที่จะส่ง</b><br><small style="color:var(--muted)">หน้าแรกของไฟล์ ปกแผน ว22202.pdf (หน้าปกของไฟล์ที่รวมแล้ว)</small><br>
+        <small class="new" style="display:inline-block;margin:4px 0;padding:2px 4px"><b>ภาพนี้จะเป็นปกในคลังงาน</b></small><br>
+        <small style="color:var(--muted)">ถ้าหน้านี้ไม่ใช่ปก ให้เลื่อนไฟล์ปกขึ้นไว้บนสุด หรือเลือกไฟล์ใหม่</small></div>
+    </div>
+  </div>
+</div>
+
+<div class="opt">
+  <div class="cap">ข้อ 2 แบบ ก ปุ่มเล็กบนปกทุกเล่ม <span class="tag">กด 2 ครั้งต่อเล่ม</span></div>
+  <p class="why">ผู้ดูแลระบบเห็นปุ่มเล็ก ใช้ปกระบบ มุมขวาบนของปก (คนอื่นไม่เห็น) กดแล้วมีป๊อปถามยืนยัน เหมาะเมื่อมีเล่มที่ไม่มีปกไม่กี่เล่ม</p>
+  <div class="two">
+    <div class="card">
+      <div class="row">
+        <div class="book"><div class="cover"><div class="logo"></div><div class="l t"></div><div class="l"></div><div class="l s"></div><button class="chip new"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M4 4h16v16H4z M4 9h16"/></svg>ใช้ปกระบบ</button></div><div class="m">ฟิสิกส์ 1<span>ว31201 · ครูสมมติ ใจดี</span></div></div>
+        <div class="book"><div class="cover text"><div class="l t"></div><div class="l"></div><div class="l"></div><div class="l s"></div><div class="l"></div><div class="l"></div><div class="l s"></div><div class="l"></div><button class="chip new"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M4 4h16v16H4z M4 9h16"/></svg>ใช้ปกระบบ</button></div><div class="m">วิทยาศาสตร์ 2<span>ว22202 · ครูสมมติ มานะ</span></div></div>
+        <div class="book"><div class="cover drawn"><div class="bar"></div><b>คู่มือรายวิชา</b><span>ค21101</span><span>คณิตศาสตร์ 1</span><span>ครูสมมติ รักเรียน</span><div class="bar"></div><button class="chip new"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M3 12a9 9 0 1 0 3-6.7L3 8 M3 3v5h5"/></svg>ใช้รูปจากไฟล์</button></div><div class="m">คณิตศาสตร์ 1<span>ค21101 · ครูสมมติ รักเรียน</span></div></div>
+      </div>
+      <p class="hint" style="margin-top:12px">เล่มที่สามเปลี่ยนเป็นปกระบบไปแล้ว ปุ่มจึงกลายเป็น ใช้รูปจากไฟล์ (ถ้าเลือกให้กลับได้)</p>
+    </div>
+    <div class="modal">
+      <b>เปลี่ยนเป็นปกที่ระบบวาด</b>
+      <p style="margin:8px 0 0">เล่ม ว22202 วิทยาศาสตร์ 2 ของครูสมมติ มานะ จะใช้ปกที่ระบบวาดจากชื่อวิชาและชื่อครูแทนรูปหน้าแรกของไฟล์ ไฟล์งานไม่เปลี่ยน</p>
+      <div class="act"><span class="btn">ยกเลิก</span><span class="btn p">เปลี่ยนปก</span></div>
+    </div>
+  </div>
+</div>
+
+<div class="opt">
+  <div class="cap">ข้อ 2 แบบ ข ปุ่ม จัดการปก แล้วเลือกหลายเล่มพร้อมกัน <span class="tag">หลายเล่มกดครั้งเดียว</span></div>
+  <p class="why">ผู้ดูแลระบบกดปุ่ม จัดการปก มุมบนของหน้าคลัง ทุกเล่มขึ้นช่องติ๊ก กดเลือกเล่มที่ปกไม่ใช่ปก แล้วกด ใช้ปกระบบ ครั้งเดียว ปกติหน้าคลังสะอาด ไม่มีปุ่มบนปก เหมาะเมื่อมีหลายเล่ม</p>
+  <div class="card">
+    <div class="bar2 new" style="padding:6px"><b>เลือกแล้ว 2 เล่ม</b><span class="btn sm p">ใช้ปกระบบ 2 เล่ม</span><span class="btn sm">ใช้รูปจากไฟล์</span><span class="btn sm" style="margin-left:auto">เสร็จ</span></div>
+    <div class="row">
+      <div class="book"><div class="cover"><div class="logo"></div><div class="l t"></div><div class="l"></div><div class="l s"></div><span class="ck"></span></div><div class="m">ฟิสิกส์ 1<span>ว31201 · ครูสมมติ ใจดี</span></div></div>
+      <div class="book pick"><div class="cover text"><div class="l t"></div><div class="l"></div><div class="l"></div><div class="l s"></div><div class="l"></div><div class="l"></div><div class="l s"></div><div class="l"></div><span class="ck">&#10003;</span></div><div class="m">วิทยาศาสตร์ 2<span>ว22202 · ครูสมมติ มานะ</span></div></div>
+      <div class="book pick"><div class="cover text"><div class="l t"></div><div class="l s"></div><div class="l"></div><div class="l"></div><div class="l"></div><div class="l s"></div><span class="ck">&#10003;</span></div><div class="m">ภาษาไทย 3<span>ท23101 · ครูสมมติ ขยัน</span></div></div>
+      <div class="book"><div class="cover drawn"><div class="bar"></div><b>คู่มือรายวิชา</b><span>ค21101</span><span>คณิตศาสตร์ 1</span><span>ครูสมมติ รักเรียน</span><div class="bar"></div><span class="ck"></span></div><div class="m">คณิตศาสตร์ 1<span>ค21101 · ครูสมมติ รักเรียน</span></div></div>
+    </div>
+    <p class="hint" style="margin-top:12px">ก่อนกดจัดการปก มุมบนมีปุ่ม <span class="btn sm new">จัดการปก</span> ข้างปุ่มสลับมุมมอง เฉพาะผู้ดูแลระบบ</p>
+  </div>
+</div>
+
+<div class="opt">
+  <div class="cap">คำถามเพิ่ม กลับไปใช้รูปจากไฟล์ได้ไหม</div>
+  <p class="why">ถ้าได้: กดแล้วเครื่องผู้ดูแลเปิดไฟล์ PDF ทำรูปหน้าแรกใหม่ (แบบปุ่ม สร้างปกงานเดิม) เผื่อกดผิดเล่ม · ถ้าไม่ได้: เปลี่ยนแล้วเปลี่ยนเลย ปุ่มน้อยกว่า ถ้าครูส่งไฟล์ใหม่ที่มีปก ปกจะกลับมาเป็นรูปจากไฟล์เองอยู่แล้ว</p>
+</div>
+</body>
+</html>

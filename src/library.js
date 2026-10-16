@@ -4,6 +4,7 @@
 const crypto = require('crypto');
 const { q } = require('./db');
 const wf = require('./workflow');
+const { DRAWN } = require('./upload');
 
 // โหลดทีละหน้า หน้าละ 24 เล่ม
 const PAGE = 24;
@@ -109,13 +110,20 @@ function openHref(row) {
 
 // ที่อยู่รูปปก ?v= เปลี่ยนเมื่อรูปเปลี่ยน เบราว์เซอร์จึงจำรูปได้นาน · ไม่มีรูปได้ null (ใช้ปกที่ระบบวาด)
 function coverUrl(row) {
-  if (!row.cover_ref) return null;
+  if (!row.cover_ref || row.cover_ref === DRAWN) return null;
   return `/library/cover/${row.id}?v=${crypto.createHash('md5').update(String(row.cover_ref)).digest('hex').slice(0, 8)}`;
+}
+
+// ปุ่มเปลี่ยนปกของผู้ดูแลระบบ (ฟังก์ชันเสริม coverswap) เฉพาะแผนและคู่มือ
+// ปกตอนนี้: 'img' รูปจากไฟล์ (ปุ่มบนปก ใช้ปกระบบ) · 'drawn' ผู้ดูแลเลือกปกระบบไว้ · 'none' ยังไม่มีรูป (สองแบบหลังปุ่มบนปก ใช้รูปจากไฟล์)
+function swapOf(row, me, ff) {
+  if (!me.is_admin || !ff.library || !ff.coverswap || row.kind === 'note') return null;
+  return row.cover_ref === DRAWN ? 'drawn' : row.cover_ref ? 'img' : 'none';
 }
 
 // ข้อมูลสำหรับหน้าเว็บ
 function decorate(rows, me, ff) {
-  return rows.map((r) => ({ ...r, open: canOpen(me, r, ff), href: openHref(r), cover: coverUrl(r), mine: me.id === r.teacher_id, shelfLabel: (SHELF[r.kind] || {}).label || '' }));
+  return rows.map((r) => ({ ...r, open: canOpen(me, r, ff), href: openHref(r), cover: coverUrl(r), swap: swapOf(r, me, ff), mine: me.id === r.teacher_id, shelfLabel: (SHELF[r.kind] || {}).label || '' }));
 }
 
 // เปิดอ่านงานคนอื่นจากคลังได้ไหม (สวิตช์ libread) ใช้กับไฟล์งานและหน้าพิมพ์บันทึกหลังแผนทั้งเล่ม
@@ -132,4 +140,4 @@ async function readable(ff, sub, { book = false } = {}) {
   return r.n > 0 && !r.bad;
 }
 
-module.exports = { PAGE, COVER_MAX, SHELVES, SHELF, page, recent, canOpen, openHref, coverUrl, decorate, readable };
+module.exports = { DRAWN, PAGE, COVER_MAX, SHELVES, SHELF, page, recent, canOpen, openHref, coverUrl, decorate, readable };
