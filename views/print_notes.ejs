@@ -2,6 +2,6 @@
 <% if (!items.length) { %>
   <div class="paper"><p style="text-align:center">ยังไม่มีบันทึกหลังแผนที่ส่งแล้วในเล่มนี้</p></div>
 <% } %>
-<% for (const it of items) { %><%- include('partials/note_page', { it }) %><% } %>
+<%- include('partials/note_pages', { items }) %>
 </body>
 </html>

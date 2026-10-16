@@ -100,6 +100,18 @@ test('หน้าแรกครู: วิชาที่ไม่ใช่ว
   assert.match(home, /คู่มือ ว31101 ยังไม่ส่ง/);
   assert.doesNotMatch(home, /แผน ว30207 ยังไม่ส่ง/);
   assert.match(home, /href="\/works\/new\?type=manual&amp;code=%E0%B8%A731101"/, 'ลิงก์ส่งคู่มือเติมรหัสวิชาให้');
+  // ปุ่มลงมือในช่อง (homeact): ช่องที่ต้องส่งเป็นปุ่ม ไม่ต้องส่งเป็นช่องเทาเรียบ ใต้รหัสวิชาบอกจำนวนที่ต้องทำ
+  assert.match(home, /class="btn btn-sm cell-act btn-primary" href="\/works\/new\?type=manual&amp;code=%E0%B8%A731101">กดส่งคู่มือ</);
+  assert.match(home, /class="btn btn-sm cell-act btn-danger"[^>]*>กดแก้ไข</);
+  assert.match(home, /<span class="cell-off">ไม่ต้องส่ง<\/span>/);
+  assert.match(home, /ต้องทำ 1 อย่าง/);
+  assert.doesNotMatch(home, /class="btn btn-sm go /, 'ไม่มีปุ่มท้ายแถวซ้ำกับปุ่มในช่อง');
+  const admin = await as('admin');
+  await admin.post('/admin/features/homeact', { on: '0' });
+  const old = (await t.get('/')).text;
+  assert.doesNotMatch(old, /cell-act/);
+  assert.match(old, /class="btn btn-sm go /, 'ปิดแล้วกลับเป็นป้ายและปุ่มท้ายแถวแบบเดิม');
+  await admin.post('/admin/features/homeact', { on: '1' });
   const form = (await t.get('/works/new?type=manual&code=' + encodeURIComponent('ว31101'))).text;
   assert.match(form, /value="วิทยาศาสตร์กายภาพ"/, 'ชื่อวิชาเติมให้จากรายวิชาที่สอน');
   assert.match(form, /accept=".pdf,application\/pdf/);

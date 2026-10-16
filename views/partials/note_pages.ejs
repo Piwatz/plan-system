@@ -1,0 +1,16 @@
+<%
+  // บันทึกหลังแผนหลายแผ่น จัดเป็นเล่มตามแผน (parent_id) ใช้ในพิมพ์ทีละฉบับ ทั้งเล่ม และแฟ้ม PA
+  // เล่มที่มีแผ่นใดใช้หน้ารวมลงนาม (layout summary) มีหน้ารวมเป็นแผ่นแรกของเล่ม ตารางแสดงทุกแผ่นของเล่มที่พิมพ์
+  const books = new Map();
+  for (const it of items) {
+    const k = it.sub.parent_id ? 'p' + it.sub.parent_id : 's' + it.sub.id;
+    if (!books.has(k)) books.set(k, []);
+    books.get(k).push(it);
+  }
+  const hasPdf = items.some((it) => it.sub.note_mode === 'file' && it.layout && it.layout !== 'legacy');
+%>
+<% for (const book of books.values()) { %>
+  <% if (book.some((it) => it.layout === 'summary')) { %><%- include('note_summary', { items: book }) %><% } %>
+  <% for (const it of book) { %><%- include('note_page', { it }) %><% } %>
+<% } %>
+<% if (hasPdf) { %><script type="module" src="/static/js/pdfprint.js?v=<%= assetVersion %>"></script><% } %>

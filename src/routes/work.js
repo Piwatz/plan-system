@@ -521,8 +521,13 @@ router.get('/s/:id', async (req, res) => {
       }
     }
   }
+  // ดึงทั้งเล่มกลับ: เจ้าของเล่ม มีแผ่นรอตรวจ และยังไม่มีผู้ตรวจลงนามแผ่นใดหลังส่งครั้งล่าสุด
+  const pendingMine = req.ff.notebook && wf.isOwner(req.me, sub) ? notes.filter((n) => n.status === 'pending').map((n) => n.id) : [];
+  const bookPull = (await wf.canWithdrawMany(pendingMine)) ? pendingMine.length : 0;
   res.render('detail', {
     title: `${wf.DOC_TYPES[sub.doc_type].label} ${sub.subject_code}`,
+    bookPull,
+    planGaps: planGaps(notes),
     sub,
     files,
     notes,
@@ -833,8 +838,16 @@ async function printDataMany(subs) {
   if (noteIds.length) {
     for (const f of await q.all('SELECT * FROM files WHERE submission_id = ANY(?) AND is_current = 1 ORDER BY id', noteIds)) files.get(f.submission_id).push(f);
   }
+  const ns = features.noteSign(null);
   return subs.map((sub, i) => {
     const revs = reviews.get(sub.id) || [];
+    // การจัดหน้าลงนามของบันทึกหลังแผน (ฟังก์ชันเสริม notesign): form ฟอร์มเดิม · bar แถบท้ายแผ่น · summary หน้ารวมลงนาม
+    // แผ่นที่ครูแนบไฟล์ ใช้แบบที่ตั้งไว้ได้เมื่อมีไฟล์ PDF หรือรูปที่วาดในหน้าพิมพ์ได้ ไม่อย่างนั้นใช้หน้าความเห็นแยกแบบเดิม (legacy)
+    const noteFiles = sub.doc_type === 'note' ? files.get(sub.id) : [];
+    let layout = 'form';
+    if (sub.doc_type === 'note' && sub.note_mode === 'file') {
+      layout = ns && noteFiles.some((f) => /^(application\/pdf|image\/)/.test(f.mime)) ? ns.pdf : 'legacy';
+    } else if (sub.doc_type === 'note' && ns) layout = ns.web;
     // วันที่ส่งครั้งแรก และผู้ให้คะแนนคนล่าสุด
     const firstSubmit = revs.find((r) => r.action === 'submit' || r.action === 'resubmit');
     const scorer = [...revs].reverse().find((r) => r.action === 'approve' && r.score_total != null);
@@ -846,7 +859,8 @@ async function printDataMany(subs) {
       gradeFull: gradeFull(sub.grade_level),
       deptFull: deptFull(sub.dept_name),
       submitDate: firstSubmit ? firstSubmit.created_at : sub.created_at,
-      files: sub.doc_type === 'note' ? files.get(sub.id) : [],
+      files: noteFiles,
+      layout,
     };
   });
 }
@@ -906,6 +920,25 @@ function bookNotes(planId, statuses) {
 async function bookWaiting(req, planId) {
   return (await bookNotes(planId, ['pending'])).filter((n) => wf.canReview(req.me, n));
 }
+
+// เลขแผนที่ข้ามในเล่ม เช่น มีแผนที่ 3 และ 5 แต่ไม่มี 4 (นับเฉพาะเลขล้วน ระหว่างเลขน้อยสุดกับมากสุด) ใช้เตือนก่อนส่งทั้งเล่ม
+function planGaps(notes) {
+  const nums = new Set(notes.map((n) => String(n.plan_no || '').trim()).filter((x) => /^\d{1,3}$/.test(x)).map(Number));
+  if (nums.size < 2) return [];
+  const out = [];
+  for (let k = Math.min(...nums) + 1; k < Math.max(...nums); k++) if (!nums.has(k)) out.push(k);
+  return out;
+}
+
+router.post('/s/:id/withdraw-book', async (req, res) => {
+  needBook(req);
+  const plan = await bookPlan(req, req.params.id);
+  if (!wf.isOwner(req.me, plan)) throw new UserError('ดึงกลับได้เฉพาะเล่มของตนเอง');
+  const ids = (await bookNotes(plan.id, ['pending'])).map((n) => n.id);
+  if (!ids.length) throw new UserError('ไม่มีแผ่นที่รอตรวจในเล่มนี้');
+  const n = await wf.withdrawMany(ids, req.me);
+  respond(req, res, `/s/${plan.id}#notes`, 'success', `ดึงบันทึกหลังแผนกลับทั้งเล่มแล้ว ${n} แผ่น แก้หรือเพิ่มแผ่นเสร็จ อย่าลืมกดส่งทั้งเล่มอีกครั้ง`);
+});
 
 router.post('/s/:id/submit-book', async (req, res) => {
   needBook(req);

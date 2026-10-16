@@ -1,6 +1,6 @@
 <%- include('../partials/top') %>
 <%
-  const ICON = { mobilesheet: 'eye', chips: 'chips', notefile: 'file', counts: 'chart', quicksign: 'cards', voice: 'mic', filecheck: 'check', board: 'board', results: 'chart', pa: 'folder', qr: 'qr', prefs: 'moon', line: 'chat', teachlist: 'books', onemain: 'star', pdfonly: 'file', pdfmerge: 'copy', selfsign: 'edit', noactivity: 'close', ttimport: 'download', coverpreview: 'eye', namepick: 'users', pin: 'shield', namefix: 'edit', methodother: 'edit', notebook: 'books', notepdf: 'file' };
+  const ICON = { mobilesheet: 'eye', chips: 'chips', notefile: 'file', counts: 'chart', quicksign: 'cards', voice: 'mic', filecheck: 'check', board: 'board', results: 'chart', pa: 'folder', qr: 'qr', prefs: 'moon', line: 'chat', teachlist: 'books', onemain: 'star', pdfonly: 'file', pdfmerge: 'copy', selfsign: 'edit', noactivity: 'close', ttimport: 'download', coverpreview: 'eye', namepick: 'users', pin: 'shield', namefix: 'edit', methodother: 'edit', notebook: 'books', notepdf: 'file', notesign: 'edit', homeact: 'check' };
 %>
 <div class="page-head">
   <div>
@@ -31,6 +31,24 @@
   </div>
 
   <div>
+    <% if (noteSign) { %>
+      <section class="card" id="notesign">
+        <h2>จัดหน้าลงนามบันทึกหลังแผน</h2>
+        <p class="muted small">มีผลตอนพิมพ์ทุกครั้ง ทั้งพิมพ์ทีละฉบับ ทั้งเล่ม และแฟ้ม PA เปลี่ยนเมื่อไรก็ได้ งานที่ลงนามแล้วไม่ต้องลงนามใหม่ ถ้ามีแผ่นใดใช้หน้ารวมลงนาม ระบบใส่หน้ารวมไว้หน้าแรกของเล่ม ตารางแสดงครบทุกแผน</p>
+        <form method="post" action="/admin/notesign" data-confirm="เปลี่ยนการจัดหน้าลงนามบันทึกหลังแผน มีผลกับการพิมพ์ครั้งต่อไปของทุกคน" data-ok-label="บันทึก">
+          <% for (const [kind, head] of [['web', 'แผ่นที่ครูพิมพ์ในเว็บ'], ['pdf', 'แผ่น PDF ที่ครูแนบ']]) { %>
+            <fieldset class="field" style="border:0;padding:0;margin:0 0 12px">
+              <legend class="label" style="font-weight:700"><%= head %></legend>
+              <% for (const o of noteSignOpts[kind]) { %>
+                <label class="check" style="margin-top:6px"><input type="radio" name="<%= kind %>" value="<%= o.key %>" <%= noteSign[kind] === o.key ? 'checked' : '' %>> <%= o.label %></label>
+              <% } %>
+            </fieldset>
+          <% } %>
+          <button class="btn btn-primary" type="submit">บันทึกการจัดหน้า</button>
+        </form>
+      </section>
+    <% } %>
+
     <section class="card" id="phrases">
       <h2>ประโยคสำเร็จรูป</h2>
       <p class="muted small">ครูแตะเลือกในหน้าเขียนบันทึกหลังแผน ใส่ [ ] ตรงคำที่ครูต้องแก้เอง เช่น ตัวเลข หรือชื่อเรื่อง</p>

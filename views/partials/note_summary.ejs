@@ -1,0 +1,42 @@
+<%
+  // หน้ารวมลงนามบันทึกหลังแผน 1 เล่ม (ฟังก์ชันเสริม notesign แบบ summary) วางหน้าแรกของเล่ม
+  // ตารางแสดงทุกแผ่นที่พิมพ์ · ช่องลงนามแต่ละระดับ ใส่ลายเซ็นเมื่อทุกแผ่นลงนามระดับนั้นครบแล้ว (ใช้การลงนามครั้งล่าสุด)
+  const first = items[0].sub;
+  const DEFAULT = 'รับทราบ';
+  const steps = items[0].steps.map((st0) => {
+    const all = items.map((it) => it.steps.find((x) => x.role === st0.role)).filter(Boolean);
+    const done = all.length === items.length && all.every((x) => x.state === 'done' && x.review && x.review.action !== 'override');
+    const skipped = all.length === items.length && all.every((x) => x.state === 'skipped');
+    const over = all.some((x) => x.review && x.review.action === 'override');
+    let review = null;
+    if (done) {
+      const last = all.map((x) => x.review).reduce((a, b) => (String(b.created_at) > String(a.created_at) ? b : a));
+      review = { ...last, comment: '' };
+    } else if (over && all.every((x) => x.state === 'done')) review = { action: 'override' };
+    return { ...st0, state: done ? 'done' : skipped ? 'skipped' : 'waiting', review };
+  });
+  const comments = (it) => {
+    const out = [];
+    for (const st of it.steps) {
+      const c = st.review && st.review.action !== 'override' && String(st.review.comment || '').trim();
+      if (c && c !== DEFAULT) out.push(c);
+    }
+    return out.length ? out.join(' / ') : it.steps.some((st) => st.state === 'done') ? DEFAULT : '';
+  };
+%>
+<div class="paper note-summary">
+  <%- include('qr_corner', { qr: items[0].qr }) %>
+  <h2 class="doc">บันทึกหลังแผนการจัดการเรียนรู้ หน้ารวมลงนาม</h2>
+  <div class="center">รายวิชา<%= first.subject_name %> รหัสวิชา <%= first.subject_code %> ชั้น <%= items[0].gradeFull %> ภาคเรียนที่ <%= first.semester %> ปีการศึกษา <%= first.academic_year %></div>
+  <div class="center">ครูผู้สอน <%= first.teacher_name %> <%= first.dept_name ? items[0].deptFull : '' %></div>
+  <table class="grid sum">
+    <thead><tr><th style="width:14mm">แผนที่</th><th>เรื่อง</th><th style="width:30mm">วันที่สอน</th><th style="width:48mm">ความเห็น</th></tr></thead>
+    <tbody>
+      <% for (const it of items) { %>
+        <tr><td class="c"><%= it.sub.plan_no %></td><td><%= it.sub.topic %></td><td class="c"><%= util.thaiDate(it.sub.teach_date, true) %></td><td><%= comments(it) %></td></tr>
+      <% } %>
+    </tbody>
+  </table>
+  <div class="center small">รวม <%= items.length %> แผ่น</div>
+  <div class="strip" style="--n:<%= steps.length || 1 %>"><% for (const st of steps) { %><%- include('sign_box', { st, sub: first, submitDate: items[0].submitDate, side: 'bar' }) %><% } %></div>
+</div>

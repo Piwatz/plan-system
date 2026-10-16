@@ -21,6 +21,8 @@
     title = 'หัวหน้างานส่งเสริมพัฒนาการเรียนรู้ฯ';
     position = st.label + 'ฯ';
   }
+  // แถบลงนามแนวนอน (side bar) ช่องแคบ ใช้หัวข้อแบบย่อ เช่น ความเห็นหัวหน้ากลุ่มสาระฯ
+  if (locals.side === 'bar') title = st.label.replace(/(การเรียนรู้|กลุ่มบริหาร|ส่งเสริม).*$/, 'ฯ').replace(/สถานศึกษา$/, '');
 %>
 <div class="box<%= locals.side ? ' ' + side : '' %>">
   <div class="t">ความเห็นของ<%= title %></div>

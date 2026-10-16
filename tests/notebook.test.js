@@ -259,3 +259,77 @@ test('บันทึกหลังแผนแนบได้เฉพาะ P
   assert.equal((await send('63', [[png(), 'ภาพ.png']])).status, 200);
   await admin.post('/admin/features/notepdf', { on: '1' });
 });
+
+test('ดึงกลับทั้งเล่มได้ก่อนผู้ตรวจลงนาม และเตือนเลขแผนข้ามก่อนส่งทั้งเล่ม', async () => {
+  const t = await as('teacher');
+  const planA = await planOf('ว30203');
+  // เล่มที่ผู้ตรวจลงนามบางแผ่นแล้ว ดึงกลับไม่ได้ ไม่มีแผ่นไหนถูกดึง
+  assert.doesNotMatch((await t.get(`/s/${planA}`)).text, /withdraw-book/);
+  const before = await notesWhere(planA, "status = 'pending'");
+  assert.ok(before.length);
+  await t.post(`/s/${planA}/withdraw-book`, {});
+  assert.deepEqual(await notesWhere(planA, "status = 'pending'"), before);
+
+  const s2 = await as('sci2');
+  const planB = await planOf('ว21101');
+  const pend = await notesWhere(planB, "status = 'pending'");
+  assert.equal(pend.length, 1);
+  assert.match((await s2.get(`/s/${planB}`)).text, /ดึงกลับทั้งเล่ม \(1 แผ่น\)/);
+  // คนอื่นดึงกลับไม่ได้
+  await t.post(`/s/${planB}/withdraw-book`, {});
+  assert.equal((await statusOf(pend[0])).status, 'pending');
+  const r = await s2.post(`/s/${planB}/withdraw-book`, {});
+  assert.equal(r.location, `/s/${planB}#notes`);
+  assert.equal((await statusOf(pend[0])).status, 'draft');
+  assert.equal((await statusOf(pend[0])).current_role, null);
+  assert.equal((await lastReview(pend[0])).action, 'withdraw');
+  assert.doesNotMatch((await s2.get(`/s/${planB}`)).text, /withdraw-book/);
+
+  // มีแผนที่ 1 และ 4 ไม่มี 2 กับ 3 เตือนในหน้าแผนและในป๊อปยืนยัน แต่ยังส่งได้
+  await s2.post('/notes', { plan_id: String(planB), plan_no: '4', result_k: 'เข้าใจ', action: 'draft' });
+  const page = (await s2.get(`/s/${planB}`)).text;
+  assert.match(page, /เลขแผนข้าม <b>ยังไม่มีบันทึกของแผนที่ 2 3<\/b>/);
+  assert.match(page, /data-confirm="[^"]*\nเลขแผนข้าม ยังไม่มีบันทึกของแผนที่ 2 3"/);
+  await s2.post(`/s/${planB}/submit-book`, {});
+  assert.equal((await statusOf(pend[0])).status, 'pending');
+});
+
+test('จัดหน้าลงนามบันทึกหลังแผน: เฉพาะผู้ดูแลระบบเปลี่ยนได้ แถบท้ายแผ่น หน้ารวมลงนาม และบันทึกประวัติ', async () => {
+  const t = await as('teacher');
+  const admin = await as('admin');
+  const planId = await planOf('ว30203');
+  const setting = async (k) => (await db.q.get('SELECT value FROM settings WHERE key = ?', k) || {}).value;
+  // ค่าเริ่มต้น แผ่นในเว็บเป็นฟอร์มเดิม
+  let print = (await t.get(`/s/${planId}/print-notes`)).text;
+  assert.match(print, /class="box note"/);
+  assert.doesNotMatch(print, /หน้ารวมลงนาม<\/h2>/);
+  // ครูเปลี่ยนไม่ได้
+  await t.post('/admin/notesign', { web: 'summary', pdf: 'summary' });
+  assert.equal(await setting('note_sign_web'), undefined);
+  // ค่าที่ไม่รู้จักไม่บันทึก
+  await admin.post('/admin/notesign', { web: 'zzz', pdf: 'form' });
+  assert.equal(await setting('note_sign_web'), undefined);
+  assert.equal(await setting('note_sign_pdf'), undefined);
+
+  await admin.post('/admin/notesign', { web: 'bar', pdf: 'bar' });
+  print = (await t.get(`/s/${planId}/print-notes`)).text;
+  assert.match(print, /class="strip"/);
+  assert.doesNotMatch(print, /class="box note"/);
+  assert.match(print, /ความเห็นของหัวหน้ากลุ่มสาระฯ/);
+
+  await admin.post('/admin/notesign', { web: 'summary', pdf: 'bar' });
+  print = (await t.get(`/s/${planId}/print-notes`)).text;
+  assert.equal((print.match(/หน้ารวมลงนาม<\/h2>/g) || []).length, 1, 'หน้ารวม 1 แผ่นต่อเล่ม');
+  assert.doesNotMatch(print, /class="box note"/, 'แผ่นในเว็บไม่มีช่องผู้ตรวจ');
+  assert.match(print, /alt="ลายเซ็นผู้สอน"/, 'ยังมีลายเซ็นครู');
+  assert.ok(await db.q.get("SELECT 1 AS x FROM audit_log WHERE action ILIKE 'เปลี่ยนการจัดหน้าลงนาม%หน้ารวมลงนาม%'"));
+
+  // ปิดฟังก์ชัน กลับเป็นฟอร์มเดิม ค่าที่เลือกไว้ยังอยู่
+  await admin.post('/admin/features/notesign', { on: '0' });
+  print = (await t.get(`/s/${planId}/print-notes`)).text;
+  assert.match(print, /class="box note"/);
+  assert.doesNotMatch(print, /หน้ารวมลงนาม<\/h2>/);
+  assert.equal(await setting('note_sign_web'), 'summary');
+  await admin.post('/admin/features/notesign', { on: '1' });
+  await admin.post('/admin/notesign', { web: 'form', pdf: 'bar' });
+});

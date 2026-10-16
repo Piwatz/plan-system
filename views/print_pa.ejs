@@ -64,6 +64,6 @@
   <% if (inc.has('eval') && w.sub.score_max) { %><%- include('partials/eval_page', { ...w, rubric: rubrics[w.sub.doc_type] }) %><% } %>
 <% } %>
 
-<% for (const it of notePages) { %><%- include('partials/note_page', { it }) %><% } %>
+<%- include('partials/note_pages', { items: notePages }) %>
 </body>
 </html>

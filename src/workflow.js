@@ -583,6 +583,59 @@ async function withdraw(subId, actor) {
   });
 }
 
+// การส่งครั้งล่าสุดของแต่ละงาน (Map id → submit/resubmit) หรือ null ถ้ามีงานใดที่ผู้ตรวจลงนามแล้วหลังส่งครั้งล่าสุด (ดึงกลับไม่ได้)
+async function lastSends(ids) {
+  const revs = await q.all(
+    "SELECT id, submission_id, action FROM reviews WHERE submission_id = ANY(?) AND action IN ('submit', 'resubmit', 'approve', 'override') ORDER BY id",
+    ids
+  );
+  const last = new Map();
+  const signed = new Set();
+  for (const r of revs) {
+    if (r.action === 'submit' || r.action === 'resubmit') {
+      last.set(r.submission_id, r.action);
+      signed.delete(r.submission_id);
+    } else signed.add(r.submission_id);
+  }
+  return signed.size || ids.some((id) => !last.has(id)) ? null : last;
+}
+
+// ดึงกลับทั้งเล่มได้ไหม (ทุกแผ่นที่รอตรวจยังไม่มีผู้ตรวจลงนาม) ใช้แสดงปุ่มในหน้าแผน
+async function canWithdrawMany(ids) {
+  return ids.length > 0 && Boolean(await lastSends(ids));
+}
+
+// ดึงบันทึกหลังแผนกลับทั้งเล่ม (ฟังก์ชันเสริม notebook) ได้เมื่อทุกแผ่นที่ขอยังรอตรวจ และยังไม่มีผู้ตรวจลงนามหลังส่งครั้งล่าสุด
+// แผ่นใดลงนามไปแล้ว ไม่ดึงกลับสักแผ่น · จำนวนคำสั่งคงที่ไม่ว่ากี่แผ่น · คืนจำนวนแผ่นที่ดึงกลับ
+async function withdrawMany(ids, actor) {
+  await db.ensureRefs();
+  const want = [...new Set(ids)];
+  if (!want.length) return 0;
+  return q.tx(async () => {
+    const rows = await q.all(`SELECT ${subCols()} FROM submissions WHERE id = ANY(?) ORDER BY id FOR UPDATE`, want);
+    if (rows.length !== want.length) throw new WorkflowError('ไม่พบงานบางฉบับ');
+    for (const s of rows) {
+      if (!isOwner(actor, s)) throw new WorkflowError('ดึงกลับได้เฉพาะงานของตนเอง');
+      if (s.status !== 'pending') throw new WorkflowError('มีบางแผ่นไม่ได้รอตรวจแล้ว');
+    }
+    const last = await lastSends(want);
+    if (!last) throw new WorkflowError('ดึงกลับทั้งเล่มไม่ได้ เพราะมีผู้ตรวจลงนามบางแผ่นแล้ว');
+    await logMany(
+      rows.map((s) => ({ sub: s.id, actor, step_label: 'ครูผู้สอน', action: 'withdraw' })),
+      null,
+      nowStr()
+    );
+    await q.run(
+      `UPDATE submissions s SET status = v.status, current_role = NULL, updated_at = ?
+       FROM unnest(?::int[], ?::text[]) AS v(id, status) WHERE s.id = v.id`,
+      nowStr(),
+      rows.map((s) => s.id),
+      rows.map((s) => (last.get(s.id) === 'resubmit' ? 'returned' : 'draft'))
+    );
+    return rows.length;
+  });
+}
+
 // ---------- ผู้ดูแลระบบดำเนินการแทน ----------
 // ใช้แก้ปัญหางานค้าง: ส่งแทนครู หรือดันงานผ่านระดับที่ผู้ตรวจไม่ลงนาม
 // ไม่ใส่ลายเซ็นของคนอื่นแทน ช่องลายเซ็นในเอกสารจะเว้นไว้ให้เซ็นด้วยมือ และบันทึกในประวัติทุกครั้ง
@@ -743,6 +796,8 @@ async function inbox(user) {
 
 module.exports = {
   onAdvance,
+  withdrawMany,
+  canWithdrawMany,
   DOC_TYPES,
   ACTION_LABELS,
   STATUS_LABELS,

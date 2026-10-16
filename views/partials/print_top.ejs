@@ -100,6 +100,21 @@
   .box.note .spot { border-bottom: 1px dotted #444; }
   .box.note .sig-date { position: static; width: 50%; margin: -0.8mm 0 0 auto; text-align: center; line-height: 1; }
   .box.note .sig-date::before { content: 'ลงนามวันที่ '; }
+  /* แถบลงนามแนวนอนท้ายแผ่น (ฟังก์ชันเสริม notesign แบบ bar และหน้ารวมลงนาม) 1 ช่องต่อ 1 ระดับ */
+  .strip { display: grid; grid-template-columns: repeat(var(--n, 3), minmax(0, 1fr)); column-gap: 4mm; margin-top: 5mm; padding-top: 2mm; border-top: 1px solid #000; font-size: calc(14pt * var(--fit, 1)); break-inside: avoid; }
+  .box.bar .t { text-align: center; line-height: 1.05; min-height: 2.1em; }
+  .box.bar .sl { margin-top: 3mm; text-align: center; padding-left: 0; }
+  .box.bar .spot { width: 34mm; border-bottom: 1px dotted #444; }
+  .box.bar .spot img { height: 8.5mm; max-width: 34mm; }
+  .box.bar .ps { line-height: 1.05; }
+  .box.bar .sig-date { position: static; text-align: center; line-height: 1; }
+  .center { text-align: center; }
+  table.grid.sum { margin-top: 4mm; }
+  /* แผ่น PDF ของครู วาดเป็นภาพในเครื่อง หน้าเต็มย่อให้พอดีพื้นที่พิมพ์ แบบ bar ย่อหน้าสุดท้ายราว 72% ของ A4 แล้วเติมแถบลงนาม */
+  .pdf-slot { text-align: center; }
+  .pdf-slot img { display: block; margin: 0 auto; max-width: 100%; max-height: 268mm; outline: 1px solid #bbb; }
+  .note-pdf.bar .pdf-slot img { max-height: 200mm; max-width: 151mm; }
+  .pdf-wait { display: block; padding: 40mm 0; color: #444; font-family: 'Kanit', sans-serif; font-size: 14px; }
   .box.full { grid-column: 1 / -1; width: 90.3mm; justify-self: center; margin-top: 0.6mm; }
   .box.full .t { text-align: center; white-space: nowrap; margin: 0 -20mm; }
   .box.l .t, .box.r .t { white-space: nowrap; }
@@ -123,6 +138,7 @@
     .paper, .paper.memo, .paper.eval { width: auto; min-height: 0; margin: 0; padding: 0; box-shadow: none; }
     .paper + .paper { margin-top: 0; break-before: page; }
     .qr-corner { top: 0; right: 0; }
+    .pdf-slot img { outline: 0; }
     .cover { min-height: 255mm; }
     .cover.color { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
   }
@@ -198,7 +214,7 @@
       return bottom - top;
     }
     document.querySelectorAll('.paper').forEach(function (p) {
-      if (!p.querySelector('.box.note')) return;
+      if (!p.classList.contains('note-sheet')) return;
       if (Math.abs(p.getBoundingClientRect().width - 210 * mm) > 2 * mm) return;
       p.style.removeProperty('--fit');
       var h = height(p);

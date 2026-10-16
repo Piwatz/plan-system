@@ -67,7 +67,8 @@ async function mySubjects(userId, t) {
     `SELECT ${wf.subCols('s')},
        (SELECT COUNT(*) FROM submissions n WHERE n.parent_id = s.id AND n.doc_type = 'note') AS note_total,
        (SELECT COUNT(*) FROM submissions n WHERE n.parent_id = s.id AND n.doc_type = 'note' AND n.status = 'approved') AS note_done,
-       (SELECT COUNT(*) FROM submissions n WHERE n.parent_id = s.id AND n.doc_type = 'note' AND n.status IN ('draft', 'returned')) AS note_todo
+       (SELECT COUNT(*) FROM submissions n WHERE n.parent_id = s.id AND n.doc_type = 'note' AND n.status IN ('draft', 'returned')) AS note_todo,
+       (SELECT COUNT(*) FROM submissions n WHERE n.parent_id = s.id AND n.doc_type = 'note' AND n.status = 'returned') AS note_back
      FROM submissions s
      WHERE s.teacher_id = ? AND s.doc_type IN ('manual', 'plan') AND s.academic_year = ? AND s.semester = ?
      ORDER BY s.subject_code, s.id`,
@@ -152,10 +153,42 @@ function rowCells(r) {
   return [plan, manual, notes];
 }
 
+// ช่องแบบปุ่มลงมือ (ฟังก์ชันเสริม homeact): ช่องที่ครูต้องทำเป็นปุ่มเด่นกดได้ในช่องนั้นเลย (ถูกส่งกลับเป็นปุ่มแดง)
+// ช่องที่ไม่ต้องส่งเป็นช่องเทาเรียบ (off) สถานะอื่นเป็นป้ายเหมือนเดิม · act = ช่องที่ครูต้องลงมือ ใช้นับ ต้องทำ N อย่าง
+function actCells(r, ff) {
+  const act = (text, href, red = false) => ({ text, href, act: true, red });
+  const work = (s, type) => {
+    if (!s) return act(type === 'plan' ? 'กดส่งแผน' : 'กดส่งคู่มือ', newHref(type, r));
+    if (s.status === 'returned') return act('กดแก้ไข', `/s/${s.id}/edit`, true);
+    if (s.status === 'draft') return act('ร่างไว้ กดส่ง', `/s/${s.id}`);
+    return { ...cell(s), href: `/s/${s.id}` };
+  };
+  const plan = r.needPlan ? work(r.plan, 'plan') : { text: 'ไม่ต้องส่ง', off: true };
+  const manual = work(r.manual, 'manual');
+  const p = r.plan;
+  let notes;
+  if (!p || p.status === 'draft') notes = { text: r.needPlan ? 'ส่งแผนก่อน' : 'ไม่ต้องเขียน', off: true };
+  else if (Number(p.note_back)) notes = act('กดแก้ไข', `/s/${p.id}#notes`, true);
+  else if (Number(p.note_todo)) notes = act(ff.notebook ? 'กดส่งทั้งเล่ม' : 'กดส่ง', `/s/${p.id}#notes`);
+  else if (!Number(p.note_total)) notes = act('กดเขียน', `/notes/new?plan=${p.id}`);
+  else {
+    const all = Number(p.note_done) === Number(p.note_total);
+    notes = { text: `${all ? 'ผ่าน' : 'ส่งแล้ว'} ${p.note_total} ฉบับ`, cls: all ? 'badge-green' : 'badge-blue', href: `/s/${p.id}#notes` };
+  }
+  return [plan, manual, notes];
+}
+
 router.get('/', async (req, res) => {
   const me = req.me;
   const t = currentTerm(req.settings);
-  const subjects = (await subjectRows(me, t, req.ff)).map((r) => ({ ...r, cells: rowCells(r), action: nextAction(r) }));
+  const subjects = (await subjectRows(me, t, req.ff)).map((r) => {
+    if (!req.ff.homeact) return { ...r, cells: rowCells(r), action: nextAction(r) };
+    const cells = actCells(r, req.ff);
+    // ปุ่มขวาสุดเหลือเฉพาะเขียนบันทึกฉบับถัดไป เมื่อช่องบันทึกไม่ได้เป็นปุ่มอยู่แล้ว
+    const p = r.plan;
+    const action = p && p.status !== 'draft' && !cells[2].act ? { label: 'เขียนบันทึก', href: `/notes/new?plan=${p.id}`, primary: false } : null;
+    return { ...r, cells, action, todoCount: cells.filter((c) => c.act).length };
+  });
   // เปิดแผน 1 วิชาหลักแล้ว แต่ยังไม่มีวิชาไหนต้องส่งแผน แปลว่ายังไม่ได้เลือกวิชาหลัก
   const mainMissing = Boolean(me.is_teacher && req.ff.onemain && !subjects.some((r) => r.needPlan));
   const mainHref = req.ff.teachlist ? '/teaching' : '/works/new?type=plan';

@@ -178,9 +178,18 @@ test('บันทึกหลังแผนแบบแนบไฟล์ข�
   let s = (await db.q.get('SELECT * FROM submissions WHERE id = ?', id));
   assert.equal(s.note_mode, 'file');
   assert.equal(s.status, 'pending');
-  const print = (await t.get(`/s/${id}/print`)).text;
+  // จัดหน้าลงนามแบบใหม่ (ค่าเริ่มต้น): หน้าพิมพ์วาดแผ่น PDF ของครูในเบราว์เซอร์ แล้วเติมแถบลงนาม
+  let print = (await t.get(`/s/${id}/print`)).text;
+  assert.match(print, /data-pdf-sheet/);
+  assert.match(print, /class="strip"/);
+  assert.match(print, /pdfprint\.js/);
+  // ปิดฟังก์ชันจัดหน้าลงนาม กลับเป็นหน้าความเห็นแยกแบบเดิม
+  await admin.post('/admin/features/notesign', { on: '0' });
+  print = (await t.get(`/s/${id}/print`)).text;
   assert.match(print, /แนบเป็นไฟล์ในระบบ/);
   assert.match(print, /บันทึกของฉัน\.pdf/);
+  assert.doesNotMatch(print, /data-pdf-sheet/);
+  await admin.post('/admin/features/notesign', { on: '1' });
 
   await admin.post('/admin/features/notefile', { on: '0' });
   id = await send({ plan_no: '22', note_mode: 'file', result_k: 'เข้าใจ', action: 'draft' }, pdf());

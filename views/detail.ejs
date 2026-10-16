@@ -267,9 +267,10 @@
               <% } %>
               </tbody>
             </table></div>
-            <% if (bookSend) { %>
+            <% if (bookSend) { const gapText = planGaps.length ? 'ยังไม่มีบันทึกของแผนที่ ' + planGaps.slice(0, 10).join(' ') + (planGaps.length > 10 ? ' และอื่น ๆ' : '') : ''; %>
+              <% if (gapText) { %><div class="alert alert-warn" style="margin-top:10px"><%- icon('note') %><span>เลขแผนข้าม <b><%= gapText %></b> ถ้าลืมเขียน กด เขียนบันทึกหลังแผน ก่อนส่ง ถ้าไม่ได้สอนแผนนั้นส่งได้เลย</span></div><% } %>
               <div class="btn-row" style="margin-top:10px">
-                <button class="btn btn-primary btn-lg" type="submit" data-confirm="<%= isOwner ? 'ส่งบันทึกหลังแผนทั้งเล่ม ' + todo.length + ' แผ่น ให้ผู้ลงความเห็น' : 'ส่งบันทึกหลังแผนทั้งเล่มแทน ' + sub.teacher_name + ' ระบบจะบันทึกว่าผู้ดูแลระบบส่งแทน' %>" data-ok-label="ส่งทั้งเล่ม"><%- icon('send', 20) %> <%= isOwner ? 'ส่งทั้งเล่ม' : 'ส่งทั้งเล่มแทนครู' %> (<%= todo.length %> แผ่น)</button>
+                <button class="btn btn-primary btn-lg" type="submit" data-confirm="<%= (isOwner ? 'ส่งบันทึกหลังแผนทั้งเล่ม ' + todo.length + ' แผ่น ให้ผู้ลงความเห็น' : 'ส่งบันทึกหลังแผนทั้งเล่มแทน ' + sub.teacher_name + ' ระบบจะบันทึกว่าผู้ดูแลระบบส่งแทน') + (gapText ? '\nเลขแผนข้าม ' + gapText : '') %>" data-ok-label="ส่งทั้งเล่ม"><%- icon('send', 20) %> <%= isOwner ? 'ส่งทั้งเล่ม' : 'ส่งทั้งเล่มแทนครู' %> (<%= todo.length %> แผ่น)</button>
                 <small class="muted">ส่งทุกแผ่นที่เป็นร่างหรือรอแก้ไขในครั้งเดียว</small>
               </div>
             <% } else if (!ff.notebook && isOwner && todo.length) { %>
@@ -279,6 +280,13 @@
               </div>
             <% } %>
           </form>
+          <% if (bookPull) { %>
+            <form method="post" action="/s/<%= sub.id %>/withdraw-book" class="btn-row" style="margin-top:10px"
+              data-confirm="ดึงบันทึกหลังแผนกลับทั้งเล่ม <%= bookPull %> แผ่น ผู้ตรวจจะไม่เห็นจนกว่าคุณจะกดส่งทั้งเล่มอีกครั้ง" data-ok-label="ดึงกลับทั้งเล่ม">
+              <button class="btn btn-ghost" type="submit"><%- icon('undo', 18) %> ดึงกลับทั้งเล่ม (<%= bookPull %> แผ่น)</button>
+              <small class="muted">ลืมแผ่นไหน หรืออยากแก้ ดึงกลับได้ก่อนผู้ตรวจลงนาม</small>
+            </form>
+          <% } %>
         <% } %>
       </div>
     <% } %>

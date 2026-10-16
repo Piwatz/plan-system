@@ -690,6 +690,8 @@ router.get('/features', async (req, res) => {
       .split(/\r?\n/)
       .filter((x) => x.trim()),
     lineReady: Boolean(req.settings.line_token && req.settings.line_to),
+    noteSignOpts: features.NOTE_SIGN,
+    noteSign: features.noteSign(req.settings),
     ready: Object.fromEntries(Object.entries(NEEDS).map(([k, [ok]]) => [k, Boolean(ok(req.settings))])),
   });
 });
@@ -707,6 +709,24 @@ router.post('/features/:key', async (req, res) => {
   if (on && need && !need[0](req.settings)) return fail(req, res, '/admin/features', need[1]);
   await features.setFlag(f.key, on, req.me);
   done(req, res, '/admin/features', `${on ? 'เปิด' : 'ปิด'} ${f.title} เรียบร้อย`);
+});
+
+// เลือกการจัดหน้าลงนามบันทึกหลังแผน (ฟังก์ชันเสริม notesign) มีผลตอนพิมพ์ทุกครั้ง งานเดิมไม่ต้องลงนามใหม่
+router.post('/notesign', async (req, res) => {
+  if (!req.ff.notesign) return fail(req, res, '/admin/features', 'เปิดฟังก์ชันจัดหน้าลงนามบันทึกหลังแผนก่อน');
+  const b = req.body || {};
+  const cur = features.noteSign(req.settings) || { web: '', pdf: '' };
+  const changed = [];
+  await q.tx(async () => {
+    for (const kind of ['web', 'pdf']) {
+      const opt = features.NOTE_SIGN[kind].find((o) => o.key === b[kind]);
+      if (!opt || opt.key === cur[kind]) continue;
+      await setSetting(`note_sign_${kind}`, opt.key);
+      changed.push(`${kind === 'web' ? 'แผ่นที่พิมพ์ในเว็บ' : 'แผ่น PDF ของครู'} ${opt.label}`);
+    }
+    if (changed.length) await features.audit(req.me, `เปลี่ยนการจัดหน้าลงนามบันทึกหลังแผน ${changed.join(' และ ')}`, 'note_sign');
+  });
+  done(req, res, '/admin/features#notesign', changed.length ? 'บันทึกการจัดหน้าลงนามเรียบร้อย' : 'ไม่มีอะไรเปลี่ยน');
 });
 
 router.post('/phrases', async (req, res) => {

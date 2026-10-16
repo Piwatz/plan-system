@@ -66,9 +66,10 @@
       <section class="card m-subj">
         <b class="m-subj-title"><%= r.code %> <%= r.name %><%= ff.onemain && r.needPlan ? ' (วิชาหลัก)' : '' %></b>
         <span class="muted small"><%= r.grade %></span>
+        <% if (r.todoCount != null) { %><span class="todo-tag <%= r.todoCount ? '' : 'done' %>"><%= r.todoCount ? 'ต้องทำ ' + r.todoCount + ' อย่าง' : 'ทำครบแล้ว' %></span><% } %>
         <div class="m-tiles">
-          <% r.cells.forEach((c, i) => { %>
-            <% if (c.href) { %><a class="m-tile <%= c.cls.replace('badge-', 'tile-') %>" href="<%= c.href %>"><% } else { %><span class="m-tile <%= c.cls.replace('badge-', 'tile-') %>"><% } %>
+          <% r.cells.forEach((c, i) => { const tc = c.act ? (c.red ? 'tile-act red' : 'tile-act') : c.off ? 'tile-off' : c.cls.replace('badge-', 'tile-'); %>
+            <% if (c.href) { %><a class="m-tile <%= tc %>" href="<%= c.href %>"><% } else { %><span class="m-tile <%= tc %>"><% } %>
               <span><%= ['แผนการสอน', 'คู่มือรายวิชา', 'บันทึกหลังแผน'][i] %></span><b><%= c.text %></b>
             <%- c.href ? '</a>' : '</span>' %>
           <% }) %>
@@ -128,16 +129,21 @@
           <% } %>
         </div>
       <% } else { %>
-        <div class="rows-head" style="margin-top:12px"><span>รายวิชา</span><span>แผนการสอน</span><span>คู่มือรายวิชา</span><span>บันทึกหลังแผน</span><span></span></div>
+        <%# ปุ่มลงมือในช่อง (homeact) ไม่มีคอลัมน์ปุ่มท้ายแถว เขียนบันทึกฉบับถัดไปอยู่ใต้ช่องบันทึกหลังแผน %>
+        <div class="rows-head<%= ff.homeact ? ' rows-act' : '' %>" style="margin-top:12px"><span>รายวิชา</span><span>แผนการสอน</span><span>คู่มือรายวิชา</span><span>บันทึกหลังแผน</span><% if (!ff.homeact) { %><span></span><% } %></div>
         <% for (const r of subjects) { %>
-          <div class="rows-item">
-            <span class="subj"><b><%= r.code %><% if (ff.onemain && r.needPlan) { %> <span class="badge badge-blue" title="วิชาหลัก"><%- icon('star', 12) %> วิชาหลัก</span><% } %></b><span><%= r.name %> <%= r.grade %></span></span>
+          <div class="rows-item<%= ff.homeact ? ' rows-act' : '' %>">
+            <span class="subj"><b><%= r.code %><% if (ff.onemain && r.needPlan) { %> <span class="badge badge-blue" title="วิชาหลัก"><%- icon('star', 12) %> วิชาหลัก</span><% } %></b><span><%= r.name %> <%= r.grade %></span>
+              <% if (r.todoCount != null) { %><span class="todo-tag <%= r.todoCount ? '' : 'done' %>"><%= r.todoCount ? 'ต้องทำ ' + r.todoCount + ' อย่าง' : 'ทำครบแล้ว' %></span><% } %></span>
             <% r.cells.forEach((c, i) => { %>
               <span><span class="cell-label"><%= ['แผนการสอน', 'คู่มือรายวิชา', 'บันทึกหลังแผน'][i] %></span>
-                <% if (c.href) { %><a class="badge <%= c.cls %>" href="<%= c.href %>"><%= c.text %></a><% } else { %><span class="badge <%= c.cls %>"><%= c.text %></span><% } %>
+                <% if (c.act) { %><a class="btn btn-sm cell-act <%= c.red ? 'btn-danger' : 'btn-primary' %>" href="<%= c.href %>"><%= c.text %></a>
+                <% } else if (c.off) { %><span class="cell-off"><%= c.text %></span>
+                <% } else if (c.href) { %><a class="badge <%= c.cls %>" href="<%= c.href %>"><%= c.text %></a><% } else { %><span class="badge <%= c.cls %>"><%= c.text %></span><% } %>
+                <% if (ff.homeact && i === 2 && r.action) { %><a class="cell-more" href="<%= r.action.href %>"><%- icon('plus', 14) %> เขียนฉบับถัดไป</a><% } %>
               </span>
             <% }) %>
-            <a class="btn btn-sm go <%= r.action.primary ? 'btn-primary' : 'btn-ghost' %>" href="<%= r.action.href %>"><%= r.action.label %></a>
+            <% if (!ff.homeact) { %><a class="btn btn-sm go <%= r.action.primary ? 'btn-primary' : 'btn-ghost' %>" href="<%= r.action.href %>"><%= r.action.label %></a><% } %>
           </div>
         <% } %>
       <% } %>

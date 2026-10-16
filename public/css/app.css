@@ -193,9 +193,17 @@ a.stat:hover { text-decoration: none; border-color: var(--primary); }
 .rows-item .subj { display: flex; flex-direction: column; line-height: 1.35; min-width: 0; }
 .rows-item .subj span { font-size: 0.875rem; color: var(--muted); }
 .rows-item .cell-label { display: none; }
+/* ปุ่มลงมือในช่อง (ฟังก์ชันเสริม homeact) ช่องที่ไม่ต้องส่งเป็นตัวจางเรียบ ป้ายต้องทำใต้รหัสวิชา */
+.rows-head.rows-act, .rows-item.rows-act { grid-template-columns: minmax(0, 1.4fr) repeat(3, minmax(0, 1fr)); }
+.cell-more { display: flex; align-items: center; gap: 3px; margin-top: 6px; font-size: 0.8rem; }
+.rows-item .cell-act { width: 100%; justify-content: center; white-space: nowrap; }
+.cell-off { color: var(--muted); opacity: .75; font-size: 0.875rem; }
+.todo-tag { align-self: flex-start; display: inline-block; margin-top: 4px; padding: 1px 8px; border-radius: 999px; font-size: 0.78rem; font-weight: 700; background: var(--wait-bg); color: var(--wait); }
+.rows-item .subj .todo-tag { color: var(--wait); font-size: 0.78rem; }
+.todo-tag.done, .rows-item .subj .todo-tag.done { background: var(--ok-bg); color: var(--ok); }
 @media (max-width: 900px) {
   .rows-head { display: none; }
-  .rows-item { grid-template-columns: 1fr 1fr; padding: 14px 16px; }
+  .rows-item, .rows-item.rows-act { grid-template-columns: 1fr 1fr; padding: 14px 16px; }
   .rows-item .subj { grid-column: 1 / -1; }
   .rows-item .go { grid-column: 1 / -1; }
   .rows-item .cell-label { display: block; font-size: 0.78rem; color: var(--muted); }
@@ -774,6 +782,12 @@ dialog.modal::backdrop { background: rgba(10, 20, 40, 0.5); }
   .m-tile.tile-blue { background: var(--wait-bg); color: var(--wait); border-color: transparent; }
   .m-tile.tile-red { background: var(--back-bg); color: var(--back); border-color: transparent; }
   .m-tile.tile-amber { background: var(--soft); color: var(--link); border-color: transparent; }
+  .m-tile.tile-act { background: var(--primary); color: #fff; border-color: transparent; }
+  .m-tile.tile-act.red { background: var(--back); }
+  html.dark .m-tile.tile-act.red { color: #0b1220; }
+  .m-tile.tile-act b { text-decoration: underline; text-underline-offset: 3px; }
+  .m-tile.tile-off { background: transparent; border-style: dashed; color: var(--muted); opacity: .8; }
+  .m-subj .todo-tag { margin-left: 6px; }
   .m-inbox { display: flex; align-items: center; gap: 12px; margin-bottom: 10px; padding: 14px; color: var(--ink); }
   .m-inbox:hover { text-decoration: none; border-color: var(--primary); }
   .m-inbox-text { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 3px; line-height: 1.35; }
