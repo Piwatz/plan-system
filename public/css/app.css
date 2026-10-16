@@ -293,9 +293,9 @@ html.dark .btn-danger, html.dark .btn-success, .theme-e .btn-danger, .theme-e .b
 .bk-row { display: flex; gap: 10px; align-items: flex-start; padding: 9px 0; border-bottom: 1px solid var(--line); }
 .bk-row > div { flex: 1; }
 .bk-row span:not(.bk-dot) { display: block; font-size: .9em; color: var(--muted); }
-.bk-dot { width: 11px; height: 11px; border-radius: 50%; flex: none; margin-top: 7px; background: var(--wait); }
-.bk-dot.ok { background: var(--ok); }
-.bk-dot.bad { background: var(--back); }
+.bk-dot { width: 11px; height: 11px; border-radius: 50%; flex: none; margin-top: 7px; background: var(--line); box-shadow: inset 0 0 0 2px var(--muted); }
+.bk-dot.ok { background: var(--ok); box-shadow: none; }
+.bk-dot.bad { background: var(--wait); box-shadow: none; }
 .bk-btns { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 12px; }
 .bk-btns form { margin: 0; }
 .alert-block { display: block; }

@@ -1,0 +1,124 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>สำรองข้อมูล ภาพตัวอย่าง รอบ 2</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai+Looped:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+  /* สีธีม I ของระบบจริง กลางวัน และกลางคืน */
+  .day { --bg:#EEF2F7; --surface:#FFFFFF; --ink:#0F1E33; --muted:#4E5F78; --line:#D6DEE9; --primary:#1D3A66; --soft:#E4ECF7; --link:#1D3A66; --ok:#1B7343; --ok-bg:#E4F4EA; --wait:#875700; --wait-bg:#FFF2DA; --back:#B0341F; --back-bg:#FDEAE4; --shadow:0 1px 2px rgba(15,30,51,.05), 0 4px 14px rgba(15,30,51,.05); }
+  .night { --bg:#0C1626; --surface:#142139; --ink:#E9EFF8; --muted:#A3B3CA; --line:#25344F; --primary:#3D6BC0; --soft:#1B2D4D; --link:#8FB5F6; --ok:#7FD4A2; --ok-bg:#163828; --wait:#F2C46B; --wait-bg:#3A2E12; --back:#FF9C88; --back-bg:#432019; --shadow:0 1px 0 rgba(255,255,255,.03), 0 10px 26px rgba(0,0,0,.4); }
+  * { box-sizing: border-box; }
+  body { margin: 0; padding: 20px 16px 48px; background: #E6EAF0; color: #0F1E33; font-family: 'Noto Sans Thai Looped', Tahoma, sans-serif; font-size: 15px; }
+  h1 { font-size: 22px; margin: 0 0 4px; }
+  .lead { color: #4E5F78; margin: 0 0 18px; }
+  .sec { font-size: 17px; font-weight: 700; color: #1D3A66; margin: 30px 0 4px; padding-top: 14px; border-top: 2px solid #C9D3E1; }
+  .opt { margin: 18px 0 8px; }
+  .cap { font-weight: 700; font-size: 18px; }
+  .cap .tag { display: inline-block; font-size: 13px; font-weight: 600; padding: 2px 10px; border-radius: 999px; background: #E4ECF7; color: #1D3A66; margin-left: 6px; vertical-align: 2px; }
+  .why { font-size: 14px; color: #4E5F78; margin: 2px 0 8px; }
+  .pair { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  @media (max-width: 760px) { .pair { grid-template-columns: 1fr; } }
+  .scr { background: var(--bg); color: var(--ink); border-radius: 14px; padding: 14px; }
+  .scr .lbl { font-size: 12px; color: var(--muted); margin-bottom: 8px; }
+  .card { background: var(--surface); border-radius: 14px; box-shadow: var(--shadow); padding: 14px; }
+  .card h3 { margin: 0 0 6px; font-size: 16px; }
+  .muted { color: var(--muted); } .small { font-size: 13px; }
+  .ic { width: 20px; height: 20px; flex: none; }
+  .btn { display: inline-block; border-radius: 10px; padding: 5px 11px; font: inherit; font-size: 13.5px; font-weight: 600; border: 1px solid var(--line); background: var(--surface); color: var(--ink); white-space: nowrap; }
+  .btn-primary { background: var(--primary); color: #fff; border-color: var(--primary); }
+  .bar { display: flex; gap: 10px; align-items: center; border-radius: 10px; padding: 10px 12px; border: 1px solid; flex-wrap: wrap; }
+  .bar .t { flex: 1; min-width: 160px; }
+  .hello { font-weight: 700; font-size: 17px; margin: 0 0 10px; }
+  .fake { height: 54px; border-radius: 12px; background: var(--surface); box-shadow: var(--shadow); margin-top: 10px; }
+  /* แบบ ก เหลือง */
+  .a1 { background: var(--wait-bg); color: var(--wait); border-color: color-mix(in srgb, var(--wait) 30%, transparent); }
+  /* แบบ ข ฟ้า */
+  .a2 { background: var(--soft); color: var(--ink); border-color: color-mix(in srgb, var(--primary) 20%, transparent); }
+  .a2 .ic { color: var(--link); }
+  /* แบบ ค เทา ขอบสี */
+  .a3 { background: var(--surface); color: var(--ink); border-color: var(--line); border-left: 5px solid var(--wait); }
+  .a3 .ic { color: var(--wait); }
+  /* แบบ ง ไม่มีแถบบนสุด ขึ้นในกล่องผู้ดูแลระบบ */
+  .admbox h3 { display: flex; align-items: center; gap: 8px; }
+  .chip { display: inline-flex; gap: 6px; align-items: center; font-size: 13px; font-weight: 600; padding: 2px 10px; border-radius: 999px; background: var(--wait-bg); color: var(--wait); }
+  .chip .ic { width: 15px; height: 15px; }
+  .tiles { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 8px; }
+  .tile { background: var(--soft); border-radius: 10px; padding: 10px; font-size: 13.5px; font-weight: 600; position: relative; }
+  .tile .dot { position: absolute; top: 8px; right: 8px; width: 9px; height: 9px; border-radius: 50%; background: var(--wait); }
+  /* กล่องสำรอง */
+  .row { display: flex; gap: 10px; padding: 8px 0; border-bottom: 1px solid var(--line); }
+  .row:last-of-type { border-bottom: 0; }
+  .row span:not(.dot) { display: block; font-size: 13px; color: var(--muted); }
+  .dot { width: 10px; height: 10px; border-radius: 50%; flex: none; margin-top: 7px; }
+  .dot.ok { background: var(--ok); } .dot.warn { background: var(--wait); } .dot.wait { background: var(--line); border: 2px solid var(--muted); }
+  .btns { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px; }
+  table { width: 100%; border-collapse: collapse; font-size: 13.5px; }
+  th, td { text-align: left; padding: 7px 5px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  th { font-size: 12px; color: var(--muted); font-weight: 600; }
+  .pill { display: inline-block; font-size: 12px; font-weight: 600; padding: 1px 8px; border-radius: 999px; }
+  .pill.ok { background: var(--ok-bg); color: var(--ok); } .pill.warn { background: var(--wait-bg); color: var(--wait); } .pill.keep { background: var(--soft); color: var(--link); }
+  .boxes { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+  .box { border: 1px solid var(--line); border-radius: 10px; padding: 10px; font-size: 13px; }
+  .box b { display: block; font-size: 14px; margin-bottom: 2px; }
+  .box .st { font-weight: 700; margin-top: 4px; }
+  .box .st.ok { color: var(--ok); } .box .st.warn { color: var(--wait); } .box .st.wait { color: var(--muted); }
+  .box.warn { border-color: var(--wait); background: var(--wait-bg); }
+  @media (max-width: 420px) { .boxes { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+<h1>สำรองข้อมูล ภาพตัวอย่างรอบ 2</h1>
+<p class="lead">ข้อมูลสมมติ ทุกแบบมีภาพโหมดกลางวันและโหมดกลางคืนคู่กัน ตัวอย่างนี้เป็นกรณีที่สำรองเมื่อคืนไม่สำเร็จ ถ้าสำรองปกติดี หน้าแรกจะไม่มีอะไรขึ้นเลย</p>
+
+<div class="sec">ส่วนที่ 1 แจ้งเตือนในหน้าแรก (เห็นเฉพาะผู้ดูแลระบบ)</div>
+
+<template id="t-a1"><div class="bar a1"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v12m0 0-4-4m4 4 4-4M4 17v3h16v-3"/></svg><div class="t"><b>สำรองข้อมูลเมื่อคืนไม่สำเร็จ</b> <span class="small">16 ต.ค. 2569 02:00 น.</span></div><span class="btn">ดูรายละเอียด</span></div></template>
+<template id="t-a2"><div class="bar a2"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v12m0 0-4-4m4 4 4-4M4 17v3h16v-3"/></svg><div class="t"><b>สำรองข้อมูลเมื่อคืนไม่สำเร็จ</b> <span class="small muted">16 ต.ค. 2569 02:00 น.</span></div><span class="btn">ดูรายละเอียด</span></div></template>
+<template id="t-a3"><div class="bar a3"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v12m0 0-4-4m4 4 4-4M4 17v3h16v-3"/></svg><div class="t"><b>สำรองข้อมูลเมื่อคืนไม่สำเร็จ</b> <span class="small muted">16 ต.ค. 2569 02:00 น.</span></div><span class="btn">ดูรายละเอียด</span></div></template>
+<template id="t-a4"><div class="card admbox"><h3>ผู้ดูแลระบบ <span class="chip"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M12 3v12m0 0-4-4m4 4 4-4M4 17v3h16v-3"/></svg>สำรองเมื่อคืนไม่สำเร็จ</span></h3><div class="tiles"><div class="tile">ตั้งค่าโรงเรียนและธีม</div><div class="tile">รายชื่อครูและผู้ตรวจ</div><div class="tile">ฟังก์ชันเสริม</div><div class="tile">เมนูผู้ดูแลทั้งหมด<span class="dot"></span></div></div></div></template>
+
+<div class="opt"><div class="cap">แบบ ก <span class="tag">เหลือง</span></div><p class="why">แบบที่ทำล่าสุด สีเดียวกับแจ้งเตือนอื่นของระบบ เห็นชัดแต่ไม่แสบตา</p><div class="pair" data-t="t-a1"></div></div>
+<div class="opt"><div class="cap">แบบ ข <span class="tag">ฟ้าอ่อน</span></div><p class="why">สีเดียวกับกล่องเตือนเรื่องลายเซ็น นุ่มที่สุด แต่อาจกลืนกับกล่องอื่น</p><div class="pair" data-t="t-a2"></div></div>
+<div class="opt"><div class="cap">แบบ ค <span class="tag">พื้นขาว ขอบซ้ายสีส้ม</span></div><p class="why">พื้นเหมือนการ์ดทั่วไป มีแถบสีเส้นเดียวด้านซ้ายบอกว่าต้องดู เรียบที่สุดในแบบที่เป็นแถบ</p><div class="pair" data-t="t-a3"></div></div>
+<div class="opt"><div class="cap">แบบ ง <span class="tag">ไม่มีแถบ ป้ายเล็กในกล่องผู้ดูแล</span></div><p class="why">ไม่มีแถบด้านบน ขึ้นเป็นป้ายเล็กข้างหัวข้อ ผู้ดูแลระบบ ในหน้าแรก และจุดสีบนปุ่มเมนูผู้ดูแลทั้งหมด เงียบที่สุด แต่อาจมองข้าม</p><div class="pair" data-t="t-a4" data-plain="1"></div></div>
+
+<div class="sec">ส่วนที่ 2 กล่องสำรองข้อมูล ในหน้าผู้ดูแลระบบ</div>
+
+<template id="t-b1"><div class="card"><h3>สำรองข้อมูล</h3>
+  <div class="row"><span class="dot warn"></span><div><b>สำรองทุกคืน</b><span>คืนล่าสุดไม่สำเร็จ 16 ต.ค. 2569 02:00 น. สาเหตุ เชื่อมต่อ Google Drive ไม่ได้ เก็บ 30 คืนล่าสุด</span></div></div>
+  <div class="row"><span class="dot ok"></span><div><b>สำรองรายเดือน เก็บถาวร</b><span>ฉบับวันที่ 1 ต.ค. 2569 มีทั้งหมด 3 ฉบับ</span></div></div>
+  <div class="row"><span class="dot wait"></span><div><b>สำรองปิดภาคเรียน เก็บถาวร</b><span>ยังไม่เคยเก็บ กดปุ่มด้านล่างตอนปิดภาคเรียน</span></div></div>
+  <div class="btns"><span class="btn btn-primary">ดาวน์โหลดสำรองฐานข้อมูล</span><span class="btn">เก็บสำรองฉบับปิดภาค 2/2569</span></div></div></template>
+<template id="t-b2"><div class="card"><h3>สำรองข้อมูล</h3><table>
+  <tr><th>ชนิด</th><th>ล่าสุด</th><th>เก็บ</th></tr>
+  <tr><td><b>ทุกคืน</b></td><td>16 ต.ค. 2569 <span class="pill warn">ไม่สำเร็จ</span><div class="small muted">เชื่อมต่อ Google Drive ไม่ได้</div></td><td>30 คืน</td></tr>
+  <tr><td><b>รายเดือน</b></td><td>1 ต.ค. 2569 <span class="pill ok">สำเร็จ</span></td><td><span class="pill keep">ถาวร</span> 3 ฉบับ</td></tr>
+  <tr><td><b>ปิดภาค</b></td><td>ยังไม่เคยเก็บ</td><td><span class="pill keep">ถาวร</span></td></tr></table>
+  <div class="btns"><span class="btn btn-primary">ดาวน์โหลดสำรองฐานข้อมูล</span><span class="btn">เก็บสำรองฉบับปิดภาค 2/2569</span></div></div></template>
+<template id="t-b3"><div class="card"><h3>สำรองข้อมูล</h3><div class="boxes">
+  <div class="box warn"><b>ทุกคืน</b>16 ต.ค. 2569<div class="st warn">ไม่สำเร็จ</div><div class="small muted">เชื่อมต่อ Google Drive ไม่ได้</div></div>
+  <div class="box"><b>รายเดือน</b>1 ต.ค. 2569<div class="st ok">เก็บถาวร 3 ฉบับ</div></div>
+  <div class="box"><b>ปิดภาคเรียน</b>ยังไม่เคยเก็บ<div class="st wait">กดปุ่มตอนปิดภาค</div></div></div>
+  <div class="btns"><span class="btn btn-primary">ดาวน์โหลดสำรองฐานข้อมูล</span><span class="btn">เก็บสำรองฉบับปิดภาค 2/2569</span></div></div></template>
+
+<div class="opt"><div class="cap">แบบ ก <span class="tag">รายการ 3 บรรทัด</span></div><p class="why">แบบที่ทำไว้แล้ว จุดหน้าบรรทัดเปลี่ยนจากแดงเป็นส้ม อ่านง่ายบนมือถือ</p><div class="pair" data-t="t-b1" data-plain="1"></div></div>
+<div class="opt"><div class="cap">แบบ ข <span class="tag">ตาราง</span></div><p class="why">ดูเทียบกันเป็นแถว มีป้ายสถานะ</p><div class="pair" data-t="t-b2" data-plain="1"></div></div>
+<div class="opt"><div class="cap">แบบ ค <span class="tag">กล่องเล็ก 3 ช่องเรียงกัน</span></div><p class="why">ช่องที่มีปัญหาเป็นพื้นเหลืองทั้งช่อง เห็นทันทีว่าอันไหน บนมือถือเรียงลงมา</p><div class="pair" data-t="t-b3" data-plain="1"></div></div>
+
+<script>
+  for (const el of document.querySelectorAll('.pair')) {
+    const tpl = document.getElementById(el.dataset.t);
+    for (const [cls, name] of [['day', 'โหมดกลางวัน'], ['night', 'โหมดกลางคืน']]) {
+      const scr = document.createElement('div');
+      scr.className = 'scr ' + cls;
+      scr.innerHTML = '<div class="lbl">' + name + '</div>' + (el.dataset.plain ? '' : '<p class="hello">สวัสดี คุณผู้ดูแลระบบ</p>');
+      scr.appendChild(tpl.content.cloneNode(true));
+      if (!el.dataset.plain) scr.insertAdjacentHTML('beforeend', '<div class="fake"></div>');
+      el.appendChild(scr);
+    }
+  }
+</script>
+</body>
+</html>
