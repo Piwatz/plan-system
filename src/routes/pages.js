@@ -536,7 +536,7 @@ router.get('/stats', async (req, res) => {
 // หน้าเกี่ยวกับระบบ (ฟังก์ชันเสริม aboutpage)
 router.get('/about', (req, res, next) => {
   if (!req.ff.aboutpage) return next();
-  res.render('about', { title: 'เกี่ยวกับระบบ' });
+  res.render('about', { title: `เกี่ยวกับ ${res.locals.site.app_name}` });
 });
 
 router.get('/profile', async (req, res) => {

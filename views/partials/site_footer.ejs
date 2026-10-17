@@ -26,7 +26,7 @@
       <ul>
         <% if (S.school_web) { %><li><a href="<%= S.school_web %>" target="_blank" rel="noopener">เว็บไซต์โรงเรียน</a></li><% } %>
         <% if (S.school_facebook) { %><li><a href="<%= S.school_facebook %>" target="_blank" rel="noopener">เพจ Facebook โรงเรียน</a></li><% } %>
-        <% if (ff.aboutpage) { %><li><a href="/about">เกี่ยวกับระบบ</a></li><% } %>
+        <% if (ff.aboutpage) { %><li><a href="/about">เกี่ยวกับ <%= S.app_name %></a></li><% } %>
         <% if (ff.aboutpage && ff.appicon) { %><li><a href="/about#install">ติดตั้งเป็นแอป</a></li><% } %>
       </ul>
     </div>

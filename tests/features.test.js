@@ -418,7 +418,9 @@ test('ชื่อแอป ไอคอนหน้าจอโฮม ท้า
   const t = await as('teacher');
   let home = (await t.get('/')).text;
   assert.match(home, /class="site-foot"/);
-  assert.match(home, /ระบบงานส่งเสริมพัฒนากระบวนการเรียนรู้/);
+  assert.match(home, /งานส่งเสริมพัฒนากระบวนการเรียนรู้/);
+  assert.doesNotMatch(home, /ระบบงานส่งเสริม/);
+  assert.match(home, /เกี่ยวกับ CW-Learn/);
   assert.match(home, /href="\/about"/);
   assert.match(home, /id="install-tip" class="modal install-tip" data-auto/);
   const about = await t.get('/about');

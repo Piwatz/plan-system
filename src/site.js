@@ -3,10 +3,10 @@
 // ค่าเริ่มต้นเป็นข้อมูลหน่วยงานของโรงเรียน (ไม่ใช่ชื่อบุคคล) ห้ามใส่ชื่อจริงของครูหรือผู้บริหารที่นี่
 
 const FIELDS = [
-  { key: 'app_name', label: 'ชื่อสั้นของระบบ (ใต้ไอคอนแอป บนแถบเมนู และชื่อแท็บ)', def: 'CW-Learn', max: 30 },
-  { key: 'app_full', label: 'ชื่อเต็มของระบบ', def: 'ระบบงานส่งเสริมพัฒนากระบวนการเรียนรู้', max: 120 },
-  { key: 'app_full_en', label: 'ชื่อเต็มภาษาอังกฤษ', def: 'Learning Process Development System', max: 120 },
-  { key: 'unit_name', label: 'หน่วยงานที่ดูแลระบบ', def: 'งานส่งเสริมพัฒนากระบวนการเรียนรู้', max: 120 },
+  { key: 'app_name', label: 'ชื่อสั้น (ใต้ไอคอนแอป บนแถบเมนู และชื่อแท็บ)', def: 'CW-Learn', max: 30 },
+  { key: 'app_full', label: 'ชื่อเต็ม', def: 'งานส่งเสริมพัฒนากระบวนการเรียนรู้', max: 120 },
+  { key: 'app_full_en', label: 'ชื่อเต็มภาษาอังกฤษ', def: 'Learning Process Development', max: 120 },
+  { key: 'unit_name', label: 'หน่วยงานที่ดูแล', def: 'งานส่งเสริมพัฒนากระบวนการเรียนรู้', max: 120 },
   { key: 'unit_group', label: 'กลุ่มงาน', def: 'กลุ่มบริหารงานวิชาการ', max: 120 },
   { key: 'school_name_en', label: 'ชื่อโรงเรียนภาษาอังกฤษ', def: 'Chanumanwittayakom School', max: 120 },
   { key: 'school_affiliation', label: 'สังกัด', def: 'สำนักงานเขตพื้นที่การศึกษามัธยมศึกษาอุบลราชธานี อำนาจเจริญ', max: 200 },

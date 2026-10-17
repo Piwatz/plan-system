@@ -24,7 +24,7 @@
       <% if (S.school_web || S.school_facebook) { %>
       <div><dt>ลิงก์</dt><dd><% if (S.school_web) { %><a href="<%= S.school_web %>" target="_blank" rel="noopener">เว็บไซต์โรงเรียน</a><% } %><% if (S.school_web && S.school_facebook) { %> · <% } %><% if (S.school_facebook) { %><a href="<%= S.school_facebook %>" target="_blank" rel="noopener">เพจ Facebook โรงเรียน</a><% } %></dd></div>
       <% } %>
-      <% if (assetDate) { %><div><dt>รุ่นของระบบ</dt><dd><%= assetDate %></dd></div><% } %>
+      <% if (assetDate) { %><div><dt>รุ่น</dt><dd><%= assetDate %></dd></div><% } %>
     </dl>
   </div>
   <% if (ff.appicon) { %>
