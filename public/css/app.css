@@ -551,7 +551,7 @@ input:focus, select:focus, textarea:focus { outline: 3px solid color-mix(in srgb
 dialog.sig-doc-dialog { width: min(560px, calc(100vw - 24px)); padding: 18px 14px; }
 .sig-doc-dialog h3 { margin: 0 0 10px; font-size: 1.05rem; }
 .sig-doc-dialog .modal-actions { grid-template-columns: 1fr; }
-.sig-paper { background: #fff; color: #000; border-radius: 4px; box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2); padding: 6mm 5mm; font-family: 'Memo TH', 'Memo Web', serif; font-size: 16pt; line-height: 1.2; text-align: center; overflow-x: auto; }
+.sig-paper { background: #fff; color: #000; border-radius: 4px; box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2); padding: 6mm 5mm; font-family: 'Memo TH', 'Memo Web', serif; font-size: 16pt; line-height: 1.2; text-align: center; }
 .sig-paper .sp-line { text-align: left; text-indent: 12.7mm; }
 .sp-sign { width: 90mm; max-width: 100%; margin: 4mm 0 0 auto; }
 .sp-sig { display: flex; align-items: flex-end; justify-content: center; }
@@ -1175,3 +1175,23 @@ a.lib-cv:hover .lib-cover { box-shadow: 0 0 0 3px var(--primary); }
 .ret-label { font-size: 0.85rem; color: var(--back); font-weight: 700; }
 .ret-comment { font-size: 1.15rem; font-weight: 600; line-height: 1.6; color: var(--ink); border-left: 5px solid var(--back); padding: 4px 0 4px 12px; margin: 4px 0 0; }
 .ret-hint { margin-top: 10px; font-size: 0.95rem; }
+
+/* เอกสารสำหรับพิมพ์ (printcard) และแถบพิมพ์ลอยบนมือถือ (printbar) */
+.print-card h3 { display: flex; gap: 8px; align-items: center; margin-top: 0; }
+.pc-tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px; }
+.pc-tile { display: flex; gap: 12px; align-items: center; padding: 12px; border: 2px solid var(--primary); border-radius: var(--rs); background: var(--soft); color: var(--ink); text-decoration: none; }
+.pc-tile:hover { box-shadow: var(--shadow); transform: translateY(-1px); }
+.pc-tile b { display: block; font-size: 1.05rem; }
+.pc-tile small { display: block; color: var(--muted); font-size: 0.86rem; }
+.pc-go { display: inline-flex; gap: 6px; align-items: center; margin-top: 6px; padding: 4px 14px; border-radius: 9px; background: var(--primary); color: #fff; font-weight: 700; font-size: 0.9rem; }
+.pc-tile.off { border-style: dashed; border-color: var(--line); background: var(--bg); color: var(--muted); }
+.pc-paper { flex: none; width: 46px; height: 62px; border: 1px solid var(--line); background: #fff; box-shadow: 0 2px 5px rgba(0, 0, 0, 0.15); position: relative; }
+.pc-paper::before { content: ''; position: absolute; left: 8px; right: 8px; top: 12px; height: 30px; background: repeating-linear-gradient(#b8c0cc 0 2px, transparent 2px 6px); }
+.pc-tile.off .pc-paper { opacity: 0.5; }
+.print-bar { display: none; }
+@media (max-width: 900px) {
+  .print-bar { display: flex; gap: 8px; position: fixed; left: 8px; right: 8px; bottom: calc(var(--bnav-h) + env(safe-area-inset-bottom) + 8px); z-index: 30; padding: 8px; border-radius: 14px; background: var(--side); box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25); }
+  .print-bar a { flex: 1 1 0; min-width: 0; display: inline-flex; gap: 5px; align-items: center; justify-content: center; padding: 8px 6px; border-radius: 10px; background: var(--accent); color: #1b1300; font-weight: 700; text-decoration: none; font-size: 0.92rem; white-space: nowrap; }
+  body:has(.print-bar) .container { padding-bottom: calc(var(--bnav-h) + 90px); }
+}
+@media print { .print-bar, .print-card { display: none !important; } }

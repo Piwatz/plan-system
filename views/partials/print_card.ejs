@@ -1,0 +1,32 @@
+<%# เอกสารสำหรับพิมพ์ในหน้างาน (ฟังก์ชันเสริม printcard แถบลอยบนมือถือ printbar) · ยังพิมพ์ไม่ได้แสดงเส้นประพร้อมบอกว่าพิมพ์ได้เมื่อไร %>
+<%
+  const pc = [];
+  if (sub.doc_type === 'note') {
+    pc.push({ href: '/s/' + sub.id + '/print', t: 'บันทึกหลังแผน', s: 'แผ่นนี้ พร้อมความเห็นและลายเซ็นผู้ตรวจ', short: 'พิมพ์บันทึก' });
+  } else {
+    pc.push({ href: '/s/' + sub.id + '/print', t: 'บันทึกข้อความ', s: sub.status === 'draft' ? 'ขออนุญาตใช้ ดูหน้าตาก่อนส่งได้' : 'ขออนุญาตใช้ พร้อมลายเซ็นตามขั้นที่ผ่านแล้ว', short: 'บันทึกข้อความ', mini: 'บันทึก' });
+    if (sub.score_max) pc.push({ href: '/s/' + sub.id + '/print?doc=eval', t: 'แบบประเมิน 20 ข้อ', s: 'คะแนน ' + Number(sub.score_total) + ' จาก ' + Number(sub.score_max), short: 'แบบประเมิน', mini: 'ประเมิน' });
+    else pc.push({ off: 1, t: 'แบบประเมิน 20 ข้อ', s: 'พิมพ์ได้เมื่อผู้ตรวจให้คะแนนแล้ว' });
+    const sent = notes.filter((n) => n.status !== 'draft').length;
+    if (sub.doc_type === 'plan' && sent) pc.push({ href: '/s/' + sub.id + '/print-notes', t: 'บันทึกหลังแผนทั้งเล่ม', s: sent + ' แผ่นที่ส่งแล้ว', short: 'ทั้งเล่ม' });
+  }
+%>
+<% if (ff.printcard) { %>
+<section class="card print-card">
+  <h3><%- icon('print', 20) %> เอกสารสำหรับพิมพ์</h3>
+  <div class="pc-tiles">
+    <% for (const x of pc) { %>
+      <% if (x.off) { %>
+        <div class="pc-tile off"><span class="pc-paper" aria-hidden="true"></span><span><b><%= x.t %></b><small><%= x.s %></small></span></div>
+      <% } else { %>
+        <a class="pc-tile" href="<%= x.href %>" target="_blank" rel="noopener"><span class="pc-paper" aria-hidden="true"></span><span><b><%= x.t %></b><small><%= x.s %></small><span class="pc-go"><%- icon('print', 16) %> พิมพ์</span></span></a>
+      <% } %>
+    <% } %>
+  </div>
+</section>
+<% } %>
+<% if (ff.printbar && !locals.hideBar) { %>
+<nav class="print-bar" aria-label="พิมพ์เอกสาร">
+  <% for (const x of pc.filter((y) => !y.off)) { %><a href="<%= x.href %>" target="_blank" rel="noopener"><%- icon('print', 16) %> <%= pc.filter((y) => !y.off).length > 2 && x.mini ? x.mini : x.short %></a><% } %>
+</nav>
+<% } %>

@@ -78,6 +78,7 @@
   <div class="alert alert-success"><%- icon('ok') %><span><%= isNote ? 'ลงความเห็นครบทุกระดับแล้ว' : 'ผ่านการพิจารณาครบทุกระดับแล้ว' %> เมื่อ <%= util.thaiDateTime(sub.completed_at) %></span></div>
 <% } %>
 
+<%- include('partials/print_card', { hideBar: canReview || bookSign }) %>
 <% if (locals.pc) { %><%- include('partials/precheck', { pc, sub, files: current, mode: 'detail' }) %><% } %>
 
 <div class="card">

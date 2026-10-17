@@ -200,3 +200,19 @@ test('ผู้ดูแลระบบตั้งจำนวนหน้า�
   const t = await as('sci2');
   assert.match((await t.get('/works/new?type=manual')).text, /data-min-pages="5"/);
 });
+
+test('หน้างานมีการ์ดเอกสารสำหรับพิมพ์และแถบพิมพ์บนมือถือ แบบประเมินที่ยังไม่มีคะแนนเป็นเส้นประ ปิดสวิตช์แล้วหาย', async () => {
+  const t = await as('sci2');
+  const id = await newDraft(t, 'ว39006', await pdf(3));
+  let page = (await t.get(`/s/${id}`)).text;
+  assert.match(page, /class="card print-card"/);
+  assert.match(page, new RegExp(`class="pc-tile" href="/s/${id}/print"`));
+  assert.match(page, /class="pc-tile off"[\s\S]*?พิมพ์ได้เมื่อผู้ตรวจให้คะแนนแล้ว/);
+  assert.match(page, /class="print-bar"/);
+  await db.setSetting('ff_printcard', '0');
+  await db.setSetting('ff_printbar', '0');
+  page = (await t.get(`/s/${id}`)).text;
+  assert.doesNotMatch(page, /print-card|class="print-bar"/);
+  await db.setSetting('ff_printcard', '1');
+  await db.setSetting('ff_printbar', '1');
+});
