@@ -1,0 +1,42 @@
+<%- include('partials/top') %>
+<%# หน้าเกี่ยวกับระบบ (ฟังก์ชันเสริม aboutpage) ข้อมูลจาก src/site.js %>
+<% const S = site; %>
+<div class="narrow">
+  <div class="card about-head">
+    <img src="<%= logoUrl %>" alt="ตราโรงเรียน">
+    <div>
+      <h1><%= S.app_name %></h1>
+      <% if (S.app_full !== S.app_name) { %><div class="about-full"><%= S.app_full %></div><% } %>
+      <% if (S.app_full_en) { %><div class="muted small"><%= S.app_full_en %></div><% } %>
+    </div>
+  </div>
+  <div class="card">
+    <dl class="about-list">
+      <div><dt>หน่วยงานที่ดูแล</dt><dd><%= [S.unit_name, S.unit_group, settings.school_name].filter(Boolean).join(' ') %></dd></div>
+      <% if (S.school_affiliation) { %><div><dt>สังกัด</dt><dd><%= S.school_affiliation %></dd></div><% } %>
+      <div><dt>ใช้ทำอะไร</dt><dd>ส่งและตรวจคู่มือรายวิชา แผนการจัดการเรียนรู้ และบันทึกหลังแผน<%= ff.library ? ' คลังงานการจัดการเรียนรู้' : '' %> พิมพ์บันทึกข้อความและแบบประเมิน</dd></div>
+      <% if (S.contact_name || S.contact_line || S.contact_hours) { %>
+      <div><dt>ติดต่อผู้ดูแลระบบ</dt><dd><%= S.contact_name %><% if (S.contact_line) { %> · LINE <% if (/^https?:/.test(S.contact_line)) { %><a href="<%= S.contact_line %>" target="_blank" rel="noopener">เพิ่มเพื่อน</a><% } else { %><%= S.contact_line %><% } %><% } %><%= S.contact_hours ? ' · ' + S.contact_hours : '' %></dd></div>
+      <% } %>
+      <% if (S.school_address || S.school_phone || S.school_email) { %>
+      <div><dt>ติดต่อโรงเรียน</dt><dd><%= S.school_address %><% if (S.school_phone) { %><br>โทร <a href="tel:<%= S.school_phone.replace(/[^0-9+]/g, '') %>"><%= S.school_phone %></a><% } %><% if (S.school_email) { %><br>อีเมล <a href="mailto:<%= S.school_email %>"><%= S.school_email %></a><% } %></dd></div>
+      <% } %>
+      <% if (S.school_web || S.school_facebook) { %>
+      <div><dt>ลิงก์</dt><dd><% if (S.school_web) { %><a href="<%= S.school_web %>" target="_blank" rel="noopener">เว็บไซต์โรงเรียน</a><% } %><% if (S.school_web && S.school_facebook) { %> · <% } %><% if (S.school_facebook) { %><a href="<%= S.school_facebook %>" target="_blank" rel="noopener">เพจ Facebook โรงเรียน</a><% } %></dd></div>
+      <% } %>
+      <% if (assetDate) { %><div><dt>รุ่นของระบบ</dt><dd><%= assetDate %></dd></div><% } %>
+    </dl>
+  </div>
+  <% if (ff.appicon) { %>
+  <div class="card" id="install">
+    <h3>ติดตั้งเป็นแอป</h3>
+    <div class="about-icon"><img src="<%= '/static/img/app/icon-' + site.icon + '-180.png' %>" alt="ไอคอนแอป"><div><b><%= S.app_name %></b><div class="muted small">ไอคอนนี้จะอยู่บนหน้าจอโฮม เปิดได้เต็มจอเหมือนแอป</div></div></div>
+    <div class="btn-row" style="margin-top:10px">
+      <button type="button" class="btn" data-install-open="ios">ไอโฟน ไอแพด</button>
+      <button type="button" class="btn" data-install-open="android">แอนดรอยด์</button>
+      <button type="button" class="btn" data-install-open="desktop">คอม</button>
+    </div>
+  </div>
+  <% } %>
+</div>
+<%- include('partials/bottom') %>

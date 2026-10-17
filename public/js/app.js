@@ -612,6 +612,59 @@
     });
   });
 
+  // ---------- วิธีติดตั้งเป็นแอป (ฟังก์ชันเสริม appicon installtip aboutpage) ----------
+  // ขึ้นเองครั้งแรกครั้งเดียวต่อเครื่อง เฉพาะไอโฟน ไอแพด แอนดรอยด์ที่ยังไม่ได้เปิดจากไอคอนแอป (จำใน localStorage)
+  const inst = document.getElementById('install-tip');
+  if (inst) {
+    const KEY = 'cw-install-tip';
+    const ua = navigator.userAgent;
+    const ios = /iPhone|iPad|iPod/.test(ua) || (/Macintosh/.test(ua) && navigator.maxTouchPoints > 1);
+    const android = /Android/.test(ua);
+    const standalone = (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches) || navigator.standalone === true;
+    const now = inst.querySelector('[data-install-now]');
+    let deferred = null;
+    // Chrome บนแอนดรอยด์และคอมติดตั้งให้ได้ทันทีด้วยปุ่มเดียว
+    window.addEventListener('beforeinstallprompt', (e) => {
+      e.preventDefault();
+      deferred = e;
+    });
+    const seen = () => {
+      try {
+        localStorage.setItem(KEY, '1');
+      } catch (e) {}
+    };
+    const openTip = (os) => {
+      inst.querySelectorAll('[data-install-os]').forEach((s) => {
+        s.hidden = s.dataset.installOs !== os;
+      });
+      now.hidden = !(deferred && os !== 'ios');
+      if (typeof inst.showModal === 'function') inst.showModal();
+    };
+    inst.querySelectorAll('[data-install-close]').forEach((b) =>
+      b.addEventListener('click', () => {
+        seen();
+        inst.close();
+      })
+    );
+    inst.addEventListener('cancel', seen);
+    now.addEventListener('click', () => {
+      seen();
+      inst.close();
+      if (deferred) deferred.prompt();
+      deferred = null;
+    });
+    document.querySelectorAll('[data-install-open]').forEach((b) => b.addEventListener('click', () => openTip(b.dataset.installOpen)));
+    let first = false;
+    try {
+      first = !localStorage.getItem(KEY);
+    } catch (e) {}
+    if (inst.hasAttribute('data-auto') && first && !standalone && (ios || android)) {
+      setTimeout(() => {
+        if (!document.querySelector('dialog[open]')) openTip(ios ? 'ios' : 'android');
+      }, 1500);
+    }
+  }
+
   // ---------- หน้าเข้าสู่ระบบ: เลือกชื่อจากรายชื่อ หรือพิมพ์ชื่อผู้ใช้เอง ----------
   document.querySelectorAll('[data-type-name]').forEach((b) => {
     b.addEventListener('click', () => {

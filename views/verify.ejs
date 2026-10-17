@@ -3,7 +3,7 @@
   <div class="card verify-card">
     <div class="verify-head">
       <img src="<%= logoUrl %>" alt="ตราโรงเรียน">
-      <div><b style="font-size:1.15rem">ตรวจสอบเอกสารจากระบบส่งแผนการสอน</b><br><span class="muted"><%= settings.school_name %></span></div>
+      <div><b style="font-size:1.15rem">ตรวจสอบเอกสารจาก <%= site.app_name %> <%= site.app_full %></b><br><span class="muted"><%= settings.school_name %></span></div>
     </div>
     <% if (!sub) { %>
       <div class="alert alert-error"><%- icon('shield') %><span>ไม่พบเอกสารนี้ในระบบ QR Code อาจไม่ถูกต้อง หรือเอกสารถูกลบไปแล้ว</span></div>

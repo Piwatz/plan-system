@@ -533,6 +533,12 @@ router.get('/stats', async (req, res) => {
   });
 });
 
+// หน้าเกี่ยวกับระบบ (ฟังก์ชันเสริม aboutpage)
+router.get('/about', (req, res, next) => {
+  if (!req.ff.aboutpage) return next();
+  res.render('about', { title: 'เกี่ยวกับระบบ' });
+});
+
 router.get('/profile', async (req, res) => {
   // งานที่ยังใช้ลายเซ็นเดิมของฉัน (ฟังก์ชันเสริม resign) มีปุ่มเปลี่ยนทั้งหมดครั้งเดียว
   const stale = req.ff.resign && req.me.signature ? (await require('../resign').staleWorks(req.me.id)).length : 0;

@@ -3,7 +3,16 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title><%= title ? title + ' | ' : '' %>ระบบส่งแผนการสอน</title>
+<title><%= title ? title + ' | ' : '' %><%= site.app_name %></title>
+<% if (ff.appicon) { %><%# ติดตั้งเป็นแอปบนหน้าจอโฮม: แอนดรอยด์และคอมอ่าน manifest ไอโฟนอ่าน apple-touch-icon %>
+<link rel="manifest" href="/manifest.webmanifest">
+<link rel="apple-touch-icon" href="<%= '/static/img/app/icon-' + site.icon + '-180.png' %>">
+<meta name="apple-mobile-web-app-title" content="<%= site.app_name %>">
+<meta name="application-name" content="<%= site.app_name %>">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="<%= theme.side %>">
+<% } %>
 <% if (ff.prefs) { %><script>try{var p=JSON.parse(localStorage.getItem('plan-prefs')||'{}');if(p.dark)document.documentElement.classList.add('dark');if(p.big)document.documentElement.classList.add('big')}catch(e){}</script><% } %>
 <% for (const f of fontFiles) { %><link rel="stylesheet" href="<%= f %>">
 <% } %><style><%- themeCss %></style>
@@ -39,6 +48,7 @@
   }
   const more = [{ href: '/stats', icon: 'chart', label: 'สถิติโรงเรียน', active: p.startsWith('/stats') }];
   if (ff.library) more.unshift({ href: '/library', icon: 'books', label: 'คลังงานการจัดการเรียนรู้', active: p.startsWith('/library') });
+  if (ff.aboutpage) more.push({ href: '/about', icon: 'school', label: 'เกี่ยวกับระบบ', active: p === '/about' });
   if (me.is_admin) {
     more.push({ href: '/admin', icon: 'school', label: 'ผู้ดูแลระบบ', active: p.startsWith('/admin') && !p.startsWith('/admin/features') });
     more.push({ href: '/admin/features', icon: 'toggle', label: 'ฟังก์ชันเสริม', active: p.startsWith('/admin/features') });
@@ -50,7 +60,7 @@
     <a class="side-brand" href="/">
       <img class="side-logo" src="<%= logoUrl %>" alt="ตราโรงเรียน">
       <span class="side-brand-text">
-        <b>ระบบส่งแผนการสอน</b>
+        <b><%= site.app_name %></b>
         <span><%= settings.school_name %></span>
       </span>
     </a>
@@ -84,7 +94,7 @@
   <div class="main">
     <header class="mtop">
       <button type="button" class="mtop-btn" data-side-open aria-label="เปิดเมนู"><%- icon('menu', 24) %></button>
-      <a class="mtop-brand" href="/"><img src="<%= logoUrl %>" alt=""><span><b>ระบบส่งแผนการสอน</b><small>ภาคเรียนที่ <%= settings.semester %>/<%= settings.academic_year %><%= demo ? ' โหมดทดลอง' : '' %></small></span></a>
+      <a class="mtop-brand" href="/"><img src="<%= logoUrl %>" alt=""><span><b><%= site.app_name %></b><small>ภาคเรียนที่ <%= settings.semester %>/<%= settings.academic_year %><%= demo ? ' โหมดทดลอง' : '' %></small></span></a>
       <a class="mtop-btn" href="/alerts" aria-label="การแจ้งเตือน"><%- icon('bell', 24) %><% if (badges.alerts) { %><span class="dot-badge"><%= badges.alerts %></span><% } %></a>
     </header>
     <% if (demo) { %><div class="demo-strip">โหมดทดลอง ข้อมูลทั้งหมดเป็นชื่อสมมติ</div><% } %>

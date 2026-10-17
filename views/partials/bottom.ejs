@@ -24,7 +24,7 @@
     if (me.is_admin && !me.is_teacher) adminTab.active = p.startsWith('/admin') && !p.startsWith('/admin/features');
   }
 %>
-    <footer class="footer"><%= settings.school_name %></footer>
+    <% if (ff.sitefooter) { %><%- include('site_footer') %><% } else { %><footer class="footer"><%= settings.school_name %></footer><% } %>
   </div>
 </div>
 <nav class="bnav" aria-label="เมนูลัด">
@@ -54,6 +54,34 @@
     <button type="button" class="btn btn-ghost btn-lg" data-sig-cancel>ยกเลิก</button>
     <button type="button" class="btn btn-primary btn-lg" data-sig-ok>เซ็นแล้ว ส่งงาน</button>
   </div>
+</dialog>
+<% } %>
+<% if (me && ff.appicon && (ff.installtip || ff.aboutpage)) { %>
+<%# วิธีติดตั้งเป็นแอป: ขึ้นเองครั้งแรกครั้งเดียวบนมือถือที่ยังไม่ติดตั้ง (installtip data-auto) หรือกดดูจากหน้าเกี่ยวกับระบบ %>
+<dialog id="install-tip" class="modal install-tip"<%- ff.installtip ? ' data-auto' : '' %>>
+  <img class="it-icon" src="<%= '/static/img/app/icon-' + site.icon + '-180.png' %>" alt="">
+  <h3 class="center">เพิ่ม <%= site.app_name %> ไว้ที่หน้าจอโฮม</h3>
+  <p class="center muted small">เปิดได้เต็มจอเหมือนแอป ไม่ต้องพิมพ์ที่อยู่เว็บอีก</p>
+  <ol class="it-steps" data-install-os="ios">
+    <li>แตะปุ่ม <b>แชร์</b> (สี่เหลี่ยมมีลูกศรชี้ขึ้น) ด้านล่างของ Safari หรือมุมขวาบนของ Chrome</li>
+    <li>เลื่อนลงแล้วแตะ <b>เพิ่มไปยังหน้าจอโฮม</b></li>
+    <li>แตะ <b>เพิ่ม</b> มุมขวาบน</li>
+  </ol>
+  <ol class="it-steps" data-install-os="android" hidden>
+    <li>แตะปุ่ม <b>เมนูจุดสามจุด</b> มุมขวาบนของ Chrome</li>
+    <li>แตะ <b>เพิ่มลงในหน้าจอหลัก</b> หรือ <b>ติดตั้งแอป</b></li>
+    <li>แตะ <b>ติดตั้ง</b> หรือ <b>เพิ่ม</b></li>
+  </ol>
+  <ol class="it-steps" data-install-os="desktop" hidden>
+    <li>Chrome หรือ Edge: กดไอคอน <b>ติดตั้ง</b> ท้ายช่องที่อยู่เว็บ หรือเมนูจุดสามจุด แล้วเลือก <b>ติดตั้ง <%= site.app_name %></b></li>
+    <li>Safari บน Mac: เมนู <b>ไฟล์</b> แล้วเลือก <b>เพิ่มไปยัง Dock</b></li>
+    <li>ไอคอนจะอยู่บนเดสก์ท็อปหรือแถบงาน กดเปิดได้เลย</li>
+  </ol>
+  <div class="modal-actions">
+    <button type="button" class="btn btn-ghost btn-lg" data-install-close>ไว้ทีหลัง</button>
+    <button type="button" class="btn btn-primary btn-lg" data-install-close>เข้าใจแล้ว</button>
+  </div>
+  <button type="button" class="btn btn-success btn-lg it-now" data-install-now hidden>ติดตั้งเลย</button>
 </dialog>
 <% } %>
 <div class="overlay" id="busy"<%- ff.resume ? ' data-resume' : '' %>>

@@ -1,0 +1,48 @@
+<%# ท้ายเว็บแบบทางการ (ฟังก์ชันเสริม sitefooter) ข้อมูลจาก src/site.js แก้ได้ในหน้าตั้งค่าโรงเรียน ช่องที่ว่างไม่แสดง
+    บนคอม 4 ช่อง บนมือถือย่อเหลือหน่วยงาน ติดต่อ และลิงก์ %>
+<% const S = site; %>
+<footer class="site-foot">
+  <div class="sf-cols">
+    <div class="sf-brand">
+      <img src="<%= logoUrl %>" alt="ตราโรงเรียน">
+      <div>
+        <b class="sf-app"><%= S.app_name %></b>
+        <% if (S.app_full !== S.app_name) { %><b><%= S.app_full %></b><% } %>
+        <% if (S.app_full_en) { %><small><%= S.app_full_en %></small><% } %>
+        <small><%= [S.unit_name, S.unit_group].filter(Boolean).join(' ') %></small>
+        <small><%= settings.school_name %><%= S.school_name_en ? ' · ' + S.school_name_en : '' %></small>
+        <% if (S.school_affiliation) { %><small><%= S.school_affiliation %></small><% } %>
+      </div>
+    </div>
+    <% if (S.school_address || S.school_phone || S.school_email) { %>
+    <div class="sf-col sf-contact">
+      <h4>ติดต่อ</h4>
+      <ul>
+        <% if (S.school_address) { %><li><%= S.school_address %></li><% } %>
+        <% if (S.school_phone) { %><li>โทร <a href="tel:<%= S.school_phone.replace(/[^0-9+]/g, '') %>"><%= S.school_phone %></a></li><% } %>
+        <% if (S.school_email) { %><li>อีเมล <a href="mailto:<%= S.school_email %>"><%= S.school_email %></a></li><% } %>
+      </ul>
+    </div>
+    <% } %>
+    <div class="sf-col">
+      <h4>ลิงก์</h4>
+      <ul>
+        <% if (S.school_web) { %><li><a href="<%= S.school_web %>" target="_blank" rel="noopener">เว็บไซต์โรงเรียน</a></li><% } %>
+        <% if (S.school_facebook) { %><li><a href="<%= S.school_facebook %>" target="_blank" rel="noopener">เพจ Facebook โรงเรียน</a></li><% } %>
+        <% if (ff.aboutpage) { %><li><a href="/about">เกี่ยวกับระบบ</a></li><% } %>
+        <% if (ff.aboutpage && ff.appicon) { %><li><a href="/about#install">ติดตั้งเป็นแอป</a></li><% } %>
+      </ul>
+    </div>
+    <% if (S.contact_name || S.contact_line || S.contact_hours) { %>
+    <div class="sf-col sf-admin">
+      <h4>ผู้ดูแลระบบ</h4>
+      <ul>
+        <% if (S.contact_name) { %><li><%= S.contact_name %></li><% } %>
+        <% if (S.contact_line) { %><li>LINE <% if (/^https?:/.test(S.contact_line)) { %><a href="<%= S.contact_line %>" target="_blank" rel="noopener">เพิ่มเพื่อน</a><% } else { %><%= S.contact_line %><% } %></li><% } %>
+        <% if (S.contact_hours) { %><li>เวลาติดต่อ <%= S.contact_hours %></li><% } %>
+      </ul>
+    </div>
+    <% } %>
+  </div>
+  <div class="sf-bar"><span>© <%= siteYear %> <%= S.unit_name || S.app_name %> <%= settings.school_name %></span><span><%= S.app_name %> <%= assetDate ? 'รุ่น ' + assetDate : '' %></span></div>
+</footer>

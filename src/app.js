@@ -14,6 +14,7 @@ const themes = require('./themes');
 const icons = require('./icons');
 const { CompiledView } = require('./view');
 const { STATIC_MOUNTS } = require('./static');
+const site = require('./site');
 
 // กุญแจเซ็น cookie: เว็บจริงต้องตั้ง SESSION_SECRET (สุ่มยาว 32 ตัวขึ้นไป) ไม่ตั้งแล้วไม่เปิดระบบ
 // ในเครื่องใช้ SESSION_SECRET ถ้าตั้งไว้ ไม่ตั้งก็สุ่มเก็บในไฟล์ secret.key ของโฟลเดอร์ข้อมูล (data-pg ไม่ใช่ data ของระบบเดิม)
@@ -44,6 +45,9 @@ function createApp(options = {}) {
   // บน Node เปลี่ยนทุกครั้งที่เปิดระบบใหม่ เบราว์เซอร์จะโหลดไฟล์ CSS/JS รุ่นล่าสุด
   // บน Workers ใช้รหัสจากตอน build (Date.now() ตอนเริ่มบน Workers ได้ 0 และไม่ได้เปลี่ยนตามรุ่นไฟล์)
   const assetVersion = options.assetVersion || Date.now().toString(36);
+  // รุ่นของระบบ (วันที่ build) แสดงท้ายเว็บและหน้าเกี่ยวกับระบบ
+  const builtAt = parseInt(assetVersion, 36);
+  const assetDate = builtAt > 1.6e12 ? util.thaiDate(db.nowStr(new Date(builtAt)), true) : '';
   const app = express();
   // หน้าเว็บ compile ไว้ล่วงหน้าใน dist/views.js (npm run build) ไม่ใช้ EJS ตอนรัน
   app.set('view', CompiledView);
@@ -132,10 +136,14 @@ function createApp(options = {}) {
       themeCss: themes.cssVars(theme) + (ff.prefs && night.key !== theme.key ? themes.cssVars(night, 'html.dark') : ''),
       fontFiles: [...new Set([...themes.fontFiles(theme), ...(ff.prefs ? themes.fontFiles(night) : [])])],
       logoUrl: settings.school_logo || '/static/img/school-logo-sm.png',
+      // ชื่อระบบ ข้อมูลท้ายเว็บ และไอคอนแอป (src/site.js)
+      site: site.of(settings),
       demo: config.DEMO,
       // รันบน Cloudflare Workers: ข้อความที่พูดถึง Wi-Fi และเครื่องที่ติดตั้งระบบเปลี่ยนเป็นแบบคลาวด์
       cloud: config.WORKERS,
       assetVersion,
+      assetDate,
+      siteYear: Number(db.nowStr().slice(0, 4)) + 543,
       currentPath: req.path,
       flash: req.session && req.session.flash,
       badges: { inbox: 0, returned: 0, notes: 0, alerts: 0 },
@@ -168,6 +176,11 @@ function createApp(options = {}) {
     next();
   });
 
+  // ไฟล์ติดตั้งแอปบนหน้าจอโฮม (ฟังก์ชันเสริม appicon) เปิดได้โดยไม่ต้องเข้าสู่ระบบ
+  app.get('/manifest.webmanifest', (req, res) => {
+    if (!req.ff.appicon) return res.status(404).end();
+    res.type('application/manifest+json').send(JSON.stringify(site.manifest(req.settings, themes.resolve(req.settings.theme).side)));
+  });
   app.use(require('./routes/media').signature);
   app.use(require('./routes/auth'));
   app.use(require('./routes/verify'));

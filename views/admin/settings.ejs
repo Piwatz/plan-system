@@ -41,6 +41,25 @@
       <div class="hint">QR Code บนเอกสารจะชี้มาที่อยู่นี้ ถ้าเว้นว่าง ระบบใช้<%= cloud ? 'ที่อยู่เว็บที่เปิดอยู่ตอนพิมพ์เอกสาร' : 'ที่อยู่ในวง Wi-Fi ของเครื่องที่ติดตั้งระบบ' %></div>
     </div>
 
+    <%# ชื่อระบบ ข้อมูลท้ายเว็บ และไอคอนแอป (src/site.js) %>
+    <h3 style="margin-top:18px">ชื่อระบบและข้อมูลท้ายเว็บ</h3>
+    <p class="muted small">ใช้บนแถบเมนู ชื่อแท็บ ใต้ไอคอนแอป ท้ายเว็บ และหน้าเกี่ยวกับระบบ ช่องที่เว้นว่างจะไม่แสดง</p>
+    <div class="form-grid">
+      <% for (const f of siteFields) { %>
+        <div class="field">
+          <label for="site_<%= f.key %>"><%= f.label %></label>
+          <input type="<%= f.url ? 'url' : 'text' %>" id="site_<%= f.key %>" name="site_<%= f.key %>" value="<%= site[f.key] %>" maxlength="<%= f.max %>"<%- f.key === 'app_name' ? ' required' : '' %>>
+        </div>
+      <% } %>
+    </div>
+    <span class="label">ไอคอนแอปบนหน้าจอโฮม</span>
+    <div class="icon-pick">
+      <% for (const [k, name] of Object.entries(siteIcons)) { %>
+        <label class="icon-card"><input type="radio" name="site_icon" value="<%= k %>" <%= site.icon === k ? 'checked' : '' %>><img src="/static/img/app/icon-<%= k %>-180.png" alt="ไอคอนแบบ <%= k %>"><span>แบบ <%= k %> <%= name %></span></label>
+      <% } %>
+    </div>
+    <div class="hint">เครื่องที่เพิ่มไปยังหน้าจอโฮมไว้แล้ว ต้องลบไอคอนเดิมแล้วเพิ่มใหม่ ไอคอนใหม่จึงจะขึ้น</div>
+
     <h3 style="margin-top:18px">การจัดวางบนมือถือและไอแพดแนวตั้ง</h3>
     <div class="seg" style="margin-bottom:6px">
       <label><input type="radio" name="mobile_layout" value="simple" <%= settings.mobile_layout !== 'classic' ? 'checked' : '' %>><span>แบบเรียบง่าย (แนะนำ)</span></label>

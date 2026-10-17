@@ -708,7 +708,8 @@ const logoUpload = multer({ storage: multer.memoryStorage(), limits: { fileSize:
 ]);
 
 router.get('/settings', (req, res) => {
-  res.render('admin/settings', { title: 'ตั้งค่าโรงเรียน', themeList: themes.list(), themeOf: (k) => themes.resolve(k) });
+  const site = require('../site');
+  res.render('admin/settings', { title: 'ตั้งค่าโรงเรียน', themeList: themes.list(), themeOf: (k) => themes.resolve(k), siteFields: site.FIELDS, siteIcons: site.ICONS });
 });
 
 // บันทึกค่าตั้ง คืนข้อความผิดพลาดถ้ามี (ไม่มีคือสำเร็จ)
@@ -734,6 +735,15 @@ async function saveSettings(req) {
   if (layout !== (req.settings.mobile_layout || 'simple')) {
     await setSetting('mobile_layout', layout);
     await features.audit(req.me, `เปลี่ยนการจัดวางบนมือถือเป็น${layout === 'simple' ? 'แบบเรียบง่าย' : 'แบบเต็ม'}`, 'mobile_layout');
+  }
+  // ชื่อระบบ ข้อมูลท้ายเว็บ และไอคอนแอป (src/site.js)
+  const site = require('../site');
+  // ฟอร์มที่ไม่มีช่องเหล่านี้ (เช่น ฟอร์มเก่า) ไม่แตะค่าเดิม
+  if ('site_app_name' in b) {
+    const oldIcon = site.of(req.settings).icon;
+    for (const [k, v] of site.fromForm(b)) await setSetting(k, v);
+    const newIcon = site.iconKey(b.site_icon);
+    if (newIcon !== oldIcon) await features.audit(req.me, `เปลี่ยนไอคอนแอปเป็นแบบ ${newIcon} ${site.ICONS[newIcon]}`, 'site_icon');
   }
   const theme = themes.themeKey(b.theme);
   if (theme !== req.settings.theme) {

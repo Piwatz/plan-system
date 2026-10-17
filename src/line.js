@@ -13,7 +13,7 @@ async function summaryText(settings, { test = false } = {}) {
      LEFT JOIN departments d ON d.id = s.department_id
      WHERE s.status = 'pending' GROUP BY s.current_role, d.name ORDER BY s.current_role, d.name`
   );
-  const lines = [`ระบบส่งแผนการสอน ${settings.school_name}`, `สรุปงานรอลงนาม ${util.thaiDate(nowStr())}`];
+  const lines = [`${require('./site').of(settings).app_name} ${settings.school_name}`, `สรุปงานรอลงนาม ${util.thaiDate(nowStr())}`];
   if (test) lines.push('(ข้อความทดลองจากหน้าฟังก์ชันเสริม)');
   let total = 0;
   for (const st of wf.allSteps()) {

@@ -401,3 +401,50 @@ test('ย่อเอกสารที่ล้นให้จบ 1 หน้�
   assert.match(print, /var all = false;/);
   await admin.post('/admin/features/printfit', { on: '1' });
 });
+
+test('ชื่อแอป ไอคอนหน้าจอโฮม ท้ายเว็บ และหน้าเกี่ยวกับระบบ เปลี่ยนได้และปิดได้', async () => {
+  const anon = new Client();
+  let r = await anon.get('/manifest.webmanifest');
+  assert.equal(r.status, 200, 'manifest เปิดได้โดยไม่ต้องเข้าระบบ');
+  let m = JSON.parse(r.text);
+  assert.equal(m.short_name, 'CW-Learn');
+  assert.equal(m.display, 'standalone');
+  assert.ok(m.icons.some((i) => i.src === '/static/img/app/icon-A-512.png'));
+  assert.ok(m.icons.some((i) => i.purpose === 'maskable'));
+  const login = (await anon.get('/login')).text;
+  assert.match(login, /<title>[^<]*CW-Learn<\/title>/);
+  assert.match(login, /rel="apple-touch-icon" href="\/static\/img\/app\/icon-A-180.png"/);
+
+  const t = await as('teacher');
+  let home = (await t.get('/')).text;
+  assert.match(home, /class="site-foot"/);
+  assert.match(home, /ระบบงานส่งเสริมพัฒนากระบวนการเรียนรู้/);
+  assert.match(home, /href="\/about"/);
+  assert.match(home, /id="install-tip" class="modal install-tip" data-auto/);
+  const about = await t.get('/about');
+  assert.equal(about.status, 200);
+  assert.match(about.text, /data-install-open="ios"/);
+  assert.match((await (await as('admin')).get('/admin/settings')).text, /name="site_icon" value="C"/);
+
+  // เปลี่ยนไอคอนและชื่อจากค่าตั้ง ช่องที่ว่างไม่แสดง
+  await db.setSetting('site_icon', 'C');
+  await db.setSetting('site_app_name', 'ทดสอบแอป');
+  await db.setSetting('site_school_phone', '');
+  m = JSON.parse((await anon.get('/manifest.webmanifest')).text);
+  assert.equal(m.short_name, 'ทดสอบแอป');
+  assert.ok(m.icons.some((i) => i.src === '/static/img/app/icon-C-512.png'));
+  home = (await t.get('/')).text;
+  assert.match(home, /icon-C-180.png/);
+  assert.doesNotMatch(home, /href="tel:/);
+  for (const k of ['site_icon', 'site_app_name', 'site_school_phone']) await db.q.run('DELETE FROM settings WHERE key = ?', k);
+  db.clearRefs();
+
+  // ปิดสวิตช์ กลับเป็นแบบเดิม
+  for (const k of ['appicon', 'sitefooter', 'aboutpage', 'installtip']) await db.setSetting(`ff_${k}`, '0');
+  assert.equal((await anon.get('/manifest.webmanifest')).status, 404);
+  home = (await t.get('/')).text;
+  assert.doesNotMatch(home, /rel="manifest"|class="site-foot"|id="install-tip"/);
+  assert.match(home, /<footer class="footer">/);
+  assert.equal((await t.get('/about')).status, 404);
+  for (const k of ['appicon', 'sitefooter', 'aboutpage', 'installtip']) await db.setSetting(`ff_${k}`, '1');
+});

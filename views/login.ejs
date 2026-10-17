@@ -2,7 +2,8 @@
 <div class="login-wrap">
   <div class="login-card">
     <div class="logo"><img src="<%= logoUrl %>" alt="ตราโรงเรียน"></div>
-    <h1 class="center" style="margin:12px 0 2px;font-size:1.5rem">ระบบส่งแผนการสอนออนไลน์</h1>
+    <h1 class="center" style="margin:12px 0 2px;font-size:1.5rem"><%= site.app_name %></h1>
+    <p class="center" style="margin:0;font-weight:600"><%= site.app_full %></p>
     <p class="center muted"><%= settings.school_name %></p>
     <% if (flash) { %><div class="alert alert-<%= flash.type === 'error' ? 'error' : 'success' %>"><span><%= flash.text %></span></div><% } %>
     <% if (error) { %><div class="alert alert-error"><%- icon('shield') %><span><%= error %></span></div><% } %>
