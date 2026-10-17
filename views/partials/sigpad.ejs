@@ -1,14 +1,32 @@
-<%# ช่องเซ็นชื่อ · preview = ปุ่มดูตัวอย่างบนเอกสาร (หน้าข้อมูลส่วนตัว) · remember = ช่องติ๊กจำลายเซ็น (กรอบเซ็นตอนลงนาม) %>
-<div class="sigpad" data-sigpad<%- ff.sigclean ? ' data-clean' : '' %>>
+<%# ช่องเซ็นชื่อ · preview = ปุ่มดูตัวอย่างบนเอกสาร และแก้ลายเซ็นที่บันทึกไว้ (หน้าข้อมูลส่วนตัว) · remember = ช่องติ๊กจำลายเซ็น (กรอบเซ็นตอนลงนาม) %>
+<% const savedSig = locals.preview && me.signature ? me.signature : ''; %>
+<div class="sigpad" data-sigpad<%- ff.sigclean ? ' data-clean' : '' %><% if (savedSig) { %> data-current="<%= savedSig %>"<% } %>>
   <canvas width="960" height="320" aria-label="ช่องเซ็นชื่อ"></canvas>
 <% if (ff.sigclean) { %>
   <div class="sig-note" data-clean-note hidden><span data-clean-text>ปรับรูปให้แล้ว ตัดขอบว่าง ลบพื้นกระดาษ</span> <button type="button" class="linkish" data-clean-toggle>ใช้รูปเดิมแทน</button></div>
+<% } %>
+<% if (ff.sigadjust) { %>
+  <div class="sig-adjust" data-adjust hidden>
+    <div class="sig-adj-row"><span class="t">ขนาด</span>
+      <button type="button" class="btn btn-ghost sig-step" data-size="-1" aria-label="เล็กลง">−</button>
+      <input type="range" min="40" max="100" step="5" value="100" data-size-range aria-label="ขนาดลายเซ็น">
+      <button type="button" class="btn btn-ghost sig-step" data-size="1" aria-label="ใหญ่ขึ้น">+</button></div>
+    <div class="sig-adj-row"><span class="t">สีเส้น</span>
+      <button type="button" class="btn btn-ghost btn-sm" data-color="#1b2f9e"><span class="ink-dot ink-blue"></span> น้ำเงิน</button>
+      <button type="button" class="btn btn-ghost btn-sm" data-color="#111111"><span class="ink-dot ink-black"></span> ดำ</button></div>
+  </div>
+<% } %>
+<% if (ff.sigadjust && locals.preview) { %>
+  <div class="sig-mini" data-mini hidden><div class="small muted">ตัวอย่างบนเอกสาร</div><div class="sp-sig sp-teacher"><img alt="ลายเซ็น" data-mini-img></div><div>(<%= me.full_name %>)</div></div>
 <% } %>
   <div class="btn-row" style="margin-top:8px">
     <button type="button" class="btn btn-ghost btn-sm" data-clear>ล้าง</button>
     <label class="btn btn-ghost btn-sm">ใช้รูปลายเซ็นจากไฟล์<input type="file" accept="image/png,image/jpeg" hidden data-file></label>
 <% if (ff.sigclean && locals.preview) { %>
     <button type="button" class="btn btn-ghost btn-sm" data-sig-preview>ดูตัวอย่างบนเอกสาร</button>
+<% } %>
+<% if (ff.sigadjust && savedSig) { %>
+    <button type="button" class="btn btn-ghost btn-sm" data-edit-saved>แก้ลายเซ็นที่บันทึกไว้</button>
 <% } %>
     <small class="muted">เซ็นด้วยนิ้วหรือเมาส์ในกรอบ</small>
   </div>

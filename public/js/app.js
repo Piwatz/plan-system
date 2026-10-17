@@ -893,10 +893,20 @@
       const r = canvas.getBoundingClientRect();
       return { x: ((e.clientX - r.left) / r.width) * canvas.width, y: ((e.clientY - r.top) / r.height) * canvas.height };
     }
+    const mini = pad.querySelector('[data-mini-img]');
+    const adjust = pad.querySelector('[data-adjust]');
     function save() {
       out.value = dirty ? canvas.toDataURL('image/png') : '';
+      if (adjust) adjust.hidden = !dirty;
+      // ตัวอย่างบนเอกสารเล็ก ๆ ใต้กรอบ (หน้าข้อมูลส่วนตัว)
+      if (mini) {
+        const src = out.value || pad.dataset.current || '';
+        if (src) mini.setAttribute('src', src);
+        mini.closest('[data-mini]').hidden = !src;
+      }
     }
     canvas.addEventListener('pointerdown', (e) => {
+      resetAdjust();
       drawing = true;
       last = pos(e);
       canvas.setPointerCapture(e.pointerId);
@@ -924,8 +934,77 @@
     pad.querySelector('[data-clear]').addEventListener('click', () => {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
       dirty = false;
+      resetAdjust();
       save();
     });
+    // ---------- ปรับขนาดและสีเอง (ฟังก์ชันเสริม sigadjust) ----------
+    // ฐาน = ลายเซ็นในกรอบที่ตัดขอบว่างแล้ว (จับไว้ตอนเริ่มปรับ) ขนาด 100 = เต็มกรอบ ลดได้ถึง 40
+    // สีเปลี่ยนได้เฉพาะลายเซ็นที่พื้นใส (เซ็นในกรอบ รูปที่ปรับแล้ว ลายเซ็นที่บันทึกไว้) รูปถ่ายเดิมที่มีพื้นเปลี่ยนสีไม่ได้
+    const range = pad.querySelector('[data-size-range]');
+    let base = null;
+    let tint = null;
+    function resetAdjust() {
+      base = null;
+      tint = null;
+      if (range) range.value = '100';
+      pad.querySelectorAll('[data-color]').forEach((b) => b.classList.remove('on'));
+    }
+    function applyAdjust() {
+      if (!dirty) return;
+      if (!base) base = trimInk(canvas);
+      if (!base) return;
+      const zoom = (range ? Number(range.value) : 100) / 100;
+      const m = 0.04;
+      const k = Math.min((canvas.width * (1 - 2 * m)) / base.width, (canvas.height * (1 - 2 * m)) / base.height) * zoom;
+      const w = base.width * k;
+      const h = base.height * k;
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.drawImage(base, (canvas.width - w) / 2, (canvas.height - h) / 2, w, h);
+      if (tint && base.clear) {
+        ctx.globalCompositeOperation = 'source-in';
+        ctx.fillStyle = tint;
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        ctx.globalCompositeOperation = 'source-over';
+      }
+      save();
+    }
+    if (range) {
+      range.addEventListener('input', applyAdjust);
+      pad.querySelectorAll('[data-size]').forEach((b) =>
+        b.addEventListener('click', () => {
+          range.value = String(Math.max(40, Math.min(100, Number(range.value) + Number(b.dataset.size) * 10)));
+          applyAdjust();
+        })
+      );
+      pad.querySelectorAll('[data-color]').forEach((b) =>
+        b.addEventListener('click', () => {
+          if (!dirty) return;
+          if (!base) base = trimInk(canvas);
+          if (!base || !base.clear) return tell('รูปนี้มีพื้นกระดาษ เปลี่ยนสีไม่ได้ กดใช้แบบปรับแล้วก่อน');
+          tint = b.dataset.color;
+          pad.querySelectorAll('[data-color]').forEach((x) => x.classList.toggle('on', x === b));
+          applyAdjust();
+        })
+      );
+    }
+    // แก้ลายเซ็นที่บันทึกไว้: ดึงลายเซ็นเดิมเข้ากรอบ ตัดขอบว่างให้เต็มกรอบ แล้วปรับต่อได้
+    const editSaved = pad.querySelector('[data-edit-saved]');
+    if (editSaved) {
+      editSaved.addEventListener('click', () => {
+        const img = new Image();
+        img.onload = () => {
+          resetAdjust();
+          pic = null;
+          if (note) note.hidden = true;
+          ctx.clearRect(0, 0, canvas.width, canvas.height);
+          ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+          dirty = true;
+          applyAdjust();
+        };
+        img.onerror = () => tell('เปิดลายเซ็นที่บันทึกไว้ไม่ได้ ลองใหม่อีกครั้ง');
+        img.src = pad.dataset.current;
+      });
+    }
     // วาดรูปลงกรอบให้พอดี · margin = ขอบว่างรอบรูป (สัดส่วนของกรอบ)
     function drawFit(src, margin) {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -945,6 +1024,7 @@
     let usingClean = false;
     function showPic() {
       if (!pic) return;
+      resetAdjust();
       if (usingClean) drawFit(pic.clean, 0.06);
       else drawFit(pic.img, 0);
       if (note) {
@@ -1003,7 +1083,37 @@
       });
       dlg.querySelector('[data-sig-close]').addEventListener('click', () => (typeof dlg.close === 'function' ? dlg.close() : dlg.removeAttribute('open')));
     }
+    save();
   });
+
+  // ตัดขอบว่างของผืนผ้าใบ (ส่วนที่ใส) คืนผืนผ้าใบใหม่ที่มีแต่ลายเซ็น · clear = พื้นใสเป็นส่วนใหญ่ (เปลี่ยนสีเส้นได้)
+  function trimInk(src) {
+    const W = src.width;
+    const H = src.height;
+    const d = src.getContext('2d').getImageData(0, 0, W, H).data;
+    let x0 = W;
+    let y0 = H;
+    let x1 = -1;
+    let y1 = -1;
+    let see = 0;
+    for (let y = 0; y < H; y++) {
+      for (let x = 0; x < W; x++) {
+        if (d[(y * W + x) * 4 + 3] < 24) continue;
+        see++;
+        if (x < x0) x0 = x;
+        if (x > x1) x1 = x;
+        if (y < y0) y0 = y;
+        if (y > y1) y1 = y;
+      }
+    }
+    if (x1 < x0) return null;
+    const out = document.createElement('canvas');
+    out.width = x1 - x0 + 1;
+    out.height = y1 - y0 + 1;
+    out.getContext('2d').drawImage(src, x0, y0, out.width, out.height, 0, 0, out.width, out.height);
+    out.clear = see < W * H * 0.6;
+    return out;
+  }
 
   // ปรับรูปถ่ายลายเซ็น: ลบพื้นกระดาษให้ใส ทำเส้นเข้ม ตัดขอบว่าง ทำในเครื่องนี้ทั้งหมด
   // ความสว่างของกระดาษดูเป็นช่อง ๆ (รูปถ่ายมีเงาและแสงไม่เท่ากัน) จุดที่มืดกว่ากระดาษรอบ ๆ ชัดเจนนับเป็นหมึก

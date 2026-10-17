@@ -518,6 +518,19 @@ input:focus, select:focus, textarea:focus { outline: 3px solid color-mix(in srgb
 .sig-box { display: inline-block; background: #fff; border: 1px solid var(--line); border-radius: var(--rs); padding: 6px 12px; }
 .sig-note { margin-top: 6px; font-size: .9em; color: var(--ok); }
 .sig-note[hidden] { display: none; }
+.sig-adjust { margin-top: 10px; display: grid; gap: 8px; }
+.sig-adjust[hidden], .sig-mini[hidden] { display: none; }
+.sig-adj-row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; max-width: 480px; }
+.sig-adj-row .t { font-weight: 600; min-width: 56px; }
+.sig-adj-row input[type=range] { flex: 1; min-width: 120px; accent-color: var(--primary); }
+.sig-step { min-width: 44px; font-size: 1.3rem; padding: 2px 12px; }
+.sig-adj-row .btn.on { background: var(--soft); border-color: var(--primary); color: var(--link); }
+/* สีหมึกจริงของลายเซ็น ไม่ใช่สีธีม */
+.ink-dot { width: 14px; height: 14px; border-radius: 50%; display: inline-block; vertical-align: -2px; box-shadow: 0 0 0 1.5px var(--muted); }
+.ink-blue { background: #1b2f9e; }
+.ink-black { background: #111111; }
+.sig-mini { margin-top: 10px; max-width: 480px; background: #fff; color: #000; border-radius: 6px; box-shadow: 0 1px 6px rgba(0, 0, 0, 0.18); padding: 8px 12px; text-align: center; font-family: 'TH SarabunPSK', 'TH Sarabun New', 'Sarabun', serif; font-size: 16pt; line-height: 1.2; }
+.sig-mini .small { text-align: left; font-family: var(--font); font-size: 12px; color: #555; }
 .linkish { background: none; border: 0; padding: 0; font: inherit; color: var(--link); text-decoration: underline; cursor: pointer; }
 .resign-box { border-bottom: 1px solid var(--line); padding-bottom: 10px; margin-bottom: 10px; }
 .resign-box form { margin: 0; }

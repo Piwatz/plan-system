@@ -151,3 +151,16 @@ test('เซ็นในกรอบตอนลงนามแล้วไม�
   assert.equal(r.status, 302, r.text);
   assert.equal(await sigOf(who), png(4), 'ติ๊กจำ เก็บในข้อมูลส่วนตัว');
 });
+
+test('หน้าข้อมูลส่วนตัวมีปุ่มปรับขนาด สีเส้น และแก้ลายเซ็นที่บันทึกไว้ ปิดสวิตช์แล้วหายไป', async () => {
+  const c = await as('sci2');
+  let page = (await c.get('/profile')).text;
+  assert.match(page, /data-size-range/);
+  assert.match(page, /data-color="#1b2f9e"/);
+  assert.match(page, /data-edit-saved>แก้ลายเซ็นที่บันทึกไว้/);
+  assert.match(page, /data-current="\/media\/signature\?v=/);
+  await db.setSetting('ff_sigadjust', '0');
+  page = (await c.get('/profile')).text;
+  assert.doesNotMatch(page, /data-size-range|data-edit-saved/);
+  await db.setSetting('ff_sigadjust', '1');
+});
