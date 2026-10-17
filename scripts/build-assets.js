@@ -78,6 +78,10 @@ function build({ quiet = false } = {}) {
   fs.writeFileSync(path.join(OUT, '_headers'), headers.join('\n') + '\n');
   const version = hash.digest('hex').slice(0, 10);
   fs.writeFileSync(VERSION_FILE, `// สร้างโดย scripts/build-assets.js ห้ามแก้เอง\nmodule.exports = ${JSON.stringify(version)};\n`);
+  // เวลาที่ build (มิลลิวินาที) ใช้แสดง รุ่น ท้ายเว็บบน Workers (รหัสรุ่นไฟล์ด้านบนเป็นค่าแฮช แปลงเป็นวันที่ไม่ได้)
+  fs.writeFileSync(path.join(ROOT, 'dist', 'build-time.js'), `// สร้างโดย scripts/build-assets.js ห้ามแก้เอง
+module.exports = ${Date.now()};
+`);
   if (!quiet) {
     console.log(`คัดลอกไฟล์ static ${count.toLocaleString()} ไฟล์ ${(bytes / 1024 / 1024).toFixed(1)} MB ไว้ที่ dist/assets (เพดาน ${MAX_FILES.toLocaleString()} ไฟล์)`);
     console.log(`ไฟล์ใหญ่สุด ${biggest.url} ${(biggest.size / 1024 / 1024).toFixed(2)} MB (เพดานไฟล์ละ 25 MiB)`);

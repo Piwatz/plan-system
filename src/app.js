@@ -46,8 +46,9 @@ function createApp(options = {}) {
   // บน Workers ใช้รหัสจากตอน build (Date.now() ตอนเริ่มบน Workers ได้ 0 และไม่ได้เปลี่ยนตามรุ่นไฟล์)
   const assetVersion = options.assetVersion || Date.now().toString(36);
   // รุ่นของระบบ (วันที่ build) แสดงท้ายเว็บและหน้าเกี่ยวกับระบบ
-  const builtAt = parseInt(assetVersion, 36);
-  const assetDate = builtAt > 1.6e12 ? util.thaiDate(db.nowStr(new Date(builtAt)), true) : '';
+  // บน Workers ใช้เวลา build (dist/build-time.js) เพราะ assetVersion เป็นค่าแฮช เดิมแปลงแฮชเป็นวันที่ได้ปี 8959
+  const builtAt = options.assetVersion ? Number(options.builtAt) || 0 : parseInt(assetVersion, 36);
+  const assetDate = builtAt > 1.6e12 && builtAt < Date.now() + 864e5 ? util.thaiDate(db.nowStr(new Date(builtAt)), true) : '';
   const app = express();
   // หน้าเว็บ compile ไว้ล่วงหน้าใน dist/views.js (npm run build) ไม่ใช้ EJS ตอนรัน
   app.set('view', CompiledView);

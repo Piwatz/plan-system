@@ -8,6 +8,7 @@ import db from './db.js';
 import jobs from './jobs.js';
 import { createApp } from './app.js';
 import assetVersion from '../dist/assets-version.js';
+import builtAt from '../dist/build-time.js';
 
 const PORT = 3000;
 let dbReady = false;
@@ -26,7 +27,7 @@ function useEnv() {
 function startApp() {
   if (appReady) return;
   useEnv();
-  const app = createApp({ assetVersion });
+  const app = createApp({ assetVersion, builtAt });
   http.createServer(app).listen(PORT);
   appReady = true;
 }
