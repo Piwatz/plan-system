@@ -169,14 +169,30 @@ function methodsOf(b, ff = {}) {
   return [...new Set([...picked, ...other])];
 }
 
-function workFields(b, docType, ff) {
+// เลขที่บันทึกข้อความ (ฟังก์ชันเสริม docnoreq): ครูพิมพ์เฉพาะเลขที่ขอจากห้องวิชาการ ระบบเติม วก. และ /ปีการศึกษาของงาน
+const DOCNO_PREFIX = 'วก.';
+function docNoNum(docNo) {
+  const m = /^\s*วก\.?\s*([0-9]+)\s*\/\s*[0-9]{4}\s*$/.exec(String(docNo || ''));
+  return m ? m[1] : '';
+}
+function docNoOf(b, year) {
+  const num = String(b.doc_no_num || '')
+    .replace(/[๐-๙]/g, (d) => String(d.charCodeAt(0) - 0x0e50))
+    .replace(/[^0-9]/g, '')
+    .replace(/^0+(?=\d)/, '')
+    .slice(0, 6);
+  return num ? `${DOCNO_PREFIX}${num}/${year}` : '';
+}
+
+function workFields(b, docType, ff, year) {
   return {
     subject_code: str(b.subject_code, 30),
     subject_name: str(b.subject_name, 200),
     grade_level: str(b.grade_level, 30),
     teaching_methods: docType === 'plan' ? JSON.stringify(methodsOf(b, ff)) : '[]',
     link_url: util.safeUrl(b.link_url).slice(0, 500),
-    doc_no: str(b.doc_no, 50),
+    // ฟอร์มแบบใหม่ส่งช่อง doc_no_num ฟอร์มแบบเดิมส่ง doc_no ข้อความอิสระ
+    doc_no: ff.docnoreq && b.doc_no_num !== undefined ? docNoOf(b, year) : str(b.doc_no, 50),
   };
 }
 
@@ -219,7 +235,8 @@ function noteFields(b, ff) {
 }
 
 // ตรวจความครบถ้วนก่อนส่งให้ผู้ตรวจ (ตอนบันทึกร่างไม่ต้องครบ)
-async function missingForSubmit(sub, ff) {
+// proxy = ผู้ดูแลระบบส่งแทนครู (ไม่บังคับเลขที่บันทึกข้อความ)
+async function missingForSubmit(sub, ff, { proxy = false } = {}) {
   const miss = [];
   if (sub.doc_type === 'note') {
     if (!sub.plan_no && !sub.topic) miss.push('แผนที่ หรือ เรื่อง');
@@ -236,6 +253,8 @@ async function missingForSubmit(sub, ff) {
     if (!sub.subject_code) miss.push('รหัสวิชา');
     if (!sub.subject_name) miss.push('ชื่อวิชา');
     if (!sub.grade_level) miss.push('ระดับชั้น');
+    // งานที่เคยส่งแล้วไม่บังคับย้อนหลัง
+    if (ff.docnoreq && !proxy && !sub.submitted_at && !sub.doc_no) miss.push('เลขที่บันทึกข้อความ (ขอเลขที่ห้องวิชาการ)');
     const cur = await currentFiles(sub.id);
     if (ff.pdfonly) {
       if (!cur.length) miss.push('ไฟล์ PDF');
@@ -260,7 +279,7 @@ async function trySubmit(req, subId) {
   if (req.ff.coverconfirm && WORK_TYPES.includes(sub.doc_type) && b.cover_check === '1' && b.cover_ok !== '1') {
     throw new UserError('บันทึกร่างไว้แล้ว แต่ยังส่งไม่ได้ ติ๊กยืนยันว่าไฟล์มีหน้าปกและหน้าปกอยู่หน้าแรกก่อน');
   }
-  const miss = await missingForSubmit(sub, req.ff);
+  const miss = await missingForSubmit(sub, req.ff, { proxy: Boolean(req.me.is_admin && req.me.id !== sub.teacher_id) });
   if (miss.length) throw new UserError(`บันทึกร่างไว้แล้ว แต่ยังส่งไม่ได้ ต้องกรอก ${miss.join(' และ ')}`);
   // ไฟล์เดียวกับงานอื่นของครูคนเดียวกันทุกไบต์ = แนบผิดเล่มแน่นอน (ฟังก์ชันเสริม dupfile)
   if (req.ff.dupfile && WORK_TYPES.includes(sub.doc_type)) {
@@ -293,7 +312,7 @@ async function checkInfo(req, sub, { miss = false } = {}) {
     minPages: precheck.minPages(req.settings),
     dup: req.ff.dupfile ? await precheck.dupList(s) : [],
     dupNow: req.ff.dupfile && s.id ? await precheck.duplicateOf(s) : null,
-    miss: miss && s.id ? await missingForSubmit(s, req.ff) : [],
+    miss: miss && s.id ? await missingForSubmit(s, req.ff, { proxy: !owner }) : [],
   };
 }
 
@@ -386,7 +405,7 @@ router.post('/works', async (req, res) => {
   const type = WORK_TYPES.includes(b.doc_type) ? b.doc_type : null;
   const year = Number(req.settings.academic_year);
   const sem = Number(req.settings.semester);
-  const f = type ? workFields(b, type, req.ff) : null;
+  const f = type ? workFields(b, type, req.ff, year) : null;
   const files = await up.take(req, 'main_files');
   // รูปปกเล็กสำหรับคลังงาน (ฟังก์ชันเสริม library) เบราว์เซอร์ทำจากหน้าแรกของ PDF
   const cover = type && req.ff.library ? await up.takeCover(req, library.COVER_MAX) : null;
@@ -687,7 +706,7 @@ async function saveEdit(req, sub, b, now, files, cover = null) {
         sub.id
       );
     } else {
-      const f = workFields(b, sub.doc_type, req.ff);
+      const f = workFields(b, sub.doc_type, req.ff, sub.academic_year);
       if (teaching.skipActivity(f.subject_code) && f.subject_code !== sub.subject_code) throw new UserError('วิชากิจกรรมพัฒนาผู้เรียน (รหัสขึ้นต้นด้วย ก) ไม่ต้องส่งแผนและคู่มือ');
       // ล็อกครูก่อนตรวจซ้ำ เหมือนตอนส่งงานใหม่
       await lockTeacher(sub.teacher_id);

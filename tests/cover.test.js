@@ -78,7 +78,7 @@ test('ติ๊กยืนยันหน้าปกก่อนส่ง: ไ
   const page = (await t.get('/works/new?type=manual')).text;
   assert.match(page, /name="cover_ok" value="1">/);
   assert.match(page, /data-need-checked="cover_ok"/);
-  const fields = { doc_type: 'manual', subject_code: 'ว30199', subject_name: 'ทดสอบปก', grade_level: 'ม.4', action: 'submit', cover_check: '1' };
+  const fields = { doc_type: 'manual', subject_code: 'ว30199', subject_name: 'ทดสอบปก', grade_level: 'ม.4', doc_no: 'วก.1/2569', action: 'submit', cover_check: '1' };
   let r = await sendForm(t, '/works', fields, [[await pdf(2), 'คู่มือ.pdf']]);
   const id = Number(/\/s\/(\d+)/.exec(JSON.parse(r.text).redirect)[1]);
   assert.equal((await subOf(id)).status, 'draft', 'ไม่ติ๊ก ยังไม่ส่ง');

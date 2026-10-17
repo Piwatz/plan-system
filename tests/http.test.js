@@ -136,7 +136,7 @@ test('ครูต่างกลุ่มสาระเปิดงานข�
 
 test('ส่งคู่มือพร้อมไฟล์ แล้วผ่านครบ 5 ระดับทางหน้าเว็บ', async () => {
   const t = await as('sci2');
-  const fields = { doc_type: 'manual', subject_code: 'ว30101', subject_name: 'ฟิสิกส์พื้นฐาน', grade_level: 'ม.4', action: 'submit' };
+  const fields = { doc_type: 'manual', subject_code: 'ว30101', subject_name: 'ฟิสิกส์พื้นฐาน', grade_level: 'ม.4', doc_no: 'วก.2/2569', action: 'submit' };
   const r = await sendForm(t, '/works', fields, [[new Blob(['%PDF-1.4 test'], { type: 'application/pdf' }), 'คู่มือ ทดสอบ.pdf']]);
   assert.equal(r.status, 200, r.text);
   const json = JSON.parse(r.text);

@@ -1195,3 +1195,9 @@ a.lib-cv:hover .lib-cover { box-shadow: 0 0 0 3px var(--primary); }
   body:has(.print-bar) .container { padding-bottom: calc(var(--bnav-h) + 90px); }
 }
 @media print { .print-bar, .print-card { display: none !important; } }
+
+/* เลขที่บันทึกข้อความ (docnoreq) วก.[เลข]/ปี */
+.docno-in { display: flex; align-items: stretch; border: 1px solid var(--line); border-radius: var(--rs); overflow: hidden; background: var(--input-bg); }
+.docno-in span { display: flex; align-items: center; padding: 0 12px; background: var(--soft); color: var(--primary); font-weight: 700; }
+.docno-in input { flex: 1; min-width: 0; border: 0; border-radius: 0; font-size: 1.1rem; }
+.docno-in:focus-within { outline: 2px solid var(--primary); outline-offset: 1px; }

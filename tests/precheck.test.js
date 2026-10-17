@@ -73,7 +73,7 @@ async function pdf(pages, subject) {
 }
 
 const subOf = (id) => db.q.get('SELECT id, status FROM submissions WHERE id = ?', id);
-const fields = (code) => ({ doc_type: 'manual', subject_code: code, subject_name: 'ทดสอบไฟล์ซ้ำ', grade_level: 'ม.4', action: 'draft' });
+const fields = (code) => ({ doc_type: 'manual', subject_code: code, subject_name: 'ทดสอบไฟล์ซ้ำ', grade_level: 'ม.4', doc_no: 'วก.3/2569', action: 'draft' });
 async function newDraft(t, code, file) {
   const r = await sendForm(t, '/works', fields(code), [[file, 'คู่มือ.pdf']]);
   return Number(/\/s\/(\d+)/.exec(JSON.parse(r.text).redirect)[1]);
@@ -238,4 +238,32 @@ test('ผู้ตรวจที่กำลังลงนามไม่เ�
   assert.match(found.page, new RegExp(`href="/s/${found.id}/print"`), 'ยังมีปุ่มพิมพ์เล็กมุมขวาบน');
   const t = await as(found.owner);
   assert.match((await t.get(`/s/${found.id}`)).text, /class="card print-card"/);
+});
+
+test('เลขที่บันทึกข้อความ: กรอกเฉพาะตัวเลข ระบบเติม วก. และ /ปี ไม่กรอกส่งไม่ได้ ผู้ดูแลส่งแทนได้ ปิดสวิตช์ไม่บังคับ', async () => {
+  const t = await as('sci2');
+  const page = (await t.get('/works/new?type=manual')).text;
+  assert.match(page, /<span>วก\.<\/span><input type="text" id="doc_no_num" name="doc_no_num"/);
+  assert.match(page, /data-ck="docno"/);
+  const base = { doc_type: 'manual', subject_name: 'ทดสอบเลข', grade_level: 'ม.4', action: 'submit', cover_check: '1', cover_ok: '1' };
+  let r = await sendForm(t, '/works', { ...base, subject_code: 'ว39010', doc_no_num: '' }, [[await pdf(6), 'คู่มือ.pdf']]);
+  let id = Number(/\/s\/(\d+)/.exec(JSON.parse(r.text).redirect)[1]);
+  assert.equal((await subOf(id)).status, 'draft', 'ไม่มีเลข ยังไม่ส่ง');
+  assert.match((await t.get(`/s/${id}`)).text, /ยังขาด เลขที่บันทึกข้อความ/);
+  // ผู้ดูแลระบบส่งแทนได้โดยไม่มีเลข
+  const a = await as('admin');
+  await a.post(`/s/${id}/submit`, { cover_check: '1', cover_ok: '1' });
+  assert.equal((await subOf(id)).status, 'pending', 'ผู้ดูแลส่งแทนได้');
+
+  r = await sendForm(t, '/works', { ...base, subject_code: 'ว39011', doc_no_num: '๒๑๔' }, [[await pdf(6), 'คู่มือ.pdf']]);
+  id = Number(/\/s\/(\d+)/.exec(JSON.parse(r.text).redirect)[1]);
+  const row = await db.q.get('SELECT status, doc_no, academic_year FROM submissions WHERE id = ?', id);
+  assert.equal(row.doc_no, `วก.214/${row.academic_year}`, 'เลขไทยแปลงเป็นเลขอารบิก เติม วก. และปี');
+  assert.equal(row.status, 'pending');
+
+  await db.setSetting('ff_docnoreq', '0');
+  r = await sendForm(t, '/works', { ...base, subject_code: 'ว39012' }, [[await pdf(6), 'คู่มือ.pdf']]);
+  id = Number(/\/s\/(\d+)/.exec(JSON.parse(r.text).redirect)[1]);
+  assert.equal((await subOf(id)).status, 'pending', 'ปิดสวิตช์ ไม่บังคับ');
+  await db.setSetting('ff_docnoreq', '1');
 });

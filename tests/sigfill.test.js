@@ -72,7 +72,7 @@ async function pdf(pages) {
 
 const SIG = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==';
 const subOf = (id) => db.q.get('SELECT id, status, teacher_signature FROM submissions WHERE id = ?', id);
-const fields = (code) => ({ doc_type: 'manual', subject_code: code, subject_name: 'ทดสอบลายเซ็น', grade_level: 'ม.4', action: 'draft' });
+const fields = (code) => ({ doc_type: 'manual', subject_code: code, subject_name: 'ทดสอบลายเซ็น', grade_level: 'ม.4', doc_no: 'วก.4/2569', action: 'draft' });
 
 async function newDraft(t, code) {
   const r = await sendForm(t, '/works', fields(code), [[await pdf(2), 'คู่มือ.pdf']]);
