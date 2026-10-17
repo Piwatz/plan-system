@@ -168,7 +168,8 @@ function actCells(r, ff) {
   const manual = work(r.manual, 'manual');
   const p = r.plan;
   let notes;
-  if (!p || p.status === 'draft') notes = { text: r.needPlan ? 'ส่งแผนก่อน' : 'ไม่ต้องเขียน', off: true };
+  // วิชาหลักที่ยังไม่ได้ส่งแผน: ต้องเขียนแต่รอแผนก่อน (ฟังก์ชันเสริม callout แสดงต่างจาก ไม่ต้องเขียน กดแล้วไปส่งแผน)
+  if (!p || p.status === 'draft') notes = r.needPlan && ff.callout ? { text: 'รอส่งแผนก่อน', wait: true, href: p ? `/s/${p.id}` : newHref('plan', r) } : { text: r.needPlan ? 'ส่งแผนก่อน' : 'ไม่ต้องเขียน', off: true };
   else if (Number(p.note_back)) notes = act('กดแก้ไข', `/s/${p.id}#notes`, true);
   else if (Number(p.note_todo)) notes = act(ff.notebook ? 'กดส่งทั้งเล่ม' : 'กดส่ง', `/s/${p.id}#notes`);
   else if (!Number(p.note_total)) notes = act('กดเขียน', `/notes/new?plan=${p.id}`);

@@ -1203,3 +1203,7 @@ a.lib-cv:hover .lib-cover { box-shadow: 0 0 0 3px var(--primary); }
 .docno-in:focus-within { outline: 2px solid var(--primary); outline-offset: 1px; }
 /* ปุ่มพิมพ์ในรายการงาน (printrow) */
 .my-print { display: flex; flex-wrap: wrap; gap: 6px; justify-content: flex-end; margin-top: 6px; white-space: normal; }
+/* ช่องบันทึกหลังแผนของวิชาหลักที่ยังไม่ส่งแผน (ต้องเขียน แต่รอแผนก่อน) ต่างจาก ไม่ต้องเขียน */
+.cell-wait { display: inline-flex; gap: 5px; align-items: center; padding: 5px 12px; border: 2px dashed var(--wait); border-radius: 9px; background: var(--wait-bg); color: var(--wait); font-weight: 700; font-size: 0.875rem; text-decoration: none; white-space: nowrap; }
+.cell-wait:hover { border-style: solid; }
+.m-tile.tile-wait { border: 2px dashed var(--wait); background: var(--wait-bg); color: var(--wait); }
