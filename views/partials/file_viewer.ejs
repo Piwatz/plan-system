@@ -10,8 +10,9 @@
     <span class="muted small nowrap" data-pdf-info></span>
     <button type="button" class="btn btn-sm btn-ghost" data-pdf-zoom="out">ย่อ</button>
     <button type="button" class="btn btn-sm btn-ghost" data-pdf-zoom="in">ขยาย</button>
-    <% if (ff.mobilesheet) { %><button type="button" class="btn btn-sm btn-ghost" data-pdf-full>เต็มจอ</button><% } %>
     <a class="btn btn-sm btn-ghost" href="/f/<%= f0.id %>?dl=1" data-viewer-dl><%- icon('download', 16) %> ดาวน์โหลด</a>
+    <%# ปุ่มอ่านเต็มจอ สีเด่น เลื่อนอ่านทุกหน้าได้เต็มจอ กดอีกครั้งเพื่อออก %>
+    <% if (ff.mobilesheet) { %><button type="button" class="btn btn-sm btn-primary" data-pdf-full><%- icon('expand', 16) %> <span data-full-label>อ่านเต็มจอ</span></button><% } %>
   </div>
   <% if (files.length > 1) { %>
     <div class="viewer-tabs"><% files.forEach((f, i) => { %><button type="button" class="btn btn-sm <%= i === 0 ? 'btn-primary' : 'btn-ghost' %>" data-view-file="/f/<%= f.id %>" data-type="<%= kind(f) %>" data-name="<%= f.original_name %>">ไฟล์ <%= i + 1 %></button><% }) %></div>

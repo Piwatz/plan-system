@@ -35,7 +35,8 @@ class Viewer {
     if (full) {
       const toggle = (on) => {
         box.classList.toggle('is-full', on);
-        full.textContent = on ? 'ออกจากเต็มจอ' : 'เต็มจอ';
+        const label = full.querySelector('[data-full-label]') || full;
+        label.textContent = on ? 'ออกจากเต็มจอ' : 'อ่านเต็มจอ';
         setTimeout(() => this.doc && this.layout(), 60);
       };
       full.addEventListener('click', () => toggle(!box.classList.contains('is-full')));

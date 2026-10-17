@@ -33,6 +33,7 @@ const PATHS = {
   plus: 'M12 5v14M5 12h14',
   print: 'M7 9V3h10v6M7 18H4v-7h16v7h-3M7 14h10v7H7z',
   download: 'M12 4v11m0 0-4-4m4 4 4-4M4 19h16',
+  expand: 'M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5',
   eye: 'M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12zM12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6z',
   edit: 'M4 20h4L19 9l-4-4L4 16z',
   ok: 'M5 12.5 10 17l9-10',
