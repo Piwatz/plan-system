@@ -20,7 +20,9 @@
     <div class="actions"><a class="btn btn-ghost" href="/s/<%= isNew ? plan.id : sub.id %>">ยกเลิก</a></div>
   </div>
 
-  <% if (locals.lastReturn && sub.status === 'returned') { %>
+  <% if (locals.lastReturn && sub.status === 'returned' && ff.retfocus) { %>
+    <%- include('partials/return_box', { r: lastReturn, hint: 'แก้ตามความเห็นด้านบน แล้วกดบันทึกหรือส่งอีกครั้ง' }) %>
+  <% } else if (locals.lastReturn && sub.status === 'returned') { %>
     <div class="alert alert-error"><%- icon('undo') %><div><b><%= lastReturn.user_name %></b> (<%= lastReturn.step_label %>) ส่งกลับให้แก้ไข
       <div class="pre" style="margin-top:6px;color:var(--ink)"><%= lastReturn.comment %></div></div></div>
   <% } %>

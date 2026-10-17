@@ -65,6 +65,7 @@ async function as(username) {
 
 async function pdf(pages) {
   const doc = await PDFDocument.create();
+  doc.setSubject(`ไฟล์ทดลอง ${Math.random()}`); // ไฟล์ไม่ซ้ำกัน (ฟังก์ชันเสริม dupfile ไม่ให้ส่งไฟล์เดียวกันสองงาน)
   for (let i = 0; i < pages; i++) doc.addPage([300, 400]);
   return new Blob([await doc.save()], { type: 'application/pdf' });
 }

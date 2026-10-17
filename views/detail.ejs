@@ -11,6 +11,8 @@
   // ผู้ลงนามบันทึกหลังแผน: อ่านเนื้อหาทางซ้าย ลงความเห็นทางขวา (มือถืออยู่ล่าง)
   const noteReview = canReview && isNote;
   const split = canReview && viewable.length > 0 && !noteReview;
+  // รายการตรวจก่อนส่ง (ฟังก์ชันเสริม precheck): ข้อแดงที่ต้องแก้ก่อน ปุ่มส่งบอกเหตุผลแทนการส่ง
+  const ckBlock = !locals.pc ? '' : pc.miss.length ? 'ยังส่งไม่ได้ ข้อมูลหรือไฟล์ยังไม่ครบ กดแก้ไขก่อน' : pc.dupNow ? 'ยังส่งไม่ได้ ไฟล์นี้เป็นไฟล์เดียวกับ' + pc.dupNow + ' กดแก้ไขแล้วแนบไฟล์ของวิชานี้' : pc.needWindow && !pc.window.open ? 'ยังส่งไม่ได้ ' + pc.window.reason : '';
 %>
 <div class="page-head">
   <div style="min-width:0">
@@ -42,7 +44,7 @@
       <form method="post" action="/s/<%= sub.id %>/submit" class="inline-form" data-busy="กำลังส่งงาน">
         <% const askCover = ff.coverconfirm && !isNote; %>
         <% if (askCover) { %><input type="hidden" name="cover_check" value="1"><label class="check cover-ok"><input type="checkbox" name="cover_ok" value="1"> <span>ฉันตรวจแล้ว <b>ไฟล์นี้มีหน้าปก</b> และ<b>หน้าปกอยู่หน้าแรก</b></span></label><% } %>
-        <button class="btn btn-primary" type="submit"<% if (askCover) { %> data-need-checked="cover_ok" data-need-message="ติ๊กยืนยันก่อนว่าไฟล์นี้มีหน้าปก และหน้าปกอยู่หน้าแรก ถ้ายังไม่มีปก กดแก้ไขแล้วเพิ่มไฟล์ปก"<% } %> data-confirm="<%= isOwner ? 'ยืนยันส่ง' + T.label + 'ให้ผู้ตรวจ' : 'ส่งงานนี้แทน ' + sub.teacher_name + ' ระบบจะบันทึกว่าผู้ดูแลระบบส่งแทน' %>" data-ok-label="ส่งเลย"<%- isOwner ? ' data-need-sig' : '' %>><%- icon('send', 18) %> <%= !isOwner ? 'ส่งแทนครู' : sub.status === 'returned' ? 'ส่งอีกครั้ง' : 'ส่งให้ผู้ตรวจ' %></button>
+        <button class="btn btn-primary" type="submit"<% if (askCover) { %> data-need-checked="cover_ok" data-need-message="ติ๊กยืนยันก่อนว่าไฟล์นี้มีหน้าปก และหน้าปกอยู่หน้าแรก ถ้ายังไม่มีปก กดแก้ไขแล้วเพิ่มไฟล์ปก"<% } %> data-confirm="<%= isOwner ? 'ยืนยันส่ง' + T.label + 'ให้ผู้ตรวจ' : 'ส่งงานนี้แทน ' + sub.teacher_name + ' ระบบจะบันทึกว่าผู้ดูแลระบบส่งแทน' %>" data-ok-label="ส่งเลย"<%- isOwner ? ' data-need-sig' : '' %><% if (ckBlock) { %> data-blocked="<%= ckBlock %>"<% } %>><%- icon('send', 18) %> <%= !isOwner ? 'ส่งแทนครู' : sub.status === 'returned' ? 'ส่งอีกครั้ง' : 'ส่งให้ผู้ตรวจ' %></button>
       </form>
     <% } %>
     <% if (canWithdraw) { %>
@@ -60,7 +62,9 @@
   </div>
 </div>
 
-<% if (sub.status === 'returned' && lastReturn) { %>
+<% if (sub.status === 'returned' && lastReturn && ff.retfocus) { %>
+  <%- include('partials/return_box', { r: lastReturn, hint: !isOwner ? '' : bookMode ? 'กด <b>แก้ไข</b> ปรับตามความเห็น แล้วกด <b>ส่งทั้งเล่ม</b> ในหน้ารายวิชา' : 'กด <b>แก้ไข</b> ปรับตามความเห็น แล้วกดส่งอีกครั้ง งานจะกลับไปที่ผู้ส่งคืนโดยตรง' }) %>
+<% } else if (sub.status === 'returned' && lastReturn) { %>
   <div class="alert alert-error"><%- icon('undo') %>
     <div><b><%= lastReturn.user_name %></b> (<%= lastReturn.step_label %>) ส่งกลับให้แก้ไข เมื่อ <%= util.thaiDateTime(lastReturn.created_at) %>
       <div class="pre" style="margin-top:6px;color:var(--ink)"><%= lastReturn.comment %></div>
@@ -69,10 +73,12 @@
     </div>
   </div>
 <% } else if (sub.status === 'draft' && isOwner) { %>
-  <div class="alert alert-info"><%- icon('note') %><span>งานนี้ยังเป็นฉบับร่าง ผู้ตรวจจะยังไม่เห็นจนกว่าคุณจะกด <b><%= bookMode ? 'ส่งทั้งเล่ม' : 'ส่งให้ผู้ตรวจ' %></b><%= bookMode ? ' ในหน้ารายวิชา' : '' %></span></div>
+  <div class="<%= ff.callout ? 'call check' : 'alert alert-info' %>"><%- icon('note') %><span><% if (ff.callout) { %><span class="call-tag">ควรตรวจ</span><% } %>งานนี้ยังเป็นฉบับร่าง ผู้ตรวจจะยังไม่เห็นจนกว่าคุณจะกด <b><%= bookMode ? 'ส่งทั้งเล่ม' : 'ส่งให้ผู้ตรวจ' %></b><%= bookMode ? ' ในหน้ารายวิชา' : '' %></span></div>
 <% } else if (sub.status === 'approved') { %>
   <div class="alert alert-success"><%- icon('ok') %><span><%= isNote ? 'ลงความเห็นครบทุกระดับแล้ว' : 'ผ่านการพิจารณาครบทุกระดับแล้ว' %> เมื่อ <%= util.thaiDateTime(sub.completed_at) %></span></div>
 <% } %>
+
+<% if (locals.pc) { %><%- include('partials/precheck', { pc, sub, files: current, mode: 'detail' }) %><% } %>
 
 <div class="card">
   <h3>เส้นทางการตรวจ</h3>

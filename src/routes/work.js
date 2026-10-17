@@ -16,6 +16,7 @@ const sigfill = require('../sigfill');
 const teaching = require('../teaching');
 const { qrSvg } = require('./verify');
 const library = require('../library');
+const precheck = require('../precheck');
 
 const router = express.Router();
 router.use(auth.requireLogin);
@@ -261,6 +262,11 @@ async function trySubmit(req, subId) {
   }
   const miss = await missingForSubmit(sub, req.ff);
   if (miss.length) throw new UserError(`บันทึกร่างไว้แล้ว แต่ยังส่งไม่ได้ ต้องกรอก ${miss.join(' และ ')}`);
+  // ไฟล์เดียวกับงานอื่นของครูคนเดียวกันทุกไบต์ = แนบผิดเล่มแน่นอน (ฟังก์ชันเสริม dupfile)
+  if (req.ff.dupfile && WORK_TYPES.includes(sub.doc_type)) {
+    const same = await precheck.duplicateOf(sub);
+    if (same) throw new UserError(`บันทึกร่างไว้แล้ว แต่ยังส่งไม่ได้ ไฟล์นี้เป็นไฟล์เดียวกับ${same} ที่แนบไว้แล้ว แนบไฟล์ของวิชานี้แทน`);
+  }
   // ผู้ดูแลระบบส่งแทนครูได้แม้ปิดรับแล้ว
   if (req.me.is_admin && req.me.id !== sub.teacher_id) return wf.submitAs(subId, req.me);
   await needOwnSignature(req, 'บันทึกร่างไว้แล้ว แต่ยังส่งไม่ได้ ');
@@ -269,6 +275,26 @@ async function trySubmit(req, subId) {
     if (!w.open) throw new UserError(`บันทึกร่างไว้แล้ว แต่ยังส่งไม่ได้ เพราะ${w.reason}`);
   }
   return wf.submit(subId, req.me);
+}
+
+// ข้อมูลของรายการตรวจก่อนส่ง (ฟังก์ชันเสริม precheck) ทั้งหน้าส่งงานและหน้างาน · null = ไม่แสดง
+async function checkInfo(req, sub, { miss = false } = {}) {
+  if (!req.ff.precheck || !WORK_TYPES.includes(sub.doc_type)) return null;
+  const s = { ...sub, teacher_id: sub.teacher_id || req.me.id };
+  const owner = s.teacher_id === req.me.id;
+  const w = submitWindow(req.settings);
+  return {
+    owner,
+    hasSig: Boolean(req.me.signature),
+    window: w,
+    // ช่วงเปิดรับใช้กับงานใหม่และฉบับร่าง งานที่ถูกส่งกลับส่งใหม่ได้เสมอ ผู้ดูแลระบบส่งแทนได้แม้ปิดรับ
+    needWindow: owner && s.status !== 'returned',
+    daysLeft: w.open && req.settings.submit_end ? util.daysUntil(req.settings.submit_end) : null,
+    minPages: precheck.minPages(req.settings),
+    dup: req.ff.dupfile ? await precheck.dupList(s) : [],
+    dupNow: req.ff.dupfile && s.id ? await precheck.duplicateOf(s) : null,
+    miss: miss && s.id ? await missingForSubmit(s, req.ff) : [],
+  };
 }
 
 function submittedMessage(sub) {
@@ -351,6 +377,7 @@ router.get('/works/new', async (req, res) => {
     subjects,
     window: submitWindow(req.settings),
     isNew: true,
+    pc: await checkInfo(req, sub),
   });
 });
 
@@ -578,6 +605,7 @@ router.get('/s/:id', async (req, res) => {
     needsScore: wf.needsScore(sub),
     rubric: wf.rubric(sub.doc_type),
     canEdit: editable(req, sub),
+    pc: editable(req, sub) && !book ? await checkInfo(req, sub, { miss: true }) : null,
     canWithdraw: await wf.canWithdraw(req.me, sub, reviews),
     bookMode: book,
     canDelete: (wf.isOwner(req.me, sub) && sub.status === 'draft' && !sub.submitted_at) || req.me.is_admin,
@@ -640,6 +668,7 @@ router.get('/s/:id/edit', async (req, res) => {
       subjects: await subjectChoices(req),
       window: submitWindow(req.settings),
       isNew: false,
+      pc: await checkInfo(req, sub),
     });
   }
   const plan = await q.get(`SELECT ${wf.subCols()} FROM submissions WHERE id = ?`, sub.parent_id);

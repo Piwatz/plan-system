@@ -9,7 +9,9 @@
     <% if (!isNew) { %><div class="actions"><a class="btn btn-ghost" href="/s/<%= sub.id %>">ยกเลิก</a></div><% } %>
   </div>
 
-  <% if (locals.lastReturn && sub.status === 'returned') { %>
+  <% if (locals.lastReturn && sub.status === 'returned' && ff.retfocus) { %>
+    <%- include('partials/return_box', { r: lastReturn, hint: 'แก้ตามความเห็นด้านบน แนบไฟล์ใหม่ถ้าต้องแก้ไฟล์ แล้วกด <b>ส่งอีกครั้งหลังแก้ไข</b> งานจะกลับไปที่ผู้ส่งคืนโดยตรง' }) %>
+  <% } else if (locals.lastReturn && sub.status === 'returned') { %>
     <div class="alert alert-error"><%- icon('undo') %><div><b><%= lastReturn.user_name %></b> (<%= lastReturn.step_label %>) ส่งกลับให้แก้ไข
       <div class="pre" style="margin-top:6px;color:var(--ink)"><%= lastReturn.comment %></div></div></div>
   <% } %>
@@ -67,7 +69,7 @@
     <h2 style="margin-top:18px">ไฟล์<%= T.label %></h2>
     <% if (ff.pdfonly) { const oldOk = files.length === 1 && files[0].mime === 'application/pdf'; %>
       <%# หมายเหตุเหนือช่องเลือกไฟล์: ต้องมีปกและเนื้อหา หน้าแรกจะเป็นปกในคลังงาน (ฟังก์ชันเสริม library) %>
-      <div class="alert alert-info lib-filenote"><%- icon('file') %><span>ไฟล์ต้องมี<b>หน้าปกและเนื้อหา</b> <%= ff.pdfmerge ? 'รวมเป็น PDF ไฟล์เดียวมาเอง หรือเลือกหลายไฟล์ เช่น ปกกับเนื้อหา แล้วเรียงด้วยปุ่มขึ้นลง เว็บจะรวมให้ก็ได้' : 'รวมเป็น PDF ไฟล์เดียวก่อนแนบ' %><% if (ff.library) { %> <b>หน้าแรกจะเป็นปกในคลังงาน</b><% } %></span></div>
+      <div class="<%= ff.callout ? 'call check' : 'alert alert-info' %> lib-filenote"><%- icon('file') %><span><% if (ff.callout) { %><span class="call-tag">ควรตรวจ</span><% } %>ไฟล์ต้องมี<b>หน้าปกและเนื้อหา</b> <%= ff.pdfmerge ? 'รวมเป็น PDF ไฟล์เดียวมาเอง หรือเลือกหลายไฟล์ เช่น ปกกับเนื้อหา แล้วเรียงด้วยปุ่มขึ้นลง เว็บจะรวมให้ก็ได้' : 'รวมเป็น PDF ไฟล์เดียวก่อนแนบ' %><% if (ff.library) { %> <b>หน้าแรกจะเป็นปกในคลังงาน</b><% } %></span></div>
       <% if (files.length) { %>
         <ul class="file-list" style="margin-bottom:10px">
           <% for (const f of files) { %>
@@ -81,7 +83,7 @@
           <p class="hint">แนบไฟล์ใหม่ด้านล่างเมื่อต้องการเปลี่ยน ไฟล์เดิมจะเก็บไว้ในประวัติ</p>
         <% } %>
       <% } %>
-      <label class="dropzone" data-dropzone data-accept="pdf" <%= ff.pdfmerge ? 'data-sortable' : 'data-single' %> <%= ff.library ? 'data-thumb' : '' %> <%= ff.filecheck ? 'data-filecheck' : '' %> data-max-mb="<%= settings.max_upload_mb %>">
+      <label class="dropzone" data-dropzone data-accept="pdf" <%= ff.pdfmerge ? 'data-sortable' : 'data-single' %><%- ff.precheck && ff.coverpreview && oldOk ? ' data-old-cover="' + Number(files[0].id) + '"' : '' %> <%= ff.library ? 'data-thumb' : '' %> <%= ff.filecheck ? 'data-filecheck' : '' %> data-max-mb="<%= settings.max_upload_mb %>">
         <span class="dz-icon"><%- icon('send', 34) %></span>
         <b>ลากไฟล์ PDF มาวางที่นี่ หรือกดเพื่อเลือกไฟล์</b><br>
         <small class="muted">เฉพาะ PDF ไม่เกิน <%= settings.max_upload_mb %> MB ต่อไฟล์<%= ff.pdfmerge ? ' เลือกได้หลายไฟล์ ระบบรวมให้' : '' %></small>
@@ -93,6 +95,7 @@
         <div class="cover-preview" data-cover hidden>
           <div data-cover-img></div>
           <div><b>หน้าปกที่จะส่ง</b><br><small class="muted" data-cover-info></small><br><% if (ff.library) { %><small><b>ภาพนี้จะเป็นปกในคลังงาน</b></small><br><% } %><small class="muted">ถ้าหน้านี้ไม่ใช่ปก ให้เลื่อนไฟล์ปกขึ้นไว้บนสุด หรือเลือกไฟล์ใหม่</small></div>
+          <% if (ff.precheck && ff.blankcover) { %><div class="cv-warn" data-cover-warn hidden><%- icon('eye', 26) %><div><b>หน้าแรกดูเหมือนไม่ใช่ปก</b><span>หน้านี้แทบไม่มีตัวหนังสือ ถ้าปกอยู่อีกไฟล์ ให้เลือกไฟล์ปกเพิ่มแล้วเลื่อนไว้บนสุด ถ้ายังไม่ได้ทำปก ให้ทำปกก่อน</span></div></div><% } %>
         </div>
       <% } %>
       <details class="howto">
@@ -132,7 +135,10 @@
     </div>
 
     <hr>
-<% if (ff.coverconfirm) { %>
+<% if (locals.pc) { %>
+    <% if (ff.coverconfirm) { %><input type="hidden" name="cover_check" value="1"><% } %>
+    <%- include('partials/precheck', { pc, sub, files, mode: 'form' }) %>
+<% } else if (ff.coverconfirm) { %>
     <input type="hidden" name="cover_check" value="1">
     <label class="check cover-ok"><input type="checkbox" name="cover_ok" value="1"> <span>ฉันตรวจแล้ว <b>ไฟล์นี้มีหน้าปก</b> และ<b>หน้าปกอยู่หน้าแรก</b><% if (ff.coverpreview) { %> ตามภาพหน้าปกที่จะส่งด้านบน<% } %></span></label>
     <p class="hint">ถ้าหน้าแรกไม่ใช่ปก: ถ้าปกอยู่อีกไฟล์ ให้เลือกไฟล์ปกเพิ่มแล้วเลื่อนไว้บนสุด ถ้ายังไม่ได้ทำปก ให้ทำปกก่อนแล้วค่อยส่ง บันทึกร่างไว้ก่อนได้โดยไม่ต้องติ๊ก</p>
@@ -141,8 +147,9 @@
       <button class="btn btn-ghost btn-lg" type="submit" name="action" value="draft">บันทึกร่าง</button>
       <button class="btn btn-primary btn-lg" type="submit" name="action" value="submit"<% if (ff.coverconfirm) { %> data-need-checked="cover_ok" data-need-message="ติ๊กยืนยันก่อนว่าไฟล์นี้มีหน้าปก และหน้าปกอยู่หน้าแรก ถ้ายังไม่มีปก ให้ทำปกก่อน หรือกดบันทึกร่างไว้ก่อน"<% } %>
         data-confirm="ยืนยันส่ง<%= T.label %>ให้ผู้ตรวจ
-หลังส่งแล้วจะแก้ไขได้เมื่อถูกส่งกลับ หรือดึงกลับก่อนมีผู้ลงนาม" data-ok-label="ส่งเลย" data-need-sig><%- icon('send', 20) %> <%= sub.status === 'returned' ? 'ส่งอีกครั้งหลังแก้ไข' : 'ส่งให้ผู้ตรวจ' %></button>
+หลังส่งแล้วจะแก้ไขได้เมื่อถูกส่งกลับ หรือดึงกลับก่อนมีผู้ลงนาม" data-ok-label="ส่งเลย" data-need-sig<%- locals.pc ? ' data-precheck-btn' : '' %>><%- icon('send', 20) %> <%= sub.status === 'returned' ? 'ส่งอีกครั้งหลังแก้ไข' : 'ส่งให้ผู้ตรวจ' %></button>
     </div>
+    <% if (locals.pc) { %><p class="hint ck-btn-note" data-ck-note hidden></p><% } %>
   </form>
 </div>
 <%- include('partials/bottom') %>

@@ -17,10 +17,22 @@
   <% } %>
 </div>
 
+<% if (locals.dueAlert) { %><%# ใกล้กำหนดส่งแต่ยังมีงานที่ยังไม่ส่ง (ฟังก์ชันเสริม duealert) %>
+  <div class="call must due-alert"><%- icon('clock') %>
+    <div><span class="call-tag">ห้ามพลาด</span><b class="call-title"><%= dueAlert.days === 0 ? 'วันนี้วันสุดท้าย' : 'เหลืออีก ' + dueAlert.days + ' วัน' %> ถึงกำหนดส่ง ยังไม่ได้ส่ง <%= dueAlert.list.length %> งาน</b>
+      <div class="call-links"><% for (const x of dueAlert.list) { %><a href="<%= x.href %>"><%= x.name %></a><% } %></div></div>
+  </div>
+<% } else if (locals.draftAlert && draftAlert.length) { %><%# แผนหรือคู่มือที่บันทึกร่างไว้แต่ยังไม่ได้กดส่ง %>
+  <div class="call check draft-alert"><%- icon('note') %>
+    <div><span class="call-tag">ควรตรวจ</span><b class="call-title">บันทึกร่างไว้ <%= draftAlert.length %> งาน ยังไม่ได้กดส่ง ผู้ตรวจยังไม่เห็น</b>
+      <div class="call-links"><% for (const x of draftAlert) { %><a href="<%= x.href %>"><%= x.name %></a><% } %></div></div>
+  </div>
+<% } %>
 <% if (sigNag && sigNag.proxy.length) { %><%- include('partials/sig_proxy', { proxy: sigNag.proxy }) %><% } %>
 <% if (sigNag && sigNag.kind !== 'confirm') { %>
-  <div class="alert alert-warn sig-nag"><%- icon('edit') %>
+  <div class="<%= ff.callout ? 'call must' : 'alert alert-warn' %> sig-nag"><%- icon('edit') %>
     <div class="t">
+<% if (ff.callout) { %><span class="call-tag">ห้ามพลาด</span><% } %>
 <% if (sigNag.kind === 'none') { %>
       <b>คุณยังไม่มีลายเซ็น</b>
       <div class="small"><%= sigNag.blank ? 'บันทึกข้อความที่ส่งไปแล้ว ' + sigNag.blank + ' งานยังไม่มีลายเซ็นของคุณ เซ็นครั้งเดียว' + (ff.sigfillauto ? ' ระบบใส่ให้ทุกงาน' : ' แล้วกดใส่ในงานได้ทันที') : 'บันทึกข้อความที่ส่งจะมีลายเซ็นของคุณ เซ็นครั้งเดียวใช้ได้ทุกงาน' %></div>

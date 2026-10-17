@@ -232,6 +232,28 @@ router.get('/', async (req, res) => {
       else if (s.status === 'draft') todo.push(`${name} ยังเป็นร่าง`);
     }
   }
+  // แถบเตือนหน้าแรก (ฟังก์ชันเสริม duealert): ใกล้กำหนดแต่ยังไม่ส่ง = แดง · แผนหรือคู่มือที่บันทึกร่างไว้แต่ยังไม่กดส่ง = ส้ม
+  let dueAlert = null;
+  let draftAlert = [];
+  if (me.is_teacher && req.ff.duealert) {
+    const unsent = [];
+    for (const r of subjects) {
+      for (const type of r.needPlan ? ['plan', 'manual'] : ['manual']) {
+        const s = r[type];
+        const name = `${type === 'manual' ? 'คู่มือ' : 'แผน'} ${r.code}`;
+        if (!s) unsent.push({ name, href: newHref(type, r) });
+        else if (s.status === 'draft') {
+          unsent.push({ name: `${name} (ร่าง)`, href: `/s/${s.id}` });
+          draftAlert.push({ name, href: `/s/${s.id}` });
+        }
+      }
+    }
+    const left = util.daysUntil(req.settings.submit_end);
+    if (submitWindow(req.settings).open && req.settings.submit_end && left != null && left >= 0 && left <= 3 && unsent.length) {
+      dueAlert = { days: left, list: unsent };
+      draftAlert = [];
+    }
+  }
   const recent = await q.all(
     `SELECT ${wf.reviewCols('r')}, s.doc_type, s.subject_code, s.subject_name, s.plan_no, s.parent_id FROM reviews r
      JOIN submissions s ON s.id = r.submission_id
@@ -318,6 +340,8 @@ router.get('/', async (req, res) => {
       notesTodo: notes.todo || 0,
     },
     todo,
+    dueAlert,
+    draftAlert,
     nextUp,
     mainHref,
     canPlan: await planLeft(me, t, req.ff),

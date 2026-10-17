@@ -1111,3 +1111,67 @@ a.lib-cv:hover .lib-cover { box-shadow: 0 0 0 3px var(--primary); }
 .icon-card img { width: 72px; height: 72px; border-radius: 16px; }
 .icon-card input { margin: 0; }
 .icon-card:has(input:checked) { border-color: var(--primary); background: var(--soft); }
+
+/* ---------- จุดที่ครูต้องระวัง ---------- */
+/* ป้ายเตือน 3 ระดับ (ฟังก์ชันเสริม callout และส่วนใหม่ที่ใช้ร่วมกัน) แดง ห้ามพลาด · ส้ม ควรตรวจ · ฟ้า แนะนำ */
+.call { display: flex; gap: 10px; align-items: flex-start; border-radius: var(--rs); padding: 12px 14px; margin-bottom: 16px; border: 2px solid; color: var(--ink); }
+.call > .ic { flex: none; margin-top: 2px; }
+.call > span, .call > div { flex: 1; min-width: 0; overflow-wrap: anywhere; }
+.call.must { background: var(--back-bg); border-color: var(--back); }
+.call.must > .ic, .call.must .call-tag { color: var(--back); }
+.call.check { background: var(--wait-bg); border-color: var(--wait); }
+.call.check > .ic, .call.check .call-tag { color: var(--wait); }
+.call.tip { background: var(--soft); border-width: 1px; border-color: color-mix(in srgb, var(--primary) 40%, transparent); }
+.call.tip > .ic, .call.tip .call-tag { color: var(--primary); }
+.call-tag { display: block; font-weight: 800; font-size: 0.82rem; letter-spacing: 0.02em; margin-bottom: 2px; }
+.call .call-title { display: block; }
+.call-links { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+.call-links a { display: inline-block; padding: 3px 10px; border-radius: 999px; background: var(--surface); border: 1px solid var(--line); color: var(--ink); text-decoration: none; font-size: 0.9rem; }
+.call-links a:hover { border-color: currentColor; }
+.call.sig-nag .t { flex: 1; }
+
+/* รายการตรวจก่อนส่ง (precheck) เขียว = ระบบตรวจแล้วผ่าน · แดง = ต้องแก้ · ส้ม = ต้องดูเอง */
+.cklist { border: 2px solid var(--wait); border-radius: var(--rs); overflow: hidden; margin: 6px 0 14px; background: var(--surface); }
+.ck-h { display: flex; gap: 8px; align-items: center; background: var(--wait-bg); color: var(--wait); font-weight: 700; padding: 9px 14px; font-size: 1.02rem; }
+.cklist.all-ok { border-color: var(--ok); }
+.cklist.all-ok .ck-h { background: var(--ok-bg); color: var(--ok); }
+.ckn { margin-left: auto; color: var(--surface); background: var(--wait); border-radius: 999px; padding: 0 10px; font-size: 0.85rem; }
+.cklist.all-ok .ckn { background: var(--ok); }
+.ck { display: flex; gap: 10px; align-items: center; padding: 9px 14px; border-top: 1px solid var(--line); flex-wrap: wrap; }
+.ck[hidden] { display: none; }
+.ck-t { flex: 1; min-width: 180px; }
+.ck-t b { display: block; font-size: 0.97rem; }
+.ck-t small { display: block; color: var(--muted); font-size: 0.86rem; overflow-wrap: anywhere; }
+.ckic { display: inline-grid; place-items: center; width: 26px; height: 26px; border-radius: 50%; flex: none; color: var(--surface); background: var(--muted); }
+.ck.ok .ckic { background: var(--ok); }
+.ck.bad { background: var(--back-bg); }
+.ck.bad .ckic { background: var(--back); }
+.ck.bad b { color: var(--back); }
+.ck.look { background: color-mix(in srgb, var(--wait-bg) 60%, var(--surface)); }
+.ck.look .ckic { background: var(--wait); }
+.ck.look.ticked { background: var(--surface); }
+.ck.look.ticked .ckic { background: var(--ok); }
+.ck .tick { display: inline-flex; align-items: center; gap: 6px; padding: 5px 12px; border: 2px solid var(--wait); border-radius: 999px; font-weight: 700; color: var(--wait); cursor: pointer; background: var(--surface); white-space: nowrap; }
+.ck .tick input { width: 20px; height: 20px; accent-color: var(--ok); margin: 0; }
+.ck.ticked .tick { border-color: var(--ok); color: var(--ok); }
+.ck-foot { padding: 8px 14px; border-top: 1px solid var(--line); }
+.btn.is-blocked { opacity: 0.55; filter: grayscale(0.4); }
+.ck-btn-note { margin-top: 8px; color: var(--back); font-weight: 600; }
+
+/* หน้าแรกเกือบว่าง (blankcover) คำเตือนตัวใหญ่ใต้ภาพหน้าปก */
+.cover-preview > div:last-child { flex: initial; min-width: 0; }
+.cover-preview > div:not([data-cover-img]):not(.cv-warn) { flex: 1; min-width: 160px; }
+.cv-warn { flex-basis: 100%; display: flex; gap: 10px; align-items: flex-start; padding: 12px 14px; border: 2px solid var(--wait); border-radius: var(--rs); background: var(--wait-bg); color: var(--ink); }
+.cv-warn[hidden] { display: none; }
+.cv-warn > .ic { color: var(--wait); flex: none; }
+.cv-warn b { display: block; font-size: 1.1rem; color: var(--wait); }
+
+/* งานที่ถูกส่งกลับ (retfocus) ความเห็นผู้ตรวจตัวใหญ่ในกรอบแดง */
+.ret-box { border: 2px solid var(--back); border-radius: var(--rs); overflow: hidden; margin-bottom: 16px; background: var(--surface); }
+.ret-h { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; background: var(--back); color: var(--surface); padding: 9px 14px; }
+.ret-h b { font-size: 1.05rem; }
+.ret-h span { font-size: 0.9rem; opacity: 0.92; }
+.ret-say { padding: 12px 16px; background: var(--back-bg); }
+.ret-label { font-size: 0.85rem; color: var(--back); font-weight: 700; }
+.ret-comment { font-size: 1.15rem; font-weight: 600; line-height: 1.6; color: var(--ink); border-left: 5px solid var(--back); padding: 4px 0 4px 12px; margin: 4px 0 0; }
+.ret-hint { margin-top: 10px; font-size: 0.95rem; }

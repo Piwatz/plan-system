@@ -11,6 +11,9 @@
     danger: 'M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3',
     warn: 'M12 3 2 20h20zM12 10v4M12 17h.01',
     ok: 'M5 12.5 10 17l9-10',
+    close: 'M6 6l12 12M18 6 6 18',
+    eye: 'M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12zM12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6z',
+    clock: 'M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18zM12 7v5l3 2',
   };
   function svg(name, size) {
     return '<svg width="' + (size || 28) + '" height="' + (size || 28) + '" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="' + (ICONS[name] || ICONS.note) + '"/></svg>';
@@ -128,18 +131,26 @@
     });
   }
 
-  // วาดหน้าแรกของ PDF ลงผืนผ้าใบด้วย PDF.js ที่มากับระบบ · width = ความกว้างเป็นพิกเซลบนจอ · คืน { canvas, pages } หรือ null ถ้าถูกยกเลิก
-  async function renderFirstPage(data, width, dpr, alive) {
+  // PDF.js ที่มากับระบบ · src = ข้อมูลไฟล์ (Uint8Array) หรือที่อยู่ไฟล์ในระบบ (โหลดเฉพาะส่วนที่ใช้ด้วย Range)
+  async function pdfjsLib() {
     const pdfjs = await import('/vendor/pdfjs/legacy/build/pdf.min.mjs');
     pdfjs.GlobalWorkerOptions.workerSrc = '/vendor/pdfjs/legacy/build/pdf.worker.min.mjs';
-    const task = pdfjs.getDocument({
-      data,
+    return pdfjs;
+  }
+  function openPdf(pdfjs, src) {
+    return pdfjs.getDocument({
+      ...(typeof src === 'string' ? { url: src, disableAutoFetch: true, disableStream: true } : { data: src }),
       cMapUrl: '/vendor/pdfjs/cmaps/',
       cMapPacked: true,
       standardFontDataUrl: '/vendor/pdfjs/standard_fonts/',
       wasmUrl: '/vendor/pdfjs/wasm/',
       iccUrl: '/vendor/pdfjs/iccs/',
     });
+  }
+
+  // วาดหน้าแรกของ PDF ลงผืนผ้าใบ · width = ความกว้างเป็นพิกเซลบนจอ · คืน { canvas, pages } หรือ null ถ้าถูกยกเลิก
+  async function renderFirstPage(data, width, dpr, alive) {
+    const task = openPdf(await pdfjsLib(), data);
     try {
       const doc = await task.promise;
       const page = await doc.getPage(1);
@@ -498,6 +509,14 @@
           return;
         }
       }
+      // รายการตรวจก่อนส่ง (ฟังก์ชันเสริม precheck): ยังมีข้อแดงหรือข้อส้มที่ต้องติ๊ก บอกเหตุผลแทนการส่ง
+      if (submitter && submitter.dataset.blocked) {
+        e.preventDefault();
+        await tell(submitter.dataset.blocked);
+        const box = form.querySelector('[data-precheck]') || document.querySelector('[data-precheck]');
+        if (box) box.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        return;
+      }
       if (form.querySelector('[data-dz-list] li.bad')) {
         e.preventDefault();
         await tell('มีไฟล์ที่ใช้ไม่ได้ (กรอบสีแดง) กดเอาออก แล้วเลือกไฟล์ใหม่ก่อน');
@@ -552,11 +571,12 @@
       const msg = sigDlg.querySelector('[data-sig-text]');
       const rem = pad.querySelector('input[name=remember_signature]');
       const remLabel = rem && rem.closest('label');
-      sigDlg.querySelector('[data-sig-title]').textContent = mode === 'save' ? 'เซ็นชื่อของคุณ' : 'เซ็นชื่อก่อนส่งงาน';
+      // form = เซ็นจากรายการตรวจก่อนส่ง ค่าที่ได้ใส่ในฟอร์มส่งงาน ใช้ตอนกดส่ง
+      sigDlg.querySelector('[data-sig-title]').textContent = mode === 'submit' ? 'เซ็นชื่อก่อนส่งงาน' : 'เซ็นชื่อของคุณ';
       const base = mode === 'save' ? 'เซ็นครั้งเดียว ใช้ในบันทึกข้อความและเอกสารที่พิมพ์จากระบบทุกงาน' : 'ลายเซ็นนี้จะอยู่ในบันทึกข้อความและเอกสารที่พิมพ์จากระบบ';
       msg.textContent = text ? text + '\n' + base : base;
       msg.classList.remove('sig-need-err');
-      ok.textContent = mode === 'save' ? 'บันทึกลายเซ็น' : 'เซ็นแล้ว ส่งงาน';
+      ok.textContent = mode === 'save' ? 'บันทึกลายเซ็น' : mode === 'form' ? 'ใช้ลายเซ็นนี้' : 'เซ็นแล้ว ส่งงาน';
       if (remLabel) remLabel.hidden = mode === 'save';
       const done = (v) => {
         ok.removeEventListener('click', onOk);
@@ -573,7 +593,7 @@
           return;
         }
         const choice = pad.querySelector('input[name=sig_choice]');
-        done({ signature: v, sig_choice: mode === 'submit' && choice ? choice.value : '', remember_signature: mode === 'submit' && rem && rem.checked ? '1' : '' });
+        done({ signature: v, sig_choice: mode !== 'save' && choice ? choice.value : '', remember_signature: mode !== 'save' && rem && rem.checked ? '1' : '' });
       };
       const onCancel = () => done(null);
       const onEsc = (ev) => {
@@ -946,20 +966,22 @@
     let coverToken = 0;
     let dt = new DataTransfer();
     // ดูหน้าแรกของไฟล์ PDF ที่จะส่ง (ไฟล์แรกในรายการ = หน้าปกหลังรวมไฟล์) ด้วย PDF.js ที่มากับระบบ
+    // ยังไม่เลือกไฟล์ใหม่ แต่มีไฟล์เดิม (data-old-cover ฟังก์ชันเสริม precheck) ดูหน้าแรกของไฟล์เดิมจากระบบ
     async function showCover(file) {
       if (!cover) return;
       const token = ++coverToken;
-      if (!file || !/\.pdf$/i.test(file.name)) {
+      const oldUrl = !file && zone.dataset.oldCover ? '/f/' + zone.dataset.oldCover + '/raw' : '';
+      if (!oldUrl && (!file || !/\.pdf$/i.test(file.name))) {
         cover.hidden = true;
         return;
       }
       try {
-        const r = await renderFirstPage(new Uint8Array(await file.arrayBuffer()), 200, window.devicePixelRatio || 1, () => token === coverToken);
+        const r = await renderFirstPage(oldUrl || new Uint8Array(await file.arrayBuffer()), 200, window.devicePixelRatio || 1, () => token === coverToken);
         if (!r || token !== coverToken) return;
         const box = cover.querySelector('[data-cover-img]');
         box.innerHTML = '';
         box.appendChild(r.canvas);
-        cover.querySelector('[data-cover-info]').textContent = 'หน้าแรกของไฟล์ ' + file.name + (dt.files.length > 1 ? ' (หน้าปกของไฟล์ที่รวมแล้ว)' : ' ทั้งไฟล์ ' + r.pages + ' หน้า');
+        cover.querySelector('[data-cover-info]').textContent = oldUrl ? 'หน้าแรกของไฟล์เดิมที่แนบไว้ ทั้งไฟล์ ' + r.pages + ' หน้า' : 'หน้าแรกของไฟล์ ' + file.name + (dt.files.length > 1 ? ' (หน้าปกของไฟล์ที่รวมแล้ว)' : ' ทั้งไฟล์ ' + r.pages + ' หน้า');
         cover.hidden = false;
       } catch {
         if (token === coverToken) cover.hidden = true;
@@ -978,6 +1000,7 @@
       const n = dt.files.length;
       const pages = [];
       showCover(dt.files[0]);
+      zone.dispatchEvent(new CustomEvent('dz:change', { detail: { files: Array.from(dt.files) } }));
       if (mergeNote) {
         mergeNote.hidden = !(sortable && n > 1);
         mergeNote.textContent = 'ระบบจะรวม ' + n + ' ไฟล์เป็น PDF ไฟล์เดียว เรียงตามลำดับด้านบน';
@@ -1055,6 +1078,299 @@
       e.preventDefault();
       if (e.dataTransfer && e.dataTransfer.files) add(e.dataTransfer.files);
     });
+    if (zone.dataset.oldCover) showCover(null);
+  });
+  // ---------- รายการตรวจก่อนส่งแผนและคู่มือ (ฟังก์ชันเสริม precheck precheckforce dupfile blankcover) ----------
+  // ข้อแดงเขียว = ระบบรู้แน่นอน (กรอกครบ เป็น PDF เปิดได้ ไม่ติดรหัส ไม่ซ้ำกับงานอื่น) ข้อแดงทำให้ปุ่มส่งบอกเหตุผลแทนการส่ง
+  // ข้อส้ม = ระบบเดา (หน้าแรกเกือบว่าง ไม่พบรหัสวิชา ชื่อไฟล์มีรหัสอื่น หน้าน้อยผิดปกติ) ครูดูเองแล้วติ๊ก ดูแล้ว (บังคับเมื่อเปิด precheckforce)
+  const INK_MIN = 0.004; // สัดส่วนจุดสีเข้มของหน้าแรก ต่ำกว่านี้ถือว่าเกือบว่าง (วัดจากไฟล์ทดลอง หน้าว่าง 0 ปกที่มีแค่ชื่อเรื่องราว 0.01 ขึ้นไป)
+  const CK_ICON = { ok: 'ok', bad: 'close', look: 'eye', wait: 'clock' };
+  const CODE_RE = /[ก-ฮ]\s?[0-9๐-๙]{5}/g;
+  function normCode(s) {
+    return String(s || '')
+      .replace(/[๐-๙]/g, (d) => String(d.charCodeAt(0) - 0x0e50))
+      .replace(/\s+/g, '')
+      .toUpperCase();
+  }
+  // สัดส่วนจุดสีเข้มของหน้า (วาดเล็ก ๆ กว้าง 120 px)
+  async function inkOf(page) {
+    const base = page.getViewport({ scale: 1 });
+    const vp = page.getViewport({ scale: 120 / base.width });
+    const c = document.createElement('canvas');
+    c.width = Math.max(1, Math.floor(vp.width));
+    c.height = Math.max(1, Math.floor(vp.height));
+    const ctx = c.getContext('2d', { willReadFrequently: true });
+    ctx.fillStyle = '#fff';
+    ctx.fillRect(0, 0, c.width, c.height);
+    await page.render({ canvas: c, canvasContext: ctx, viewport: vp }).promise;
+    const d = ctx.getImageData(0, 0, c.width, c.height).data;
+    let dark = 0;
+    for (let i = 0; i < d.length; i += 4) if (d[i] + d[i + 1] + d[i + 2] < 600) dark++;
+    return dark / (d.length / 4);
+  }
+  // เปิด PDF ครั้งเดียว: จำนวนหน้า ตัวหนังสือ n หน้าแรก ความเข้มหน้าแรก · เปิดไม่ได้คืน { error: locked | broken }
+  async function inspectPdf(src, textPages, wantInk) {
+    let task;
+    try {
+      task = openPdf(await pdfjsLib(), src);
+      const doc = await task.promise;
+      const out = { pages: doc.numPages, text: [], ink: null };
+      for (let p = 1; p <= Math.min(doc.numPages, textPages); p++) {
+        const tc = await (await doc.getPage(p)).getTextContent();
+        out.text.push(tc.items.map((x) => x.str || '').join(' '));
+      }
+      // วาดไม่เสร็จใน 8 วินาที (เครื่องช้าหรือฟอนต์โหลดไม่ขึ้น) ข้ามการวัดความเข้ม ไม่ให้รายการตรวจค้าง
+      if (wantInk) out.ink = await Promise.race([inkOf(await doc.getPage(1)), new Promise((r) => setTimeout(() => r(null), 8000))]).catch(() => null);
+      return out;
+    } catch (e) {
+      return { error: e && e.name === 'PasswordException' ? 'locked' : 'broken' };
+    } finally {
+      if (task) task.destroy().catch(() => {});
+    }
+  }
+  function sameBytes(a, b) {
+    if (a.length !== b.length) return false;
+    for (let i = 0; i < a.length; i++) if (a[i] !== b[i]) return false;
+    return true;
+  }
+
+  document.querySelectorAll('[data-precheck][data-mode=form]').forEach((box) => {
+    const form = box.closest('form');
+    if (!form) return;
+    const btn = form.querySelector('[data-precheck-btn]');
+    const note = form.querySelector('[data-ck-note]');
+    const zone = form.querySelector('[data-dropzone]');
+    const warn = form.querySelector('[data-cover-warn]');
+    const count = box.querySelector('[data-ck-count]');
+    let dup = [];
+    try {
+      dup = JSON.parse(box.dataset.dup || '[]');
+    } catch {
+      dup = [];
+    }
+    const minPages = Number(box.dataset.minPages) || 0;
+    const oldFile = box.dataset.oldFile || '';
+    const force = box.hasAttribute('data-force');
+    const blankOn = box.hasAttribute('data-blank');
+    const pdfOnly = box.hasAttribute('data-pdfonly');
+    const fCode = form.elements.subject_code;
+    const fields = [
+      ['รหัสวิชา', fCode],
+      ['ชื่อวิชา', form.elements.subject_name],
+      ['ระดับชั้น', form.elements.grade_level],
+    ];
+    let run = 0;
+    let names = [];
+    let text = null; // ตัวหนังสือ 3 หน้าแรก (null = ไฟล์สแกนหรือยังไม่รู้ ไม่เตือนเรื่องรหัสวิชา)
+    let oldPages = null;
+    const item = (k) => box.querySelector('[data-ck="' + k + '"]');
+
+    function update() {
+      const shown = Array.from(box.querySelectorAll('[data-ck]')).filter((x) => !x.hidden);
+      let done = 0;
+      const bad = [];
+      const look = [];
+      for (const it of shown) {
+        const tick = it.querySelector('.tick input');
+        const ticked = Boolean(tick && tick.checked);
+        it.classList.toggle('ticked', ticked);
+        const title = it.querySelector('[data-ck-title]').textContent;
+        if (it.classList.contains('ok') || (it.classList.contains('look') && ticked)) done++;
+        if (it.classList.contains('bad') && it.hasAttribute('data-block')) bad.push(title);
+        if (it.classList.contains('look') && !ticked) look.push(title);
+      }
+      if (count) count.textContent = done + '/' + shown.length;
+      box.classList.toggle('all-ok', done === shown.length);
+      let msg = '';
+      if (bad.length) msg = 'ยังส่งไม่ได้ ต้องแก้ข้อสีแดงก่อน\n' + bad.join('\n') + '\nกดบันทึกร่างไว้ก่อนได้';
+      else if (force && look.length) msg = 'ติ๊ก ดูแล้ว ในข้อสีส้มให้ครบก่อนส่ง\n' + look.join('\n');
+      if (btn) {
+        if (msg) btn.dataset.blocked = msg;
+        else delete btn.dataset.blocked;
+        btn.classList.toggle('is-blocked', Boolean(msg));
+      }
+      if (note) {
+        note.hidden = !msg;
+        note.textContent = msg ? (bad.length ? 'กดส่งได้เมื่อแก้ข้อสีแดงแล้ว' : 'กดส่งได้เมื่อติ๊ก ดูแล้ว ในข้อสีส้มครบ') : '';
+      }
+    }
+    function set(k, st, sub) {
+      const it = item(k);
+      if (!it) return;
+      it.classList.remove('ok', 'bad', 'look', 'wait');
+      it.classList.add(st);
+      it.querySelector('[data-ck-ic]').innerHTML = svg(CK_ICON[st], 16);
+      if (sub != null) it.querySelector('[data-ck-sub]').textContent = sub;
+      update();
+    }
+    function show(k, on, sub) {
+      const it = item(k);
+      if (!it) return;
+      it.hidden = !on;
+      if (on && sub != null) it.querySelector('[data-ck-sub]').textContent = sub;
+      update();
+    }
+    function untick(k) {
+      const it = item(k);
+      const c = it && it.querySelector('.tick input');
+      if (c) c.checked = false;
+    }
+
+    function checkCode() {
+      const code = normCode(fCode && fCode.value);
+      const miss = Boolean(code && text != null && !normCode(text).includes(code));
+      show('code', miss, 'ตัวหนังสือใน 3 หน้าแรกไม่มีรหัส ' + code + ' ตรวจว่าแนบไฟล์ถูกวิชา');
+    }
+    function checkNames() {
+      const code = normCode(fCode && fCode.value);
+      let hit = '';
+      for (const n of names) {
+        const other = (n.match(CODE_RE) || []).map(normCode).find((c) => c !== code);
+        if (other) {
+          hit = 'ชื่อไฟล์ ' + n + ' มีรหัส ' + other + ' แต่รหัสวิชาที่กรอกคือ ' + code;
+          break;
+        }
+      }
+      show('fname', Boolean(code && hit), hit);
+    }
+    function checkFields() {
+      const miss = fields.filter(([, el]) => !(el && el.value.trim())).map(([label]) => label);
+      set('fields', miss.length ? 'bad' : 'ok', miss.length ? 'ยังไม่ได้กรอก ' + miss.join(' ') : fields.map(([, el]) => el.value.trim()).join(' '));
+      checkCode();
+      checkNames();
+    }
+    for (const [, el] of fields) {
+      if (!el) continue;
+      el.addEventListener('input', checkFields);
+      el.addEventListener('change', checkFields);
+    }
+    box.addEventListener('change', update);
+
+    async function checkPages(pages, isNew) {
+      let msg = '';
+      if (minPages && pages < minPages) msg = 'ไฟล์มี ' + pages + ' หน้า น้อยกว่า ' + minPages + ' หน้าที่โรงเรียนตั้งไว้ ตรวจว่าแนบไฟล์ครบทั้งเล่ม';
+      else if (isNew && oldFile) {
+        if (oldPages == null) {
+          const r = await inspectPdf('/f/' + oldFile + '/raw', 0, false);
+          oldPages = r.error ? 0 : r.pages;
+        }
+        if (oldPages && pages < oldPages / 2) msg = 'ไฟล์ใหม่มี ' + pages + ' หน้า ไฟล์เดิมมี ' + oldPages + ' หน้า ตรวจว่าแนบไฟล์ครบทั้งเล่ม';
+      }
+      return msg;
+    }
+
+    // ผลการเปิดไฟล์ (ใช้ทั้งไฟล์ที่เพิ่งเลือกและไฟล์เดิม)
+    async function showInspect(token, r, isNew) {
+      if (r.error) {
+        set('open', 'bad', 'ไฟล์ ' + r.name + (r.error === 'locked' ? ' ติดรหัสผ่าน ผู้ตรวจเปิดไม่ได้ ให้บันทึกเป็น PDF ใหม่แบบไม่ใส่รหัสผ่าน' : ' เปิดไม่ได้ ไฟล์อาจเสีย ให้บันทึกเป็น PDF ใหม่แล้วแนบอีกครั้ง'));
+        for (const k of ['blank', 'code', 'pages']) show(k, false);
+        if (warn) warn.hidden = true;
+        text = null;
+        return;
+      }
+      set('open', 'ok', r.pages + ' หน้า เปิดได้ ไม่ติดรหัสผ่าน');
+      const blank = blankOn && r.ink != null && r.ink < INK_MIN;
+      show('blank', blank, 'หน้าแรกแทบไม่มีตัวหนังสือ ดูภาพหน้าปกด้านบนว่าเป็นหน้าปกจริง');
+      if (warn) warn.hidden = !blank;
+      const joined = r.text.join(' ');
+      text = normCode(joined).length >= 30 ? joined : null;
+      checkCode();
+      const msg = await checkPages(r.pages, isNew);
+      if (token !== run) return;
+      show('pages', Boolean(msg), msg);
+    }
+
+    async function checkDup(token, files) {
+      const it = item('dup');
+      if (!it) return;
+      show('dup', true);
+      if (files.length !== 1) {
+        set('dup', 'ok', 'ไฟล์ที่รวมแล้ว ระบบเทียบอีกครั้งตอนกดส่ง');
+        return;
+      }
+      const f = files[0];
+      const same = dup.filter((d) => d.size === f.size);
+      if (same.length) set('dup', 'wait', 'กำลังเทียบกับงานอื่นของคุณ');
+      const mine = same.length ? new Uint8Array(await f.arrayBuffer()) : null;
+      for (const d of same) {
+        try {
+          const r = await fetch('/f/' + d.id + '/raw', { credentials: 'same-origin' });
+          if (!r.ok) continue;
+          const other = new Uint8Array(await r.arrayBuffer());
+          if (token !== run) return;
+          if (sameBytes(mine, other)) {
+            set('dup', 'bad', 'เป็นไฟล์เดียวกับ' + d.label + ' ที่แนบไว้แล้ว แนบไฟล์ของวิชานี้แทน');
+            return;
+          }
+        } catch {
+          // เทียบไม่ได้ ระบบตรวจอีกครั้งตอนกดส่ง
+        }
+      }
+      if (token === run) set('dup', 'ok', 'ไม่ซ้ำกับไฟล์ในงานอื่นของคุณ');
+    }
+
+    async function onFiles(files) {
+      const token = ++run;
+      for (const k of ['cover', 'blank', 'code', 'fname', 'pages']) untick(k);
+      text = null;
+      names = files.map((f) => f.name);
+      checkNames();
+      if (!files.length) {
+        if (oldFile) return inspectOld(token);
+        set('pdf', 'bad', 'ยังไม่ได้เลือกไฟล์');
+        for (const k of ['open', 'dup', 'blank', 'code', 'pages']) show(k, false);
+        if (warn) warn.hidden = true;
+        return;
+      }
+      const notPdf = files.filter((f) => !/\.pdf$/i.test(f.name));
+      if (pdfOnly && notPdf.length) set('pdf', 'bad', notPdf.map((f) => f.name).join(' ') + ' ไม่ใช่ PDF');
+      else set('pdf', 'ok', files.length > 1 ? 'เลือก ' + files.length + ' ไฟล์ ระบบรวมเป็นไฟล์เดียวตอนส่ง' : files[0].name + ' ' + fmtSize(files[0].size));
+      const pdfs = files.filter((f) => /\.pdf$/i.test(f.name));
+      checkDup(token, files);
+      if (!pdfs.length) {
+        for (const k of ['open', 'blank', 'code', 'pages']) show(k, false);
+        return;
+      }
+      show('open', true);
+      set('open', 'wait', 'กำลังตรวจ');
+      const all = { pages: 0, text: [], ink: null };
+      for (let i = 0; i < pdfs.length; i++) {
+        const r = await inspectPdf(new Uint8Array(await pdfs[i].arrayBuffer()), 3 - all.text.length, i === 0 && blankOn);
+        if (token !== run) return;
+        if (r.error) return showInspect(token, { error: r.error, name: pdfs[i].name }, true);
+        all.pages += r.pages;
+        all.text.push(...r.text);
+        if (i === 0) all.ink = r.ink;
+      }
+      showInspect(token, all, true);
+    }
+    // ยังไม่เลือกไฟล์ใหม่: ตรวจไฟล์เดิมที่แนบไว้ (โหลดเฉพาะส่วนที่ใช้)
+    async function inspectOld(token) {
+      set('pdf', 'ok', item('pdf').querySelector('[data-ck-sub]').dataset.old || item('pdf').querySelector('[data-ck-sub]').textContent);
+      show('open', true);
+      set('open', 'wait', 'กำลังตรวจไฟล์เดิม');
+      const r = await inspectPdf('/f/' + oldFile + '/raw', 3, blankOn);
+      if (token !== run) return;
+      showInspect(token, { ...r, name: 'เดิม' }, false);
+    }
+
+    // เซ็นชื่อจากรายการตรวจ: ใส่ลายเซ็นในฟอร์ม ใช้ตอนกดส่ง ไม่ต้องออกจากหน้านี้
+    const signBtn = box.querySelector('[data-ck-sign]');
+    if (signBtn) {
+      signBtn.addEventListener('click', async () => {
+        const got = await askSignature('form');
+        if (!got) return;
+        for (const [k, v] of Object.entries(got)) if (v) putSigField(form, k, v);
+        signBtn.hidden = true;
+        set('sig', 'ok', 'เซ็นแล้ว ลายเซ็นนี้ใช้ตอนกดส่ง');
+      });
+    }
+
+    const pdfSub = item('pdf') && item('pdf').querySelector('[data-ck-sub]');
+    if (pdfSub) pdfSub.dataset.old = pdfSub.textContent;
+    if (zone) zone.addEventListener('dz:change', (e) => onFiles(e.detail.files || []));
+    checkFields();
+    if (oldFile) inspectOld(++run);
   });
 
   // ---------- ช่องเซ็นชื่อ ----------

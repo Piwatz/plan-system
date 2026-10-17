@@ -93,6 +93,8 @@ const DEFAULT_SETTINGS = {
   resubmit_mode: 'resume',
   score_role: 'dept_head',
   max_upload_mb: '100',
+  // รายการตรวจก่อนส่ง (ฟังก์ชันเสริม precheck): ไฟล์ที่มีหน้าน้อยกว่านี้ขึ้นข้อส้ม จำนวนหน้าน้อยผิดปกติ (0 = ไม่เตือน)
+  min_pages: '5',
   grade_levels: 'ม.1\nม.2\nม.3\nม.4\nม.5\nม.6',
   teaching_methods: [
     'Active Learning',

@@ -100,6 +100,7 @@
       <div class="field"><label for="submit_start">เริ่มรับวันที่ (ไม่บังคับ)</label><input type="date" id="submit_start" name="submit_start" value="<%= settings.submit_start %>"></div>
       <div class="field"><label for="submit_end">ส่งได้ถึงวันที่ (ไม่บังคับ)</label><input type="date" id="submit_end" name="submit_end" value="<%= settings.submit_end %>"></div>
       <div class="field"><label for="max_upload_mb">ขนาดไฟล์สูงสุด (MB)</label><input type="number" id="max_upload_mb" name="max_upload_mb" value="<%= settings.max_upload_mb %>" min="1" max="100"></div>
+      <% if (ff.precheck) { %><div class="field"><label for="min_pages">เตือนเมื่อไฟล์มีน้อยกว่า (หน้า)</label><input type="number" id="min_pages" name="min_pages" value="<%= settings.min_pages ?? 5 %>" min="0" max="500"><div class="hint">ข้อส้มในรายการตรวจก่อนส่ง ใส่ 0 ถ้าไม่ต้องการเตือน</div></div><% } %>
     </div>
     <p class="muted small">ปิดรับแล้วครูยังบันทึกร่างได้ งานที่ถูกส่งกลับให้แก้ไขและบันทึกหลังแผนยังส่งได้ตามปกติ</p>
 

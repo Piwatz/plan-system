@@ -727,6 +727,7 @@ async function saveSettings(req) {
   await setSetting('submit_start', date(b.submit_start));
   await setSetting('submit_end', date(b.submit_end));
   await setSetting('max_upload_mb', Math.min(100, Math.max(1, Number(b.max_upload_mb) || 20)));
+  if (b.min_pages !== undefined) await setSetting('min_pages', Math.min(500, Math.max(0, parseInt(b.min_pages, 10) || 0)));
   await setSetting('grade_levels', util.lines(b.grade_levels).join('\n'));
   await setSetting('teaching_methods', util.lines(b.teaching_methods).join('\n'));
   const url = String(b.public_url || '').trim().replace(/\/+$/, '');

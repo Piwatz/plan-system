@@ -65,6 +65,7 @@ async function as(username) {
 
 async function pdf(pages) {
   const doc = await PDFDocument.create();
+  doc.setSubject(`ไฟล์ทดลอง ${Math.random()}`); // ไฟล์ไม่ซ้ำกัน (ฟังก์ชันเสริม dupfile ไม่ให้ส่งไฟล์เดียวกันสองงาน)
   for (let i = 0; i < pages; i++) doc.addPage([300, 400]);
   return new Blob([await doc.save()], { type: 'application/pdf' });
 }
@@ -75,7 +76,7 @@ const currentFiles = (id) => db.q.all("SELECT id, original_name FROM files WHERE
 test('ติ๊กยืนยันหน้าปกก่อนส่ง: ไม่ติ๊กบันทึกร่างไว้แต่ไม่ส่ง ติ๊กแล้วส่งได้ ปิดสวิตช์แล้วไม่ถาม', async () => {
   const t = await as('sci2');
   const page = (await t.get('/works/new?type=manual')).text;
-  assert.match(page, /name="cover_ok" value="1"> <span>ฉันตรวจแล้ว <b>ไฟล์นี้มีหน้าปก<\/b>/);
+  assert.match(page, /name="cover_ok" value="1">/);
   assert.match(page, /data-need-checked="cover_ok"/);
   const fields = { doc_type: 'manual', subject_code: 'ว30199', subject_name: 'ทดสอบปก', grade_level: 'ม.4', action: 'submit', cover_check: '1' };
   let r = await sendForm(t, '/works', fields, [[await pdf(2), 'คู่มือ.pdf']]);

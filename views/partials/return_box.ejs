@@ -1,0 +1,9 @@
+<%# งานที่ถูกส่งกลับ (ฟังก์ชันเสริม retfocus): ความเห็นผู้ตรวจตัวใหญ่ในกรอบแดงบนสุด · locals: r = แถว reviews ที่ส่งกลับ, hint = ข้อความบอกวิธีทำต่อ %>
+<div class="ret-box" role="alert">
+  <div class="ret-h"><%- icon('undo', 20) %><b>ผู้ตรวจส่งกลับให้แก้ไข</b><span><%= r.user_name %> (<%= r.step_label %>)<%= r.created_at ? ' เมื่อ ' + util.thaiDateTime(r.created_at) : '' %></span></div>
+  <div class="ret-say">
+    <div class="ret-label">ความเห็นของผู้ตรวจ</div>
+    <div class="pre ret-comment"><%= r.comment || 'ไม่ได้เขียนความเห็น สอบถามผู้ตรวจโดยตรง' %></div>
+    <% if (locals.hint) { %><div class="ret-hint"><%- hint %></div><% } %>
+  </div>
+</div>
