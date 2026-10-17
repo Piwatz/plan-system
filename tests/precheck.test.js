@@ -216,3 +216,26 @@ test('หน้างานมีการ์ดเอกสารสำหร�
   await db.setSetting('ff_printcard', '1');
   await db.setSetting('ff_printbar', '1');
 });
+
+test('ผู้ตรวจที่กำลังลงนามไม่เห็นการ์ดและแถบพิมพ์ เจ้าของงานยังเห็น', async () => {
+  // หาคู่ งานรอตรวจ + ผู้ตรวจที่มีปุ่มลงนามงานนั้น
+  const rows = await db.q.all(
+    `SELECT s.id, o.username AS owner, u.username AS reviewer FROM submissions s
+     JOIN users o ON o.id = s.teacher_id JOIN user_roles r ON r.role = s.current_role JOIN users u ON u.id = r.user_id
+     WHERE s.status = 'pending' AND s.doc_type IN ('manual', 'plan') AND u.id <> s.teacher_id ORDER BY s.id`
+  );
+  let found = null;
+  for (const x of rows) {
+    const c = await as(x.reviewer);
+    const page = (await c.get(`/s/${x.id}`)).text;
+    if (page.includes(`/s/${x.id}/approve`)) {
+      found = { ...x, page };
+      break;
+    }
+  }
+  assert.ok(found, 'มีงานที่ผู้ตรวจลงนามได้');
+  assert.doesNotMatch(found.page, /print-card|class="print-bar"/);
+  assert.match(found.page, new RegExp(`href="/s/${found.id}/print"`), 'ยังมีปุ่มพิมพ์เล็กมุมขวาบน');
+  const t = await as(found.owner);
+  assert.match((await t.get(`/s/${found.id}`)).text, /class="card print-card"/);
+});
