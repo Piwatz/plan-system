@@ -270,10 +270,14 @@ test('เลขที่บันทึกข้อความ: กรอกเ
 
 test('หน้าแผนและคู่มือของฉันมีปุ่มพิมพ์ในแถวงานที่ส่งแล้ว ปิดสวิตช์แล้วหาย', async () => {
   const w = await db.q.get(
-    "SELECT s.id, u.username FROM submissions s JOIN users u ON u.id = s.teacher_id WHERE s.status <> 'draft' AND s.doc_type IN ('manual', 'plan') AND u.is_admin = 0 ORDER BY s.id LIMIT 1"
+    "SELECT s.id, u.username FROM submissions s JOIN users u ON u.id = s.teacher_id WHERE s.subject_code = 'ว39011' AND s.status <> 'draft'"
   );
   const t = await as(w.username);
-  assert.match((await t.get('/my')).text, new RegExp(`class="my-print"><a class="btn btn-sm btn-ghost" href="/s/${w.id}/print"`));
+  const my = (await t.get('/my')).text;
+  assert.match(my, new RegExp(`class="my-print"><a class="btn btn-sm btn-ghost" href="/s/${w.id}/print"`));
+  const f = await db.q.get("SELECT id FROM files WHERE submission_id = ? AND kind = 'main' AND is_current = 1 ORDER BY id LIMIT 1", w.id);
+  assert.ok(f);
+  assert.ok(my.includes(`href="/f/${f.id}/view"`), 'ปุ่มเปิดไฟล์งาน');
   await db.setSetting('ff_printrow', '0');
   assert.doesNotMatch((await t.get('/my')).text, /my-print/);
   await db.setSetting('ff_printrow', '1');

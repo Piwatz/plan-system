@@ -365,7 +365,8 @@ router.get('/my', async (req, res) => {
     `SELECT ${wf.subCols('s')},
        (SELECT COUNT(*) FROM submissions n WHERE n.parent_id = s.id AND n.doc_type = 'note') AS note_total,
        (SELECT COUNT(*) FROM submissions n WHERE n.parent_id = s.id AND n.doc_type = 'note' AND n.status = 'approved') AS note_done,
-       (SELECT COUNT(*) FROM submissions n WHERE n.parent_id = s.id AND n.doc_type = 'note' AND n.status IN ('draft', 'returned')) AS note_todo
+       (SELECT COUNT(*) FROM submissions n WHERE n.parent_id = s.id AND n.doc_type = 'note' AND n.status IN ('draft', 'returned')) AS note_todo,
+       (SELECT f.id FROM files f WHERE f.submission_id = s.id AND f.kind = 'main' AND f.is_current = 1 ORDER BY f.id LIMIT 1) AS main_file_id
      FROM submissions s
      WHERE s.teacher_id = ? AND s.doc_type IN ('manual', 'plan') AND s.academic_year = ? AND s.semester = ?
      ORDER BY s.subject_code, s.id`,

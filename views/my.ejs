@@ -39,7 +39,7 @@
               </td>
               <td class="right nowrap">
                 <a class="btn btn-sm <%= w.status === 'returned' ? 'btn-danger' : 'btn-ghost' %>" href="/s/<%= w.id %>"><%= w.status === 'returned' ? 'แก้ไข' : w.status === 'draft' ? 'เปิดร่าง' : 'ดูรายละเอียด' %></a>
-                <% if (ff.printrow && w.status !== 'draft') { %><div class="my-print"><a class="btn btn-sm btn-ghost" href="/s/<%= w.id %>/print" target="_blank" rel="noopener"><%- icon('print', 16) %> พิมพ์บันทึกข้อความ</a><% if (w.score_max) { %><a class="btn btn-sm btn-ghost" href="/s/<%= w.id %>/print?doc=eval" target="_blank" rel="noopener"><%- icon('print', 16) %> พิมพ์แบบประเมิน</a><% } %></div><% } %>
+                <% if (ff.printrow && w.status !== 'draft') { %><div class="my-print"><a class="btn btn-sm btn-ghost" href="/s/<%= w.id %>/print" target="_blank" rel="noopener"><%- icon('print', 16) %> พิมพ์บันทึกข้อความ</a><% if (w.score_max) { %><a class="btn btn-sm btn-ghost" href="/s/<%= w.id %>/print?doc=eval" target="_blank" rel="noopener"><%- icon('print', 16) %> พิมพ์แบบประเมิน</a><% } %><% if (w.main_file_id) { %><a class="btn btn-sm btn-ghost" href="/f/<%= w.main_file_id %>/view" target="_blank" rel="noopener"><%- icon('file', 16) %> เปิดไฟล์<%= type === 'plan' ? 'แผน' : 'คู่มือ' %></a><% } %></div><% } %>
               </td>
             <% } else { %>
               <td><span class="muted"><%= type === 'plan' && !canPlan ? 'ไม่ต้องส่ง ส่งแผนเฉพาะวิชาหลัก' : 'ยังไม่ได้ส่ง' %></span></td>
