@@ -267,3 +267,14 @@ test('เลขที่บันทึกข้อความ: กรอกเ
   assert.equal((await subOf(id)).status, 'pending', 'ปิดสวิตช์ ไม่บังคับ');
   await db.setSetting('ff_docnoreq', '1');
 });
+
+test('หน้าแผนและคู่มือของฉันมีปุ่มพิมพ์ในแถวงานที่ส่งแล้ว ปิดสวิตช์แล้วหาย', async () => {
+  const w = await db.q.get(
+    "SELECT s.id, u.username FROM submissions s JOIN users u ON u.id = s.teacher_id WHERE s.status <> 'draft' AND s.doc_type IN ('manual', 'plan') AND u.is_admin = 0 ORDER BY s.id LIMIT 1"
+  );
+  const t = await as(w.username);
+  assert.match((await t.get('/my')).text, new RegExp(`class="my-print"><a class="btn btn-sm btn-ghost" href="/s/${w.id}/print"`));
+  await db.setSetting('ff_printrow', '0');
+  assert.doesNotMatch((await t.get('/my')).text, /my-print/);
+  await db.setSetting('ff_printrow', '1');
+});

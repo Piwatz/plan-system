@@ -39,6 +39,7 @@
               </td>
               <td class="right nowrap">
                 <a class="btn btn-sm <%= w.status === 'returned' ? 'btn-danger' : 'btn-ghost' %>" href="/s/<%= w.id %>"><%= w.status === 'returned' ? 'แก้ไข' : w.status === 'draft' ? 'เปิดร่าง' : 'ดูรายละเอียด' %></a>
+                <% if (ff.printrow && w.status !== 'draft') { %><div class="my-print"><a class="btn btn-sm btn-ghost" href="/s/<%= w.id %>/print" target="_blank" rel="noopener"><%- icon('print', 16) %> พิมพ์บันทึกข้อความ</a><% if (w.score_max) { %><a class="btn btn-sm btn-ghost" href="/s/<%= w.id %>/print?doc=eval" target="_blank" rel="noopener"><%- icon('print', 16) %> พิมพ์แบบประเมิน</a><% } %></div><% } %>
               </td>
             <% } else { %>
               <td><span class="muted"><%= type === 'plan' && !canPlan ? 'ไม่ต้องส่ง ส่งแผนเฉพาะวิชาหลัก' : 'ยังไม่ได้ส่ง' %></span></td>
@@ -56,6 +57,7 @@
             <td class="right nowrap">
               <a class="btn btn-sm btn-ghost" href="/s/<%= s.plan.id %>#notes">ดูทั้งหมด</a>
               <a class="btn btn-sm btn-warn" href="/notes/new?plan=<%= s.plan.id %>">เขียนบันทึก</a>
+              <% if (ff.printrow && s.plan.note_total - s.plan.note_todo > 0) { %><div class="my-print"><a class="btn btn-sm btn-ghost" href="/s/<%= s.plan.id %>/print-notes" target="_blank" rel="noopener"><%- icon('print', 16) %> พิมพ์ทั้งเล่ม</a></div><% } %>
             </td>
           <% } else { %>
             <td colspan="2"><span class="muted">เขียนได้หลังจากส่งแผนการจัดการเรียนรู้ของวิชานี้แล้ว</span></td>
