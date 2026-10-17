@@ -55,12 +55,14 @@ code { font-size: 0.9em; background: var(--head-bg); padding: 1px 6px; border-ra
   scrollbar-color: rgba(255, 255, 255, 0.25) transparent;
   z-index: 40;
 }
-.side-brand { display: flex; align-items: center; gap: 12px; padding: 20px 20px 18px; border-bottom: 1px solid rgba(255, 255, 255, 0.12); color: #fff; }
+.side-brand { display: flex; align-items: flex-start; gap: 12px; padding: 20px 16px 18px; border-bottom: 1px solid rgba(255, 255, 255, 0.12); color: #fff; }
 .side-brand:hover { text-decoration: none; }
-.side-logo { width: 46px; height: 46px; object-fit: contain; flex: none; }
+.side-logo { width: 52px; height: auto; object-fit: contain; flex: none; }
 .side-brand-text { display: flex; flex-direction: column; line-height: 1.3; min-width: 0; }
 .side-brand-text b { font-size: 1.12rem; }
-.side-brand-text span { font-size: 0.82rem; color: var(--side-muted); }
+.side-brand-text span { font-size: 0.8rem; color: var(--side-muted); line-height: 1.35; }
+.side-brand-text .side-full { font-size: 0.86rem; font-weight: 700; color: #fff; }
+.side-brand-text > * { text-wrap: balance; }
 .side-close { display: none; }
 .side-nav { flex: 1; padding: 12px 12px; display: flex; flex-direction: column; gap: 3px; }
 .side-label { padding: 12px 12px 4px; font-size: 0.8rem; color: var(--side-muted); }

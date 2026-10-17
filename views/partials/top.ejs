@@ -61,6 +61,9 @@
       <img class="side-logo" src="<%= logoUrl %>" alt="ตราโรงเรียน">
       <span class="side-brand-text">
         <b><%= site.app_name %></b>
+        <%# ชื่อเต็ม ชื่ออังกฤษ และชื่อโรงเรียน แบบเดียวกับท้ายเว็บ %>
+        <% if (site.app_full !== site.app_name) { %><strong class="side-full"><%= site.app_full %></strong><% } %>
+        <% if (site.app_full_en) { %><span><%= site.app_full_en %></span><% } %>
         <span><%= settings.school_name %></span>
       </span>
     </a>
