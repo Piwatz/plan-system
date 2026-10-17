@@ -510,6 +510,18 @@
           return;
         }
       }
+      // ครูที่ยังไม่มีลายเซ็นกดส่งงาน (ฟังก์ชันเสริม sigrequire): เปิดกรอบเซ็นชื่อแทนป๊อปยืนยัน เซ็นแล้วส่งต่อทันที
+      if (submitter && submitter.hasAttribute('data-need-sig') && sigDlg && sigDlg.hasAttribute('data-require') && !form.querySelector('input[data-sig-copy][name=signature]')) {
+        e.preventDefault();
+        const got = await askSignature('submit', (submitter && submitter.dataset.confirm) || form.dataset.confirm);
+        if (!got) return;
+        for (const [k, v] of Object.entries(got)) if (v) putSigField(form, k, v);
+        form.dataset.confirmed = '1';
+        form._submitter = submitter;
+        if (form.requestSubmit) form.requestSubmit(submitter);
+        else form.submit();
+        return;
+      }
       const text = (submitter && submitter.dataset.confirm) || form.dataset.confirm;
       if (!text) {
         proceed(e, form, submitter);
@@ -527,6 +539,78 @@
     },
     true
   );
+
+  // ---------- กรอบเซ็นชื่อสำหรับครูที่ยังไม่มีลายเซ็น (ฟังก์ชันเสริม sigrequire signag) ----------
+  // mode submit = เซ็นก่อนส่งงาน (ค่าที่ได้ใส่ในฟอร์มส่งงาน) · save = บันทึกเป็นลายเซ็นในข้อมูลส่วนตัว (ปุ่ม เซ็นตอนนี้)
+  const sigDlg = document.getElementById('sig-need');
+  function askSignature(mode, text) {
+    return new Promise((resolve) => {
+      if (!sigDlg || typeof sigDlg.showModal !== 'function') return resolve(null);
+      const pad = sigDlg.querySelector('[data-sigpad]');
+      const ok = sigDlg.querySelector('[data-sig-ok]');
+      const cancel = sigDlg.querySelector('[data-sig-cancel]');
+      const msg = sigDlg.querySelector('[data-sig-text]');
+      const rem = pad.querySelector('input[name=remember_signature]');
+      const remLabel = rem && rem.closest('label');
+      sigDlg.querySelector('[data-sig-title]').textContent = mode === 'save' ? 'เซ็นชื่อของคุณ' : 'เซ็นชื่อก่อนส่งงาน';
+      const base = mode === 'save' ? 'เซ็นครั้งเดียว ใช้ในบันทึกข้อความและเอกสารที่พิมพ์จากระบบทุกงาน' : 'ลายเซ็นนี้จะอยู่ในบันทึกข้อความและเอกสารที่พิมพ์จากระบบ';
+      msg.textContent = text ? text + '\n' + base : base;
+      msg.classList.remove('sig-need-err');
+      ok.textContent = mode === 'save' ? 'บันทึกลายเซ็น' : 'เซ็นแล้ว ส่งงาน';
+      if (remLabel) remLabel.hidden = mode === 'save';
+      const done = (v) => {
+        ok.removeEventListener('click', onOk);
+        cancel.removeEventListener('click', onCancel);
+        sigDlg.removeEventListener('cancel', onEsc);
+        if (sigDlg.open) sigDlg.close();
+        resolve(v);
+      };
+      const onOk = () => {
+        const v = pad.querySelector('input[name=signature]').value;
+        if (!v) {
+          msg.textContent = 'ยังไม่ได้เซ็นชื่อ เซ็นด้วยนิ้วหรือเมาส์ในกรอบก่อน';
+          msg.classList.add('sig-need-err');
+          return;
+        }
+        const choice = pad.querySelector('input[name=sig_choice]');
+        done({ signature: v, sig_choice: mode === 'submit' && choice ? choice.value : '', remember_signature: mode === 'submit' && rem && rem.checked ? '1' : '' });
+      };
+      const onCancel = () => done(null);
+      const onEsc = (ev) => {
+        ev.preventDefault();
+        done(null);
+      };
+      ok.addEventListener('click', onOk);
+      cancel.addEventListener('click', onCancel);
+      sigDlg.addEventListener('cancel', onEsc);
+      sigDlg.showModal();
+    });
+  }
+  function putSigField(form, name, value) {
+    let i = form.querySelector('input[data-sig-copy][name="' + name + '"]');
+    if (!i) {
+      i = document.createElement('input');
+      i.type = 'hidden';
+      i.name = name;
+      i.setAttribute('data-sig-copy', '');
+      form.appendChild(i);
+    }
+    i.value = value;
+  }
+  document.querySelectorAll('[data-sig-open]').forEach((b) => {
+    b.addEventListener('click', async () => {
+      const got = await askSignature('save');
+      if (!got) return;
+      const f = document.createElement('form');
+      f.method = 'post';
+      f.setAttribute('action', '/profile/sign');
+      putSigField(f, 'signature', got.signature);
+      putSigField(f, 'back', window.location.pathname);
+      document.body.appendChild(f);
+      showBusy('กำลังบันทึกลายเซ็น');
+      f.submit();
+    });
+  });
 
   // ---------- หน้าเข้าสู่ระบบ: เลือกชื่อจากรายชื่อ หรือพิมพ์ชื่อผู้ใช้เอง ----------
   document.querySelectorAll('[data-type-name]').forEach((b) => {

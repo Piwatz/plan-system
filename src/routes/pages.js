@@ -287,8 +287,20 @@ router.get('/', async (req, res) => {
       else if (s.status === 'draft') nextUp.push({ title: `${name} ยังเป็นฉบับร่าง`, sub: 'แตะเพื่อตรวจแล้วกดส่ง', href: `/s/${s.id}`, tone: 'wait' });
     }
   }
+  // ลายเซ็นครู (ฟังก์ชันเสริม sigfillauto signag): มีลายเซ็นแล้วเติมงานที่ยังว่างก่อน แล้วนับงานที่ยังไม่มีลายเซ็น
+  let sigNag = null;
+  if (me.is_teacher && (req.ff.signag || req.ff.sigfillauto)) {
+    const sigfill = require('../sigfill');
+    await sigfill.autoFill(req);
+    if (req.ff.signag) {
+      const blank = (await sigfill.blankWorks(me.id)).length;
+      if (!me.signature) sigNag = { kind: 'none', blank };
+      else if (blank && req.ff.sigfill) sigNag = { kind: 'fill', blank };
+    }
+  }
   res.render('home', {
     title: 'หน้าหลัก',
+    sigNag,
     backupProblem,
     term: t,
     subjects,
@@ -522,8 +534,49 @@ router.get('/stats', async (req, res) => {
 router.get('/profile', async (req, res) => {
   // งานที่ยังใช้ลายเซ็นเดิมของฉัน (ฟังก์ชันเสริม resign) มีปุ่มเปลี่ยนทั้งหมดครั้งเดียว
   const stale = req.ff.resign && req.me.signature ? (await require('../resign').staleWorks(req.me.id)).length : 0;
-  res.render('profile', { title: 'ข้อมูลส่วนตัว', stale });
+  // งานที่ส่งตอนยังไม่มีลายเซ็น (ฟังก์ชันเสริม sigfill sigfillauto) แบบใส่ให้ทันทีเติมก่อนแสดง
+  const sigfill = require('../sigfill');
+  if (req.ff.sigfillauto) await sigfill.autoFill(req);
+  const blank = req.ff.sigfill || req.ff.sigfillauto ? (await sigfill.blankWorks(req.me.id)).map(sigfill.workLabel) : [];
+  res.render('profile', { title: 'ข้อมูลส่วนตัว', stale, blank });
 });
+
+// ใส่ลายเซ็นของฉันในทุกงานที่ส่งตอนยังไม่มีลายเซ็น (ฟังก์ชันเสริม sigfill) บันทึก audit_log
+router.post('/profile/sigfill', async (req, res) => {
+  if (!req.ff.sigfill) {
+    req.flash('error', 'ฟังก์ชันใส่ลายเซ็นในงานที่ส่งแล้วปิดอยู่');
+    return res.redirect('/profile');
+  }
+  if (!req.me.signature) {
+    req.flash('error', 'กรุณาบันทึกลายเซ็นก่อน');
+    return res.redirect('/profile');
+  }
+  const n = await require('../sigfill').fill(req.me.id);
+  if (n) await require('../features').audit(req.me, `ใส่ลายเซ็นของตัวเองในงานที่ส่งตอนยังไม่มีลายเซ็น ${n} งาน`, `user ${req.me.id}`);
+  req.flash('success', n ? `ใส่ลายเซ็นของคุณใน ${n} งานเรียบร้อย เอกสารที่พิมพ์จากนี้มีลายเซ็นแล้ว` : 'ทุกงานมีลายเซ็นแล้ว');
+  res.redirect(safeBack(req.body && req.body.back, '/profile'));
+});
+
+// เซ็นชื่อจากกรอบในแถบเตือนหน้าแรก (ฟังก์ชันเสริม signag) เก็บเป็นลายเซ็นในข้อมูลส่วนตัว
+router.post('/profile/sign', async (req, res) => {
+  const sig = String((req.body && req.body.signature) || '');
+  const back = safeBack(req.body && req.body.back, '/');
+  if (!/^data:image\/(png|jpeg);base64,[A-Za-z0-9+/=]+$/.test(sig) || sig.length > 400 * 1024) {
+    req.flash('error', 'ยังไม่ได้เซ็นชื่อ หรือรูปลายเซ็นไม่ถูกต้อง');
+    return res.redirect(back);
+  }
+  await q.run('UPDATE users SET signature = ? WHERE id = ?', sig, req.me.id);
+  req.me.signature = sig;
+  const n = await require('../sigfill').autoFill(req);
+  req.flash('success', `บันทึกลายเซ็นเรียบร้อย${n ? ` ใส่ในงานที่ส่งไปแล้ว ${n} งาน` : ''}`);
+  res.redirect(back);
+});
+
+// ที่อยู่ย้อนกลับภายในเว็บนี้เท่านั้น
+function safeBack(v, def) {
+  const s = String(v || '');
+  return /^\/(?![/\\])/.test(s) ? s : def;
+}
 
 // ใช้ลายเซ็นใหม่ในทุกงานที่ลงนามหรือส่งด้วยลายเซ็นเดิม (ฟังก์ชันเสริม resign) บันทึก audit_log
 router.post('/profile/resign-all', async (req, res) => {
@@ -552,8 +605,11 @@ router.post('/profile', async (req, res) => {
       return res.redirect('/profile');
     }
     await q.run('UPDATE users SET signature = ? WHERE id = ?', b.signature, req.me.id);
+    req.me.signature = b.signature;
   }
-  req.flash('success', 'บันทึกข้อมูลส่วนตัวเรียบร้อย');
+  // บันทึกลายเซ็นแล้ว ใส่ในงานที่ส่งตอนยังไม่มีลายเซ็นให้ทันที (ฟังก์ชันเสริม sigfillauto)
+  const filled = b.remove_signature === '1' ? 0 : await require('../sigfill').autoFill(req);
+  req.flash('success', `บันทึกข้อมูลส่วนตัวเรียบร้อย${filled ? ` ใส่ลายเซ็นในงานที่ส่งไปแล้ว ${filled} งาน` : ''}`);
   res.redirect('/profile');
 });
 

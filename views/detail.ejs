@@ -42,7 +42,7 @@
       <form method="post" action="/s/<%= sub.id %>/submit" class="inline-form" data-busy="กำลังส่งงาน">
         <% const askCover = ff.coverconfirm && !isNote; %>
         <% if (askCover) { %><input type="hidden" name="cover_check" value="1"><label class="check cover-ok"><input type="checkbox" name="cover_ok" value="1"> <span>ฉันตรวจแล้ว <b>ไฟล์นี้มีหน้าปก</b> และ<b>หน้าปกอยู่หน้าแรก</b></span></label><% } %>
-        <button class="btn btn-primary" type="submit"<% if (askCover) { %> data-need-checked="cover_ok" data-need-message="ติ๊กยืนยันก่อนว่าไฟล์นี้มีหน้าปก และหน้าปกอยู่หน้าแรก ถ้ายังไม่มีปก กดแก้ไขแล้วเพิ่มไฟล์ปก"<% } %> data-confirm="<%= isOwner ? 'ยืนยันส่ง' + T.label + 'ให้ผู้ตรวจ' : 'ส่งงานนี้แทน ' + sub.teacher_name + ' ระบบจะบันทึกว่าผู้ดูแลระบบส่งแทน' %>" data-ok-label="ส่งเลย"><%- icon('send', 18) %> <%= !isOwner ? 'ส่งแทนครู' : sub.status === 'returned' ? 'ส่งอีกครั้ง' : 'ส่งให้ผู้ตรวจ' %></button>
+        <button class="btn btn-primary" type="submit"<% if (askCover) { %> data-need-checked="cover_ok" data-need-message="ติ๊กยืนยันก่อนว่าไฟล์นี้มีหน้าปก และหน้าปกอยู่หน้าแรก ถ้ายังไม่มีปก กดแก้ไขแล้วเพิ่มไฟล์ปก"<% } %> data-confirm="<%= isOwner ? 'ยืนยันส่ง' + T.label + 'ให้ผู้ตรวจ' : 'ส่งงานนี้แทน ' + sub.teacher_name + ' ระบบจะบันทึกว่าผู้ดูแลระบบส่งแทน' %>" data-ok-label="ส่งเลย"<%- isOwner ? ' data-need-sig' : '' %>><%- icon('send', 18) %> <%= !isOwner ? 'ส่งแทนครู' : sub.status === 'returned' ? 'ส่งอีกครั้ง' : 'ส่งให้ผู้ตรวจ' %></button>
       </form>
     <% } %>
     <% if (canWithdraw) { %>
@@ -276,12 +276,12 @@
             <% if (bookSend) { const gapText = planGaps.length ? 'ยังไม่มีบันทึกของแผนที่ ' + planGaps.slice(0, 10).join(' ') + (planGaps.length > 10 ? ' และอื่น ๆ' : '') : ''; %>
               <% if (gapText) { %><div class="alert alert-warn" style="margin-top:10px"><%- icon('note') %><span>เลขแผนข้าม <b><%= gapText %></b> ถ้าลืมเขียน กด เขียนบันทึกหลังแผน ก่อนส่ง ถ้าไม่ได้สอนแผนนั้นส่งได้เลย</span></div><% } %>
               <div class="btn-row" style="margin-top:10px">
-                <button class="btn btn-primary btn-lg" type="submit" data-confirm="<%= (isOwner ? 'ส่งบันทึกหลังแผนทั้งเล่ม ' + todo.length + ' แผ่น ให้ผู้ลงความเห็น' : 'ส่งบันทึกหลังแผนทั้งเล่มแทน ' + sub.teacher_name + ' ระบบจะบันทึกว่าผู้ดูแลระบบส่งแทน') + (gapText ? '\nเลขแผนข้าม ' + gapText : '') %>" data-ok-label="ส่งทั้งเล่ม"><%- icon('send', 20) %> <%= isOwner ? 'ส่งทั้งเล่ม' : 'ส่งทั้งเล่มแทนครู' %> (<%= todo.length %> แผ่น)</button>
+                <button class="btn btn-primary btn-lg" type="submit" data-confirm="<%= (isOwner ? 'ส่งบันทึกหลังแผนทั้งเล่ม ' + todo.length + ' แผ่น ให้ผู้ลงความเห็น' : 'ส่งบันทึกหลังแผนทั้งเล่มแทน ' + sub.teacher_name + ' ระบบจะบันทึกว่าผู้ดูแลระบบส่งแทน') + (gapText ? '\nเลขแผนข้าม ' + gapText : '') %>" data-ok-label="ส่งทั้งเล่ม"<%- isOwner ? ' data-need-sig' : '' %>><%- icon('send', 20) %> <%= isOwner ? 'ส่งทั้งเล่ม' : 'ส่งทั้งเล่มแทนครู' %> (<%= todo.length %> แผ่น)</button>
                 <small class="muted">ส่งทุกแผ่นที่เป็นร่างหรือรอแก้ไขในครั้งเดียว</small>
               </div>
             <% } else if (!ff.notebook && isOwner && todo.length) { %>
               <div class="btn-row" style="margin-top:10px">
-                <button class="btn btn-primary" type="submit" data-need-checked="ids" data-confirm="ส่งบันทึกหลังแผนที่เลือกทั้งหมดให้ผู้ลงความเห็น" data-ok-label="ส่งทั้งหมด"><%- icon('send', 18) %> ส่งบันทึกที่เลือก (<span data-checked-count="ids">0</span>)</button>
+                <button class="btn btn-primary" type="submit" data-need-checked="ids" data-confirm="ส่งบันทึกหลังแผนที่เลือกทั้งหมดให้ผู้ลงความเห็น" data-ok-label="ส่งทั้งหมด" data-need-sig><%- icon('send', 18) %> ส่งบันทึกที่เลือก (<span data-checked-count="ids">0</span>)</button>
                 <small class="muted">ร่างหรือรอแก้ไข <%= todo.length %> ฉบับ</small>
               </div>
             <% } %>
@@ -341,6 +341,17 @@
 
     <div class="card">
       <h3>ประวัติ</h3>
+      <% if (sigBlank) { %>
+        <div class="resign-box">
+          <div class="small muted">งานนี้ส่งไปตอนยังไม่มีลายเซ็น บันทึกข้อความจึงไม่มีลายเซ็นของคุณ</div>
+          <% if (me.signature) { %>
+          <div class="btn-row"><span class="sig-box"><img src="<%= me.signature %>" alt="ลายเซ็นของคุณ"></span>
+            <form method="post" action="/s/<%= sub.id %>/sigfill" data-confirm="ใส่ลายเซ็นในข้อมูลส่วนตัวของคุณในงานนี้ ใช่ไหม ไม่ต้องส่งงานใหม่ ผู้ตรวจไม่ต้องลงนามใหม่" data-ok-label="ใส่ลายเซ็น"><button class="btn btn-sm btn-primary" type="submit">ใส่ลายเซ็นของฉันในงานนี้</button></form></div>
+          <% } else { %>
+          <a class="btn btn-sm btn-primary" href="/profile">เซ็นชื่อในหน้าข้อมูลส่วนตัว</a>
+          <% } %>
+        </div>
+      <% } %>
       <% if (oldSig) { %>
         <div class="resign-box">
           <div class="small muted">คุณลงนามงานนี้ด้วยลายเซ็นเดิม</div>

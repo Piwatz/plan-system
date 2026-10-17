@@ -142,7 +142,7 @@
       <% if (isNew) { %><button class="btn btn-ghost btn-lg" type="submit" name="action" value="new">บันทึกร่างแล้วเขียนแผนถัดไป</button><% } %>
       <% if (!ff.notebook) { %>
         <button class="btn btn-primary btn-lg" type="submit" name="action" value="submit"
-          data-confirm="ยืนยันส่งบันทึกหลังแผนฉบับนี้ให้ผู้ลงความเห็น" data-ok-label="ส่งเลย"><%- icon('send', 20) %> <%= sub.status === 'returned' ? 'ส่งอีกครั้งหลังแก้ไข' : 'ส่งให้ผู้ลงความเห็น' %></button>
+          data-confirm="ยืนยันส่งบันทึกหลังแผนฉบับนี้ให้ผู้ลงความเห็น" data-ok-label="ส่งเลย" data-need-sig><%- icon('send', 20) %> <%= sub.status === 'returned' ? 'ส่งอีกครั้งหลังแก้ไข' : 'ส่งให้ผู้ลงความเห็น' %></button>
       <% } %>
     </div>
     <% if (ff.notebook) { %>

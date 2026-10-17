@@ -72,5 +72,20 @@
 <% } %>
   </div>
 <% } %>
+<% if (sigMissing) { const nWorks = sigMissing.reduce((a, r) => a + r.n, 0); %>
+  <div class="card" id="sigmissing">
+    <h3 class="acct-head">งานที่ยังไม่มีลายเซ็นครู<% if (sigMissing.length) { %> <span class="acct-chip"><%= sigMissing.length %> คน <%= nWorks %> งาน</span><% } %></h3>
+<% if (sigMissing.length) { %>
+<% for (const r of sigMissing) { %>
+    <div class="bk-row acct-row"><span class="bk-dot<%= r.has_sig ? '' : ' bad' %>"></span><div><b><a href="/admin/users/<%= r.id %>"><%= r.full_name %></a></b>
+      <span><%= r.dept || 'ไม่มีกลุ่มสาระ' %> · <%= r.n %> งาน · <%= r.has_sig ? (ff.sigfillauto ? 'มีลายเซ็นแล้ว ระบบใส่ให้เมื่อครูเปิดหน้าแรก' : 'มีลายเซ็นแล้ว รอครูกดใส่ในงาน') : 'ยังไม่มีลายเซ็น' %></span></div></div>
+<% } %>
+    <form method="post" action="/admin/sig-remind" style="margin-top:10px" data-confirm="ส่งแจ้งเตือนในระบบถึงครูทั้ง <%= sigMissing.length %> คน ให้เซ็นชื่อในหน้าข้อมูลส่วนตัว ใช่ไหม" data-ok-label="ส่งแจ้งเตือน"><button class="btn btn-primary" type="submit">ส่งแจ้งเตือนถึงครูทั้ง <%= sigMissing.length %> คน</button></form>
+    <p class="muted small">ผู้ดูแลระบบใส่ลายเซ็นแทนครูไม่ได้ เพราะเป็นเอกสารราชการ ได้แค่ตามให้ครูเซ็นเอง ครูที่เซ็นแล้วหลุดจากรายชื่อเอง</p>
+<% } else { %>
+    <div class="bk-row"><span class="bk-dot ok"></span><div><b>ทุกงานที่ส่งแล้วมีลายเซ็นครู</b><span>ครูที่ส่งงานตอนยังไม่มีลายเซ็นจะขึ้นที่นี่ พร้อมปุ่มส่งแจ้งเตือน</span></div></div>
+<% } %>
+  </div>
+<% } %>
 </div>
 <%- include('../partials/bottom') %>

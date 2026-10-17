@@ -1047,3 +1047,13 @@ a.lib-cv:hover .lib-cover { box-shadow: 0 0 0 3px var(--primary); }
 .lib-mini .lib-lock { display: none; }
 .lib-mini-t { display: flex; flex-direction: column; margin-top: 6px; line-height: 1.3; }
 .lib-mini-t span { color: var(--muted); }
+
+/* กรอบเซ็นชื่อสำหรับครูที่ยังไม่มีลายเซ็น (sigrequire signag) และแถบเตือน */
+.sig-need { width: min(560px, calc(100vw - 32px)); }
+.sig-need-title { margin: 0 0 4px; }
+.sig-need [data-sig-text] { white-space: pre-line; }
+.sig-need .sig-need-err { color: var(--back); font-weight: 600; }
+.sig-need label[hidden] { display: none; }
+.sig-nag .t, .sigfill-bar .t { flex: 1; min-width: 0; }
+.sigfill-bar { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
+.sigfill-bar ul { margin: 4px 0 0; padding-left: 20px; }

@@ -86,6 +86,7 @@
   .tsign { width: 90mm; margin-left: auto; text-align: center; }
   .tsig { height: 11mm; display: flex; align-items: flex-end; justify-content: center; }
   .tsig img { max-height: 10.5mm; max-width: 50mm; }
+  .tsig-dots { white-space: nowrap; }
   .boxes { display: grid; grid-template-columns: 73mm 82mm; column-gap: 6.6mm; row-gap: 8mm; margin-top: 6mm; }
   .paper.memo .boxes { row-gap: 10.5mm; margin-top: 5.5mm; }
   .box.l .sl { padding-left: 5.7mm; }
@@ -169,6 +170,7 @@
   <% } else { %>
   <span>ตัวอย่างก่อนพิมพ์ ขนาด A4</span>
   <% } %>
+  <% if (ff.sigprint) { %><span class="pv-warn" data-nosig-warn hidden>ยังไม่มีลายเซ็นผู้สอน</span><% } %>
   <label><input type="checkbox" data-opt="noDates"> ไม่แสดงวันที่ใต้ลายเซ็น</label>
   <label><input type="checkbox" data-opt="noQr"> ไม่แสดง QR Code</label>
   <button type="button" onclick="window.print()">พิมพ์ หรือบันทึกเป็น PDF</button>
@@ -250,6 +252,14 @@
     });
   }
   fitNotes();
+  // เอกสารที่ส่งแล้วแต่ยังไม่มีลายเซ็นผู้สอน (ฟังก์ชันเสริม sigprint) ป้ายเตือนบนแถบ ไม่พิมพ์ออกกระดาษ
+  document.addEventListener('DOMContentLoaded', function () {
+    var warn = document.querySelector('[data-nosig-warn]');
+    var n = document.querySelectorAll('.paper[data-nosig]').length;
+    if (!warn || !n) return;
+    warn.textContent = 'ยังไม่มีลายเซ็นผู้สอน' + (document.querySelectorAll('.paper').length > 1 ? ' ' + n + ' ฉบับ' : '') + ' ให้ครูเซ็นในหน้าข้อมูลส่วนตัว หรือเซ็นด้วยปากกา';
+    warn.hidden = false;
+  });
   if (document.fonts && document.fonts.ready) document.fonts.ready.then(fitNotes);
   window.addEventListener('load', fitNotes);
   window.addEventListener('beforeprint', fitNotes);

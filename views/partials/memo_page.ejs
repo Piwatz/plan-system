@@ -6,7 +6,7 @@
   const middle = steps.slice(0, -1);
   const term = `ภาคเรียนที่ ${sub.semester} ปีการศึกษา ${sub.academic_year}`;
 %>
-<div class="paper memo">
+<div class="paper memo"<%- ff.sigprint && !sub.teacher_signature && sub.status !== 'draft' ? ' data-nosig' : '' %>>
   <%- include('qr_corner') %>
   <div class="memo-title"><% if (settings.memo_logo) { %><img class="garuda" src="<%= settings.memo_logo %>" alt=""><% } %><h1 class="doc">บันทึกข้อความ</h1></div>
   <div class="mrow"><b>ส่วนราชการ</b> <%= settings.school_name %>  <%= String(settings.school_location || '').trim().split(' ').filter(Boolean).join('  ') %></div>
@@ -23,7 +23,7 @@
   <p class="indent">เพื่อโปรดทราบและพิจารณาอนุญาต</p>
 
   <div class="tsign">
-    <div class="tsig"><% if (sub.teacher_signature) { %><img src="<%= sub.teacher_signature %>" alt="ลายเซ็นผู้สอน"><% } %></div>
+    <div class="tsig"><% if (sub.teacher_signature) { %><img src="<%= sub.teacher_signature %>" alt="ลายเซ็นผู้สอน"><% } else if (ff.sigprint) { %><%# ยังไม่มีลายเซ็นผู้สอน (ฟังก์ชันเสริม sigprint) เว้นเส้นจุดให้เซ็นด้วยปากกา %><span class="tsig-dots">ลงชื่อ ..................................................</span><% } %></div>
     <div>(<%= sub.teacher_name %>)</div>
     <div>ตำแหน่ง <%= sub.teacher_position || 'ครู' %></div>
   </div>

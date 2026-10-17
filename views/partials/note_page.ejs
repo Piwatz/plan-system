@@ -18,7 +18,7 @@
     <% } %>
   </div>
 <% } else { %>
-<div class="paper note-sheet">
+<div class="paper note-sheet"<%- ff.sigprint && !sub.teacher_signature && sub.status !== 'draft' ? ' data-nosig' : '' %>>
   <%- include('qr_corner', { qr: it.qr }) %>
   <h2 class="doc">บันทึกหลังแผนการจัดการเรียนรู้</h2>
   <div class="row"><span class="k">แผนการจัดการเรียนรู้ที่</span><span class="line" style="max-width:14%"><%= sub.plan_no %></span><span class="k">เรื่อง</span><span class="line"><%= sub.topic %></span></div>

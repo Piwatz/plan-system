@@ -17,6 +17,22 @@
   <% } %>
 </div>
 
+<% if (sigNag) { %>
+  <div class="alert alert-warn sig-nag"><%- icon('edit') %>
+    <div class="t">
+<% if (sigNag.kind === 'none') { %>
+      <b>คุณยังไม่มีลายเซ็น</b>
+      <div class="small"><%= sigNag.blank ? 'บันทึกข้อความที่ส่งไปแล้ว ' + sigNag.blank + ' งานยังไม่มีลายเซ็นของคุณ เซ็นครั้งเดียว' + (ff.sigfillauto ? ' ระบบใส่ให้ทุกงาน' : ' แล้วกดใส่ในงานได้ทันที') : 'บันทึกข้อความที่ส่งจะมีลายเซ็นของคุณ เซ็นครั้งเดียวใช้ได้ทุกงาน' %></div>
+      <div class="btn-row" style="margin-top:8px"><button type="button" class="btn btn-primary btn-sm" data-sig-open>เซ็นตอนนี้</button></div>
+<% } else { %>
+      <b>มี <%= sigNag.blank %> งานที่ส่งไปตอนยังไม่มีลายเซ็น</b>
+      <div class="small">กดปุ่มเดียว ใส่ลายเซ็นของคุณในทุกงานนั้น ไม่ต้องส่งใหม่</div>
+      <form method="post" action="/profile/sigfill" style="margin-top:8px" data-confirm="ใส่ลายเซ็นของคุณในงานที่ส่งไปตอนยังไม่มีลายเซ็นทั้ง <%= sigNag.blank %> งาน ใช่ไหม" data-ok-label="ใส่ลายเซ็น"><input type="hidden" name="back" value="/"><button class="btn btn-primary btn-sm" type="submit">ใส่ลายเซ็นของฉันในงานเหล่านี้</button></form>
+<% } %>
+    </div>
+  </div>
+<% } %>
+
 <% if (warnings.length) { %>
   <div class="alert alert-warn"><%- icon('toggle') %>
     <div><b>สิ่งที่ผู้ดูแลระบบควรตั้งค่าให้ครบ</b>
@@ -45,7 +61,7 @@
   </div>
 <% } %>
 
-<% if (!me.signature) { %>
+<% if (!me.signature && !sigNag) { %><%# แถบเตือนแบบเดิม ใช้เมื่อปิดฟังก์ชันเสริม signag %>
   <div class="alert alert-info"><%- icon('edit') %><span>คุณยังไม่ได้บันทึกลายเซ็น ลายเซ็นจะปรากฏในบันทึกข้อความและเอกสารที่พิมพ์ <a href="/profile"><b>เซ็นชื่อเลย</b></a></span></div>
 <% } %>
 

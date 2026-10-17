@@ -12,6 +12,7 @@ const storage = require('../storage');
 const drivepath = require('../drivepath');
 const features = require('../features');
 const resign = require('../resign');
+const sigfill = require('../sigfill');
 const teaching = require('../teaching');
 const { qrSvg } = require('./verify');
 const library = require('../library');
@@ -244,6 +245,13 @@ async function missingForSubmit(sub, ff) {
   return miss;
 }
 
+// ครูส่งงานของตัวเอง: ลายเซ็นที่เซ็นในกรอบตอนกดส่ง (ฟังก์ชันเสริม sigrequire) เก็บเหมือนตอนลงนาม
+// เปิด sigrequire แล้วยังไม่มีลายเซ็น ส่งไม่ได้ (ผู้ดูแลระบบส่งแทนครูไม่ต้องมี เว้นช่องให้เซ็นมือ)
+async function needOwnSignature(req, prefix = '') {
+  await applySignature(req);
+  if (req.ff.sigrequire && !req.me.signature) throw new UserError(`${prefix}เซ็นชื่อก่อนส่งงาน กดส่งอีกครั้งแล้วเซ็นในกรอบ หรือบันทึกลายเซ็นในหน้าข้อมูลส่วนตัว`);
+}
+
 async function trySubmit(req, subId) {
   const sub = await wf.getSub(subId);
   // ฟอร์มที่มีช่องติ๊กยืนยันหน้าปก (cover_check) ต้องติ๊กก่อนส่ง (ฟังก์ชันเสริม coverconfirm)
@@ -255,6 +263,7 @@ async function trySubmit(req, subId) {
   if (miss.length) throw new UserError(`บันทึกร่างไว้แล้ว แต่ยังส่งไม่ได้ ต้องกรอก ${miss.join(' และ ')}`);
   // ผู้ดูแลระบบส่งแทนครูได้แม้ปิดรับแล้ว
   if (req.me.is_admin && req.me.id !== sub.teacher_id) return wf.submitAs(subId, req.me);
+  await needOwnSignature(req, 'บันทึกร่างไว้แล้ว แต่ยังส่งไม่ได้ ');
   if (sub.doc_type !== 'note' && sub.status === 'draft') {
     const w = submitWindow(req.settings);
     if (!w.open) throw new UserError(`บันทึกร่างไว้แล้ว แต่ยังส่งไม่ได้ เพราะ${w.reason}`);
@@ -578,7 +587,20 @@ router.get('/s/:id', async (req, res) => {
     canAddCover: canAddCover(req, sub),
     // ลายเซ็นเดิมของฉันในงานนี้ (ฟังก์ชันเสริม resign) มีปุ่มใช้ลายเซ็นใหม่
     oldSig: req.ff.resign && req.me.signature ? await resign.oldSignature(req.me.id, sub.id) : null,
+    // งานของฉันที่ส่งตอนยังไม่มีลายเซ็น (ฟังก์ชันเสริม sigfill) มีปุ่มใส่ลายเซ็นของฉันในงานนี้
+    sigBlank: req.ff.sigfill && wf.isOwner(req.me, sub) && (await sigfill.blankWorks(req.me.id, sub.id)).length > 0,
   });
+});
+
+// ใส่ลายเซ็นของฉันในงานนี้ที่ส่งไปตอนยังไม่มีลายเซ็น (ฟังก์ชันเสริม sigfill) เฉพาะเจ้าของงาน บันทึก audit_log
+router.post('/s/:id/sigfill', async (req, res) => {
+  if (!req.ff.sigfill) throw new UserError('ฟังก์ชันใส่ลายเซ็นในงานที่ส่งแล้วปิดอยู่');
+  const sub = await viewable(req, req.params.id);
+  if (!sub || !wf.isOwner(req.me, sub)) throw new UserError('ใส่ลายเซ็นได้เฉพาะงานของตนเอง');
+  if (!req.me.signature) throw new UserError('กรุณาบันทึกลายเซ็นในหน้าข้อมูลส่วนตัวก่อน');
+  const n = await sigfill.fill(req.me.id, sub.id);
+  if (n) await features.audit(req.me, `ใส่ลายเซ็นของตัวเองใน${wf.DOC_TYPES[sub.doc_type].label} ${sub.subject_code} ที่ส่งตอนยังไม่มีลายเซ็น`, `submission ${sub.id}`);
+  respond(req, res, `/s/${sub.id}`, 'success', n ? 'ใส่ลายเซ็นของคุณในงานนี้เรียบร้อย เอกสารที่พิมพ์จากนี้มีลายเซ็นแล้ว' : 'งานนี้มีลายเซ็นอยู่แล้ว');
 });
 
 // ใช้ลายเซ็นใหม่ของฉันในงานนี้ (ฟังก์ชันเสริม resign) ไม่จำกัดเวลา เฉพาะลายเซ็นของตัวเอง บันทึก audit_log
@@ -1066,6 +1088,7 @@ router.post('/s/:id/submit-book', async (req, res) => {
     if (m.length) miss.push(`แผนที่ ${n.plan_no || n.topic} ขาด ${m.join(' และ ')}`);
   }
   if (miss.length) throw new UserError(`ยังส่งทั้งเล่มไม่ได้ ${miss.join(' · ')} กดแก้ไขแผ่นนั้นให้ครบก่อน`);
+  if (wf.isOwner(req.me, plan)) await needOwnSignature(req, 'ยังส่งทั้งเล่มไม่ได้ ');
   const after = await wf.submitMany(
     notes.map((n) => n.id),
     req.me
@@ -1165,10 +1188,12 @@ function collectScores(b) {
 // ฟอร์มที่มีช่องติ๊ก จำลายเซ็นนี้ไว้ (sig_choice, ฟังก์ชันเสริม resign) ไม่ติ๊ก = ใช้กับการลงนามครั้งนี้อย่างเดียว ไม่เก็บทับข้อมูลส่วนตัว
 async function applySignature(req) {
   const b = req.body || {};
-  if (b.signature && validSignature(b.signature)) {
+  if (b.signature && validSignature(b.signature) && b.signature !== req.me.signature) {
     const keep = !(req.ff.resign && b.sig_choice === '1') || b.remember_signature === '1';
     if (keep) await q.run('UPDATE users SET signature = ? WHERE id = ?', b.signature, req.me.id);
     req.me.signature = b.signature;
+    // จำลายเซ็นแล้ว งานเดิมที่ส่งตอนยังไม่มีลายเซ็นได้ลายเซ็นนี้ด้วย (ฟังก์ชันเสริม sigfillauto)
+    if (keep) await sigfill.autoFill(req);
   }
 }
 

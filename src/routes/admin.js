@@ -59,7 +59,43 @@ router.get('/', async (req, res) => {
     filesDir: config.FILES_DIR,
     backupInfo: await backupInfo(req),
     accounts: req.ff.unlock ? await accountInfo() : null,
+    sigMissing: req.ff.siglist ? await require('../sigfill').missingList() : null,
   });
+});
+
+// แจ้งเตือนในระบบถึงครูที่ส่งงานแล้วแต่ยังไม่มีลายเซ็น (ฟังก์ชันเสริม siglist) ผู้ดูแลระบบใส่ลายเซ็นแทนไม่ได้ ได้แค่ตามให้ครูเซ็นเอง
+router.post('/sig-remind', async (req, res) => {
+  if (!req.ff.siglist) {
+    req.flash('error', 'ฟังก์ชันรายชื่องานที่ไม่มีลายเซ็นครูปิดอยู่');
+    return res.redirect('/admin');
+  }
+  const rows = await require('../sigfill').missingList();
+  if (!rows.length) {
+    req.flash('success', 'ทุกงานมีลายเซ็นครูแล้ว');
+    return res.redirect('/admin#sigmissing');
+  }
+  const now = nowStr();
+  // ใส่ให้ทันที (sigfillauto) ครูที่มีลายเซ็นแล้วแค่เปิดหน้าแรก · ปิดอยู่ ต้องกดปุ่มในหน้าข้อมูลส่วนตัว
+  const fillHow = req.ff.sigfillauto ? 'เข้าระบบแล้วเปิดหน้าแรก ระบบใส่ลายเซ็นให้เอง' : 'เปิดหน้าข้อมูลส่วนตัว แล้วกด ใส่ลายเซ็นของฉันในงานเหล่านี้';
+  await q.tx(async () => {
+    for (const r of rows) {
+      const text = r.has_sig
+        ? `เรียน คุณครู${r.full_name}\nงานที่ส่งแล้ว ${r.n} งานยังไม่มีลายเซ็นของคุณ ${fillHow}`
+        : `เรียน คุณครู${r.full_name}\nงานที่ส่งแล้ว ${r.n} งานยังไม่มีลายเซ็นของคุณ บันทึกข้อความจึงไม่มีลายเซ็นผู้สอน กรุณาเซ็นชื่อในหน้าข้อมูลส่วนตัว เซ็นครั้งเดียว ระบบใส่ให้ทุกงาน`;
+      await q.run(
+        'INSERT INTO notifications (user_id, from_user_id, from_name, text, link, created_at) VALUES (?, ?, ?, ?, ?, ?)',
+        r.id,
+        req.me.id,
+        `${req.me.full_name} (ผู้ดูแลระบบ)`,
+        text,
+        '/profile',
+        now
+      );
+    }
+  });
+  await features.audit(req.me, `ส่งแจ้งเตือนครูที่งานยังไม่มีลายเซ็น ${rows.length} คน`, '');
+  req.flash('success', `ส่งแจ้งเตือนในระบบแล้ว ${rows.length} คน ครูจะเห็นข้อความเมื่อเข้าระบบ`);
+  res.redirect('/admin#sigmissing');
 });
 
 // กล่องบัญชีผู้ใช้ (ฟังก์ชันเสริม unlock): ชื่อที่ถูกใส่รหัสผิด · ยังไม่เคยเข้าระบบ · เข้าแล้วแต่ยังไม่เปลี่ยนรหัสที่ผู้ดูแลตั้งให้

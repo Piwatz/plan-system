@@ -141,7 +141,7 @@
       <button class="btn btn-ghost btn-lg" type="submit" name="action" value="draft">บันทึกร่าง</button>
       <button class="btn btn-primary btn-lg" type="submit" name="action" value="submit"<% if (ff.coverconfirm) { %> data-need-checked="cover_ok" data-need-message="ติ๊กยืนยันก่อนว่าไฟล์นี้มีหน้าปก และหน้าปกอยู่หน้าแรก ถ้ายังไม่มีปก ให้ทำปกก่อน หรือกดบันทึกร่างไว้ก่อน"<% } %>
         data-confirm="ยืนยันส่ง<%= T.label %>ให้ผู้ตรวจ
-หลังส่งแล้วจะแก้ไขได้เมื่อถูกส่งกลับ หรือดึงกลับก่อนมีผู้ลงนาม" data-ok-label="ส่งเลย"><%- icon('send', 20) %> <%= sub.status === 'returned' ? 'ส่งอีกครั้งหลังแก้ไข' : 'ส่งให้ผู้ตรวจ' %></button>
+หลังส่งแล้วจะแก้ไขได้เมื่อถูกส่งกลับ หรือดึงกลับก่อนมีผู้ลงนาม" data-ok-label="ส่งเลย" data-need-sig><%- icon('send', 20) %> <%= sub.status === 'returned' ? 'ส่งอีกครั้งหลังแก้ไข' : 'ส่งให้ผู้ตรวจ' %></button>
     </div>
   </form>
 </div>

@@ -44,6 +44,18 @@
     </div>
   </form>
 </dialog>
+<% if (me && !me.signature && (ff.sigrequire || ff.signag)) { %>
+<%# กรอบเซ็นชื่อสำหรับครูที่ยังไม่มีลายเซ็น: เปิดตอนกดส่งงาน (sigrequire ปุ่มที่มี data-need-sig) หรือปุ่ม เซ็นตอนนี้ ในหน้าแรก (signag) %>
+<dialog id="sig-need" class="modal sig-need"<%- ff.sigrequire ? " data-require" : "" %>>
+  <h3 class="sig-need-title" data-sig-title>เซ็นชื่อก่อนส่งงาน</h3>
+  <p class="muted small" data-sig-text>ลายเซ็นนี้จะอยู่ในบันทึกข้อความและเอกสารที่พิมพ์จากระบบ</p>
+  <%- include('sigpad', { remember: true }) %>
+  <div class="modal-actions">
+    <button type="button" class="btn btn-ghost btn-lg" data-sig-cancel>ยกเลิก</button>
+    <button type="button" class="btn btn-primary btn-lg" data-sig-ok>เซ็นแล้ว ส่งงาน</button>
+  </div>
+</dialog>
+<% } %>
 <div class="overlay" id="busy"<%- ff.resume ? ' data-resume' : '' %>>
   <div class="overlay-box">
     <div class="spinner"></div>
