@@ -912,7 +912,12 @@ dialog.modal::backdrop { background: rgba(10, 20, 40, 0.5); }
 
 /* ---------- ฟังก์ชันเสริม แถบให้คะแนนแบบย่อบนมือถือ + อ่านเต็มจอ ---------- */
 .viewer.is-full { position: fixed !important; inset: 0; z-index: 90; height: 100vh !important; height: 100dvh !important; min-height: 0; margin: 0; border-radius: 0; }
-.viewer.is-full .pdf-pages { border-radius: 0; }
+.viewer.is-full .pdf-pages { border-radius: 0; padding: calc(4px + env(safe-area-inset-top)) 4px calc(4px + env(safe-area-inset-bottom)); gap: 6px; }
+/* เต็มจอจริง: ซ่อนแถบเครื่องมือ เหลือแต่หน้าไฟล์ ออกด้วยปุ่มกากบาทใสมุมบนขวา */
+.viewer.is-full .viewer-bar, .viewer.is-full .viewer-tabs { display: none; }
+.viewer-close { display: none; }
+.viewer.is-full .viewer-close { display: grid; place-items: center; position: fixed; top: calc(10px + env(safe-area-inset-top)); right: 10px; z-index: 91; width: 46px; height: 46px; border-radius: 50%; border: 0; background: rgba(15, 30, 51, 0.45); color: #fff; cursor: pointer; }
+.viewer.is-full .viewer-close:active { background: rgba(15, 30, 51, 0.7); }
 body:has(.viewer.is-full) { overflow: hidden; }
 .sheet-bar .sb-mini, .sheet-bar .sb-full, .sheet-scrim { display: none; }
 @media (max-width: 900px) {

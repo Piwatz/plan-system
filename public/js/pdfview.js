@@ -40,6 +40,8 @@ class Viewer {
         setTimeout(() => this.doc && this.layout(), 60);
       };
       full.addEventListener('click', () => toggle(!box.classList.contains('is-full')));
+      const exit = box.querySelector('[data-pdf-exit]');
+      if (exit) exit.addEventListener('click', () => toggle(false));
       document.addEventListener('keydown', (e) => {
         if (e.key === 'Escape' && box.classList.contains('is-full')) toggle(false);
       });
