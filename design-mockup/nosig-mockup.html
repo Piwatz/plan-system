@@ -1,0 +1,189 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>งานที่ไม่มีลายเซ็นครู ภาพตัวอย่าง</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai+Looped:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+  :root { --bg:#EEF2F7; --surface:#FFFFFF; --ink:#0F1E33; --muted:#4E5F78; --line:#D6DEE9; --primary:#1D3A66; --soft:#E4ECF7; --ok:#1B7343; --ok-bg:#E4F4EA; --wait:#875700; --wait-bg:#FFF2DA; --bad:#A3122A; --bad-bg:#FDE7EA; --shadow:0 1px 2px rgba(15,30,51,.05), 0 4px 14px rgba(15,30,51,.05); }
+  * { box-sizing: border-box; }
+  body { margin: 0; padding: 18px 16px 30px; background: #E6EAF0; color: var(--ink); font-family: 'Noto Sans Thai Looped', Tahoma, sans-serif; font-size: 15px; width: 1080px; }
+  h1 { font-size: 24px; margin: 0 0 2px; color: var(--primary); }
+  .lead { color: var(--muted); margin: 0 0 14px; }
+  .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  .opt { background: #fff; border-radius: 16px; padding: 14px; border: 1px solid #C9D3E1; }
+  .cap { font-weight: 700; font-size: 18px; margin-bottom: 2px; }
+  .cap .n { display: inline-grid; place-items: center; width: 30px; height: 30px; border-radius: 50%; background: var(--primary); color: #fff; margin-right: 6px; }
+  .why { font-size: 14px; color: var(--muted); margin: 0 0 10px; }
+  .scr { background: var(--bg); border-radius: 14px; padding: 12px; }
+  .lbl { font-size: 12px; color: var(--muted); margin-bottom: 6px; }
+  .card { background: var(--surface); border-radius: 14px; box-shadow: var(--shadow); padding: 12px 14px; margin-bottom: 10px; }
+  .card:last-child { margin-bottom: 0; }
+  .card h3 { margin: 0 0 6px; font-size: 16px; }
+  .small { font-size: 13px; } .muted { color: var(--muted); }
+  .btn { display: inline-flex; align-items: center; gap: 6px; border-radius: 10px; padding: 7px 12px; font: inherit; font-size: 14px; font-weight: 600; border: 1px solid var(--line); background: var(--surface); color: var(--ink); white-space: nowrap; }
+  .btn-primary { background: var(--primary); color: #fff; border-color: var(--primary); }
+  .btns { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 8px; }
+  .warn { background: var(--wait-bg); color: var(--wait); border-radius: 12px; padding: 10px 12px; font-weight: 600; }
+  .warn .t { color: #5a3a00; }
+  .okbox { background: var(--ok-bg); color: var(--ok); border-radius: 12px; padding: 10px 12px; }
+  .sig { height: 48px; }
+  ul.w { margin: 4px 0 0; padding-left: 20px; font-size: 14px; }
+  .pad { border: 2px dashed #9fb0c8; border-radius: 12px; height: 110px; background: #fff; display: grid; place-items: center; position: relative; }
+  .pad .base { position: absolute; left: 24px; right: 24px; bottom: 26px; border-bottom: 1px solid #9fb0c8; }
+  .modal { background: var(--surface); border-radius: 16px; box-shadow: 0 10px 30px rgba(15,30,51,.25); padding: 14px; }
+  .chk { display: flex; gap: 8px; align-items: center; font-size: 14px; margin-top: 8px; }
+  .chk i { width: 18px; height: 18px; border-radius: 4px; background: var(--primary); display: inline-block; }
+  table { width: 100%; border-collapse: collapse; font-size: 13.5px; }
+  th, td { text-align: left; padding: 6px 6px; border-bottom: 1px solid var(--line); }
+  th { color: var(--muted); font-weight: 600; }
+  .pill { display: inline-block; padding: 1px 8px; border-radius: 999px; font-size: 12px; font-weight: 600; }
+  .p-bad { background: var(--bad-bg); color: var(--bad); }
+  .p-wait { background: var(--wait-bg); color: var(--wait); }
+  .p-ok { background: var(--ok-bg); color: var(--ok); }
+  .toolbar { background: #1b3762; color: #fff; border-radius: 10px 10px 0 0; padding: 8px 10px; display: flex; gap: 8px; flex-wrap: wrap; align-items: center; font-size: 13px; }
+  .toolbar .tw { background: #fff2da; color: #6b4500; padding: 4px 10px; border-radius: 8px; font-weight: 700; }
+  .toolbar .tb { background: #e3a21a; color: #1b1300; padding: 4px 10px; border-radius: 8px; }
+  .paper { background: #fff; border: 1px solid #bbb; border-top: 0; padding: 14px 26px 18px; font-family: 'Sarabun', 'Noto Sans Thai Looped', serif; font-size: 13px; line-height: 1.5; }
+  .paper .ind { text-indent: 36px; }
+  .tsign { width: 230px; margin: 10px 0 0 auto; text-align: center; }
+  .tsign .dl { letter-spacing: 1px; }
+  .note { font-size: 12.5px; color: var(--muted); margin-top: 8px; }
+  .sw { display: grid; grid-template-columns: 1fr auto; gap: 6px 10px; align-items: center; font-size: 14px; }
+  .tg { width: 40px; height: 22px; border-radius: 999px; background: var(--ok); position: relative; }
+  .tg::after { content: ''; position: absolute; right: 3px; top: 3px; width: 16px; height: 16px; border-radius: 50%; background: #fff; }
+  .wide { grid-column: 1 / -1; }
+  .two { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+</style>
+</head>
+<body>
+<h1>แก้ปัญหา บันทึกข้อความไม่มีลายเซ็นครู</h1>
+<p class="lead">ภาพตัวอย่าง 5 ข้อ ทุกข้อมีสวิตช์เปิดปิดในหน้าฟังก์ชันเสริม · ชื่อในภาพเป็นชื่อสมมติ · ผู้ดูแลระบบใส่ลายเซ็นแทนครูไม่ได้ ลายเซ็นต้องมาจากครูเอง</p>
+
+<div class="grid">
+  <!-- ข้อ 1 -->
+  <div class="opt">
+    <div class="cap"><span class="n">1</span>เติมลายเซ็นในงานที่ส่งไปแล้ว</div>
+    <p class="why">ครูบันทึกลายเซ็นเสร็จ ขึ้นกล่องนี้ทันที กดครั้งเดียวใส่ครบทุกงาน ไม่ต้องส่งงานใหม่ ผู้ตรวจไม่ต้องลงนามใหม่</p>
+    <div class="scr">
+      <div class="lbl">หน้าข้อมูลส่วนตัว ของครู</div>
+      <div class="card">
+        <h3>ลายเซ็นของฉัน</h3>
+        <svg class="sig" viewBox="0 0 220 48"><path d="M8 32 C 30 6, 40 44, 60 22 S 90 8, 104 30 S 140 40, 150 18 S 190 30, 212 22" fill="none" stroke="#0d1b5a" stroke-width="3" stroke-linecap="round"/></svg>
+        <div class="okbox small">บันทึกลายเซ็นแล้ว</div>
+      </div>
+      <div class="card">
+        <div class="warn"><span class="t">มี 2 งานที่ส่งไปตอนยังไม่มีลายเซ็น</span></div>
+        <ul class="w">
+          <li>คู่มือรายวิชา ว30203 ฟิสิกส์เพิ่มเติม 3</li>
+          <li>แผนการจัดการเรียนรู้ ว30203 ฟิสิกส์เพิ่มเติม 3</li>
+        </ul>
+        <div class="btns"><span class="btn btn-primary">ใส่ลายเซ็นของฉันในงานเหล่านี้</span></div>
+        <div class="note">กดแล้วมีป๊อปถามยืนยัน · หน้างานแต่ละงานมีปุ่ม ใส่ลายเซ็นของฉันในงานนี้ ด้วย</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ข้อ 2 -->
+  <div class="opt">
+    <div class="cap"><span class="n">2</span>ต้องมีลายเซ็นก่อนส่ง</div>
+    <p class="why">ครูที่ยังไม่มีลายเซ็น กดส่งงานแล้วขึ้นกรอบให้เซ็นด้วยนิ้วหรือเมาส์ตรงนั้นเลย เซ็นเสร็จส่งต่อได้ทันที ไม่ต้องไปหาเมนู</p>
+    <div class="scr">
+      <div class="lbl">กดปุ่ม ส่งงาน ในหน้าส่งงาน</div>
+      <div class="modal">
+        <h3 style="margin:0 0 4px">เซ็นชื่อก่อนส่งงาน</h3>
+        <div class="small muted" style="margin-bottom:8px">ลายเซ็นนี้จะอยู่ในบันทึกข้อความขออนุญาตใช้คู่มือรายวิชา</div>
+        <div class="pad"><div class="base"></div>
+          <svg viewBox="0 0 220 60" style="width:200px;position:relative;top:-6px"><path d="M10 40 C 30 10, 46 54, 66 28 S 96 12, 112 36 S 146 46, 158 22 S 196 36, 212 28" fill="none" stroke="#0d1b5a" stroke-width="3" stroke-linecap="round"/></svg>
+        </div>
+        <div class="chk"><i></i> จำลายเซ็นนี้ไว้ใช้กับงานต่อไป</div>
+        <div class="btns" style="justify-content:flex-end"><span class="btn">เซ็นใหม่</span><span class="btn btn-primary">เซ็นแล้ว ส่งงาน</span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ข้อ 3 -->
+  <div class="opt">
+    <div class="cap"><span class="n">3</span>แถบเตือนที่หน้าแรกของครู</div>
+    <p class="why">ครูที่ยังไม่มีลายเซ็นเห็นแถบนี้บนสุดทุกครั้งที่เข้าระบบ จนกว่าจะเซ็น กดแล้วเปิดกรอบเซ็นแบบข้อ 2</p>
+    <div class="scr">
+      <div class="lbl">หน้าแรก ของครู</div>
+      <div class="card" style="background:var(--wait-bg)">
+        <div style="font-weight:700;color:#5a3a00">คุณยังไม่มีลายเซ็น</div>
+        <div class="small" style="color:var(--wait)">บันทึกข้อความที่ส่งไปจะไม่มีลายเซ็นของคุณ เซ็นครั้งเดียว ระบบใส่ให้ทุกงานที่ส่งแล้ว 2 งาน</div>
+        <div class="btns"><span class="btn btn-primary">เซ็นตอนนี้</span></div>
+      </div>
+      <div class="card">
+        <h3>รายวิชาของฉัน</h3>
+        <div class="small muted">ว30203 ฟิสิกส์เพิ่มเติม 3 · คู่มือ ส่งแล้ว · แผน ส่งแล้ว</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ข้อ 4 -->
+  <div class="opt">
+    <div class="cap"><span class="n">4</span>รายชื่อสำหรับผู้ดูแลระบบ</div>
+    <p class="why">รู้ว่าต้องตามใคร กดส่งแจ้งเตือนในระบบถึงครูกลุ่มนี้ครั้งเดียว ครูที่เซ็นแล้วหลุดจากรายชื่อเอง</p>
+    <div class="scr">
+      <div class="lbl">หน้าผู้ดูแลระบบ</div>
+      <div class="card">
+        <h3>งานที่ยังไม่มีลายเซ็นครู 3 คน 5 งาน</h3>
+        <table>
+          <tr><th>ครู</th><th>กลุ่มสาระ</th><th>งาน</th><th>สถานะ</th></tr>
+          <tr><td>ครูสมศรี ใจงาม</td><td>ภาษาไทย</td><td>2</td><td><span class="pill p-bad">ยังไม่มีลายเซ็น</span></td></tr>
+          <tr><td>ครูประเสริฐ ทดลอง</td><td>คณิตศาสตร์</td><td>2</td><td><span class="pill p-bad">ยังไม่มีลายเซ็น</span></td></tr>
+          <tr><td>ครูมานี มีสุข</td><td>ศิลปะ</td><td>1</td><td><span class="pill p-wait">มีลายเซ็นแล้ว รอครูกดใส่ในงาน</span></td></tr>
+        </table>
+        <div class="btns"><span class="btn btn-primary">ส่งแจ้งเตือนถึงครูทั้ง 3 คน</span></div>
+        <div class="note">ผู้ดูแลระบบใส่ลายเซ็นแทนไม่ได้ (เอกสารราชการ) ได้แค่ตามให้ครูเซ็นเอง</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ข้อ 5 -->
+  <div class="opt">
+    <div class="cap"><span class="n">5</span>ป้ายเตือนในหน้าพิมพ์</div>
+    <p class="why">ผู้ตรวจหรือคนพิมพ์เห็นทันทีว่ายังไม่มีลายเซ็นผู้สอน ป้ายไม่พิมพ์ออกกระดาษ และมีเส้นจุดให้เซ็นด้วยปากกาได้</p>
+    <div class="scr">
+      <div class="lbl">หน้าพิมพ์บันทึกข้อความ</div>
+      <div class="toolbar"><span class="tw">ยังไม่มีลายเซ็นผู้สอน</span><span class="tb">พิมพ์ หรือบันทึกเป็น PDF</span></div>
+      <div class="paper">
+        <div class="ind">ข้าพเจ้าจึงขออนุญาตใช้คู่มือรายวิชาภาษาไทย 1 (ท21101) ตามเอกสารที่แนบมาพร้อมนี้ เพื่อจัดการเรียนการสอนในภาคเรียนที่ 2 ปีการศึกษา 2569 ต่อไป</div>
+        <div class="ind">เพื่อโปรดทราบและพิจารณาอนุญาต</div>
+        <div class="tsign">
+          <div class="dl">ลงชื่อ ......................................</div>
+          <div>(ครูสมศรี ใจงาม)</div>
+          <div>ตำแหน่ง ครู</div>
+        </div>
+      </div>
+      <div class="note">เดิมช่องนี้ว่างเปล่า ไม่มีเส้นให้เซ็น เมื่อครูใส่ลายเซ็นแล้ว เส้นจุดหายไปเหลือแต่ลายเซ็น</div>
+    </div>
+  </div>
+
+  <!-- สวิตช์ -->
+  <div class="opt">
+    <div class="cap">สวิตช์ในหน้าฟังก์ชันเสริม</div>
+    <p class="why">ทุกข้อเปิดปิดแยกกันได้ ปิดแล้วกลับเป็นแบบเดิม (ส่งงานได้โดยไม่มีลายเซ็น ไม่มีแถบ ไม่มีป้าย)</p>
+    <div class="scr">
+      <div class="card">
+        <div class="sw">
+          <span>1 เติมลายเซ็นในงานที่ส่งไปแล้ว</span><span class="tg"></span>
+          <span>2 ต้องมีลายเซ็นก่อนส่ง</span><span class="tg"></span>
+          <span>3 แถบเตือนครูที่ยังไม่มีลายเซ็น</span><span class="tg"></span>
+          <span>4 รายชื่องานที่ไม่มีลายเซ็นครู</span><span class="tg"></span>
+          <span>5 ป้ายเตือนและเส้นเซ็นมือในหน้าพิมพ์</span><span class="tg"></span>
+        </div>
+      </div>
+      <div class="card small">
+        <b>ข้อ 1 เลือกได้อีกชั้น</b>
+        <div class="two" style="margin-top:6px">
+          <div><b>แบบ ก กดเอง</b><br><span class="muted">ครูกดปุ่มใส่ลายเซ็นเอง ตามภาพข้อ 1</span></div>
+          <div><b>แบบ ข ใส่ให้ทันที</b><br><span class="muted">ครูบันทึกลายเซ็นเมื่อไร ระบบใส่ในงานที่ว่างให้เลย ไม่ต้องกดเพิ่ม</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+</body>
+</html>
