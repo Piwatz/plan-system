@@ -63,7 +63,7 @@ function manifest(settings, themeColor) {
   return {
     name: s.app_full === s.app_name ? s.app_name : `${s.app_name} ${s.app_full}`,
     short_name: s.app_name,
-    description: [s.app_full, s.unit_name, settings && settings.school_name].filter(Boolean).join(' '),
+    description: [...new Set([s.app_full, s.unit_name, settings && settings.school_name].filter(Boolean))].join(' '),
     lang: 'th',
     start_url: '/',
     scope: '/',
