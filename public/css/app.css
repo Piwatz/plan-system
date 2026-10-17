@@ -57,7 +57,7 @@ code { font-size: 0.9em; background: var(--head-bg); padding: 1px 6px; border-ra
 }
 .side-brand { display: flex; align-items: center; gap: 12px; padding: 20px 20px 18px; border-bottom: 1px solid rgba(255, 255, 255, 0.12); color: #fff; }
 .side-brand:hover { text-decoration: none; }
-.side-logo { width: 46px; height: 46px; object-fit: contain; flex: none; background: #fff; border-radius: 50%; padding: 4px; }
+.side-logo { width: 46px; height: 46px; object-fit: contain; flex: none; }
 .side-brand-text { display: flex; flex-direction: column; line-height: 1.3; min-width: 0; }
 .side-brand-text b { font-size: 1.12rem; }
 .side-brand-text span { font-size: 0.82rem; color: var(--side-muted); }
@@ -729,7 +729,7 @@ dialog.modal::backdrop { background: rgba(10, 20, 40, 0.5); }
   }
   .mtop-brand { flex: 1; min-width: 0; display: flex; align-items: center; gap: 10px; color: #fff; }
   .mtop-brand:hover { text-decoration: none; }
-  .mtop-brand img { width: 36px; height: 36px; object-fit: contain; background: #fff; border-radius: 50%; padding: 3px; flex: none; }
+  .mtop-brand img { width: 36px; height: 36px; object-fit: contain; flex: none; }
   .mtop-brand span { display: flex; flex-direction: column; line-height: 1.25; min-width: 0; }
   .mtop-brand b { font-size: 1rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .mtop-brand small { font-size: 0.78rem; color: var(--side-muted); }
@@ -1069,6 +1069,7 @@ a.lib-cv:hover .lib-cover { box-shadow: 0 0 0 3px var(--primary); }
 .sf-brand small { display: block; line-height: 1.6; }
 .sf-col h4 { margin: 0 0 8px; color: #fff; font-size: 0.95rem; }
 .sf-col ul { list-style: none; margin: 0; padding: 0; line-height: 1.8; }
+.sf-line { display: block; text-wrap: balance; }
 .sf-bar { display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; padding: 10px 28px; background: rgba(0, 0, 0, 0.18); font-size: 0.8rem; }
 @media (max-width: 1200px) {
   .sf-cols { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }

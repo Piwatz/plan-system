@@ -9,9 +9,6 @@
         <b class="sf-app"><%= S.app_name %></b>
         <% if (S.app_full !== S.app_name) { %><b><%= S.app_full %></b><% } %>
         <% if (S.app_full_en) { %><small><%= S.app_full_en %></small><% } %>
-        <small><%= [S.unit_name, S.unit_group].filter(Boolean).join(' ') %></small>
-        <small><%= settings.school_name %><%= S.school_name_en ? ' · ' + S.school_name_en : '' %></small>
-        <% if (S.school_affiliation) { %><small><%= S.school_affiliation %></small><% } %>
       </div>
     </div>
     <% if (S.school_address || S.school_phone || S.school_email) { %>
@@ -37,7 +34,8 @@
     <div class="sf-col sf-admin">
       <h4>ผู้ดูแลระบบ</h4>
       <ul>
-        <% if (S.contact_name) { %><li><%= S.contact_name %></li><% } %>
+        <%# ชื่อหลายคำแยกบรรทัดตามช่องว่าง กันคำท้ายตกลงมาบรรทัดเดียว %>
+        <% if (S.contact_name) { %><li><% for (const w of S.contact_name.split(/\s+/).filter(Boolean)) { %><span class="sf-line"><%= w %></span><% } %></li><% } %>
         <% if (S.contact_line) { %><li>LINE <% if (/^https?:/.test(S.contact_line)) { %><a href="<%= S.contact_line %>" target="_blank" rel="noopener">เพิ่มเพื่อน</a><% } else { %><%= S.contact_line %><% } %></li><% } %>
         <% if (S.contact_hours) { %><li>เวลาติดต่อ <%= S.contact_hours %></li><% } %>
       </ul>
