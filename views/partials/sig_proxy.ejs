@@ -1,0 +1,7 @@
+<%# งานที่ผู้ดูแลระบบส่งแทน (ฟังก์ชันเสริม sigconfirm) ครูเปิดหน้างาน ตรวจ แล้วกดยืนยันและใส่ลายเซ็นเองทีละงาน %>
+<div class="alert alert-info sigfill-bar">
+  <div class="t"><b>ผู้ดูแลระบบส่งงานแทนคุณ <%= proxy.length %> งาน รอคุณยืนยัน</b>
+    <div class="small">เปิดแต่ละงาน ตรวจความถูกต้อง แล้วกด ยืนยันงานนี้และใส่ลายเซ็น<%= me.signature ? '' : ' (เซ็นชื่อก่อน)' %></div>
+    <ul class="small sig-proxy-list"><% for (const w of proxy.slice(0, 8)) { %><li><a href="/s/<%= w.id %>#sigconfirm"><%= w.label %></a></li><% } %><% if (proxy.length > 8) { %><li>และอีก <%= proxy.length - 8 %> งาน</li><% } %></ul>
+  </div>
+</div>

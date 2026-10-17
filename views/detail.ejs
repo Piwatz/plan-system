@@ -342,11 +342,11 @@
     <div class="card">
       <h3>ประวัติ</h3>
       <% if (sigBlank) { %>
-        <div class="resign-box">
-          <div class="small muted">งานนี้ส่งไปตอนยังไม่มีลายเซ็น บันทึกข้อความจึงไม่มีลายเซ็นของคุณ</div>
+        <div class="resign-box" id="sigconfirm">
+          <div class="small muted"><%= sigBlank.proxy ? 'ผู้ดูแลระบบส่งงานนี้แทนคุณ ตรวจไฟล์และรายละเอียดแล้วกดยืนยัน ลายเซ็นของคุณจะอยู่ในบันทึกข้อความ' : 'งานนี้ส่งไปตอนยังไม่มีลายเซ็น บันทึกข้อความจึงไม่มีลายเซ็นของคุณ' %></div>
           <% if (me.signature) { %>
-          <div class="btn-row"><span class="sig-box"><img src="<%= me.signature %>" alt="ลายเซ็นของคุณ"></span>
-            <form method="post" action="/s/<%= sub.id %>/sigfill" data-confirm="ใส่ลายเซ็นในข้อมูลส่วนตัวของคุณในงานนี้ ใช่ไหม ไม่ต้องส่งงานใหม่ ผู้ตรวจไม่ต้องลงนามใหม่" data-ok-label="ใส่ลายเซ็น"><button class="btn btn-sm btn-primary" type="submit">ใส่ลายเซ็นของฉันในงานนี้</button></form></div>
+          <div class="btn-row"><span class="sig-box sig-old"><img src="<%= me.signature %>" alt="ลายเซ็นของคุณ"></span>
+            <form method="post" action="/s/<%= sub.id %>/sigfill" data-confirm="<%= sigBlank.proxy ? 'ยืนยันว่าคุณตรวจงานที่ผู้ดูแลระบบส่งแทนแล้ว และใส่ลายเซ็นของคุณในงานนี้ ใช่ไหม ประวัติของงานจะบันทึกว่าคุณยืนยันแล้ว' : 'ใส่ลายเซ็นในข้อมูลส่วนตัวของคุณในงานนี้ ใช่ไหม ไม่ต้องส่งงานใหม่ ผู้ตรวจไม่ต้องลงนามใหม่' %>" data-ok-label="<%= sigBlank.proxy ? 'ยืนยัน' : 'ใส่ลายเซ็น' %>"><button class="btn btn-sm btn-primary" type="submit"><%= sigBlank.proxy ? 'ยืนยันงานนี้และใส่ลายเซ็น' : 'ใส่ลายเซ็นของฉันในงานนี้' %></button></form></div>
           <% } else { %>
           <a class="btn btn-sm btn-primary" href="/profile">เซ็นชื่อในหน้าข้อมูลส่วนตัว</a>
           <% } %>

@@ -588,19 +588,31 @@ router.get('/s/:id', async (req, res) => {
     // ลายเซ็นเดิมของฉันในงานนี้ (ฟังก์ชันเสริม resign) มีปุ่มใช้ลายเซ็นใหม่
     oldSig: req.ff.resign && req.me.signature ? await resign.oldSignature(req.me.id, sub.id) : null,
     // งานของฉันที่ส่งตอนยังไม่มีลายเซ็น (ฟังก์ชันเสริม sigfill) มีปุ่มใส่ลายเซ็นของฉันในงานนี้
-    sigBlank: req.ff.sigfill && wf.isOwner(req.me, sub) && (await sigfill.blankWorks(req.me.id, sub.id)).length > 0,
+    // งานที่ผู้ดูแลระบบส่งแทน (sigconfirm) ปุ่มยืนยันงานนี้และใส่ลายเซ็น
+    sigBlank: wf.isOwner(req.me, sub) ? sigBlankOf(req, await sigfill.blankWorks(req.me.id, sub.id)) : null,
   });
 });
 
+// กล่องใส่ลายเซ็นในหน้างาน: null = ไม่แสดง · proxy = ผู้ดูแลระบบส่งแทน ครูยืนยันเอง (sigconfirm)
+function sigBlankOf(req, rows) {
+  const w = rows[0];
+  if (!w) return null;
+  const proxy = Boolean(w.proxy) && req.ff.sigconfirm;
+  return proxy || req.ff.sigfill ? { proxy } : null;
+}
+
 // ใส่ลายเซ็นของฉันในงานนี้ที่ส่งไปตอนยังไม่มีลายเซ็น (ฟังก์ชันเสริม sigfill) เฉพาะเจ้าของงาน บันทึก audit_log
+// งานที่ผู้ดูแลระบบส่งแทน (sigconfirm) บันทึกในประวัติของงานด้วยว่าครูยืนยันงานนี้แล้ว
 router.post('/s/:id/sigfill', async (req, res) => {
-  if (!req.ff.sigfill) throw new UserError('ฟังก์ชันใส่ลายเซ็นในงานที่ส่งแล้วปิดอยู่');
   const sub = await viewable(req, req.params.id);
   if (!sub || !wf.isOwner(req.me, sub)) throw new UserError('ใส่ลายเซ็นได้เฉพาะงานของตนเอง');
+  const box = sigBlankOf(req, await sigfill.blankWorks(req.me.id, sub.id));
+  if (!box) return respond(req, res, `/s/${sub.id}`, 'success', req.ff.sigfill || req.ff.sigconfirm ? 'งานนี้มีลายเซ็นอยู่แล้ว' : 'ฟังก์ชันใส่ลายเซ็นในงานที่ส่งแล้วปิดอยู่');
   if (!req.me.signature) throw new UserError('กรุณาบันทึกลายเซ็นในหน้าข้อมูลส่วนตัวก่อน');
   const n = await sigfill.fill(req.me.id, sub.id);
-  if (n) await features.audit(req.me, `ใส่ลายเซ็นของตัวเองใน${wf.DOC_TYPES[sub.doc_type].label} ${sub.subject_code} ที่ส่งตอนยังไม่มีลายเซ็น`, `submission ${sub.id}`);
-  respond(req, res, `/s/${sub.id}`, 'success', n ? 'ใส่ลายเซ็นของคุณในงานนี้เรียบร้อย เอกสารที่พิมพ์จากนี้มีลายเซ็นแล้ว' : 'งานนี้มีลายเซ็นอยู่แล้ว');
+  if (n && box.proxy) await wf.log(sub.id, req.me, { step_label: 'ครูผู้สอน', action: 'sigconfirm', comment: '' });
+  if (n) await features.audit(req.me, `${box.proxy ? 'ยืนยันงานที่ผู้ดูแลระบบส่งแทนและใส่ลายเซ็นใน' : 'ใส่ลายเซ็นของตัวเองใน'}${wf.DOC_TYPES[sub.doc_type].label} ${sub.subject_code}`, `submission ${sub.id}`);
+  respond(req, res, `/s/${sub.id}`, 'success', n ? (box.proxy ? 'ยืนยันงานนี้และใส่ลายเซ็นของคุณเรียบร้อย' : 'ใส่ลายเซ็นของคุณในงานนี้เรียบร้อย') + ' เอกสารที่พิมพ์จากนี้มีลายเซ็นแล้ว' : 'งานนี้มีลายเซ็นอยู่แล้ว');
 });
 
 // ใช้ลายเซ็นใหม่ของฉันในงานนี้ (ฟังก์ชันเสริม resign) ไม่จำกัดเวลา เฉพาะลายเซ็นของตัวเอง บันทึก audit_log

@@ -161,3 +161,37 @@ test('ปิดใส่ให้ทันที ครูกดปุ่มใ�
   assert.doesNotMatch((await (await as('admin')).get('/admin')).text, /id="sigmissing"/);
   for (const k of ['sigfill', 'sigfillauto', 'sigrequire', 'signag', 'siglist', 'sigprint']) await db.setSetting(`ff_${k}`, '1');
 });
+
+test('งานที่ผู้ดูแลส่งแทน: ไม่ใส่ลายเซ็นให้เอง ครูยืนยันเองในหน้างาน งานที่ครูส่งเองยังใส่ให้ทันทีเหมือนเดิม · ปิดสวิตช์กลับเป็นใส่ให้ทุกงาน', async () => {
+  const me = await db.q.get("SELECT id FROM users WHERE username = 'sci2'");
+  await db.q.run('UPDATE users SET signature = ? WHERE id = ?', SIG, me.id);
+  const t = await as('sci2');
+  const admin = await as('admin');
+  const byAdmin = await newDraft(t, 'ว30191');
+  await admin.post(`/s/${byAdmin}/submit`, {});
+  assert.equal((await subOf(byAdmin)).status, 'pending', 'ผู้ดูแลส่งแทนได้');
+  assert.equal((await subOf(byAdmin)).teacher_signature, null, 'ส่งแทนไม่ใส่ลายเซ็นครู');
+  // งานที่ครูส่งเองแต่ลายเซ็นหาย ยังใส่ให้ทันทีเมื่อเปิดหน้าแรก
+  const own = (await db.q.get("SELECT id FROM submissions WHERE teacher_id = ? AND status <> 'draft' AND id <> ? ORDER BY id LIMIT 1", me.id, byAdmin)).id;
+  await db.q.run('UPDATE submissions SET teacher_signature = NULL WHERE id = ?', own);
+
+  const home = (await t.get('/')).text;
+  assert.equal((await subOf(own)).teacher_signature, SIG, 'งานที่ครูส่งเองใส่ให้ทันที');
+  assert.equal((await subOf(byAdmin)).teacher_signature, null, 'งานที่ผู้ดูแลส่งแทนไม่ใส่ให้เอง');
+  assert.match(home, /ผู้ดูแลระบบส่งงานแทนคุณ 1 งาน รอคุณยืนยัน/);
+  assert.match(home, new RegExp(`href="/s/${byAdmin}#sigconfirm"`));
+  await t.post('/profile/sigfill', {});
+  assert.equal((await subOf(byAdmin)).teacher_signature, null, 'ปุ่มใส่ทั้งหมดไม่รวมงานที่ส่งแทน');
+  assert.match((await t.get(`/s/${byAdmin}`)).text, /ยืนยันงานนี้และใส่ลายเซ็น/);
+  await t.post(`/s/${byAdmin}/sigfill`, {});
+  assert.equal((await subOf(byAdmin)).teacher_signature, SIG);
+  assert.ok(await db.q.get("SELECT 1 FROM reviews WHERE submission_id = ? AND action = 'sigconfirm' AND user_id = ?", byAdmin, me.id), 'ประวัติบันทึกว่าครูยืนยัน');
+  assert.match((await t.get(`/s/${byAdmin}`)).text, /ครูยืนยันงานที่ผู้ดูแลระบบส่งแทน/);
+
+  // ปิดสวิตช์: งานที่ส่งแทนได้ลายเซ็นเองเหมือนงานอื่น (แบบ ก)
+  await db.setSetting('ff_sigconfirm', '0');
+  await db.q.run('UPDATE submissions SET teacher_signature = NULL WHERE id = ?', byAdmin);
+  await t.get('/');
+  assert.equal((await subOf(byAdmin)).teacher_signature, SIG);
+  await db.setSetting('ff_sigconfirm', '1');
+});

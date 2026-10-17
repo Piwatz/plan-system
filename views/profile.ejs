@@ -7,16 +7,20 @@
     <form method="post" action="/profile/resign-all" data-confirm="ใช้ลายเซ็นปัจจุบันแทนลายเซ็นเดิมในงานที่ลงนามหรือส่งไปแล้วทั้ง <%= stale %> งาน ใช่ไหม เอกสารที่พิมพ์จากนี้จะเป็นลายเซ็นใหม่" data-ok-label="ใช้ลายเซ็นใหม่"><button class="btn btn-primary btn-sm" type="submit">ใช้ลายเซ็นใหม่ทั้ง <%= stale %> งาน</button></form>
   </div>
 <% } %>
-<% if (blank.length) { %>
+<% const own = blank.filter((w) => !w.proxy); const proxy = blank.filter((w) => w.proxy); %>
+<% if (own.length && (ff.sigfill || ff.sigfillauto)) { %>
   <div class="alert alert-warn sigfill-bar">
-    <div class="t"><b>มี <%= blank.length %> งานที่ส่งไปตอนยังไม่มีลายเซ็น</b>
-      <ul class="small"><% for (const w of blank.slice(0, 8)) { %><li><%= w %></li><% } %><% if (blank.length > 8) { %><li>และอีก <%= blank.length - 8 %> งาน</li><% } %></ul>
+    <div class="t"><b>มี <%= own.length %> งานที่ส่งไปตอนยังไม่มีลายเซ็น</b>
+      <ul class="small"><% for (const w of own.slice(0, 8)) { %><li><%= w.label %></li><% } %><% if (own.length > 8) { %><li>และอีก <%= own.length - 8 %> งาน</li><% } %></ul>
       <% if (!me.signature) { %><div class="small">เซ็นชื่อในกรอบด้านล่างแล้วกดบันทึก<%= ff.sigfillauto ? ' ระบบใส่ลายเซ็นในงานเหล่านี้ให้ทันที' : '' %></div><% } %>
     </div>
     <% if (me.signature && ff.sigfill) { %>
-    <form method="post" action="/profile/sigfill" data-confirm="ใส่ลายเซ็นของคุณในงานที่ส่งไปตอนยังไม่มีลายเซ็นทั้ง <%= blank.length %> งาน ใช่ไหม ไม่ต้องส่งงานใหม่ ผู้ตรวจไม่ต้องลงนามใหม่" data-ok-label="ใส่ลายเซ็น"><button class="btn btn-primary btn-sm" type="submit">ใส่ลายเซ็นของฉันในงานเหล่านี้</button></form>
+    <form method="post" action="/profile/sigfill" data-confirm="ใส่ลายเซ็นของคุณในงานที่ส่งไปตอนยังไม่มีลายเซ็นทั้ง <%= own.length %> งาน ใช่ไหม ไม่ต้องส่งงานใหม่ ผู้ตรวจไม่ต้องลงนามใหม่" data-ok-label="ใส่ลายเซ็น"><button class="btn btn-primary btn-sm" type="submit">ใส่ลายเซ็นของฉันในงานเหล่านี้</button></form>
     <% } %>
   </div>
+<% } %>
+<% if (proxy.length) { %>
+  <%- include('partials/sig_proxy', { proxy }) %>
 <% } %>
   <form class="card" method="post" action="/profile">
     <dl class="info" style="margin-bottom:14px">

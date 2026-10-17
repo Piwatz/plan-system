@@ -292,11 +292,13 @@ router.get('/', async (req, res) => {
   if (me.is_teacher && (req.ff.signag || req.ff.sigfillauto)) {
     const sigfill = require('../sigfill');
     await sigfill.autoFill(req);
-    if (req.ff.signag) {
-      const blank = (await sigfill.blankWorks(me.id)).length;
-      if (!me.signature) sigNag = { kind: 'none', blank };
-      else if (blank && req.ff.sigfill) sigNag = { kind: 'fill', blank };
-    }
+    const rows = req.ff.signag || req.ff.sigconfirm ? await sigfill.blankWorks(me.id) : [];
+    // งานที่ผู้ดูแลระบบส่งแทน (sigconfirm) แสดงเป็นรายการให้เปิดหน้างานแล้วยืนยันเอง ทีละงาน
+    const proxy = req.ff.sigconfirm ? rows.filter((w) => w.proxy).map((w) => ({ id: w.id, label: sigfill.workLabel(w) })) : [];
+    const blank = rows.length - proxy.length;
+    if (req.ff.signag && !me.signature) sigNag = { kind: 'none', blank, proxy };
+    else if (req.ff.signag && blank && req.ff.sigfill) sigNag = { kind: 'fill', blank, proxy };
+    else if (me.signature && proxy.length) sigNag = { kind: 'confirm', blank: 0, proxy };
   }
   res.render('home', {
     title: 'หน้าหลัก',
@@ -537,7 +539,10 @@ router.get('/profile', async (req, res) => {
   // งานที่ส่งตอนยังไม่มีลายเซ็น (ฟังก์ชันเสริม sigfill sigfillauto) แบบใส่ให้ทันทีเติมก่อนแสดง
   const sigfill = require('../sigfill');
   if (req.ff.sigfillauto) await sigfill.autoFill(req);
-  const blank = req.ff.sigfill || req.ff.sigfillauto ? (await sigfill.blankWorks(req.me.id)).map(sigfill.workLabel) : [];
+  // proxy = ผู้ดูแลระบบส่งแทน ครูเปิดหน้างานแล้วยืนยันเอง (sigconfirm) ไม่นับรวมในปุ่มใส่ทั้งหมด
+  const blank = req.ff.sigfill || req.ff.sigfillauto || req.ff.sigconfirm
+    ? (await sigfill.blankWorks(req.me.id)).map((w) => ({ id: w.id, label: sigfill.workLabel(w), proxy: Boolean(w.proxy) && req.ff.sigconfirm }))
+    : [];
   res.render('profile', { title: 'ข้อมูลส่วนตัว', stale, blank });
 });
 
@@ -551,7 +556,7 @@ router.post('/profile/sigfill', async (req, res) => {
     req.flash('error', 'กรุณาบันทึกลายเซ็นก่อน');
     return res.redirect('/profile');
   }
-  const n = await require('../sigfill').fill(req.me.id);
+  const n = await require('../sigfill').fill(req.me.id, null, { skipProxy: req.ff.sigconfirm });
   if (n) await require('../features').audit(req.me, `ใส่ลายเซ็นของตัวเองในงานที่ส่งตอนยังไม่มีลายเซ็น ${n} งาน`, `user ${req.me.id}`);
   req.flash('success', n ? `ใส่ลายเซ็นของคุณใน ${n} งานเรียบร้อย เอกสารที่พิมพ์จากนี้มีลายเซ็นแล้ว` : 'ทุกงานมีลายเซ็นแล้ว');
   res.redirect(safeBack(req.body && req.body.back, '/profile'));

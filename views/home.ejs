@@ -17,7 +17,8 @@
   <% } %>
 </div>
 
-<% if (sigNag) { %>
+<% if (sigNag && sigNag.proxy.length) { %><%- include('partials/sig_proxy', { proxy: sigNag.proxy }) %><% } %>
+<% if (sigNag && sigNag.kind !== 'confirm') { %>
   <div class="alert alert-warn sig-nag"><%- icon('edit') %>
     <div class="t">
 <% if (sigNag.kind === 'none') { %>
