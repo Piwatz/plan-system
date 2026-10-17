@@ -389,3 +389,15 @@ test('เปิดอ่านไฟล์ PDF ในหน้าเว็บไ
   assert.equal((await other.get(`/f/${f.id}/view`)).status, 404);
   assert.equal((await other.get(`/f/${f.id}/raw`)).status, 404);
 });
+
+test('ย่อเอกสารที่ล้นให้จบ 1 หน้า เปิดปิดได้', async () => {
+  const admin = await as('admin');
+  const sub = (await db.q.get("SELECT * FROM submissions WHERE status = 'approved' AND doc_type = 'manual' ORDER BY id LIMIT 1"));
+  let print = (await admin.get(`/s/${sub.id}/print`)).text;
+  assert.match(print, /var all = true;/);
+  assert.match(print, /\.paper\.eval \{[^}]*calc\(12pt \* var\(--fit, 1\)\)/);
+  await admin.post('/admin/features/printfit', { on: '0' });
+  print = (await admin.get(`/s/${sub.id}/print?doc=eval`)).text;
+  assert.match(print, /var all = false;/);
+  await admin.post('/admin/features/printfit', { on: '1' });
+});

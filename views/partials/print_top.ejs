@@ -35,7 +35,7 @@
   .toolbar .mac-tip[hidden] { display: none; }
   .paper { position: relative; width: 210mm; min-height: 297mm; margin: 16px auto; background: #fff; padding: 12.5mm 18mm 12.5mm 22mm; box-shadow: 0 4px 24px rgba(0,0,0,.15); }
   .paper + .paper { margin-top: 24px; }
-  /* --fit ย่อตัวอักษรของบันทึกหลังแผนที่สูงเกิน 1 หน้า (สคริปต์ท้ายไฟล์ตั้งให้ วัดในเครื่องที่เปิดอยู่) ไม่ตั้ง = ขนาดจริง */
+  /* --fit ย่อตัวอักษรของเอกสารที่สูงเกิน 1 หน้า (สคริปต์ท้ายไฟล์ตั้งให้ วัดในเครื่องที่เปิดอยู่) ไม่ตั้ง = ขนาดจริง */
   .paper { font-size: calc(16pt * var(--fit, 1)); }
   .hide-qr .qr-corner, .hide-dates .sig-date { display: none !important; }
   .qr-corner { position: absolute; top: 6mm; right: 8mm; width: 18mm; text-align: center; font-size: 7pt; line-height: 1.1; color: #333; font-family: 'Kanit', sans-serif; }
@@ -123,11 +123,11 @@
   .box.l .t, .box.r .t { white-space: nowrap; }
 
   /* แบบประเมิน: หัวเรื่อง 16 หัวตาราง 14 เนื้อหา 12 พอยต์ ตามแบบฟอร์มของโรงเรียน */
-  .paper.eval { page: evalform; padding: 15mm 10mm 10mm 15mm; font-size: 12pt; }
-  .paper.eval h2.doc { font-size: 16pt; }
-  .paper.eval .row { font-size: 14pt; }
-  .paper.eval .small { font-size: 12pt; }
-  .paper.eval table.grid { font-size: 12pt; }
+  .paper.eval { page: evalform; padding: 15mm 10mm 10mm 15mm; font-size: calc(12pt * var(--fit, 1)); }
+  .paper.eval h2.doc { font-size: calc(16pt * var(--fit, 1)); }
+  .paper.eval .row { font-size: calc(14pt * var(--fit, 1)); }
+  .paper.eval .small { font-size: calc(12pt * var(--fit, 1)); }
+  .paper.eval table.grid { font-size: calc(12pt * var(--fit, 1)); }
 
   table.grid { width: 100%; border-collapse: collapse; margin: 6pt 0; font-size: 14pt; }
   table.grid th, table.grid td { border: 1px solid #000; padding: 1pt 5px; vertical-align: top; }
@@ -195,9 +195,10 @@
     });
   })();
 
-  // บันทึกหลังแผนให้จบ 1 หน้าทุกเครื่อง: แต่ละเบราว์เซอร์วาดตัวอักษรไม่เท่ากัน (Safari บน Mac สูงกว่า Windows ราว 5%)
-  // วัดความสูงจริงในเครื่องนี้ ถ้าเกินพื้นที่พิมพ์ A4 (สูง 297 ขอบบนล่างรวม 25 เผื่ออีก 2 มม.) ย่อตัวอักษรเท่าที่จำเป็น ไม่ต่ำกว่า 85%
-  // ยาวเกินกว่านั้นปล่อยขึ้นหน้าใหม่ตามปกติ · วัดแบบแผ่น A4 เสมอ (จอแคบสลับเป็นแผ่น A4 ชั่วคราวระหว่างวัด) เนื้อหากว้างเท่ากระดาษจริง
+  // เอกสารให้จบ 1 หน้าทุกเครื่อง: แต่ละเบราว์เซอร์วาดตัวอักษรไม่เท่ากัน (Safari บน Mac สูงกว่า Windows ราว 5%)
+  // วัดความสูงจริงในเครื่องนี้ ถ้าเกินพื้นที่พิมพ์ A4 (สูง 297 ลบขอบบนล่างของเอกสารนั้น เผื่ออีก 2 มม.) ย่อตัวอักษรเท่าที่จำเป็น
+  // ฟังก์ชันเสริม printfit เปิด: ย่อบันทึกข้อความ แบบประเมิน และบันทึกหลังแผน ไม่ต่ำกว่า 14 จาก 16 พอยต์ (87.5%)
+  // ปิด: ย่อเฉพาะบันทึกหลังแผน ไม่ต่ำกว่า 85% แบบเดิม · ย่อไม่พอปล่อยขึ้นหน้าใหม่ตามปกติด้วยขนาดจริง · วัดแบบแผ่น A4 เสมอ (จอแคบสลับเป็นแผ่น A4 ชั่วคราวระหว่างวัด) เนื้อหากว้างเท่ากระดาษจริง
   function fitNotes() {
     var root = document.documentElement;
     root.classList.add('fit-measure');
@@ -216,8 +217,9 @@
     // Safari ตอนพิมพ์จริงสูงกว่าที่วัดบนจอราว 5% (ผู้ใช้ลองบน Mac แล้ว) จึงเผื่อมากกว่าเบราว์เซอร์อื่น
     var ua = navigator.userAgent;
     var safari = /Safari/.test(ua) && !/Chrome|Chromium|CriOS|Edg|FxiOS|Firefox/.test(ua);
-    var limit = (safari ? 255 : 270) * mm;
-    var MIN = 0.85;
+    var all = <%= Boolean(ff.printfit) %>;
+    var MIN = all ? 14 / 16 : 0.85;
+    var kinds = all ? ['note-sheet', 'memo', 'eval'] : ['note-sheet'];
     function height(p) {
       var top = p.getBoundingClientRect().top + parseFloat(getComputedStyle(p).paddingTop);
       var bottom = top;
@@ -230,8 +232,11 @@
       return bottom - top;
     }
     document.querySelectorAll('.paper').forEach(function (p) {
-      if (!p.classList.contains('note-sheet')) return;
+      if (!kinds.some(function (c) { return p.classList.contains(c); })) return;
       if (Math.abs(p.getBoundingClientRect().width - 210 * mm) > 2 * mm) return;
+      // ขอบบนล่างบนจอเท่ากับขอบกระดาษตอนพิมพ์ (บันทึกหลังแผน 25 มม. ได้ 270 และ Safari 255 เหมือนเดิม)
+      var ps = getComputedStyle(p);
+      var limit = (297 * mm - parseFloat(ps.paddingTop) - parseFloat(ps.paddingBottom) - 2 * mm) * (safari ? 0.945 : 1);
       p.style.removeProperty('--fit');
       var h = height(p);
       var k = 1;
