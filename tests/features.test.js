@@ -426,7 +426,7 @@ test('ชื่อแอป ไอคอนหน้าจอโฮม ท้า
   const about = await t.get('/about');
   assert.equal(about.status, 200);
   assert.match(about.text, /data-install-open="ios"/);
-  assert.match((await (await as('admin')).get('/admin/settings')).text, /name="site_icon" value="C"/);
+  assert.match((await (await as('admin')).get('/admin/settings')).text, /name="site_icon" value="D"/);
 
   // เปลี่ยนไอคอนและชื่อจากค่าตั้ง ช่องที่ว่างไม่แสดง
   await db.setSetting('site_icon', 'C');

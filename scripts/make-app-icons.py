@@ -1,5 +1,6 @@
-# สร้างไอคอนแอป (เพิ่มไปยังหน้าจอโฮม) 3 แบบจากตราโรงเรียน public/img/school-logo.png
+# สร้างไอคอนแอป (เพิ่มไปยังหน้าจอโฮม) 4 แบบจากตราโรงเรียน public/img/school-logo.png
 # A ตราเต็มกรอบ · B ตราบนวงกลมครีม · C แดงไล่เฉด ขอบทอง · พื้นแดงเลือดหมู #6C1422
+# D ตราเต็มกรอบบนพื้นกรมท่า #1B3762 สีเดียวกับแถบเมนูของธีม I (ค่าเริ่มต้นของหน้าเว็บ)
 # ได้ icon-<แบบ>-180.png (ไอโฟน) 192 และ 512 (แอนดรอยด์ คอม) และ maskable-<แบบ>-512.png (ตราย่อเหลือในวงปลอดภัย 80% ของแอนดรอยด์)
 # รันใหม่เมื่อเปลี่ยนตรา: python scripts/make-app-icons.py
 import os
@@ -8,9 +9,10 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 LOGO = Image.open(os.path.join(ROOT, 'public', 'img', 'school-logo.png')).convert('RGBA')
 OUT = os.path.join(ROOT, 'public', 'img', 'app')
 RED = (108, 20, 34)
+NAVY = (27, 55, 98)
 
 def icon(style, S=1024, scale=1.0):
-    bg = Image.new('RGBA', (S, S), RED + (255,))
+    bg = Image.new('RGBA', (S, S), (NAVY if style == 'D' else RED) + (255,))
     d = ImageDraw.Draw(bg)
     if style == 'C':
         top = (150, 34, 52)
@@ -36,7 +38,7 @@ def icon(style, S=1024, scale=1.0):
     return bg.convert('RGB')
 
 os.makedirs(OUT, exist_ok=True)
-for s in 'ABC':
+for s in 'ABCD':
     big = icon(s)
     for n in (180, 192, 512):
         big.resize((n, n), Image.LANCZOS).save(os.path.join(OUT, f'icon-{s}-{n}.png'), optimize=True)
