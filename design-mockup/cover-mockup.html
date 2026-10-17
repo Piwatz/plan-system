@@ -1,0 +1,97 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>หน้าปก ภาพตัวอย่าง</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai+Looped:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+  .day { --bg:#EEF2F7; --surface:#FFFFFF; --ink:#0F1E33; --muted:#4E5F78; --line:#D6DEE9; --primary:#1D3A66; --soft:#E4ECF7; --link:#1D3A66; --ok:#1B7343; --ok-bg:#E4F4EA; --wait:#875700; --wait-bg:#FFF2DA; --shadow:0 1px 2px rgba(15,30,51,.05), 0 4px 14px rgba(15,30,51,.05); }
+  .night { --bg:#0C1626; --surface:#142139; --ink:#E9EFF8; --muted:#A3B3CA; --line:#25344F; --primary:#3D6BC0; --soft:#1B2D4D; --link:#8FB5F6; --ok:#7FD4A2; --ok-bg:#163828; --wait:#F2C46B; --wait-bg:#3A2E12; --shadow:0 1px 0 rgba(255,255,255,.03), 0 10px 26px rgba(0,0,0,.4); }
+  * { box-sizing: border-box; }
+  body { margin: 0; padding: 20px 16px 40px; background: #E6EAF0; color: #0F1E33; font-family: 'Noto Sans Thai Looped', Tahoma, sans-serif; font-size: 15px; }
+  h1 { font-size: 22px; margin: 0 0 4px; }
+  .lead { color: #4E5F78; margin: 0 0 10px; }
+  .sec { font-size: 17px; font-weight: 700; color: #1D3A66; margin: 26px 0 4px; padding-top: 12px; border-top: 2px solid #C9D3E1; }
+  .opt { margin: 16px 0 8px; }
+  .cap { font-weight: 700; font-size: 18px; }
+  .cap .tag { display: inline-block; font-size: 13px; font-weight: 600; padding: 2px 10px; border-radius: 999px; background: #E4ECF7; color: #1D3A66; margin-left: 6px; vertical-align: 2px; }
+  .why { font-size: 14px; color: #4E5F78; margin: 2px 0 8px; }
+  .pair { display: grid; grid-template-columns: minmax(0,1fr) minmax(0,1fr); gap: 12px; }
+  .scr { background: var(--bg); color: var(--ink); border-radius: 14px; padding: 14px; min-width: 0; }
+  .scr .lbl { font-size: 12px; color: var(--muted); margin-bottom: 8px; }
+  .card { background: var(--surface); border-radius: 14px; box-shadow: var(--shadow); padding: 14px; }
+  .card h3 { margin: 0 0 8px; font-size: 16px; }
+  .small { font-size: 13px; } .muted { color: var(--muted); }
+  .btn { display: inline-flex; align-items: center; gap: 6px; border-radius: 10px; padding: 7px 12px; font: inherit; font-size: 14px; font-weight: 600; border: 1px solid var(--line); background: var(--surface); color: var(--ink); white-space: nowrap; }
+  .btn-primary { background: var(--primary); color: #fff; border-color: var(--primary); }
+  .btn.off { opacity: .45; }
+  .row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin-top: 10px; }
+  .thumbs { display: flex; gap: 10px; align-items: flex-start; }
+  .pg { width: 86px; height: 120px; border-radius: 4px; background: #fff; box-shadow: 0 1px 5px rgba(0,0,0,.25); flex: none; padding: 8px 7px; display: flex; flex-direction: column; gap: 4px; }
+  .pg i { display: block; height: 4px; border-radius: 2px; background: #c8ced8; }
+  .pg.cover { background: linear-gradient(160deg, #3c7bd6, #1b3f87); align-items: center; justify-content: center; color: #fff; font-size: 10px; text-align: center; font-weight: 700; }
+  .check { display: flex; gap: 10px; align-items: flex-start; border: 2px solid var(--primary); border-radius: 12px; padding: 10px 12px; background: var(--soft); margin-top: 10px; font-size: 14.5px; }
+  .box { width: 22px; height: 22px; border-radius: 5px; border: 2px solid var(--primary); flex: none; margin-top: 2px; background: var(--surface); }
+  .box.on { background: var(--primary); position: relative; }
+  .box.on::after { content: ''; position: absolute; left: 6px; top: 2px; width: 6px; height: 11px; border: solid #fff; border-width: 0 3px 3px 0; transform: rotate(45deg); }
+  .warn { background: var(--wait-bg); color: var(--wait); border-radius: 10px; padding: 8px 10px; font-size: 13.5px; margin-top: 8px; }
+  .tl { border-left: 3px solid var(--line); padding: 2px 0 8px 12px; margin-top: 8px; font-size: 14px; }
+  .admin { border: 1.5px dashed var(--line); border-radius: 12px; padding: 12px; margin-top: 10px; }
+  .admin b { display: block; margin-bottom: 4px; }
+</style>
+</head>
+<body>
+<h1>หน้าปก ภาพตัวอย่าง</h1>
+<p class="lead">ข้อมูลสมมติ ทุกแบบมีกลางวันและกลางคืนคู่กัน</p>
+
+<div class="sec">ส่วนที่ 1 ยืนยันก่อนส่ง (หน้าส่งงาน ใต้ภาพหน้าแรกที่ระบบแสดงอยู่แล้ว)</div>
+<p class="why">กดส่งไม่ได้จนกว่าจะติ๊ก มีภาพหน้าแรกของไฟล์ให้ดูข้าง ๆ ครอบคลุม 3 กรณี: ทำไฟล์เดียวรวมปกแล้ว · ทำ 2 ไฟล์แต่เรียงผิด · ไม่ได้ทำปก</p>
+
+<template id="t-a1"><div class="card"><h3>หน้าแรกของไฟล์ที่จะส่ง</h3>
+  <div class="thumbs"><div class="pg cover">คู่มือรายวิชา<br>ฟิสิกส์ 3</div><div class="small muted">ภาพนี้คือหน้าแรกของไฟล์ ผู้ตรวจจะเห็นหน้านี้ก่อน และใช้เป็นปกในคลังงาน</div></div>
+  <div class="check"><span class="box on"></span><span>ฉันตรวจแล้ว <b>ไฟล์นี้มีหน้าปก</b> และ<b>หน้าปกอยู่หน้าแรก</b> ตามภาพด้านบน</span></div>
+  <div class="small muted" style="margin-top:6px">ถ้าภาพด้านบนไม่ใช่ปก: ถ้าปกอยู่อีกไฟล์ ให้เลือกไฟล์ปกเพิ่มแล้วเลื่อนไว้บนสุด · ถ้ายังไม่ได้ทำปก ให้ทำปกก่อนแล้วค่อยส่ง</div>
+  <div class="row"><span class="btn">บันทึกร่าง</span><span class="btn btn-primary">ส่งให้ผู้ตรวจ</span></div>
+</div></template>
+
+<template id="t-a2"><div class="card"><h3>หน้าแรกของไฟล์ที่จะส่ง</h3>
+  <div class="thumbs"><div class="pg"><i></i><i style="width:70%"></i><i></i><i></i><i style="width:60%"></i><i></i></div><div class="small muted">ภาพนี้คือหน้าแรกของไฟล์ ผู้ตรวจจะเห็นหน้านี้ก่อน และใช้เป็นปกในคลังงาน</div></div>
+  <div class="check"><span class="box"></span><span>ฉันตรวจแล้ว <b>ไฟล์นี้มีหน้าปก</b> และ<b>หน้าปกอยู่หน้าแรก</b> ตามภาพด้านบน</span></div>
+  <div class="warn">ยังไม่ได้ติ๊ก ถ้าหน้าแรกไม่ใช่ปก ให้เพิ่มไฟล์ปกแล้วเลื่อนไว้บนสุดก่อน</div>
+  <div class="row"><span class="btn">บันทึกร่าง</span><span class="btn btn-primary off">ส่งให้ผู้ตรวจ</span></div>
+</div></template>
+
+<div class="opt"><div class="cap">ติ๊กแล้ว <span class="tag">หน้าแรกเป็นปก ส่งได้</span></div><div class="pair" data-t="t-a1"></div></div>
+<div class="opt"><div class="cap">ยังไม่ติ๊ก <span class="tag">หน้าแรกเป็นเนื้อหา ส่งไม่ได้</span></div><p class="why">บันทึกร่างได้เสมอ ไม่บังคับติ๊ก (ยังไม่ส่งให้ใคร)</p><div class="pair" data-t="t-a2"></div></div>
+
+<div class="sec">ส่วนที่ 2 ปุ่มเพิ่มหน้าปก (หน้างาน งานที่ส่งแล้ว)</div>
+<p class="why">เลือกไฟล์ปกไฟล์เดียว ระบบต่อไว้หน้าแรกของไฟล์เดิม ไม่ต้องหาไฟล์เนื้อหา ไม่ต้องส่งกลับ ผู้ตรวจที่ลงนามแล้วไม่ต้องลงนามใหม่ ไฟล์เดิมเก็บไว้ในประวัติ</p>
+
+<template id="t-b1"><div class="card"><h3>คู่มือรายวิชา ว30122.pdf</h3>
+  <div class="thumbs"><div class="pg"><i></i><i style="width:70%"></i><i></i><i></i></div><div><div class="small muted">หน้าแรกของไฟล์ตอนนี้</div><div class="row" style="margin-top:6px"><span class="btn btn-primary">เพิ่มหน้าปก</span></div><div class="small muted" style="margin-top:6px">เลือกไฟล์ปก PDF แล้วระบบต่อไว้หน้าแรกให้ เนื้อหาเดิมไม่เปลี่ยน</div></div></div>
+  <div class="tl"><b>ประวัติ</b><br>17 ต.ค. 2569 16:40 น. นางสาวสมใจ ใจดี เพิ่มหน้าปก (ไฟล์เดิมเก็บไว้ในประวัติ)</div>
+</div></template>
+<div class="opt"><div class="pair" data-t="t-b1"></div></div>
+
+<div class="sec">ส่วนที่ 3 ผู้ดูแลระบบช่วยแทน (กล่องดำเนินการแทนเดิม ในหน้างาน)</div>
+<template id="t-c1"><div class="card"><h3>ผู้ดูแลระบบดำเนินการแทน</h3>
+  <div class="admin"><b>เพิ่มหน้าปกแทนครู</b><span class="small muted">ต่อไฟล์ปกไว้หน้าแรก ผู้ตรวจไม่ต้องลงนามใหม่</span><div class="row"><span class="btn">เพิ่มหน้าปกแทนครู</span></div></div>
+  <div class="admin"><b>ส่งกลับให้ครูแก้แทนผู้ตรวจ</b><span class="small muted">ไม่ต้องรอผู้ตรวจกดส่งกลับ ครูแก้แล้วส่งใหม่ งานกลับมารอที่ขั้นที่ค้างอยู่ ลายเซ็นที่ลงไว้แล้วยังอยู่</span><div class="row"><span class="btn">ส่งกลับให้ครูแก้</span></div></div>
+</div></template>
+<div class="opt"><div class="pair" data-t="t-c1"></div></div>
+
+<script>
+  for (const el of document.querySelectorAll('[data-t]')) {
+    const tpl = document.getElementById(el.dataset.t);
+    for (const [cls, name] of [['day', 'โหมดกลางวัน'], ['night', 'โหมดกลางคืน']]) {
+      const scr = document.createElement('div');
+      scr.className = 'scr ' + cls;
+      scr.innerHTML = '<div class="lbl">' + name + '</div>';
+      scr.appendChild(tpl.content.cloneNode(true));
+      el.appendChild(scr);
+    }
+  }
+</script>
+</body>
+</html>

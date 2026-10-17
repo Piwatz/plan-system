@@ -13,6 +13,7 @@ const ACTION_LABELS = {
   skip: 'ข้ามระดับนี้',
   withdraw: 'ดึงกลับมาแก้ไข',
   override: 'ผู้ดูแลระบบดำเนินการแทน',
+  cover: 'เพิ่มหน้าปก (ไฟล์เดิมเก็บไว้ในประวัติ)',
 };
 
 // ชนิดงาน: คู่มือรายวิชาและแผน ส่งทีละรายวิชาต่อภาคเรียน บันทึกหลังแผนผูกกับแผนแต่ละเล่ม
@@ -677,6 +678,22 @@ async function overrideStep(subId, actor, { comment = '' } = {}) {
   });
 }
 
+// ผู้ดูแลระบบส่งกลับให้ครูแก้แทนผู้ตรวจขั้นที่ค้างอยู่ (ฟังก์ชันเสริม adminreturn) ครูส่งใหม่แล้วกลับมารอที่ขั้นนี้ ลายเซ็นเดิมยังอยู่
+async function adminReturn(subId, actor, { comment = '' } = {}) {
+  await db.ensureRefs();
+  return q.tx(async () => {
+    const sub = await lockSub(subId);
+    adminCheck(actor, sub);
+    if (sub.status !== 'pending' || !sub.current_role) throw new WorkflowError('งานนี้ไม่ได้รอผู้ตรวจอยู่');
+    const text = String(comment).trim();
+    if (!text) throw new WorkflowError('กรุณาเขียนสิ่งที่ครูต้องแก้ไข');
+    const st = stepOf(sub.current_role);
+    await log(sub.id, actor, { role: st.role, step_label: `ผู้ดูแลระบบส่งกลับแทน${st.label}`, action: 'return', comment: text });
+    await q.run("UPDATE submissions SET status = 'returned', returned_role = ?, current_role = NULL, updated_at = ? WHERE id = ?", st.role, nowStr(), sub.id);
+    return getSub(sub.id);
+  });
+}
+
 async function overrideAll(subId, actor, opts = {}) {
   let sub = await getSub(subId);
   if (sub && (sub.status === 'draft' || sub.status === 'returned')) sub = await submitAs(subId, actor);
@@ -823,6 +840,8 @@ module.exports = {
   approveMany,
   submitMany,
   sendBackMany,
+  adminReturn,
+  log,
   groupBooks,
   BOOK_KEEP,
   sendBack,

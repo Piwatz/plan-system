@@ -423,6 +423,45 @@
     }
   }
 
+  // ---------- เพิ่มหน้าปกให้งานที่ส่งแล้ว (ฟังก์ชันเสริม addcover) ----------
+  // เลือกไฟล์ปก แล้วรวมปกไว้หน้าแรกของไฟล์เดิมในเครื่องนี้ (pdf-lib) ส่งเป็นไฟล์ใหม่ ไฟล์เดิมระบบเก็บเป็นประวัติ
+  document.querySelectorAll('[data-add-cover]').forEach((form) => {
+    const input = form.querySelector('[data-cover-file]');
+    input.addEventListener('change', async () => {
+      const cover = input.files[0];
+      input.value = '';
+      if (!cover) return;
+      if (!/\.pdf$/i.test(cover.name)) return tell('เลือกไฟล์ปกเป็น PDF');
+      const ok = await ask('ต่อไฟล์ ' + cover.name + ' ไว้หน้าแรกของ ' + form.dataset.name + ' ใช่ไหม\nเนื้อหาเดิมไม่เปลี่ยน ไฟล์เดิมเก็บไว้ในประวัติ', { icon: 'note', ok: 'เพิ่มหน้าปก' });
+      if (!ok) return;
+      const url = form.getAttribute('action');
+      try {
+        showBusy('กำลังเพิ่มหน้าปก', false);
+        const res = await fetch(form.dataset.file);
+        if (!res.ok) throw new SendError('เปิดไฟล์เดิมไม่ได้ ลองใหม่อีกครั้ง');
+        const old = new File([await res.blob()], form.dataset.name, { type: 'application/pdf' });
+        const m = await mergeInBrowser([cover, old]);
+        const merged = new Blob([m.bytes], { type: 'application/pdf' });
+        const thumb = form.dataset.library ? await makeThumb(new Uint8Array(m.bytes)) : null;
+        showBusy('กำลังเพิ่มหน้าปก', true);
+        setProgress(0);
+        const data = new URLSearchParams();
+        const total = merged.size + (thumb ? thumb.size : 0);
+        const start = await request('POST', '/upload/start', new URLSearchParams({ form: url, field: 'main_files', name: 'merged.pdf', merged: '2', size: String(merged.size) }), { 'Content-Type': 'application/x-www-form-urlencoded' });
+        await sendChunks(start.token, merged, start.chunk, (n) => setProgress(Math.min(99, Math.round((n / total) * 100))));
+        data.append('upload_main_files', start.token);
+        if (thumb) data.append('upload_cover_thumb', await uploadBlob(thumb, { form: url, field: 'cover_thumb', name: 'cover.jpg' }));
+        setProgress(100);
+        const r = await request('POST', url, data, { 'Content-Type': 'application/x-www-form-urlencoded' });
+        window.location.href = r.redirect || window.location.pathname;
+      } catch (err) {
+        showPaused(false);
+        hideBusy();
+        tell((err && err.userMessage) || NET_ERROR);
+      }
+    });
+  });
+
   // ส่งต่อจริง: ฟอร์มมีไฟล์ใช้ XHR พร้อมแถบความคืบหน้า ฟอร์มอื่นปล่อยเบราว์เซอร์ส่งตามปกติ
   function proceed(e, form, submitter) {
     if (form.hasAttribute('data-covers')) {

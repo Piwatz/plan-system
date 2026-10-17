@@ -40,7 +40,9 @@
     <% } else if (canEdit) { %>
       <a class="btn btn-ghost" href="/s/<%= sub.id %>/edit"><%- icon('edit', 18) %> แก้ไข</a>
       <form method="post" action="/s/<%= sub.id %>/submit" class="inline-form" data-busy="กำลังส่งงาน">
-        <button class="btn btn-primary" type="submit" data-confirm="<%= isOwner ? 'ยืนยันส่ง' + T.label + 'ให้ผู้ตรวจ' : 'ส่งงานนี้แทน ' + sub.teacher_name + ' ระบบจะบันทึกว่าผู้ดูแลระบบส่งแทน' %>" data-ok-label="ส่งเลย"><%- icon('send', 18) %> <%= !isOwner ? 'ส่งแทนครู' : sub.status === 'returned' ? 'ส่งอีกครั้ง' : 'ส่งให้ผู้ตรวจ' %></button>
+        <% const askCover = ff.coverconfirm && !isNote; %>
+        <% if (askCover) { %><input type="hidden" name="cover_check" value="1"><label class="check cover-ok"><input type="checkbox" name="cover_ok" value="1"> <span>ฉันตรวจแล้ว <b>ไฟล์นี้มีหน้าปก</b> และ<b>หน้าปกอยู่หน้าแรก</b></span></label><% } %>
+        <button class="btn btn-primary" type="submit"<% if (askCover) { %> data-need-checked="cover_ok" data-need-message="ติ๊กยืนยันก่อนว่าไฟล์นี้มีหน้าปก และหน้าปกอยู่หน้าแรก ถ้ายังไม่มีปก กดแก้ไขแล้วเพิ่มไฟล์ปก"<% } %> data-confirm="<%= isOwner ? 'ยืนยันส่ง' + T.label + 'ให้ผู้ตรวจ' : 'ส่งงานนี้แทน ' + sub.teacher_name + ' ระบบจะบันทึกว่าผู้ดูแลระบบส่งแทน' %>" data-ok-label="ส่งเลย"><%- icon('send', 18) %> <%= !isOwner ? 'ส่งแทนครู' : sub.status === 'returned' ? 'ส่งอีกครั้ง' : 'ส่งให้ผู้ตรวจ' %></button>
       </form>
     <% } %>
     <% if (canWithdraw) { %>
@@ -195,12 +197,16 @@
   <form class="card admin-tools" method="post" action="/s/<%= sub.id %>/admin-finish" data-busy="กำลังดำเนินการแทน">
     <div class="card-head"><h3><%- icon('shield', 20) %> เครื่องมือผู้ดูแลระบบ</h3><span class="badge badge-amber">เฉพาะผู้ดูแลระบบเห็น</span></div>
     <p class="muted small">ใช้เมื่องานค้างนาน ระบบไม่ส่งข้อความแจ้งใคร แต่บันทึกในประวัติว่าผู้ดูแลระบบดำเนินการแทน ไม่ใส่ลายเซ็นของผู้อื่น ช่องลายเซ็นในเอกสารเว้นไว้ให้เซ็นด้วยมือ</p>
-    <div class="field"><label for="admin-note">หมายเหตุ (ไม่บังคับ)</label><input type="text" id="admin-note" name="comment" maxlength="300" placeholder="เช่น ครูส่งเอกสารกระดาษแล้ว ผู้บริหารลงนามในกระดาษ"></div>
+    <div class="field"><label for="admin-note">หมายเหตุ (ไม่บังคับ)</label><input type="text" id="admin-note" name="comment" maxlength="300" placeholder="<%= ff.adminreturn ? 'เช่น กรุณาเพิ่มหน้าปก (ส่งกลับต้องเขียน ครูจะเห็น)' : 'เช่น ครูส่งเอกสารกระดาษแล้ว ผู้บริหารลงนามในกระดาษ' %>"></div>
     <div class="btn-row">
       <% if (canEdit) { %><a class="btn btn-ghost" href="/s/<%= sub.id %>/edit"><%- icon('edit', 18) %> แก้ไขแทนครู</a><% } %>
       <% if (sub.status === 'pending' && curStep) { %>
         <button class="btn btn-warn" type="submit" formaction="/s/<%= sub.id %>/admin-advance" data-confirm="ดำเนินการแทน<%= curStep.label %>
 งานจะไปต่อระดับถัดไป" data-ok-label="ดำเนินการแทน"><%- icon('next', 18) %> ดำเนินการแทน<%= curStep.label %></button>
+      <% } %>
+      <% if (ff.adminreturn && sub.status === 'pending' && curStep) { %>
+        <button class="btn btn-ghost" type="submit" formaction="/s/<%= sub.id %>/admin-return" data-require-field="comment" data-require-message="เขียนสิ่งที่ครูต้องแก้ในช่องหมายเหตุก่อน เช่น กรุณาเพิ่มหน้าปก ครูจะเห็นข้อความนี้" data-confirm="ส่งกลับให้ <%= sub.teacher_name %> แก้ไขแทน<%= curStep.label %>
+ครูแก้แล้วส่งใหม่ งานจะกลับมารอที่<%= curStep.label %> ลายเซ็นที่ลงไว้แล้วยังอยู่" data-ok-label="ส่งกลับ"><%- icon('undo', 18) %> ส่งกลับให้ครูแก้</button>
       <% } %>
       <button class="btn btn-primary" type="submit" data-confirm="ให้งานนี้ผ่านครบทุกระดับทันที
 ระบบบันทึกว่าผู้ดูแลระบบดำเนินการแทน" data-ok-label="ให้ผ่านทั้งหมด"><%- icon('ok', 18) %> ให้ผ่านครบทุกระดับทันที</button>
@@ -307,6 +313,13 @@
             </li>
           <% } %>
         </ul>
+        <% const mainPdf = canAddCover && current.find((f) => f.kind === 'main' && /pdf/.test(f.mime)); %>
+        <% if (mainPdf) { %>
+          <form class="add-cover" method="post" action="/s/<%= sub.id %>/cover" data-add-cover data-file="/f/<%= mainPdf.id %>/raw" data-name="<%= mainPdf.original_name %>" data-library="<%= ff.library ? '1' : '' %>">
+            <label class="btn btn-sm btn-primary"><%- icon('plus', 16) %> <%= isOwner ? 'เพิ่มหน้าปก' : 'เพิ่มหน้าปกแทนครู' %><input type="file" accept=".pdf,application/pdf" hidden data-cover-file></label>
+            <small class="muted">ลืมใส่ปก เลือกไฟล์ปก PDF ระบบต่อไว้หน้าแรกของไฟล์เดิมให้ ไม่ต้องส่งใหม่ ผู้ตรวจไม่ต้องลงนามใหม่</small>
+          </form>
+        <% } %>
         <% if (old.length) { %>
           <details style="margin-top:8px"><summary class="muted small" style="cursor:pointer">ไฟล์รุ่นก่อนแก้ไข <%= old.length %> ไฟล์</summary>
             <ul class="file-list"><% for (const f of old) { %><li class="old"><span class="fname"><%= f.original_name %> <small class="muted"><%= util.thaiDate(f.uploaded_at, true) %></small></span><a class="btn btn-sm btn-ghost" href="/f/<%= f.id %>?dl=1">ดาวน์โหลด</a></li><% } %></ul>

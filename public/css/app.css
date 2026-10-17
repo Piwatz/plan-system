@@ -516,6 +516,9 @@ input:focus, select:focus, textarea:focus { outline: 3px solid color-mix(in srgb
 .sigpad canvas { width: 100%; max-width: 480px; height: 160px; border: 1.5px dashed var(--line); border-radius: var(--rs); background: #fff; touch-action: none; display: block; }
 .sig-preview { max-width: 240px; max-height: 90px; display: block; }
 .sig-box { display: inline-block; background: #fff; border: 1px solid var(--line); border-radius: var(--rs); padding: 6px 12px; }
+.cover-ok { margin: 4px 0 6px; font-size: 1.02rem; border-width: 2px; }
+.add-cover { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-top: 10px; }
+.add-cover small { flex: 1; min-width: 180px; }
 .sig-note { margin-top: 6px; font-size: .9em; color: var(--ok); }
 .sig-note[hidden] { display: none; }
 .sig-adjust { margin-top: 10px; display: grid; gap: 8px; }

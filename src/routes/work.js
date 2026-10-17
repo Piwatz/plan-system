@@ -144,6 +144,13 @@ function editable(req, sub) {
   return Boolean(sub && (wf.isOwner(req.me, sub) || req.me.is_admin) && (sub.status === 'draft' || sub.status === 'returned'));
 }
 
+// เพิ่มหน้าปก: เจ้าของงานจนกว่าผู้ตรวจคนสุดท้ายจะลงนาม · ผู้ดูแลระบบได้ทุกขั้น (งานของคนอื่น)
+function canAddCover(req, sub) {
+  if (!req.ff.addcover || !sub || !WORK_TYPES.includes(sub.doc_type)) return false;
+  if (wf.isOwner(req.me, sub)) return sub.status !== 'approved';
+  return Boolean(req.me.is_admin);
+}
+
 function submitWindow(settings) {
   if (settings.submit_open !== '1') return { open: false, reason: 'ขณะนี้ปิดรับการส่งแผนและคู่มือ' };
   const today = todayStr();
@@ -239,6 +246,11 @@ async function missingForSubmit(sub, ff) {
 
 async function trySubmit(req, subId) {
   const sub = await wf.getSub(subId);
+  // ฟอร์มที่มีช่องติ๊กยืนยันหน้าปก (cover_check) ต้องติ๊กก่อนส่ง (ฟังก์ชันเสริม coverconfirm)
+  const b = req.body || {};
+  if (req.ff.coverconfirm && WORK_TYPES.includes(sub.doc_type) && b.cover_check === '1' && b.cover_ok !== '1') {
+    throw new UserError('บันทึกร่างไว้แล้ว แต่ยังส่งไม่ได้ ติ๊กยืนยันว่าไฟล์มีหน้าปกและหน้าปกอยู่หน้าแรกก่อน');
+  }
   const miss = await missingForSubmit(sub, req.ff);
   if (miss.length) throw new UserError(`บันทึกร่างไว้แล้ว แต่ยังส่งไม่ได้ ต้องกรอก ${miss.join(' และ ')}`);
   // ผู้ดูแลระบบส่งแทนครูได้แม้ปิดรับแล้ว
@@ -563,6 +575,7 @@ router.get('/s/:id', async (req, res) => {
     isOwner: wf.isOwner(req.me, sub),
     canPlan: !req.ff.onemain || !(await teaching.planBlocked(req.me, Number(req.settings.academic_year), Number(req.settings.semester))),
     approveLabel: approveLabel(sub),
+    canAddCover: canAddCover(req, sub),
     // ลายเซ็นเดิมของฉันในงานนี้ (ฟังก์ชันเสริม resign) มีปุ่มใช้ลายเซ็นใหม่
     oldSig: req.ff.resign && req.me.signature ? await resign.oldSignature(req.me.id, sub.id) : null,
   });
@@ -689,6 +702,45 @@ router.post('/s/:id/submit', async (req, res) => {
   respond(req, res, `/s/${sub.id}`, 'success', submittedMessage(after));
 });
 
+// เพิ่มหน้าปก: เบราว์เซอร์รวมไฟล์ปกไว้หน้าแรกของไฟล์เดิมแล้วส่งมาเป็นไฟล์ใหม่ (upload_main_files) ไม่เปลี่ยนขั้นการตรวจ
+// ไฟล์เดิมเก็บเป็นประวัติ บันทึกในประวัติของงาน (action cover) และ audit_log
+router.post('/s/:id/cover', async (req, res) => {
+  const sub = await viewable(req, req.params.id);
+  if (!canAddCover(req, sub)) throw new UserError('เพิ่มหน้าปกงานนี้ไม่ได้');
+  const files = await up.take(req, 'main_files');
+  const cover = req.ff.library ? await up.takeCover(req, library.COVER_MAX) : null;
+  let oldCover = null;
+  try {
+    if (files.length !== 1 || files[0].ext !== '.pdf') throw new UserError('เลือกไฟล์ปกเป็น PDF ไฟล์เดียว');
+    await rejectBadFiles(req, files);
+    oldCover = await q.tx(async () => {
+      await q.run("UPDATE files SET is_current = 0 WHERE submission_id = ? AND kind = 'main' AND is_current = 1", sub.id);
+      await up.attach(sub.id, files, 'main');
+      const byAdmin = !wf.isOwner(req.me, sub);
+      await wf.log(sub.id, req.me, { step_label: byAdmin ? 'ผู้ดูแลระบบ' : 'ครูผู้สอน', action: 'cover', comment: '' });
+      return cover ? up.useCover(sub.id, cover) : null;
+    });
+  } catch (e) {
+    await dropFiles(req, cover ? [...files, cover] : files);
+    throw e;
+  }
+  if (oldCover) await up.trashAll([oldCover]);
+  await features.audit(req.me, `เพิ่มหน้าปก${wf.DOC_TYPES[sub.doc_type].label} ${sub.subject_code} ของ ${sub.teacher_name}`, `submission ${sub.id}`);
+  respond(req, res, `/s/${sub.id}`, 'success', 'เพิ่มหน้าปกเรียบร้อย ไฟล์เดิมเก็บไว้ในไฟล์รุ่นก่อนแก้ไข');
+});
+
+// ผู้ดูแลระบบส่งกลับให้ครูแก้แทนผู้ตรวจ (ฟังก์ชันเสริม adminreturn) ไม่แจ้งใคร บันทึกในประวัติและ audit_log
+router.post('/s/:id/admin-return', async (req, res) => {
+  adminOnly(req);
+  if (!req.ff.adminreturn) throw new UserError('ฟังก์ชันส่งกลับแทนผู้ตรวจปิดอยู่');
+  const sub = await loadSub(req.params.id);
+  if (!sub) throw new UserError('ไม่พบงานนี้');
+  const st = wf.stepOf(sub.current_role);
+  await wf.adminReturn(sub.id, req.me, { comment: str((req.body || {}).comment, 300) });
+  await features.audit(req.me, `ส่งกลับแทน${st ? st.label : 'ผู้ตรวจ'} ${wf.DOC_TYPES[sub.doc_type].label} ${sub.subject_code} ของ ${sub.teacher_name}`, `submission ${sub.id}`);
+  respond(req, res, `/s/${sub.id}`, 'success', 'ส่งกลับให้ครูแก้ไขแล้ว ครูแก้แล้วส่งใหม่ งานจะกลับมารอที่ขั้นเดิม');
+});
+
 router.post('/s/:id/withdraw', async (req, res) => {
   const sub = await viewable(req, req.params.id);
   if (!sub) throw new UserError('ไม่พบงานนี้');
@@ -730,6 +782,13 @@ async function uploadTarget(req, b) {
   if (lc) {
     const sub = await loadSub(lc[1]);
     if (!req.me.is_admin || !req.ff.library || !sub || !WORK_TYPES.includes(sub.doc_type)) throw new UserError('สร้างปกได้เฉพาะผู้ดูแลระบบ');
+    return sub;
+  }
+  // เพิ่มหน้าปกให้งานที่ส่งแล้ว (ฟังก์ชันเสริม addcover)
+  const ac = /^\/s\/(\d+)\/cover$/.exec(form);
+  if (ac) {
+    const sub = await viewable(req, ac[1]);
+    if (!canAddCover(req, sub)) throw new UserError('เพิ่มหน้าปกงานนี้ไม่ได้');
     return sub;
   }
   const m = /^\/s\/(\d+)$/.exec(form);
