@@ -578,3 +578,9 @@
   - npm test ผ่าน 138 (เพิ่ม 1 ข้อใน sigfill.test.js) · ลองจอมือถือในระบบทดลอง: กล่องรอยืนยัน ปุ่ม ป๊อปถาม สำเร็จ ประวัติขึ้น · ภาพ `design-mockup/sigconfirm-result.png`
   - บทเรียน: `node --test` ไฟล์เดียวใช้หน้าเว็บที่ build ไว้เก่า (dist/views.js) ต้อง `node scripts/build-views.js` ก่อน หรือใช้ npm test · req.me.signature เป็นที่อยู่ /media/signature ไม่ใช่รูป
 - **ขึ้นเว็บจริงแล้ว 18 ต.ค. 2569 (sigconfirm):** Version 2ad505db (Claude รันเองตามที่ครูเต้ยสั่ง) · ไม่มี migration · /login 200 · ถัดไปตามจุดพัก: แชท J K M
+
+### ไอคอนและชื่อแอป (18 ต.ค. 2569 ครูเต้ยขอ) · รอผู้ใช้เลือก
+- ครูเต้ยอยากให้กด เพิ่มไปยังหน้าจอโฮม (iOS Android) และทางลัดบนเดสก์ท็อป มีไอคอนตราโรงเรียนบนกรอบสี่เหลี่ยมขอบมนสีแดงเลือดหมู #6C1422 (วัดจากภาพที่ส่งมา) · ตอนนี้ระบบมีแค่ `<link rel="icon">` ไม่มี manifest และ apple-touch-icon iOS จึงวาดตัว ห ให้เอง
+- ชื่อต้องรองรับการรวมงานส่งเสริมการจัดการเรียนรู้อื่นในอนาคต (ไม่ผูกกับคำว่าแผน)
+- ภาพตัวอย่าง `design-mockup/appicon-mockup.png` ไอคอน A ตราเต็มกรอบ · B ตราบนวงกลมครีม · C แดงไล่เฉดขอบทอง · ชื่อ 1 ห้องครู ชว. / Chanu Teacher Hub (แนะนำ) · 2 ครูชานุ / ChanuTeach · 3 สอนดี ชว. / Chanu TeachWell · 4 วิชาการ ชว. / Chanu Academic · 5 ส่งแผน ชว. / Chanu Plan · ชื่อเต็มที่เสนอ ระบบงานส่งเสริมการจัดการเรียนรู้ โรงเรียนชานุมานวิทยาคม
+- แผนเมื่อเลือกแล้ว: ไฟล์ไอคอน 180 192 512 (มี maskable เผื่อขอบ Android) + favicon · manifest.webmanifest (name short_name theme_color display standalone) · meta apple-mobile-web-app-title · สวิตช์ใน features.js (ปิด = ไอคอนเดิม) · ถามด้วยว่าจะเปลี่ยนชื่อบนแถบเมนูและหัวเว็บตามด้วยไหม
