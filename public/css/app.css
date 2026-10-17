@@ -895,8 +895,10 @@ dialog.modal::backdrop { background: rgba(10, 20, 40, 0.5); }
 }
 
 /* ---------- กรอบแสดงไฟล์ PDF ในหน้าเว็บ (PDF.js) เลื่อนอ่านได้ทุกหน้า ---------- */
-.pdf-pages { flex: 1; min-height: 0; overflow: auto; -webkit-overflow-scrolling: touch; background: var(--head-bg); padding: 12px; display: flex; flex-direction: column; align-items: center; gap: 12px; border-radius: 0 0 var(--r) var(--r); }
-.pdf-page { flex: none; background: #fff; box-shadow: 0 1px 4px rgba(0, 0, 0, 0.18); }
+.pdf-pages { flex: 1; min-height: 0; overflow: auto; -webkit-overflow-scrolling: touch; background: var(--head-bg); padding: 12px; display: flex; flex-direction: column; align-items: flex-start; gap: 12px; border-radius: 0 0 var(--r) var(--r); }
+/* margin auto: หน้าแคบกว่ากรอบอยู่กลาง หน้าที่ขยายจนกว้างกว่ากรอบเลื่อนซ้ายขวาได้ครบ ไม่โดนตัดขอบซ้าย */
+.pdf-page { flex: none; margin: 0 auto; background: #fff; box-shadow: 0 1px 4px rgba(0, 0, 0, 0.18); transform-origin: top center; }
+.pdf-img { margin: 0 auto; }
 .pdf-page canvas { display: block; }
 .pdf-img { max-width: 100%; height: auto; background: #fff; box-shadow: 0 1px 4px rgba(0, 0, 0, 0.18); }
 .pdf-msg { margin: auto; padding: 30px 16px; text-align: center; color: var(--muted); }
@@ -918,6 +920,16 @@ dialog.modal::backdrop { background: rgba(10, 20, 40, 0.5); }
 .viewer-close { display: none; }
 .viewer.is-full .viewer-close { display: grid; place-items: center; position: fixed; top: calc(10px + env(safe-area-inset-top)); right: 10px; z-index: 91; width: 46px; height: 46px; border-radius: 50%; border: 0; background: rgba(15, 30, 51, 0.45); color: #fff; cursor: pointer; }
 .viewer.is-full .viewer-close:active { background: rgba(15, 30, 51, 0.7); }
+/* เต็มจอ: ถ่างสองนิ้วขยายเฉพาะไฟล์ (pdfview.js) ไม่ขยายทั้งหน้าเว็บ ปุ่มจึงไม่หลุดจอ */
+.viewer.is-full .pdf-pages { touch-action: pan-x pan-y; }
+.pdf-pages.pinching .pdf-page { transform: scale(var(--pinch, 1)); }
+/* แถบเลื่อนเร็วด้านขวา ลากปุ่มเลขหน้าเพื่อข้ามหลายหน้า และป้ายเลขหน้ามุมซ้ายบน */
+.viewer-scrub, .viewer-page { display: none; }
+.viewer.is-full.multi .viewer-scrub { display: block; position: fixed; z-index: 91; right: 0; width: 56px; top: calc(92px + env(safe-area-inset-top)); bottom: calc(36px + env(safe-area-inset-bottom)); touch-action: none; cursor: grab; }
+.viewer-scrub::before { content: ''; position: absolute; right: 12px; top: 0; bottom: 0; width: 4px; border-radius: 2px; background: rgba(15, 30, 51, 0.18); }
+.scrub-thumb { position: absolute; right: 2px; top: 0; min-width: 46px; height: 46px; padding: 0 8px; border-radius: 23px; display: grid; place-items: center; background: rgba(15, 30, 51, 0.6); color: #fff; font-size: 0.85rem; font-weight: 700; transform: translateY(-50%); pointer-events: none; white-space: nowrap; }
+.viewer-scrub.dragging .scrub-thumb { background: var(--primary); font-size: 1rem; }
+.viewer.is-full .viewer-page { display: block; position: fixed; z-index: 91; left: 10px; top: calc(16px + env(safe-area-inset-top)); padding: 6px 12px; border-radius: 999px; background: rgba(15, 30, 51, 0.45); color: #fff; font-size: 0.85rem; font-weight: 600; pointer-events: none; }
 body:has(.viewer.is-full) { overflow: hidden; }
 .sheet-bar .sb-mini, .sheet-bar .sb-full, .sheet-scrim { display: none; }
 @media (max-width: 900px) {

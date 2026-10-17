@@ -25,7 +25,7 @@ class Viewer {
     box.querySelectorAll('[data-pdf-zoom]').forEach((b) =>
       b.addEventListener('click', () => {
         const next = b.dataset.pdfZoom === 'in' ? this.zoom * 1.25 : this.zoom / 1.25;
-        this.zoom = Math.min(3, Math.max(0.5, next));
+        this.zoom = Math.min(4, Math.max(0.5, next));
         if (this.doc) this.layout();
       })
     );
@@ -46,6 +46,9 @@ class Viewer {
         if (e.key === 'Escape' && box.classList.contains('is-full')) toggle(false);
       });
     }
+    this.pill = box.querySelector('[data-pdf-pagepill]');
+    this.setupPinch();
+    this.setupScrub();
     let last = this.pages.clientWidth;
     window.addEventListener('resize', () => {
       clearTimeout(this.rt);
@@ -117,6 +120,7 @@ class Viewer {
     const token = this.token;
     this.observer.disconnect();
     this.counter.disconnect();
+    this.seen = new Set();
     const keep = this.pages.scrollTop / Math.max(1, this.pages.scrollHeight);
     this.pages.innerHTML = '';
     const width = Math.max(240, this.pages.clientWidth - 24);
@@ -140,11 +144,114 @@ class Viewer {
   }
 
   showPage(n) {
+    this.current = n;
     if (this.info && this.doc) this.info.textContent = `หน้า ${n} จาก ${this.doc.numPages}`;
+    if (this.pill && this.doc) this.pill.textContent = `หน้า ${n} / ${this.doc.numPages}`;
+    if (this.scrubThumb && !this.scrubThumb.parentNode.classList.contains('dragging')) this.scrubThumb.textContent = String(n);
+    this.box.classList.toggle('multi', Boolean(this.doc && this.doc.numPages > 1));
   }
 
+  // เต็มจอ: ถ่างหรือหุบสองนิ้วขยายเฉพาะไฟล์ (เบราว์เซอร์ไม่ขยายทั้งหน้าเว็บ ปุ่มกากบาทจึงอยู่ที่เดิม)
+  // ระหว่างถ่างย่อขยายภาพเดิมด้วย CSS ปล่อยนิ้วแล้ววาดใหม่ให้คมตามขนาดใหม่ จุดใต้นิ้วยังอยู่ใต้นิ้ว
+  setupPinch() {
+    const full = () => this.box.classList.contains('is-full') && this.doc;
+    const dist = (t) => Math.hypot(t[0].clientX - t[1].clientX, t[0].clientY - t[1].clientY);
+    let start = null;
+    // Safari มีเหตุการณ์ gesture ของตัวเอง ต้องห้ามไว้ ไม่งั้นขยายทั้งหน้าเว็บ
+    ['gesturestart', 'gesturechange', 'gestureend'].forEach((ev) =>
+      this.pages.addEventListener(ev, (e) => {
+        if (full()) e.preventDefault();
+      })
+    );
+    this.pages.addEventListener(
+      'touchstart',
+      (e) => {
+        if (!full() || e.touches.length !== 2) return;
+        const r = this.pages.getBoundingClientRect();
+        const cx = (e.touches[0].clientX + e.touches[1].clientX) / 2 - r.left;
+        const cy = (e.touches[0].clientY + e.touches[1].clientY) / 2 - r.top;
+        start = {
+          d: dist(e.touches),
+          s: 1,
+          cx,
+          cy,
+          fx: (this.pages.scrollLeft + cx) / Math.max(1, this.pages.scrollWidth),
+          fy: (this.pages.scrollTop + cy) / Math.max(1, this.pages.scrollHeight),
+        };
+        this.pages.classList.add('pinching');
+      },
+      { passive: true }
+    );
+    this.pages.addEventListener(
+      'touchmove',
+      (e) => {
+        if (!start || e.touches.length !== 2) return;
+        e.preventDefault();
+        const z = Math.min(4, Math.max(0.5, this.zoom * (dist(e.touches) / start.d)));
+        start.s = z / this.zoom;
+        this.pages.style.setProperty('--pinch', String(start.s));
+      },
+      { passive: false }
+    );
+    const end = async () => {
+      if (!start) return;
+      const s = start;
+      start = null;
+      this.pages.classList.remove('pinching');
+      this.pages.style.removeProperty('--pinch');
+      if (Math.abs(s.s - 1) < 0.04) return;
+      this.zoom = Math.min(4, Math.max(0.5, this.zoom * s.s));
+      await this.layout();
+      this.pages.scrollLeft = s.fx * this.pages.scrollWidth - s.cx;
+      this.pages.scrollTop = s.fy * this.pages.scrollHeight - s.cy;
+    };
+    this.pages.addEventListener('touchend', end);
+    this.pages.addEventListener('touchcancel', end);
+  }
+
+  // แถบเลื่อนเร็วด้านขวา (เต็มจอ): ปุ่มบอกเลขหน้า ลากขึ้นลงเพื่อข้ามหลายหน้า แตะที่แถบเพื่อกระโดดไปตรงนั้น
+  setupScrub() {
+    const bar = this.box.querySelector('[data-pdf-scrub]');
+    if (!bar) return;
+    const thumb = bar.querySelector('[data-scrub-thumb]');
+    this.scrubThumb = thumb;
+    const max = () => Math.max(1, this.pages.scrollHeight - this.pages.clientHeight);
+    const place = (frac) => {
+      thumb.style.top = `${Math.min(1, Math.max(0, frac)) * 100}%`;
+    };
+    const pageAt = (frac) => (this.doc ? 1 + Math.round(Math.min(1, Math.max(0, frac)) * (this.doc.numPages - 1)) : 1);
+    this.pages.addEventListener('scroll', () => {
+      if (bar.classList.contains('dragging')) return;
+      place(this.pages.scrollTop / max());
+    });
+    const go = (e) => {
+      const r = bar.getBoundingClientRect();
+      const frac = Math.min(1, Math.max(0, (e.clientY - r.top) / Math.max(1, r.height)));
+      place(frac);
+      thumb.textContent = String(pageAt(frac));
+      this.pages.scrollTop = frac * max();
+    };
+    bar.addEventListener('pointerdown', (e) => {
+      bar.setPointerCapture(e.pointerId);
+      bar.classList.add('dragging');
+      go(e);
+    });
+    bar.addEventListener('pointermove', (e) => {
+      if (bar.classList.contains('dragging')) go(e);
+    });
+    const stop = () => bar.classList.remove('dragging');
+    bar.addEventListener('pointerup', stop);
+    bar.addEventListener('pointercancel', stop);
+  }
+
+  // เลขหน้าที่แสดง = หน้าบนสุดที่เห็นเกินครึ่ง
   onCount(list) {
-    for (const e of list) if (e.isIntersecting) this.showPage(Number(e.target.dataset.n));
+    if (!this.seen) this.seen = new Set();
+    for (const e of list) {
+      if (e.isIntersecting) this.seen.add(Number(e.target.dataset.n));
+      else this.seen.delete(Number(e.target.dataset.n));
+    }
+    if (this.seen.size) this.showPage(Math.min(...this.seen));
   }
 
   onSeen(list) {

@@ -17,7 +17,9 @@
   <% if (files.length > 1) { %>
     <div class="viewer-tabs"><% files.forEach((f, i) => { %><button type="button" class="btn btn-sm <%= i === 0 ? 'btn-primary' : 'btn-ghost' %>" data-view-file="/f/<%= f.id %>" data-type="<%= kind(f) %>" data-name="<%= f.original_name %>">ไฟล์ <%= i + 1 %></button><% }) %></div>
   <% } %>
-  <% if (ff.mobilesheet) { %><button type="button" class="viewer-close" data-pdf-exit aria-label="ออกจากเต็มจอ"><%- icon('close', 26) %></button><% } %>
+  <% if (ff.mobilesheet) { %><button type="button" class="viewer-close" data-pdf-exit aria-label="ออกจากเต็มจอ"><%- icon('close', 26) %></button>
+  <div class="viewer-page" data-pdf-pagepill></div>
+  <div class="viewer-scrub" data-pdf-scrub aria-label="ลากเพื่อเลื่อนไปหน้าอื่น"><div class="scrub-thumb" data-scrub-thumb>1</div></div><% } %>
   <div class="pdf-pages" data-pdf-pages data-src="/f/<%= f0.id %>" data-type="<%= kind(f0) %>"></div>
 </section>
 <script type="module" src="/static/js/pdfview.js?v=<%= assetVersion %>"></script>
