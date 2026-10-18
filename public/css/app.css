@@ -1019,6 +1019,26 @@ body:has(.viewer.is-full) { overflow: hidden; }
 .cv-c .cv-name { color: var(--c); }
 .cv-c .cv-bot { padding-bottom: 9cqw; }
 .cv-c .cv-line { display: block; }
+/* งานที่แสดงในคลังงาน (libshow) การ์ดในหน้าฟังก์ชันเสริม และเล่มที่ซ่อนอยู่ในหน้าคลัง */
+.card .ls-mode { display: flex; flex-direction: row; align-items: flex-start; margin: 0 0 8px; font-weight: 400; }
+.card .ls-mode input { flex: none; margin-top: 2px; }
+.ls-mode > span { display: flex; flex-direction: column; }
+.ls-list { max-height: 420px; overflow-y: auto; margin-top: 8px; border-top: 1px solid var(--line); }
+.ls-row { display: flex; justify-content: space-between; align-items: center; gap: 10px; padding: 8px 2px; border-bottom: 1px solid var(--line); }
+.ls-row[hidden] { display: none; }
+.ls-row > span:first-child { display: flex; flex-direction: column; min-width: 0; line-height: 1.35; }
+.ls-seg { display: flex; flex: none; border: 1px solid var(--line); border-radius: var(--rs); overflow: hidden; }
+.ls-seg label { position: relative; cursor: pointer; }
+.ls-seg label + label { border-left: 1px solid var(--line); }
+.ls-seg input { position: absolute; opacity: 0; inset: 0; margin: 0; cursor: pointer; }
+.ls-seg span { display: block; padding: 5px 9px; font-size: 0.82rem; font-weight: 600; color: var(--muted); white-space: nowrap; }
+.ls-seg input:focus-visible + span { outline: 2px solid var(--primary); outline-offset: -2px; }
+.ls-seg .ls-auto input:checked + span { background: var(--primary); color: #fff; }
+.ls-seg .ls-show input:checked + span { background: var(--ok); color: #fff; }
+.ls-seg .ls-hide input:checked + span { background: var(--back); color: #fff; }
+.lib-book.is-hidden .lib-cover { opacity: 0.38; filter: grayscale(0.6); }
+.lib-meta .lib-showbtn { align-self: flex-start; margin-top: 6px; padding: 2px 10px; font-size: 0.8rem; }
+.lib-showbar { display: flex; align-items: center; justify-content: flex-end; gap: 8px; margin: 0 0 10px; }
 /* เลือกแบบปกในหน้าฟังก์ชันเสริม */
 .cvs-pick { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; margin-bottom: 14px; }
 .cvs-opt { display: flex; flex-direction: column; gap: 6px; cursor: pointer; }

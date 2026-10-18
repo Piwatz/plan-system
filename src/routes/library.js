@@ -1,6 +1,6 @@
 // คลังงานการจัดการเรียนรู้ (ฟังก์ชันเสริม library) หน้าชั้นวาง รูปปก และปุ่มผู้ดูแลระบบ สร้างปกงานเดิม
 const express = require('express');
-const { q } = require('../db');
+const { q, setSetting } = require('../db');
 const auth = require('../auth');
 const util = require('../util');
 const up = require('../upload');
@@ -17,7 +17,7 @@ function closed(res) {
 // ภาคเรียนที่มีงานผ่านครบ และภาคปัจจุบันเสมอ
 async function termList(settings) {
   const cur = { year: Number(settings.academic_year), semester: Number(settings.semester) };
-  const list = await q.all("SELECT DISTINCT academic_year AS year, semester FROM submissions WHERE status = 'approved' ORDER BY academic_year DESC, semester DESC");
+  const list = await q.all("SELECT DISTINCT academic_year AS year, semester FROM submissions WHERE status IN ('approved', 'pending') ORDER BY academic_year DESC, semester DESC");
   if (!list.some((t) => t.year === cur.year && t.semester === cur.semester)) list.unshift(cur);
   return { cur, list };
 }
@@ -29,9 +29,13 @@ router.get('/library', async (req, res) => {
   const department = util.idOrNull(req.query.department) || null;
   const shelfKey = library.SHELF[req.query.shelf] ? req.query.shelf : library.SHELVES[0].key;
   const offset = Math.max(0, util.intOr(req.query.offset, 0));
-  const { shelf, rows, total, byDept } = await library.page(shelfKey, { term, department, offset });
-  const books = library.decorate(rows, req.me, req.ff);
-  const query = { shelf: shelf.key, year: term.year, semester: term.semester, ...(department ? { department } : {}) };
+  // งานที่แสดงในคลัง (libshow) ผู้ดูแลระบบเปิด ?hidden=1 เห็นเล่มที่ซ่อนอยู่ด้วย (จาง ๆ พร้อมปุ่มแสดงเล่มนี้)
+  const rule = library.showRule(req.settings);
+  const manage = Boolean(req.me.is_admin && req.ff.libshow);
+  const hidden = manage && req.query.hidden === '1';
+  const { shelf, rows, total, byDept } = await library.page(shelfKey, { term, department, offset, rule, all: hidden });
+  const books = library.decorate(rows, req.me, req.ff, manage ? rule : null);
+  const query = { shelf: shelf.key, year: term.year, semester: term.semester, ...(department ? { department } : {}), ...(hidden ? { hidden: '1' } : {}) };
   // หัวแถวกลุ่มสาระ: ลิงก์ ดูทั้งหมด = กรองกลุ่มสาระนั้น (ภาคและชั้นเดิม)
   const groups = { byDept, base: new URLSearchParams({ shelf: shelf.key, year: term.year, semester: term.semester }).toString(), one: !!department };
   const more = offset + rows.length < total ? `/library?${new URLSearchParams({ ...query, offset: String(offset + rows.length) })}` : '';
@@ -61,14 +65,45 @@ router.get('/library', async (req, res) => {
     views: features.LIBRARY_VIEWS,
     defaultView: features.libraryView(req.settings),
     noCover,
+    manage,
+    hidden,
+    showMode: rule.mode,
   });
+});
+
+// ผู้ดูแลระบบ ซ่อนหรือแสดงเล่มเดียว (ฟังก์ชันเสริม libshow) want = show|hide
+// ถ้าเล่มเป็นแบบที่ต้องการอยู่แล้วตามค่าหลักและรายครู ลบข้อยกเว้นของเล่มนี้ทิ้ง (ไม่สะสมรายการ)
+router.post('/library/show', async (req, res) => {
+  const b = req.body || {};
+  const back = typeof b.back === 'string' && b.back.startsWith('/library?') ? b.back : '/library';
+  if (!req.me.is_admin || !req.ff.library || !req.ff.libshow) {
+    req.flash('error', 'เฉพาะผู้ดูแลระบบ');
+    return res.redirect(back);
+  }
+  const want = b.want === 'show' ? 'show' : b.want === 'hide' ? 'hide' : '';
+  const [kind, idText] = String(b.key || '').split(':');
+  const rule = library.showRule(req.settings);
+  const st = want ? await library.bookState(kind, util.idOrNull(idText), rule) : null;
+  if (!st) {
+    req.flash('error', 'ไม่พบเล่มนี้');
+    return res.redirect(back);
+  }
+  const books = { ...rule.books };
+  if (st.base === (want === 'show')) delete books[st.bkey];
+  else books[st.bkey] = want;
+  await q.tx(async () => {
+    await setSetting('lib_show_books', JSON.stringify(books));
+    await features.audit(req.me, `${want === 'show' ? 'แสดง' : 'ซ่อน'}เล่มในคลังงาน ${library.SHELF[kind].label} ${st.subject_code} ของ${st.teacher_name}`, `lib_show ${st.bkey}`);
+  });
+  req.flash('success', `${want === 'show' ? 'แสดง' : 'ซ่อน'}เล่ม ${st.subject_code} เรียบร้อย`);
+  res.redirect(back);
 });
 
 // รูปปกเล็ก ทุกคนที่เข้าระบบเห็นได้ (เห็นปกแต่อาจเปิดอ่านไม่ได้) ที่อยู่มี ?v= ตามรูป เบราว์เซอร์จึงจำไว้ได้ 1 ปี
 router.get('/library/cover/:id', async (req, res) => {
   if (!req.ff.library) return res.status(404).end();
   const id = util.idOrNull(req.params.id);
-  const s = id && (await q.get("SELECT cover_ref FROM submissions WHERE id = ? AND doc_type IN ('plan', 'manual') AND status = 'approved'", id));
+  const s = id && (await q.get("SELECT cover_ref FROM submissions WHERE id = ? AND doc_type IN ('plan', 'manual') AND status != 'draft'", id));
   if (!s || !s.cover_ref) return res.status(404).end();
   await require('./work').sendStored(req, res, { id, stored_name: s.cover_ref, size: 0 }, { 'Content-Type': 'image/jpeg', 'Cache-Control': 'private, max-age=31536000, immutable' });
 });

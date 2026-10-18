@@ -3,7 +3,7 @@
 <div class="page-head">
   <div>
     <h1>คลังงานการจัดการเรียนรู้</h1>
-    <div class="sub">งานที่ผ่านการตรวจครบทุกระดับแล้ว<%= ff.libread ? ' เปิดอ่านได้ทุกเล่ม' : ' ทุกคนเห็นปกและชื่อ เปิดอ่านได้เฉพาะงานของตัวเอง' %></div>
+    <div class="sub"><%= showMode === 'sent' ? 'งานที่ส่งแล้ว เล่มที่ยังลงนามไม่ครบมีป้ายบอก' : 'งานที่ผ่านการตรวจครบทุกระดับแล้ว' %><%= ff.libread ? ' เปิดอ่านได้ทุกเล่ม' : ' ทุกคนเห็นปกและชื่อ เปิดอ่านได้เฉพาะงานของตัวเอง' %></div>
   </div>
   <div class="actions lib-views" role="group" aria-label="เลือกมุมมอง">
     <% for (const v of views) { %>
@@ -38,6 +38,16 @@
 เครื่องนี้จะเปิดไฟล์ PDF ทีละเล่มแล้วทำรูปปกเล็ก อาจใช้เวลาหลายนาที ห้ามปิดหน้านี้จนกว่าจะเสร็จ" data-ok-label="สร้างปก"></form>
 <% } %>
 
+<% if (manage) { const back = '/library?' + qs({}); %>
+  <%# ผู้ดูแลระบบ (libshow) เปิดดูเล่มที่ซ่อนอยู่ (จาง ๆ) แล้วกดแสดงหรือซ่อนทีละเล่ม · ค่าหลักและรายครูตั้งในหน้าฟังก์ชันเสริม %>
+  <div class="lib-showbar">
+    <a class="btn btn-sm btn-ghost" href="/admin/features#libshow"><%- icon('toggle', 16) %> ตั้งค่างานที่แสดง</a>
+    <a class="btn btn-sm <%= hidden ? 'btn-primary' : 'btn-ghost' %>" href="/library?<%= new URLSearchParams(Object.fromEntries(Object.entries({ ...query, hidden: hidden ? '' : '1' }).filter(([, v]) => v !== ''))) %>" aria-pressed="<%= hidden %>"><%- icon('eye', 16) %> เห็นเล่มที่ซ่อนอยู่</a>
+  </div>
+  <form id="lib-show-show" method="post" action="/library/show"><input type="hidden" name="want" value="show"><input type="hidden" name="back" value="<%= back %>"></form>
+  <form id="lib-show-hide" method="post" action="/library/show"><input type="hidden" name="want" value="hide"><input type="hidden" name="back" value="<%= back %>"></form>
+<% } %>
+
 <% const swap = books.some((b) => b.swap); %>
 <% if (swap) { const back = '/library?' + qs({}); %>
   <%# ผู้ดูแลระบบเปลี่ยนปก (coverswap): 2 โหมด สลับได้ เครื่องจำไว้ ปุ่มบนปกทีละเล่ม หรือเลือกหลายเล่มพร้อมกัน %>
@@ -58,7 +68,7 @@
 <% } %>
 
 <% if (!books.length) { %>
-  <div class="card"><div class="empty"><span class="big"><%- icon('books', 40) %></span><p>ยังไม่มี<%= shelf.label %>ที่ผ่านครบในภาคเรียนนี้<%= department ? ' ของกลุ่มสาระนี้' : '' %></p></div></div>
+  <div class="card"><div class="empty"><span class="big"><%- icon('books', 40) %></span><p>ยังไม่มี<%= shelf.label %><%= showMode === 'sent' ? 'ที่ส่งแล้ว' : 'ที่ผ่านครบ' %>ในภาคเรียนนี้<%= department ? ' ของกลุ่มสาระนี้' : '' %></p></div></div>
 <% } else { %>
   <div class="card lib" data-lib data-default="<%= defaultView %>" data-view="shelf"<%- department ? ' data-one' : '' %><%- swap ? ' data-swap="one"' : '' %>>
     <script>(function(){var b=document.querySelector('[data-lib]'),k=['<%- views.map((v) => v.key).join("','") %>'],v='';try{v=localStorage.getItem('plan-libview')||''}catch(e){}if(k.indexOf(v)<0)v=b.getAttribute('data-default');if(k.indexOf(v)<0)v=window.matchMedia('(max-width: 760px)').matches?'list':'shelf';b.setAttribute('data-view',v)})()</script>

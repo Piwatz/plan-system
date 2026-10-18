@@ -361,6 +361,66 @@ test('ปกที่ระบบวาดแบบใหม่: ค่าเร
   }
 });
 
+test('เลือกงานที่แสดงในคลัง 3 ชั้น: ค่าหลัก รายครู รายเล่ม ผู้ดูแลเห็นเล่มที่ซ่อนอยู่ ปิดฟังก์ชันกลับเป็นแบบเดิม (libshow)', async () => {
+  const pend = await db.q.get(
+    "SELECT s.id, s.subject_code, s.teacher_id, s.academic_year, s.semester, u.username FROM submissions s JOIN users u ON u.id = s.teacher_id WHERE s.doc_type = 'manual' AND s.status = 'pending' ORDER BY s.id LIMIT 1"
+  );
+  assert.ok(pend, 'ข้อมูลทดลองมีคู่มือที่รอลงนาม');
+  const other = await db.q.get("SELECT username FROM users WHERE is_teacher = 1 AND is_admin = 0 AND id != ? AND username != 'admin' ORDER BY id LIMIT 1", pend.teacher_id);
+  const url = `/library?shelf=manual&year=${pend.academic_year}&semester=${pend.semester}`;
+  const card = new RegExp(`value="manual:${pend.id}"|${pend.subject_code}`);
+  const t = await as(other.username);
+  const admin = await as('admin');
+  const setting = async (k) => ((await db.q.get('SELECT value FROM settings WHERE key = ?', k)) || {}).value;
+  try {
+    assert.doesNotMatch((await t.get(url)).text, card, 'ค่าเริ่มต้น เฉพาะงานที่ผ่านครบ');
+    const fp = (await admin.get('/admin/features')).text;
+    assert.match(fp, /id="libshow"/);
+    assert.match(fp, /action="\/admin\/libshow" data-confirm=/);
+    assert.match(fp, new RegExp(`name="t_${pend.teacher_id}" value="auto" checked`));
+    // ชั้น 1 ค่าหลัก ส่งแล้วทุกงาน
+    await admin.post('/admin/libshow', { mode: 'sent' });
+    let page = (await t.get(url)).text;
+    assert.match(page, card);
+    assert.match(page, /badge badge-amber">รอลงนาม \d จาก \d/);
+    assert.doesNotMatch(page, /lib-show-/, 'ครูไม่เห็นปุ่มซ่อนเล่ม');
+    assert.ok(await db.q.get("SELECT 1 AS x FROM audit_log WHERE action LIKE 'ตั้งงานที่แสดงในคลังงาน งานที่ส่งแล้วทุกงาน%'"));
+    // ชั้น 2 รายครู ซ่อนครูคนนี้ แม้ค่าหลักแสดงทุกงาน
+    await admin.post('/admin/libshow', { mode: 'sent', [`t_${pend.teacher_id}`]: 'hide' });
+    assert.doesNotMatch((await t.get(url)).text, card);
+    // ค่าหลักกลับเป็นผ่านครบ แต่ครูคนนี้แสดงทุกงาน
+    await admin.post('/admin/libshow', { mode: 'approved', [`t_${pend.teacher_id}`]: 'show' });
+    assert.match((await t.get(url)).text, card);
+    assert.equal(await setting('lib_show_teachers'), JSON.stringify({ [pend.teacher_id]: 'show' }));
+    // ชั้น 3 รายเล่ม ซ่อนเล่มนี้ ผู้ดูแลเปิด เห็นเล่มที่ซ่อนอยู่ แล้วกดแสดงกลับ ข้อยกเว้นถูกลบทิ้ง
+    const back = `${url}&hidden=1`;
+    assert.match((await admin.get(url)).text, new RegExp(`form="lib-show-hide" name="key" value="manual:${pend.id}"`));
+    await admin.post('/library/show', { key: `manual:${pend.id}`, want: 'hide', back });
+    assert.doesNotMatch((await t.get(url)).text, card);
+    assert.doesNotMatch((await admin.get(url)).text, new RegExp(`value="manual:${pend.id}"`));
+    const seeAll = (await admin.get(back)).text;
+    assert.match(seeAll, /lib-book is-hidden/);
+    assert.match(seeAll, /ซ่อนอยู่ ซ่อนเล่มนี้ไว้/);
+    assert.match(seeAll, new RegExp(`form="lib-show-show" name="key" value="manual:${pend.id}"`));
+    await admin.post('/library/show', { key: `manual:${pend.id}`, want: 'show', back });
+    assert.equal(await setting('lib_show_books'), '{}', 'กลับเป็นตามรายครูแล้ว ไม่ต้องจำข้อยกเว้น');
+    assert.match((await t.get(url)).text, card);
+    // ครูกดซ่อนเล่มไม่ได้ ค่าที่ไม่รู้จักไม่บันทึก
+    await t.post('/library/show', { key: `manual:${pend.id}`, want: 'hide' });
+    assert.equal(await setting('lib_show_books'), '{}');
+    assert.notEqual((await t.post('/admin/libshow', { mode: 'sent' })).status, 200);
+    await admin.post('/admin/libshow', { mode: 'bogus' });
+    assert.equal(await setting('lib_show'), 'approved');
+    // ปิดฟังก์ชัน กลับเป็นเฉพาะงานที่ผ่านครบ ไม่สนรายครู
+    await setFlag(admin, 'libshow', false);
+    assert.doesNotMatch((await t.get(url)).text, card);
+    await setFlag(admin, 'libshow', true);
+  } finally {
+    await db.q.run("DELETE FROM settings WHERE key IN ('lib_show', 'lib_show_teachers', 'lib_show_books')");
+    await setFlag(admin, 'libshow', true);
+  }
+});
+
 test('หน้าแรกมีแถบเล่มใหม่ในคลัง และปิดคลังแล้วไม่มีเมนู หน้า แถบ และรูปปกตอนส่งงาน', async () => {
   const t = await as('teacher');
   const home = (await t.get('/')).text;

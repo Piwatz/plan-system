@@ -10,6 +10,7 @@ const util = require('../util');
 const config = require('../config');
 const features = require('../features');
 const themes = require('../themes');
+const library = require('../library');
 
 const router = express.Router();
 router.use(auth.requireLogin, auth.requireAdmin);
@@ -796,6 +797,11 @@ router.get('/features', async (req, res) => {
     libViews: features.LIBRARY_VIEWS,
     libView: features.libraryView(req.settings),
     coverStyles: features.COVER_STYLES,
+    showModes: library.SHOW_MODES,
+    showRule: library.showRule(req.settings),
+    showTeachers: req.ff.libshow
+      ? await q.all('SELECT u.id, u.full_name, d.name AS dept_name FROM users u LEFT JOIN departments d ON d.id = u.department_id WHERE u.is_teacher = 1 AND u.is_active = 1 ORDER BY d.sort NULLS LAST, u.full_name')
+      : [],
     // ข้อมูลสมมติของภาพตัวอย่างปก
     coverSample: { open: true, subject_code: 'ว30203', subject_name: 'ฟิสิกส์เพิ่มเติม 3', teacher_name: 'นายสมมติ ใจดี', gradeText: 'ชั้นมัธยมศึกษาปีที่ 5', termText: 'ภาคเรียนที่ 2 ปีการศึกษา 2569' },
     ready: Object.fromEntries(Object.entries(NEEDS).map(([k, [ok]]) => [k, Boolean(ok(req.settings))])),
@@ -847,6 +853,32 @@ router.post('/libview', async (req, res) => {
     await features.audit(req.me, `ตั้งมุมมองเริ่มต้นของคลังงาน ${opt ? opt.label : 'ตามขนาดจอ'}`, 'library_view');
   });
   done(req, res, '/admin/features#libview', 'บันทึกมุมมองเริ่มต้นของคลังงานเรียบร้อย');
+});
+
+// งานที่แสดงในคลังงาน (ฟังก์ชันเสริม libshow) ค่าหลัก + ยกเว้นรายครู t_<รหัสครู> = auto|show|hide · รายเล่มทำในหน้าคลัง
+router.post('/libshow', async (req, res) => {
+  if (!req.ff.libshow) return fail(req, res, '/admin/features', 'เปิดฟังก์ชันเลือกงานที่แสดงในคลังงานก่อน');
+  const b = req.body || {};
+  const mode = library.SHOW_MODES.find((m) => m.key === b.mode);
+  if (!mode) return fail(req, res, '/admin/features#libshow', 'ไม่พบค่าหลักที่เลือก');
+  const cur = library.showRule(req.settings);
+  const ids = new Set((await q.all('SELECT id FROM users WHERE is_teacher = 1')).map((u) => String(u.id)));
+  const teachers = { ...cur.teachers };
+  for (const [k, v] of Object.entries(b)) {
+    const id = k.startsWith('t_') ? k.slice(2) : '';
+    if (!ids.has(id)) continue;
+    if (v === 'show' || v === 'hide') teachers[id] = v;
+    else if (v === 'auto') delete teachers[id];
+  }
+  const changed = mode.key !== cur.mode || JSON.stringify(teachers) !== JSON.stringify(cur.teachers);
+  if (!changed) return done(req, res, '/admin/features#libshow', 'ไม่มีอะไรเปลี่ยน');
+  const count = (want) => Object.values(teachers).filter((v) => v === want).length;
+  await q.tx(async () => {
+    await setSetting('lib_show', mode.key);
+    await setSetting('lib_show_teachers', JSON.stringify(teachers));
+    await features.audit(req.me, `ตั้งงานที่แสดงในคลังงาน ${mode.label} ยกเว้นแสดงทุกงาน ${count('show')} คน ซ่อน ${count('hide')} คน`, 'lib_show');
+  });
+  done(req, res, '/admin/features#libshow', 'บันทึกงานที่แสดงในคลังงานเรียบร้อย');
 });
 
 // แบบปกที่ระบบวาด (ฟังก์ชันเสริม coverstyle) มีผลกับคลังงานทันที ไม่แก้ไฟล์ของใคร

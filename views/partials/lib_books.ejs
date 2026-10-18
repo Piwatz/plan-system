@@ -6,7 +6,7 @@
   <h2 class="lib-grp-h"><span><%= g.name %></span><% if (g.key && !groups.one) { %> <a href="/library?<%= groups.base %>&amp;department=<%= g.key %>">ดูทั้งหมด <%= groups.byDept[g.key] || g.books.length %> เล่ม</a><% } %></h2>
   <div class="lib-row" data-lib-row>
 <% for (const b of g.books) { %>
-  <article class="lib-book">
+  <article class="lib-book<%= b.hiddenWhy ? ' is-hidden' : '' %>">
     <div class="lib-cvw">
     <% if (b.open) { %><a class="lib-cv" href="<%= b.href %>" aria-label="เปิดอ่าน <%= b.subject_code %> <%= b.subject_name %>"><%- include('lib_cover', { b }) %></a><% } else { %><span class="lib-cv"><%- include('lib_cover', { b }) %></span><% } %>
     <% if (b.swap) { const who = b.subject_code + ' ' + (b.subject_name || '') + ' ของ' + b.teacher_name; %>
@@ -23,7 +23,12 @@
       <b><%= b.subject_name || b.subject_code %></b>
       <span><%= b.subject_code %><span class="lib-dept"> <%= b.dept_name || '' %></span></span>
       <span><%= b.teacher_name %></span>
-      <span class="lib-tags"><% if (b.mine) { %><span class="badge badge-blue">งานของฉัน</span><% } else { %><span class="badge badge-green">ผ่านครบ</span><% } %><% if (b.kind === 'note') { %><span class="badge badge-gray"><%= b.sheets %> แผ่น</span><% } %></span>
+      <%# ป้าย: ผ่านครบ หรือรอลงนามถึงไหน (libshow) · ผู้ดูแลเห็นเหตุผลที่เล่มซ่อนอยู่ %>
+      <span class="lib-tags"><% if (b.hiddenWhy) { %><span class="badge badge-red">ซ่อนอยู่ <%= b.hiddenWhy %></span><% } else if (b.waitText) { %><span class="badge badge-amber"><%= b.waitText %></span><% } %><% if (b.mine) { %><span class="badge badge-blue">งานของฉัน</span><% } else if (!b.waitText) { %><span class="badge badge-green">ผ่านครบ</span><% } %><% if (b.kind === 'note') { %><span class="badge badge-gray"><%= b.sheets %> แผ่น</span><% } %></span>
+      <%# ผู้ดูแลระบบ (libshow) ซ่อนหรือแสดงเล่มนี้ อยู่ใต้ชื่อ เห็นได้ทุกมุมมอง %>
+      <% if (b.showBtn) { const who = b.subject_code + ' ' + (b.subject_name || '') + ' ของ' + b.teacher_name; %>
+        <button type="submit" class="btn btn-sm lib-showbtn <%= b.showBtn === 'show' ? 'btn-primary' : 'btn-ghost' %>" form="lib-show-<%= b.showBtn %>" name="key" value="<%= b.bkey %>" data-confirm="<%= b.showBtn === 'show' ? 'แสดง' : 'ซ่อน' %>เล่ม <%= who %> <%= b.showBtn === 'show' ? 'ในคลังงาน ทุกคนเห็นปกและชื่อ' : 'จากคลังงาน คนอื่นจะไม่เห็นเล่มนี้' %>" data-ok-label="<%= b.showBtn === 'show' ? 'แสดงเล่มนี้' : 'ซ่อนเล่มนี้' %>"><%- icon(b.showBtn === 'show' ? 'eye' : 'close', 16) %> <%= b.showBtn === 'show' ? 'แสดงเล่มนี้' : 'ซ่อนเล่มนี้' %></button>
+      <% } %>
     </div>
     <div class="lib-act">
       <% if (b.open) { %><a class="btn btn-sm btn-primary" href="<%= b.href %>"><%- icon('eye', 16) %> เปิดอ่าน</a><% } else { %><span class="btn btn-sm btn-ghost lib-off"><%- icon('lock', 16) %> <span class="lib-off-long">เปิดอ่านได้เฉพาะเจ้าของ</span><span class="lib-off-short">เฉพาะเจ้าของ</span></span><% } %>

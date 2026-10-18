@@ -355,7 +355,7 @@ router.get('/', async (req, res) => {
     daysLeft: util.daysUntil(req.settings.submit_end),
     warnings,
     // แถบเล่มใหม่ในคลังงาน (ฟังก์ชันเสริม library)
-    libRecent: req.ff.library ? library.decorate(await library.recent(6), me, req.ff) : [],
+    libRecent: req.ff.library ? library.decorate(await library.recent(6, library.showRule(req.settings)), me, req.ff) : [],
   });
 });
 
