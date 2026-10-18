@@ -325,6 +325,42 @@ test('ตั้งมุมมองเริ่มต้นของคลั�
   assert.match((await t.get('/library?shelf=manual')).text, /data-default=""/);
 });
 
+test('ปกที่ระบบวาดแบบใหม่: ค่าเริ่มต้นแบบ ง สีตามชนิดงาน มีตรา ระดับชั้น ภาคเรียน ผู้ดูแลเลือกแบบได้ ปิดแล้วกลับเป็นแบบเดิม', async () => {
+  const library = require('../src/library');
+  assert.equal(library.gradeText('ม.5'), 'ชั้นมัธยมศึกษาปีที่ 5');
+  assert.equal(library.gradeText('ป 3'), 'ชั้นประถมศึกษาปีที่ 3');
+  assert.equal(library.gradeText('ม.4/1'), 'ชั้น ม.4/1');
+  assert.equal(library.gradeText(''), '');
+  assert.equal(library.termText({ academic_year: '2569', semester: 2 }), 'ภาคเรียนที่ 2 ปีการศึกษา 2569');
+  const t = await as('teacher');
+  const page = (await t.get('/library?shelf=note')).text;
+  assert.match(page, /lib-cover drawn cv cv-d k-note/);
+  assert.match(page, /class="cv-logo"><img src="[^"]*school-logo/);
+  assert.match(page, /ภาคเรียนที่ \d ปีการศึกษา \d{4}/);
+  const admin = await as('admin');
+  const fp = (await admin.get('/admin/features')).text;
+  assert.match(fp, /id="coverstyle"/);
+  assert.match(fp, /action="\/admin\/coverstyle" data-confirm=/);
+  assert.equal((fp.match(/name="style" value="[a-d]"/g) || []).length, 4);
+  assert.match(fp, /name="style" value="d" checked/);
+  await admin.post('/admin/coverstyle', { style: 'c' });
+  assert.match((await t.get('/library?shelf=note')).text, /cv cv-c k-note/);
+  assert.ok(await db.q.get("SELECT 1 AS x FROM audit_log WHERE action LIKE 'ตั้งแบบปกที่ระบบวาด แบบ ค%'"));
+  await admin.post('/admin/coverstyle', { style: 'z' });
+  assert.equal((await db.q.get("SELECT value FROM settings WHERE key = 'cover_style'")).value, 'c', 'ค่าที่ไม่รู้จักไม่บันทึก');
+  assert.notEqual((await t.post('/admin/coverstyle', { style: 'a' })).status, 200);
+  assert.equal((await db.q.get("SELECT value FROM settings WHERE key = 'cover_style'")).value, 'c');
+  await setFlag(admin, 'coverstyle', false);
+  try {
+    const old = (await t.get('/library?shelf=note')).text;
+    assert.match(old, /class="lib-cover drawn">/);
+    assert.doesNotMatch(old, /cv-logo/);
+  } finally {
+    await setFlag(admin, 'coverstyle', true);
+    await admin.post('/admin/coverstyle', { style: 'd' });
+  }
+});
+
 test('หน้าแรกมีแถบเล่มใหม่ในคลัง และปิดคลังแล้วไม่มีเมนู หน้า แถบ และรูปปกตอนส่งงาน', async () => {
   const t = await as('teacher');
   const home = (await t.get('/')).text;

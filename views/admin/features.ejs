@@ -1,6 +1,6 @@
 <%- include('../partials/top') %>
 <%
-  const ICON = { mobilesheet: 'eye', chips: 'chips', notefile: 'file', counts: 'chart', quicksign: 'cards', voice: 'mic', filecheck: 'check', board: 'board', results: 'chart', pa: 'folder', qr: 'qr', prefs: 'moon', line: 'chat', teachlist: 'books', onemain: 'star', pdfonly: 'file', pdfmerge: 'copy', selfsign: 'edit', noactivity: 'close', ttimport: 'download', coverpreview: 'eye', namepick: 'users', pin: 'shield', namefix: 'edit', methodother: 'edit', notebook: 'books', notepdf: 'file', notesign: 'edit', homeact: 'check', library: 'books', libread: 'eye', coverswap: 'copy' };
+  const ICON = { mobilesheet: 'eye', chips: 'chips', notefile: 'file', counts: 'chart', quicksign: 'cards', voice: 'mic', filecheck: 'check', board: 'board', results: 'chart', pa: 'folder', qr: 'qr', prefs: 'moon', line: 'chat', teachlist: 'books', onemain: 'star', pdfonly: 'file', pdfmerge: 'copy', selfsign: 'edit', noactivity: 'close', ttimport: 'download', coverpreview: 'eye', namepick: 'users', pin: 'shield', namefix: 'edit', methodother: 'edit', notebook: 'books', notepdf: 'file', notesign: 'edit', homeact: 'check', library: 'books', libread: 'eye', coverswap: 'copy', coverstyle: 'books' };
 %>
 <div class="page-head">
   <div>
@@ -64,6 +64,24 @@
             <% } %>
           </div>
           <button class="btn btn-primary" type="submit">บันทึกมุมมอง</button>
+        </form>
+      </section>
+    <% } %>
+
+    <% if (ff.library && ff.coverstyle) { %>
+      <section class="card" id="coverstyle">
+        <h2>แบบปกที่ระบบวาด</h2>
+        <p class="muted small">ใช้กับเล่มในคลังงานที่ไม่มีรูปปก และบันทึกหลังแผนทุกเล่ม สีแยกตามชนิดงาน ภาพตัวอย่างเป็นข้อมูลสมมติ เปลี่ยนเมื่อไรก็ได้ มีผลกับทุกคนทันที</p>
+        <form method="post" action="/admin/coverstyle" data-confirm="เปลี่ยนแบบปกที่ระบบวาด มีผลกับคลังงานของทุกคนทันที" data-ok-label="บันทึก">
+          <div class="cvs-pick">
+            <% coverStyles.forEach((o, i) => { %>
+              <label class="cvs-opt">
+                <%- include('../partials/lib_cover', { b: { ...coverSample, kind: ['plan', 'manual', 'note', 'plan'][i], shelfLabel: ['แผนการจัดการเรียนรู้', 'คู่มือรายวิชา', 'บันทึกหลังแผน', 'แผนการจัดการเรียนรู้'][i] }, style: o.key }) %>
+                <span class="check"><input type="radio" name="style" value="<%= o.key %>" <%= coverStyle === o.key ? 'checked' : '' %>> <%= o.label %></span>
+              </label>
+            <% }) %>
+          </div>
+          <button class="btn btn-primary" type="submit">บันทึกแบบปก</button>
         </form>
       </section>
     <% } %>

@@ -795,6 +795,9 @@ router.get('/features', async (req, res) => {
     noteSign: features.noteSign(req.settings),
     libViews: features.LIBRARY_VIEWS,
     libView: features.libraryView(req.settings),
+    coverStyles: features.COVER_STYLES,
+    // ข้อมูลสมมติของภาพตัวอย่างปก
+    coverSample: { open: true, subject_code: 'ว30203', subject_name: 'ฟิสิกส์เพิ่มเติม 3', teacher_name: 'นายสมมติ ใจดี', gradeText: 'ชั้นมัธยมศึกษาปีที่ 5', termText: 'ภาคเรียนที่ 2 ปีการศึกษา 2569' },
     ready: Object.fromEntries(Object.entries(NEEDS).map(([k, [ok]]) => [k, Boolean(ok(req.settings))])),
   });
 });
@@ -844,6 +847,19 @@ router.post('/libview', async (req, res) => {
     await features.audit(req.me, `ตั้งมุมมองเริ่มต้นของคลังงาน ${opt ? opt.label : 'ตามขนาดจอ'}`, 'library_view');
   });
   done(req, res, '/admin/features#libview', 'บันทึกมุมมองเริ่มต้นของคลังงานเรียบร้อย');
+});
+
+// แบบปกที่ระบบวาด (ฟังก์ชันเสริม coverstyle) มีผลกับคลังงานทันที ไม่แก้ไฟล์ของใคร
+router.post('/coverstyle', async (req, res) => {
+  if (!req.ff.coverstyle) return fail(req, res, '/admin/features', 'เปิดฟังก์ชันปกที่ระบบวาดแบบใหม่ก่อน');
+  const opt = features.COVER_STYLES.find((o) => o.key === String((req.body || {}).style || ''));
+  if (!opt) return fail(req, res, '/admin/features#coverstyle', 'ไม่พบแบบปกที่เลือก');
+  if (opt.key === features.coverStyle(req.settings)) return done(req, res, '/admin/features#coverstyle', 'ไม่มีอะไรเปลี่ยน');
+  await q.tx(async () => {
+    await setSetting('cover_style', opt.key);
+    await features.audit(req.me, `ตั้งแบบปกที่ระบบวาด ${opt.label}`, 'cover_style');
+  });
+  done(req, res, '/admin/features#coverstyle', 'บันทึกแบบปกที่ระบบวาดเรียบร้อย');
 });
 
 // ดูตัวอย่างการจัดหน้าลงนามแบบหนึ่งจากเล่มจริง ไม่เปลี่ยนค่าที่ทุกคนใช้ ?web=bar หรือ ?pdf=summary · book = รหัสแผน (เล่ม)

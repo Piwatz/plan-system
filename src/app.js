@@ -137,6 +137,7 @@ function createApp(options = {}) {
       themeCss: themes.cssVars(theme) + (ff.prefs && night.key !== theme.key ? themes.cssVars(night, 'html.dark') : ''),
       fontFiles: [...new Set([...themes.fontFiles(theme), ...(ff.prefs ? themes.fontFiles(night) : [])])],
       logoUrl: settings.school_logo || '/static/img/school-logo-sm.png',
+      coverStyle: features.coverStyle(settings),
       // ชื่อระบบ ข้อมูลท้ายเว็บ และไอคอนแอป (src/site.js)
       site: site.of(settings),
       demo: config.DEMO,

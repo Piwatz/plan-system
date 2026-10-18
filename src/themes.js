@@ -16,6 +16,9 @@ const FONTS = {
   Krub: 'krub',
 };
 
+// สีปกที่ระบบวาดในคลังงาน แยกตามชนิดงาน (ฟังก์ชันเสริม coverstyle) ธีมใดอยากได้สีอื่นใส่ cvPlan cvManual cvNote ในธีมนั้น
+// ปกเป็นกระดาษ จึงใช้สีเดียวกันทั้งโหมดกลางวันและกลางคืน
+const COVER_BASE = { cvPlan: '#1D3A66', cvManual: '#17694F', cvNote: '#8E1B2C' };
 const STATUS_BASE = { ok: '#1E6E50', okBg: '#E1F2EA', wait: '#7A5200', waitBg: '#FBEFD5', back: '#A61B1B', backBg: '#FCE7E5' };
 
 const THEMES = {
@@ -39,7 +42,7 @@ function themeKey(k) {
 
 function resolve(key, { dark = false } = {}) {
   const k = dark && !THEMES[themeKey(key)].dark ? 'j' : themeKey(key);
-  const t = { ...STATUS_BASE, ...THEMES[k], key: k };
+  const t = { ...COVER_BASE, ...STATUS_BASE, ...THEMES[k], key: k };
   t.link = t.link || t.primary;
   t.sideMuted = t.sideMuted || 'rgba(255,255,255,.72)';
   t.sideBtn = t.sideBtn || 'rgba(0,0,0,.2)';
@@ -72,6 +75,9 @@ function cssVars(t, selector = ':root') {
     '--wait-bg': t.waitBg,
     '--back': t.back,
     '--back-bg': t.backBg,
+    '--cv-plan': t.cvPlan,
+    '--cv-manual': t.cvManual,
+    '--cv-note': t.cvNote,
     '--r': `${t.r}px`,
     '--rs': `${t.rs}px`,
     '--font': fam(t.body),

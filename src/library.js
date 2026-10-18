@@ -121,9 +121,23 @@ function swapOf(row, me, ff) {
   return row.cover_ref === DRAWN ? 'drawn' : row.cover_ref ? 'img' : 'none';
 }
 
+// ระดับชั้นบนปกที่ระบบวาด ม.5 เป็น ชั้นมัธยมศึกษาปีที่ 5 · ป.3 เป็น ชั้นประถมศึกษาปีที่ 3 · แบบอื่น (เช่น ม.4/1) ใส่ ชั้น นำหน้าตามที่กรอก
+function gradeText(g) {
+  const v = String(g || '').trim();
+  if (!v) return '';
+  const m = v.match(/^(ม|ป)\.?\s*([1-6])$/);
+  if (m) return `ชั้น${m[1] === 'ม' ? 'มัธยม' : 'ประถม'}ศึกษาปีที่ ${m[2]}`;
+  return v.startsWith('ชั้น') ? v : `ชั้น ${v}`;
+}
+
+function termText(r) {
+  if (!r.academic_year) return '';
+  return `${r.semester ? `ภาคเรียนที่ ${r.semester} ` : ''}ปีการศึกษา ${r.academic_year}`;
+}
+
 // ข้อมูลสำหรับหน้าเว็บ
 function decorate(rows, me, ff) {
-  return rows.map((r) => ({ ...r, open: canOpen(me, r, ff), href: openHref(r), cover: coverUrl(r), swap: swapOf(r, me, ff), mine: me.id === r.teacher_id, shelfLabel: (SHELF[r.kind] || {}).label || '' }));
+  return rows.map((r) => ({ ...r, gradeText: gradeText(r.grade_level), termText: termText(r), open: canOpen(me, r, ff), href: openHref(r), cover: coverUrl(r), swap: swapOf(r, me, ff), mine: me.id === r.teacher_id, shelfLabel: (SHELF[r.kind] || {}).label || '' }));
 }
 
 // เปิดอ่านงานคนอื่นจากคลังได้ไหม (สวิตช์ libread) ใช้กับไฟล์งานและหน้าพิมพ์บันทึกหลังแผนทั้งเล่ม
@@ -140,4 +154,4 @@ async function readable(ff, sub, { book = false } = {}) {
   return r.n > 0 && !r.bad;
 }
 
-module.exports = { DRAWN, PAGE, COVER_MAX, SHELVES, SHELF, page, recent, canOpen, openHref, coverUrl, decorate, readable };
+module.exports = { DRAWN, PAGE, COVER_MAX, SHELVES, SHELF, page, recent, canOpen, openHref, coverUrl, gradeText, termText, decorate, readable };

@@ -1,6 +1,14 @@
-<%# ปกของเล่มในคลังงาน: รูปปกเล็กจาก Drive (โหลดเมื่อเลื่อนถึง) หรือปกที่ระบบวาดจากชื่อวิชาและชื่อครู · กุญแจ = เห็นปกแต่เปิดอ่านไม่ได้ %>
-<span class="lib-cover<%= b.cover ? '' : ' drawn' %>">
-  <% if (b.cover) { %><img src="<%= b.cover %>" alt="" loading="lazy" decoding="async" width="300" height="424"><% } else { %>
+<%# ปกของเล่มในคลังงาน: รูปปกเล็กจาก Drive (โหลดเมื่อเลื่อนถึง) หรือปกที่ระบบวาดจากชื่อวิชาและชื่อครู · กุญแจ = เห็นปกแต่เปิดอ่านไม่ได้
+    ปกที่ระบบวาดแบบใหม่ (ฟังก์ชันเสริม coverstyle) ทุกแบบใช้ HTML ชุดเดียว หน้าตาแต่ละแบบอยู่ใน app.css (.cv-a ถึง .cv-d) สีตามชนิดงาน (.k-plan .k-manual .k-note)
+    style = บังคับแบบ (ตัวอย่างในหน้าฟังก์ชันเสริม) %>
+<% const cvs = typeof style !== 'undefined' ? style : coverStyle; %>
+<span class="lib-cover<%= b.cover ? '' : ' drawn' %><%= !b.cover && cvs ? ` cv cv-${cvs} k-${b.kind}` : '' %>">
+  <% if (b.cover) { %><img src="<%= b.cover %>" alt="" loading="lazy" decoding="async" width="300" height="424"><% } else if (cvs) { %>
+    <span class="cv-frame"></span><span class="cv-top"><span class="cv-logo"><img src="<%= logoUrl %>" alt="" loading="lazy" decoding="async"></span><span class="cv-school"><%= settings.school_name %></span></span>
+    <span class="cv-kind"><b><%= b.shelfLabel %></b><span class="cv-bar"></span></span>
+    <span class="cv-mid"><span class="cv-code">รหัสวิชา <%= b.subject_code %></span><b class="cv-name"><%= b.subject_name %></b><% if (b.gradeText) { %><span class="cv-sm"><%= b.gradeText %></span><% } %></span>
+    <span class="cv-bot"><span class="cv-line"></span><span>ครูผู้สอน <%= b.teacher_name %></span><% if (b.termText) { %><span class="cv-sm"><%= b.termText %></span><% } %></span>
+  <% } else { %>
     <span class="c-bar"></span><b class="c-shelf"><%= b.shelfLabel %></b><span class="c-code"><%= b.subject_code %></span><span class="c-name"><%= b.subject_name %></span><span class="c-teacher"><%= b.teacher_name %></span><span class="c-bar"></span>
   <% } %>
   <% if (!b.open) { %><span class="lib-lock" title="เปิดอ่านได้เฉพาะเจ้าของ"><%- icon('lock', 14) %></span><% } %>
