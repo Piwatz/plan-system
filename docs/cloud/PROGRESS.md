@@ -713,3 +713,4 @@
   - npm test ผ่าน 155 ข้อ (เพิ่ม 2 ข้อใน cover.test.js) · ลองจริงใน plan-demo: ผู้ดูแลเปิดกล่อง ติ๊กหน้า 1 ต่อปกที่ระบบวาด บันทึกสำเร็จ ไฟล์ใหม่ A4 1 หน้า ประวัติขึ้นถูก · ภาพ `design-mockup/coverpdf-dialog.jpg` `coverpdf-result.jpg` (ซ้าย PDF ขวาปกในคลัง) `coverpdf-4styles.jpg` (วาดแบบ ก ข ค ง)
   - ยังไม่ได้ลอง: Safari ไอแพด ไอโฟน (ต้องให้ครูเต้ยลอง) · ไฟล์ใหญ่หลายสิบ MB · จอมือถือของกล่องเปลี่ยนปก
   - **รอผู้ใช้สั่งขึ้นเว็บ** ไม่มี migration
+- **ขึ้นเว็บจริงแล้ว 19 ต.ค. 2569 (เปลี่ยนปกในไฟล์ PDF coverpdf):** Version dc59c25a (Claude รันเองตามที่ครูเต้ยสั่ง) · /login 200 · บนเว็บมี front-dlg ใน app.css, coverdraw.js 200, editFront ใน pdfmerge.js · ไม่มี migration · สวิตช์เปิดเองตามค่าเริ่มต้น · push GitHub แล้ว · ยังรอครูเต้ยลองบน Safari ไอแพด
