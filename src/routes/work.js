@@ -369,6 +369,20 @@ function lockTeacher(teacherId) {
 
 // ---------- คู่มือรายวิชา และ แผนการจัดการเรียนรู้ ----------
 
+// คู่มือใช้เลขบันทึกข้อความเลขเดียวทุกวิชา (ฟังก์ชันเสริม docnoshare): คู่มือที่ยังไม่มีเลข เติมเลขจากคู่มือเล่มอื่นของครูคนเดิมในภาคเดียวกันให้
+// เติมแค่ในช่องของฟอร์ม ครูแก้ได้ · คืน { no, code } หรือ null
+async function sharedDocNo(req, sub, teacherId) {
+  if (!req.ff.docnoshare || !req.ff.docnoreq || sub.doc_type !== 'manual' || sub.doc_no) return null;
+  const r = await q.get(
+    "SELECT doc_no, subject_code FROM submissions WHERE teacher_id = ? AND doc_type = 'manual' AND academic_year = ? AND semester = ? AND id != ? AND COALESCE(doc_no, '') != '' ORDER BY updated_at DESC, id DESC LIMIT 1",
+    teacherId,
+    sub.academic_year,
+    sub.semester,
+    sub.id || 0
+  );
+  return r ? { no: r.doc_no, code: r.subject_code } : null;
+}
+
 router.get('/works/new', async (req, res) => {
   const type = WORK_TYPES.includes(req.query.type) ? req.query.type : 'manual';
   if (!req.me.department_id) throw new UserError('บัญชีของคุณยังไม่ได้กำหนดกลุ่มสาระ กรุณาแจ้งผู้ดูแลระบบ');
@@ -397,6 +411,7 @@ router.get('/works/new', async (req, res) => {
     window: submitWindow(req.settings),
     isNew: true,
     pc: await checkInfo(req, sub),
+    sharedNo: await sharedDocNo(req, sub, req.me.id),
   });
 });
 
@@ -688,6 +703,7 @@ router.get('/s/:id/edit', async (req, res) => {
       window: submitWindow(req.settings),
       isNew: false,
       pc: await checkInfo(req, sub),
+      sharedNo: await sharedDocNo(req, sub, sub.teacher_id),
     });
   }
   const plan = await q.get(`SELECT ${wf.subCols()} FROM submissions WHERE id = ?`, sub.parent_id);

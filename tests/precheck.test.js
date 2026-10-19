@@ -268,6 +268,25 @@ test('เลขที่บันทึกข้อความ: กรอกเ
   await db.setSetting('ff_docnoreq', '1');
 });
 
+test('คู่มือใช้เลขบันทึกข้อความเลขเดียว: เล่มใหม่ของภาคเดียวกันเติมเลขเดิมให้ แผนไม่เติม ปิดสวิตช์ไม่เติม (docnoshare)', async () => {
+  const t = await as('sci2');
+  const row = await db.q.get("SELECT doc_no, subject_code FROM submissions WHERE subject_code = 'ว39011'");
+  const num = /วก\.(\d+)\//.exec(row.doc_no)[1];
+  const page = (await t.get('/works/new?type=manual')).text;
+  assert.match(page, new RegExp(`name="doc_no_num" inputmode="numeric" maxlength="6" value="${num}"`));
+  assert.match(page, /ใช้เลขเดียวกับคู่มือ ว39011 ระบบเติมให้แล้ว/);
+  assert.doesNotMatch((await t.get('/works/new?type=plan')).text, /ใช้เลขเดียวกับคู่มือ/, 'แผนไม่เติม');
+  // ครูอีกคนไม่ได้เลขของคนอื่น
+  const other = (await (await as('scihead')).get('/works/new?type=manual')).text;
+  assert.doesNotMatch(other, new RegExp(`value="${num}"`));
+  await db.setSetting('ff_docnoshare', '0');
+  try {
+    assert.doesNotMatch((await t.get('/works/new?type=manual')).text, /ใช้เลขเดียวกับคู่มือ/);
+  } finally {
+    await db.setSetting('ff_docnoshare', '1');
+  }
+});
+
 test('หน้าแผนและคู่มือของฉันมีปุ่มพิมพ์ในแถวงานที่ส่งแล้ว ปิดสวิตช์แล้วหาย', async () => {
   const w = await db.q.get(
     "SELECT s.id, u.username FROM submissions s JOIN users u ON u.id = s.teacher_id WHERE s.subject_code = 'ว39011' AND s.status <> 'draft'"
