@@ -473,6 +473,142 @@
     });
   });
 
+  // ---------- เปลี่ยนปก (ฟังก์ชันเสริม coverpdf) ----------
+  // เปิดไฟล์เดิม แสดงภาพหน้าแรก ๆ ให้ติ๊กหน้าที่จะลบ เลือกปกใหม่ (ปกที่ระบบวาด หรือไฟล์ปก) แล้วทำไฟล์ใหม่ในเครื่องนี้ (pdf-lib)
+  // ส่งทางเดียวกับปุ่มเพิ่มหน้าปก พร้อมบอก front=1 removed drawn newcover ให้เซิร์ฟเวอร์บันทึกประวัติ
+  const FRONT_SHOW = 6;
+  document.querySelectorAll('[data-front-open]').forEach((btn) => {
+    const dlg = document.getElementById(btn.dataset.frontOpen);
+    if (!dlg) return;
+    const box = dlg.querySelector('[data-front-pages]');
+    const sum = dlg.querySelector('[data-front-sum]');
+    const fileIn = dlg.querySelector('[data-front-file]');
+    const fname = dlg.querySelector('[data-front-fname]');
+    const drawnBox = dlg.querySelector('[data-front-drawn]');
+    let bytes = null;
+    let total = 0;
+    let coverFile = null;
+    const choice = () => (dlg.querySelector('input[name=front_new]:checked') || {}).value || 'none';
+    const removed = () => [...box.querySelectorAll('input:checked')].map((i) => Number(i.value));
+    function refresh() {
+      if (drawnBox) drawnBox.hidden = choice() !== 'drawn';
+      const del = removed();
+      const mode = choice();
+      const parts = [];
+      if (del.length) parts.push('ลบหน้า ' + del.join(', '));
+      if (mode === 'drawn') parts.push('ต่อปกที่ระบบวาดเป็นหน้า 1');
+      if (mode === 'file' && coverFile) parts.push('ต่อไฟล์ ' + coverFile.name + ' ไว้หน้าแรก');
+      const left = total - del.length + (mode === 'drawn' ? 1 : 0);
+      sum.textContent = total ? (parts.length ? parts.join(' แล้ว') : 'ยังไม่ได้เลือกหน้าที่จะลบหรือปกใหม่') + (parts.length && mode !== 'file' ? ' ไฟล์ใหม่มี ' + left + ' หน้า' : '') : '';
+    }
+    dlg.addEventListener('change', (e) => {
+      if (e.target === fileIn) {
+        const f = fileIn.files[0];
+        fileIn.value = '';
+        if (f && !/\.pdf$/i.test(f.name)) tell('เลือกไฟล์ปกเป็น PDF');
+        else if (f) coverFile = f;
+        fname.textContent = coverFile ? coverFile.name : 'ยังไม่ได้เลือก';
+        if (coverFile) dlg.querySelector('input[name=front_new][value=file]').checked = true;
+      }
+      if (e.target.closest('[data-front-pages]')) e.target.closest('label').classList.toggle('on', e.target.checked);
+      refresh();
+    });
+    dlg.querySelector('[data-front-cancel]').addEventListener('click', () => dlg.close());
+    btn.addEventListener('click', async () => {
+      dlg.showModal();
+      refresh();
+      if (bytes) return;
+      try {
+        const res = await fetch(dlg.dataset.file);
+        if (!res.ok) throw new SendError('เปิดไฟล์เดิมไม่ได้ ลองใหม่อีกครั้ง');
+        bytes = new Uint8Array(await res.arrayBuffer());
+        const task = openPdf(await pdfjsLib(), bytes.slice());
+        try {
+          const doc = await task.promise;
+          total = doc.numPages;
+          box.textContent = '';
+          for (let n = 1; n <= Math.min(FRONT_SHOW, total); n++) {
+            const page = await doc.getPage(n);
+            const vp0 = page.getViewport({ scale: 1 });
+            const vp = page.getViewport({ scale: 300 / vp0.width });
+            const canvas = document.createElement('canvas');
+            canvas.width = Math.floor(vp.width);
+            canvas.height = Math.floor(vp.height);
+            const ctx = canvas.getContext('2d');
+            ctx.fillStyle = '#fff';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            await page.render({ canvas, canvasContext: ctx, viewport: vp }).promise;
+            const label = document.createElement('label');
+            label.className = 'front-page';
+            label.innerHTML = '<input type="checkbox" value="' + n + '"><span class="fp-del">ลบ</span><span class="fp-n">หน้า ' + n + '</span>';
+            label.insertBefore(canvas, label.lastChild);
+            box.appendChild(label);
+          }
+          if (total > FRONT_SHOW) box.insertAdjacentHTML('beforeend', '<span class="muted small front-more">แสดง ' + FRONT_SHOW + ' หน้าแรก จากทั้งหมด ' + total + ' หน้า</span>');
+        } finally {
+          task.destroy().catch(() => {});
+        }
+        refresh();
+      } catch (err) {
+        bytes = null;
+        box.textContent = (err && err.userMessage) || 'เปิดไฟล์เดิมไม่ได้ ลองใหม่อีกครั้ง';
+      }
+    });
+    dlg.querySelector('[data-front-ok]').addEventListener('click', async () => {
+      if (!bytes || !total) return tell('รอให้เปิดไฟล์เสร็จก่อน');
+      const del = removed();
+      const mode = choice();
+      if (mode === 'file' && !coverFile) return tell('ยังไม่ได้เลือกไฟล์ปก กดที่ ไฟล์ปก PDF เพื่อเลือก');
+      if (!del.length && mode === 'none') return tell('ยังไม่ได้เลือกหน้าที่จะลบหรือปกใหม่');
+      if (del.length >= total && mode === 'none') return tell('ลบทุกหน้าไม่ได้ ต้องเหลืออย่างน้อย 1 หน้า');
+      dlg.close();
+      const ok = await ask('เปลี่ยนปก ' + dlg.dataset.name + '\n' + sum.textContent + '\nไฟล์เดิมเก็บไว้ในไฟล์รุ่นก่อนแก้ไข ผู้ตรวจไม่ต้องลงนามใหม่', { icon: 'note', ok: 'เปลี่ยนปก' });
+      if (!ok) return dlg.showModal();
+      const url = dlg.dataset.action;
+      try {
+        showBusy('กำลังเปลี่ยนปก', false);
+        if (!window.PDFLib) await loadScript('/vendor/pdf-lib/pdf-lib.min.js');
+        if (!window.PdfMerge) await loadScript('/static/js/pdfmerge.js');
+        let coverPng = null;
+        if (mode === 'drawn') {
+          if (!window.CoverDraw) await loadScript('/static/js/coverdraw.js');
+          // วาดจากปกตัวใหญ่ที่ซ่อนไว้นอกจอ ตัวหนังสือจึงคมและตัดบรรทัดเหมือนในคลังงาน
+          const wrap = document.createElement('div');
+          wrap.className = 'front-render';
+          wrap.appendChild(drawnBox.querySelector('.lib-cover').cloneNode(true));
+          document.body.appendChild(wrap);
+          try {
+            const canvas = await window.CoverDraw.draw(wrap.firstChild, 1654);
+            const png = await new Promise((r) => canvas.toBlob(r, 'image/png'));
+            if (!png) throw new SendError('วาดปกไม่สำเร็จ ลองใหม่อีกครั้ง');
+            coverPng = new Uint8Array(await png.arrayBuffer());
+          } finally {
+            wrap.remove();
+          }
+        }
+        const coverPdf = mode === 'file' ? new Uint8Array(await coverFile.arrayBuffer()) : null;
+        const m = await window.PdfMerge.editFront(window.PDFLib, bytes.slice(), { remove: del, coverPng, coverPdf });
+        const merged = new Blob([m.bytes], { type: 'application/pdf' });
+        const thumb = dlg.dataset.library ? await makeThumb(new Uint8Array(m.bytes)) : null;
+        showBusy('กำลังเปลี่ยนปก', true);
+        setProgress(0);
+        const all = merged.size + (thumb ? thumb.size : 0);
+        const start = await request('POST', '/upload/start', new URLSearchParams({ form: url, field: 'main_files', name: 'merged.pdf', merged: '2', size: String(merged.size) }), { 'Content-Type': 'application/x-www-form-urlencoded' });
+        await sendChunks(start.token, merged, start.chunk, (n) => setProgress(Math.min(99, Math.round((n / all) * 100))));
+        const data = new URLSearchParams({ front: '1', removed: del.join(','), drawn: mode === 'drawn' ? '1' : '', newcover: mode === 'file' ? '1' : '' });
+        data.append('upload_main_files', start.token);
+        if (thumb) data.append('upload_cover_thumb', await uploadBlob(thumb, { form: url, field: 'cover_thumb', name: 'cover.jpg' }));
+        setProgress(100);
+        const r = await request('POST', url, data, { 'Content-Type': 'application/x-www-form-urlencoded' });
+        window.location.href = r.redirect || window.location.pathname;
+      } catch (err) {
+        showPaused(false);
+        hideBusy();
+        tell((err && err.userMessage) || NET_ERROR);
+      }
+    });
+  });
+
   // ส่งต่อจริง: ฟอร์มมีไฟล์ใช้ XHR พร้อมแถบความคืบหน้า ฟอร์มอื่นปล่อยเบราว์เซอร์ส่งตามปกติ
   function proceed(e, form, submitter) {
     if (form.hasAttribute('data-covers')) {

@@ -147,10 +147,24 @@ function editable(req, sub) {
 }
 
 // เพิ่มหน้าปก: เจ้าของงานจนกว่าผู้ตรวจคนสุดท้ายจะลงนาม · ผู้ดูแลระบบได้ทุกขั้น (งานของคนอื่น)
-function canAddCover(req, sub) {
-  if (!req.ff.addcover || !sub || !WORK_TYPES.includes(sub.doc_type)) return false;
+function coverRule(req, sub) {
+  if (!sub || !WORK_TYPES.includes(sub.doc_type)) return false;
   if (wf.isOwner(req.me, sub)) return sub.status !== 'approved';
   return Boolean(req.me.is_admin);
+}
+function canAddCover(req, sub) {
+  return Boolean(req.ff.addcover) && coverRule(req, sub);
+}
+// เปลี่ยนปก (ฟังก์ชันเสริม coverpdf): ติ๊กหน้าที่จะลบแล้วต่อปกใหม่ กติกาเดียวกับเพิ่มหน้าปก · ปกที่ระบบวาดเฉพาะผู้ดูแลระบบ
+function canFrontPages(req, sub) {
+  return Boolean(req.ff.coverpdf) && coverRule(req, sub);
+}
+function canDrawnCover(req, sub) {
+  return canFrontPages(req, sub) && Boolean(req.me.is_admin);
+}
+// หน้าที่ลบ เลขหน้าเริ่มที่ 1 ไม่ซ้ำ เรียงน้อยไปมาก
+function pageList(v) {
+  return [...new Set(String(v || '').split(',').map((x) => intOrNull(x)).filter((n) => n > 0 && n <= 999))].sort((a, b) => a - b).slice(0, 50);
 }
 
 function submitWindow(settings) {
@@ -647,6 +661,12 @@ router.get('/s/:id', async (req, res) => {
     canPlan: !req.ff.onemain || !(await teaching.planBlocked(req.me, Number(req.settings.academic_year), Number(req.settings.semester))),
     approveLabel: approveLabel(sub),
     canAddCover: canAddCover(req, sub),
+    canFrontPages: canFrontPages(req, sub),
+    // ปกที่ระบบวาดสำหรับต่อเป็นหน้าแรกของ PDF (เฉพาะผู้ดูแลระบบ) หน้าตาเดียวกับคลังงาน ตราใช้รูปใหญ่ให้คมตอนพิมพ์
+    drawnBook: canDrawnCover(req, sub)
+      ? { kind: sub.doc_type, shelfLabel: library.SHELF[sub.doc_type].label, subject_code: sub.subject_code, subject_name: sub.subject_name, teacher_name: sub.teacher_name, gradeText: library.gradeText(sub.grade_level), termText: library.termText(sub), cover: null, open: true }
+      : null,
+    logoBig: req.settings.school_logo || '/static/img/school-logo.png',
     // ลายเซ็นเดิมของฉันในงานนี้ (ฟังก์ชันเสริม resign) มีปุ่มใช้ลายเซ็นใหม่
     oldSig: req.ff.resign && req.me.signature ? await resign.oldSignature(req.me.id, sub.id) : null,
     // งานของฉันที่ส่งตอนยังไม่มีลายเซ็น (ฟังก์ชันเสริม sigfill) มีปุ่มใส่ลายเซ็นของฉันในงานนี้
@@ -802,9 +822,17 @@ router.post('/s/:id/submit', async (req, res) => {
 
 // เพิ่มหน้าปก: เบราว์เซอร์รวมไฟล์ปกไว้หน้าแรกของไฟล์เดิมแล้วส่งมาเป็นไฟล์ใหม่ (upload_main_files) ไม่เปลี่ยนขั้นการตรวจ
 // ไฟล์เดิมเก็บเป็นประวัติ บันทึกในประวัติของงาน (action cover) และ audit_log
+// เปลี่ยนปก (front=1 ฟังก์ชันเสริม coverpdf): เบราว์เซอร์ตัดหน้าที่ติ๊ก (removed) แล้วต่อปกใหม่ (drawn = ปกที่ระบบวาด · newcover = ไฟล์ปก) บันทึก action frontpages
 router.post('/s/:id/cover', async (req, res) => {
   const sub = await viewable(req, req.params.id);
-  if (!canAddCover(req, sub)) throw new UserError('เพิ่มหน้าปกงานนี้ไม่ได้');
+  const b = req.body || {};
+  const front = b.front === '1';
+  const removed = front ? pageList(b.removed) : [];
+  const drawn = front && b.drawn === '1';
+  if (front ? !canFrontPages(req, sub) : !canAddCover(req, sub)) throw new UserError(front ? 'เปลี่ยนปกงานนี้ไม่ได้' : 'เพิ่มหน้าปกงานนี้ไม่ได้');
+  if (drawn && !canDrawnCover(req, sub)) throw new UserError('ต่อปกที่ระบบวาดได้เฉพาะผู้ดูแลระบบ');
+  if (front && !removed.length && !drawn && b.newcover !== '1') throw new UserError('ยังไม่ได้เลือกหน้าที่จะลบหรือปกใหม่');
+  const what = front ? [removed.length ? `ลบหน้า ${removed.join(', ')}` : '', drawn ? 'ต่อปกที่ระบบวาด' : b.newcover === '1' ? 'ต่อไฟล์ปกใหม่' : ''].filter(Boolean).join(' แล้ว') : '';
   const files = await up.take(req, 'main_files');
   const cover = req.ff.library ? await up.takeCover(req, library.COVER_MAX) : null;
   let oldCover = null;
@@ -815,7 +843,7 @@ router.post('/s/:id/cover', async (req, res) => {
       await q.run("UPDATE files SET is_current = 0 WHERE submission_id = ? AND kind = 'main' AND is_current = 1", sub.id);
       await up.attach(sub.id, files, 'main');
       const byAdmin = !wf.isOwner(req.me, sub);
-      await wf.log(sub.id, req.me, { step_label: byAdmin ? 'ผู้ดูแลระบบ' : 'ครูผู้สอน', action: 'cover', comment: '' });
+      await wf.log(sub.id, req.me, { step_label: byAdmin ? 'ผู้ดูแลระบบ' : 'ครูผู้สอน', action: front ? 'frontpages' : 'cover', comment: what });
       return cover ? up.useCover(sub.id, cover) : null;
     });
   } catch (e) {
@@ -823,8 +851,9 @@ router.post('/s/:id/cover', async (req, res) => {
     throw e;
   }
   if (oldCover) await up.trashAll([oldCover]);
-  await features.audit(req.me, `เพิ่มหน้าปก${wf.DOC_TYPES[sub.doc_type].label} ${sub.subject_code} ของ ${sub.teacher_name}`, `submission ${sub.id}`);
-  respond(req, res, `/s/${sub.id}`, 'success', 'เพิ่มหน้าปกเรียบร้อย ไฟล์เดิมเก็บไว้ในไฟล์รุ่นก่อนแก้ไข');
+  const label = `${wf.DOC_TYPES[sub.doc_type].label} ${sub.subject_code} ของ ${sub.teacher_name}`;
+  await features.audit(req.me, front ? `เปลี่ยนปก${label} ${what}` : `เพิ่มหน้าปก${label}`, `submission ${sub.id}`);
+  respond(req, res, `/s/${sub.id}`, 'success', `${front ? 'เปลี่ยนปก' : 'เพิ่มหน้าปก'}เรียบร้อย ไฟล์เดิมเก็บไว้ในไฟล์รุ่นก่อนแก้ไข`);
 });
 
 // ผู้ดูแลระบบส่งกลับให้ครูแก้แทนผู้ตรวจ (ฟังก์ชันเสริม adminreturn) ไม่แจ้งใคร บันทึกในประวัติและ audit_log
@@ -886,7 +915,7 @@ async function uploadTarget(req, b) {
   const ac = /^\/s\/(\d+)\/cover$/.exec(form);
   if (ac) {
     const sub = await viewable(req, ac[1]);
-    if (!canAddCover(req, sub)) throw new UserError('เพิ่มหน้าปกงานนี้ไม่ได้');
+    if (!canAddCover(req, sub) && !canFrontPages(req, sub)) throw new UserError('เพิ่มหน้าปกงานนี้ไม่ได้');
     return sub;
   }
   const m = /^\/s\/(\d+)$/.exec(form);

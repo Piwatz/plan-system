@@ -320,8 +320,32 @@
             </li>
           <% } %>
         </ul>
-        <% const mainPdf = canAddCover && current.find((f) => f.kind === 'main' && /pdf/.test(f.mime)); %>
-        <% if (mainPdf) { %>
+        <% const mainPdf = (canAddCover || canFrontPages) && current.find((f) => f.kind === 'main' && /pdf/.test(f.mime)); %>
+        <% if (mainPdf && canFrontPages) { %>
+          <%# เปลี่ยนปก (ฟังก์ชันเสริม coverpdf): ดูภาพหน้าแรก ๆ ติ๊กหน้าที่จะลบ แล้วต่อปกใหม่ ทำในเบราว์เซอร์แล้วส่งเป็นไฟล์ใหม่ทางเดียวกับปุ่มเพิ่มหน้าปก %>
+          <div class="add-cover">
+            <button type="button" class="btn btn-sm btn-primary" data-front-open="front-dlg"><%- icon('edit', 16) %> <%= isOwner ? 'เปลี่ยนปก' : 'เปลี่ยนปกแทนครู' %></button>
+            <small class="muted">ดูหน้าแรก ๆ ของไฟล์ ติ๊กหน้าที่จะลบ แล้วต่อปกใหม่<%= drawnBook ? ' หรือปกที่ระบบวาด' : '' %> ผู้ตรวจไม่ต้องลงนามใหม่</small>
+          </div>
+          <dialog class="modal front-dlg" id="front-dlg" data-action="/s/<%= sub.id %>/cover" data-file="/f/<%= mainPdf.id %>/raw" data-name="<%= mainPdf.original_name %>" data-library="<%= ff.library ? '1' : '' %>">
+            <h3>เปลี่ยนปก <%= sub.subject_code %></h3>
+            <p class="front-step"><b>1</b> ติ๊กหน้าที่จะลบ <span class="muted small">กดที่ภาพหน้าที่ไม่ต้องการ</span></p>
+            <div class="front-pages" data-front-pages><span class="muted small">กำลังเปิดไฟล์</span></div>
+            <p class="front-step"><b>2</b> ปกใหม่</p>
+            <div class="front-opts">
+              <label><input type="radio" name="front_new" value="none"<%= drawnBook ? '' : ' checked' %>> ไม่ต่อปกใหม่</label>
+              <% if (drawnBook) { %><label><input type="radio" name="front_new" value="drawn" checked> ปกที่ระบบวาด แบบเดียวกับคลังงาน</label><% } %>
+              <label><input type="radio" name="front_new" value="file"> ไฟล์ปก PDF <span class="muted small" data-front-fname>ยังไม่ได้เลือก</span><input type="file" accept=".pdf,application/pdf" hidden data-front-file></label>
+            </div>
+            <% if (drawnBook) { %><div class="front-drawn" data-front-drawn><%- include('partials/lib_cover', { b: drawnBook, logoUrl: logoBig }) %></div><% } %>
+            <p class="front-sum" data-front-sum></p>
+            <div class="modal-actions">
+              <button type="button" class="btn btn-ghost btn-lg" data-front-cancel>ยกเลิก</button>
+              <button type="button" class="btn btn-primary btn-lg" data-front-ok>บันทึก</button>
+            </div>
+          </dialog>
+        <% } %>
+        <% if (mainPdf && canAddCover) { %>
           <form class="add-cover" method="post" action="/s/<%= sub.id %>/cover" data-add-cover data-file="/f/<%= mainPdf.id %>/raw" data-name="<%= mainPdf.original_name %>" data-library="<%= ff.library ? '1' : '' %>">
             <label class="btn btn-sm btn-primary"><%- icon('plus', 16) %> <%= isOwner ? 'เพิ่มหน้าปก' : 'เพิ่มหน้าปกแทนครู' %><input type="file" accept=".pdf,application/pdf" hidden data-cover-file></label>
             <small class="muted">ลืมใส่ปก เลือกไฟล์ปก PDF ระบบต่อไว้หน้าแรกของไฟล์เดิมให้ ไม่ต้องส่งใหม่ ผู้ตรวจไม่ต้องลงนามใหม่</small>

@@ -1282,3 +1282,30 @@ a.lib-cv:hover .lib-cover { box-shadow: 0 0 0 3px var(--primary); }
 .cell-wait:hover { border-style: solid; }
 .m-tile.tile-wait { border: 2px dashed var(--wait); background: var(--wait-bg); color: var(--wait); }
 .docno-shared { color: var(--ok); display: flex; gap: 4px; align-items: flex-start; }
+
+/* ---------- เปลี่ยนปก (ฟังก์ชันเสริม coverpdf) ภาพหน้าแรก ๆ ติ๊กหน้าที่จะลบ แล้วเลือกปกใหม่ ---------- */
+dialog.front-dlg { width: min(720px, calc(100vw - 24px)); max-height: calc(100vh - 24px); overflow: auto; text-align: left; padding: 18px 16px; }
+.front-dlg h3 { margin: 0 0 6px; }
+.front-step { margin: 14px 0 8px; font-weight: 600; }
+.front-step > b { display: inline-grid; place-items: center; width: 26px; height: 26px; border-radius: 50%; background: var(--primary); color: #fff; margin-right: 6px; }
+.front-pages { display: grid; grid-template-columns: repeat(auto-fill, minmax(104px, 1fr)); gap: 10px; }
+.front-page { position: relative; display: flex; flex-direction: column; align-items: center; gap: 4px; cursor: pointer; }
+.front-page input { position: absolute; top: 6px; left: 6px; width: 22px; height: 22px; z-index: 1; }
+.front-page canvas { width: 100%; height: auto; border: 2px solid var(--line); border-radius: 4px; box-shadow: 1px 2px 5px rgba(15, 30, 51, 0.15); }
+.front-page .fp-n { font-size: 0.9rem; }
+.front-page .fp-del { display: none; position: absolute; top: 34%; left: 50%; transform: translateX(-50%); padding: 2px 12px; border-radius: 99px; background: var(--back); color: #fff; font-weight: 700; z-index: 1; }
+.front-page.on canvas { border-color: var(--back); opacity: 0.45; }
+.front-page.on .fp-del { display: block; }
+.front-page.on .fp-n { color: var(--back); font-weight: 600; text-decoration: line-through; }
+.front-more { grid-column: 1 / -1; }
+.front-opts { display: flex; flex-direction: column; gap: 8px; }
+.front-opts label { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; padding: 8px 10px; border: 1px solid var(--line); border-radius: var(--rs); cursor: pointer; }
+.front-opts label:has(input:checked) { border-color: var(--primary); background: var(--soft); }
+.front-drawn { margin-top: 10px; }
+.front-drawn .lib-cover { width: 170px; }
+.front-drawn[hidden] { display: none; }
+.front-sum { margin: 12px 0 0; padding: 8px 10px; border-radius: var(--rs); background: var(--head-bg); font-weight: 600; }
+.front-sum:empty { display: none; }
+/* ปกตัวใหญ่ที่ซ่อนนอกจอ ใช้วาดลง PDF ไม่แสดงให้เห็น */
+.front-render { position: fixed; left: -10000px; top: 0; width: 620px; }
+.front-render .lib-cover { width: 620px; border-radius: 0; box-shadow: none; }

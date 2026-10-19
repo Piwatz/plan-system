@@ -39,5 +39,43 @@
     return { bytes: await out.save(), pages: out.getPageCount() };
   }
 
-  return { mergePdfs, PdfError };
+  // เปลี่ยนปก (ฟังก์ชันเสริม coverpdf): ลบหน้าที่ติ๊ก (remove = เลขหน้าเริ่มที่ 1) แล้วต่อปกใหม่ไว้หน้าแรก
+  // coverPng = รูปปกที่ระบบวาด (เต็มหน้า A4) · coverPdf = ไฟล์ปกที่เลือกเอง · แก้ในไฟล์เดิม ที่คั่นหน้าและข้อมูลไฟล์ยังอยู่
+  const A4 = [595.28, 841.89];
+  async function editFront(PDFLib, bytes, opts) {
+    const { PDFDocument } = PDFLib;
+    const o = opts || {};
+    let doc;
+    try {
+      doc = await PDFDocument.load(bytes, { ignoreEncryption: true, updateMetadata: false });
+    } catch {
+      throw new PdfError('เปิดไฟล์เดิมไม่ได้ จึงเปลี่ยนปกไม่ได้');
+    }
+    if (doc.isEncrypted) throw new PdfError('ไฟล์เดิมตั้งรหัสผ่านไว้ จึงเปลี่ยนปกไม่ได้');
+    const total = doc.getPageCount();
+    const remove = [...new Set(o.remove || [])].filter((n) => n >= 1 && n <= total).sort((a, b) => b - a);
+    if (remove.length >= total && !o.coverPng && !o.coverPdf) throw new PdfError('ลบทุกหน้าไม่ได้ ต้องเหลืออย่างน้อย 1 หน้า');
+    for (const n of remove) doc.removePage(n - 1);
+    let added = 0;
+    if (o.coverPdf) {
+      let src;
+      try {
+        src = await PDFDocument.load(o.coverPdf, { ignoreEncryption: true, updateMetadata: false });
+      } catch {
+        throw new PdfError('ไฟล์ปกเปิดไม่ได้ ลองบันทึกเป็น PDF ใหม่แล้วเลือกอีกครั้ง');
+      }
+      if (src.isEncrypted) throw new PdfError('ไฟล์ปกตั้งรหัสผ่านไว้ ให้บันทึกเป็น PDF ใหม่โดยไม่ใส่รหัสผ่าน');
+      const pages = await doc.copyPages(src, src.getPageIndices());
+      pages.forEach((p, i) => doc.insertPage(i, p));
+      added = pages.length;
+    } else if (o.coverPng) {
+      const img = await doc.embedPng(o.coverPng);
+      const page = doc.insertPage(0, A4);
+      page.drawImage(img, { x: 0, y: 0, width: A4[0], height: A4[1] });
+      added = 1;
+    }
+    return { bytes: await doc.save(), pages: doc.getPageCount(), removed: remove.length, added };
+  }
+
+  return { mergePdfs, editFront, PdfError };
 });
