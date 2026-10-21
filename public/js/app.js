@@ -473,6 +473,32 @@
     });
   });
 
+  // ---------- ใช้ไฟล์รุ่นก่อน (ฟังก์ชันเสริม oldfile) ----------
+  // ไฟล์ PDF: ทำรูปปกในคลังจากไฟล์ที่กลับไปใช้ในเครื่องนี้ส่งไปด้วย ทำรูปไม่ได้ก็ยังส่งได้ (ระบบใช้ปกที่วาดให้แทน)
+  document.querySelectorAll('[data-old-file]').forEach((form) => {
+    form.querySelector('button').addEventListener('click', async () => {
+      const ok = await ask(form.dataset.text, { icon: 'note', ok: 'ใช้ไฟล์นี้' });
+      if (!ok) return;
+      const url = form.getAttribute('action');
+      try {
+        showBusy('กำลังเปลี่ยนไฟล์', false);
+        const data = new URLSearchParams();
+        try {
+          const res = await fetch(form.dataset.oldFile);
+          const thumb = res.ok ? await makeThumb(new Uint8Array(await res.arrayBuffer())) : null;
+          if (thumb) data.append('upload_cover_thumb', await uploadBlob(thumb, { form: url, field: 'cover_thumb', name: 'cover.jpg' }));
+        } catch {
+          // ไม่มีรูปปกก็กลับไปใช้ไฟล์ได้
+        }
+        const r = await request('POST', url, data, { 'Content-Type': 'application/x-www-form-urlencoded' });
+        window.location.href = r.redirect || window.location.pathname;
+      } catch (err) {
+        hideBusy();
+        tell((err && err.userMessage) || NET_ERROR);
+      }
+    });
+  });
+
   // ---------- เปลี่ยนปก (ฟังก์ชันเสริม coverpdf) ----------
   // เปิดไฟล์เดิม แสดงภาพหน้าแรก ๆ ให้ติ๊กหน้าที่จะลบ เลือกปกใหม่ (ปกที่ระบบวาด หรือไฟล์ปก) แล้วทำไฟล์ใหม่ในเครื่องนี้ (pdf-lib)
   // ส่งทางเดียวกับปุ่มเพิ่มหน้าปก พร้อมบอก front=1 removed drawn newcover ให้เซิร์ฟเวอร์บันทึกประวัติ

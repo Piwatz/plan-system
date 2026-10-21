@@ -353,7 +353,7 @@
         <% } %>
         <% if (old.length) { %>
           <details style="margin-top:8px"><summary class="muted small" style="cursor:pointer">ไฟล์รุ่นก่อนแก้ไข <%= old.length %> ไฟล์</summary>
-            <ul class="file-list"><% for (const f of old) { %><li class="old"><span class="fname"><%= f.original_name %> <small class="muted"><%= util.thaiDate(f.uploaded_at, true) %></small></span><a class="btn btn-sm btn-ghost" href="/f/<%= f.id %>?dl=1">ดาวน์โหลด</a></li><% } %></ul>
+            <ul class="file-list"><% for (const f of old) { %><li class="old"><span class="fname"><%= f.original_name %> <small class="muted"><%= util.thaiDate(f.uploaded_at, true) %></small></span><a class="btn btn-sm btn-ghost" href="/f/<%= f.id %>?dl=1">ดาวน์โหลด</a><% if (canOldFile && f.kind === 'main') { %><%# ใช้ไฟล์รุ่นก่อน (ฟังก์ชันเสริม oldfile) ไฟล์ PDF เบราว์เซอร์ทำรูปปกในคลังจากไฟล์นี้ส่งไปด้วย %><% const ofText = 'กลับไปใช้ไฟล์ ' + f.original_name + ' เป็นไฟล์ที่ส่ง ใช่ไหม\nไฟล์ที่ใช้อยู่ตอนนี้เก็บไว้ในไฟล์รุ่นก่อนแก้ไข ไม่ลบไฟล์ใด ผู้ตรวจไม่ต้องลงนามใหม่'; const ofThumb = ff.library && /pdf/.test(f.mime); %><form method="post" action="/s/<%= sub.id %>/oldfile/<%= f.id %>"<% if (ofThumb) { %> data-old-file="/f/<%= f.id %>/raw" data-text="<%= ofText %>"<% } else { %> data-confirm="<%= ofText %>" data-ok-label="ใช้ไฟล์นี้"<% } %>><button class="btn btn-sm btn-primary" type="<%= ofThumb ? 'button' : 'submit' %>"><%= isOwner ? 'ใช้ไฟล์นี้' : 'ใช้ไฟล์นี้แทนครู' %></button></form><% } %></li><% } %></ul>
           </details>
         <% } %>
       </div>

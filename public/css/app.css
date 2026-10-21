@@ -412,7 +412,7 @@ input:focus, select:focus, textarea:focus { outline: 3px solid color-mix(in srgb
 .file-list li { display: flex; gap: 10px; align-items: center; padding: 10px 0; border-bottom: 1px solid var(--line); flex-wrap: wrap; }
 .file-list li:last-child { border-bottom: 0; }
 .file-list .fname { flex: 1; min-width: 160px; overflow-wrap: anywhere; }
-.file-list .old { opacity: 0.6; }
+.file-list .old .fname, .file-list .old .btn-ghost { opacity: 0.6; }
 
 /* ---------- แถบความคืบหน้าการตรวจ ---------- */
 .stepper { display: flex; gap: 0; overflow-x: auto; padding: 6px 2px 2px; }

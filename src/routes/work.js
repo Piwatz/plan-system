@@ -159,6 +159,10 @@ function canAddCover(req, sub) {
 function canFrontPages(req, sub) {
   return Boolean(req.ff.coverpdf) && coverRule(req, sub);
 }
+// ใช้ไฟล์รุ่นก่อน (ฟังก์ชันเสริม oldfile) กติกาเดียวกับเพิ่มหน้าปก
+function canOldFile(req, sub) {
+  return Boolean(req.ff.oldfile) && coverRule(req, sub);
+}
 function canDrawnCover(req, sub) {
   return canFrontPages(req, sub) && Boolean(req.me.is_admin);
 }
@@ -663,6 +667,7 @@ router.get('/s/:id', async (req, res) => {
     approveLabel: approveLabel(sub),
     canAddCover: canAddCover(req, sub),
     canFrontPages: canFrontPages(req, sub),
+    canOldFile: canOldFile(req, sub),
     // ปกที่ระบบวาดสำหรับต่อเป็นหน้าแรกของ PDF (เฉพาะผู้ดูแลระบบ) หน้าตาเดียวกับคลังงาน ตราใช้รูปใหญ่ให้คมตอนพิมพ์
     drawnBook: canDrawnCover(req, sub)
       ? { kind: sub.doc_type, shelfLabel: library.SHELF[sub.doc_type].label, subject_code: sub.subject_code, subject_name: sub.subject_name, teacher_name: sub.teacher_name, gradeText: library.gradeText(sub.grade_level), termText: library.termText(sub), cover: null, open: true }
@@ -859,6 +864,41 @@ router.post('/s/:id/cover', async (req, res) => {
   respond(req, res, `/s/${sub.id}`, 'success', `${front ? 'เปลี่ยนปก' : 'เพิ่มหน้าปก'}เรียบร้อย ไฟล์เดิมเก็บไว้ในไฟล์รุ่นก่อนแก้ไข`);
 });
 
+// ใช้ไฟล์รุ่นก่อน (ฟังก์ชันเสริม oldfile): สลับ is_current ไฟล์ที่เลือกเป็นไฟล์ที่ส่ง ไฟล์ที่ใช้อยู่กลายเป็นรุ่นก่อน ไม่ลบไฟล์ใด ไม่เปลี่ยนขั้นการตรวจ
+// รูปปกในคลัง: เบราว์เซอร์ทำจากไฟล์ที่กลับไปใช้ส่งมาด้วย · ไม่มีรูป (ไม่ใช่ PDF หรือทำไม่ได้) ล้างรูปเดิม ปุ่มสร้างปกของผู้ดูแลทำให้ใหม่ได้ (ปกที่ระบบวาดที่ผู้ดูแลเลือกไว้คงเดิม)
+router.post('/s/:id/oldfile/:file', async (req, res) => {
+  const sub = await viewable(req, req.params.id);
+  if (!canOldFile(req, sub)) throw new UserError('ใช้ไฟล์รุ่นก่อนในงานนี้ไม่ได้');
+  const f = await loadFile(req.params.file);
+  if (!f || Number(f.submission_id) !== Number(sub.id) || f.is_current || f.kind !== 'main') throw new UserError('ไม่พบไฟล์รุ่นก่อนนี้ หรือใช้อยู่แล้ว');
+  const cover = req.ff.library ? await up.takeCover(req, library.COVER_MAX) : null;
+  const what = `${f.original_name} (ส่งเมื่อ ${util.thaiDate(f.uploaded_at, true)})`;
+  let oldCover = null;
+  try {
+    oldCover = await q.tx(async () => {
+      await q.run("UPDATE files SET is_current = 0 WHERE submission_id = ? AND kind = 'main' AND is_current = 1", sub.id);
+      await q.run('UPDATE files SET is_current = 1 WHERE id = ?', f.id);
+      const byAdmin = !wf.isOwner(req.me, sub);
+      await wf.log(sub.id, req.me, { step_label: byAdmin ? 'ผู้ดูแลระบบ' : 'ครูผู้สอน', action: 'oldfile', comment: what });
+      if (cover) return up.useCover(sub.id, cover);
+      const r = await q.get(
+        `WITH o AS (SELECT cover_ref AS old FROM submissions WHERE id = ?)
+         UPDATE submissions s SET cover_ref = NULL FROM o WHERE s.id = ? AND s.cover_ref IS NOT NULL AND s.cover_ref != ? RETURNING o.old`,
+        sub.id,
+        sub.id,
+        up.DRAWN
+      );
+      return r ? r.old : null;
+    });
+  } catch (e) {
+    if (cover) await dropFiles(req, [cover]);
+    throw e;
+  }
+  if (oldCover) await up.trashAll([oldCover]);
+  await features.audit(req.me, `ใช้ไฟล์รุ่นก่อน${wf.DOC_TYPES[sub.doc_type].label} ${sub.subject_code} ของ ${sub.teacher_name} ${what}`, `submission ${sub.id}`);
+  respond(req, res, `/s/${sub.id}`, 'success', 'กลับไปใช้ไฟล์รุ่นก่อนเรียบร้อย ไฟล์ที่ใช้อยู่เก็บไว้ในไฟล์รุ่นก่อนแก้ไข');
+});
+
 // ผู้ดูแลระบบส่งกลับให้ครูแก้แทนผู้ตรวจ (ฟังก์ชันเสริม adminreturn) ไม่แจ้งใคร บันทึกในประวัติและ audit_log
 router.post('/s/:id/admin-return', async (req, res) => {
   adminOnly(req);
@@ -919,6 +959,13 @@ async function uploadTarget(req, b) {
   if (ac) {
     const sub = await viewable(req, ac[1]);
     if (!canAddCover(req, sub) && !canFrontPages(req, sub)) throw new UserError('เพิ่มหน้าปกงานนี้ไม่ได้');
+    return sub;
+  }
+  // รูปปกในคลังจากไฟล์รุ่นก่อนที่กลับไปใช้ (ฟังก์ชันเสริม oldfile)
+  const of = /^\/s\/(\d+)\/oldfile\/\d+$/.exec(form);
+  if (of) {
+    const sub = await viewable(req, of[1]);
+    if (!canOldFile(req, sub)) throw new UserError('ใช้ไฟล์รุ่นก่อนในงานนี้ไม่ได้');
     return sub;
   }
   const m = /^\/s\/(\d+)$/.exec(form);

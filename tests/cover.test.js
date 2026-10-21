@@ -309,3 +309,69 @@ test('รายชื่องานที่หน้าแรกน่าจ�
   assert.equal((await a.get('/admin/frontcheck/todo')).status, 404);
   await db.setSetting('ff_frontcheck', '1');
 });
+
+test('ใช้ไฟล์รุ่นก่อน: สลับไฟล์ที่ส่งกับไฟล์รุ่นก่อน ไม่ลบไฟล์ใด ขั้นการตรวจไม่เปลี่ยน รูปปกในคลังทำใหม่ กติกาเดียวกับเปลี่ยนปก ปิดสวิตช์แล้วไม่มีปุ่ม', async () => {
+  // งานที่ผ่านครบ เปลี่ยนปกก่อนให้มีไฟล์รุ่นก่อน
+  const done = await db.q.get(
+    "SELECT s.id, u.username FROM submissions s JOIN users u ON u.id = s.teacher_id WHERE s.status = 'approved' AND s.doc_type IN ('manual', 'plan') AND u.is_admin = 0 ORDER BY s.id LIMIT 1"
+  );
+  const a = await as('admin');
+  const tk = await uploadOne(a, await pdf(3), 'merged.pdf', { form: `/s/${done.id}/cover`, field: 'main_files', merged: '2' });
+  assert.equal((await a.req('POST', `/s/${done.id}/cover`, new URLSearchParams({ front: '1', removed: '1', upload_main_files: tk }), XHR)).status, 200);
+  const before = (await currentFiles(done.id))[0];
+  const old = await db.q.get("SELECT id FROM files WHERE submission_id = ? AND kind = 'main' AND is_current = 0 ORDER BY id DESC LIMIT 1", done.id);
+  const nAll = (await db.q.get('SELECT COUNT(*)::int AS n FROM files WHERE submission_id = ?', done.id)).n;
+
+  const page = (await a.get(`/s/${done.id}`)).text;
+  assert.ok(page.includes(`action="/s/${done.id}/oldfile/${old.id}"`), 'มีปุ่มที่ไฟล์รุ่นก่อน');
+  assert.match(page, /ใช้ไฟล์นี้แทนครู/);
+  assert.match(page, /data-old-file="\/f\/\d+\/raw"/, 'ไฟล์ PDF ทำรูปปกในคลังจากเบราว์เซอร์');
+
+  // เจ้าของงานที่ผ่านครบแล้วไม่มีปุ่มและทำไม่ได้
+  const owner = await as(done.username);
+  assert.doesNotMatch((await owner.get(`/s/${done.id}`)).text, /\/oldfile\//);
+  assert.notEqual((await owner.req('POST', `/s/${done.id}/oldfile/${old.id}`, new URLSearchParams(), XHR)).status, 200);
+  // ไฟล์ที่ใช้อยู่ หรือไฟล์ของงานอื่น ใช้ไม่ได้
+  assert.notEqual((await a.req('POST', `/s/${done.id}/oldfile/${before.id}`, new URLSearchParams(), XHR)).status, 200);
+  const other = await db.q.get('SELECT id FROM files WHERE submission_id != ? ORDER BY id LIMIT 1', done.id);
+  assert.notEqual((await a.req('POST', `/s/${done.id}/oldfile/${other.id}`, new URLSearchParams(), XHR)).status, 200);
+
+  // ผู้ดูแลระบบกลับไปใช้ไฟล์รุ่นก่อนพร้อมรูปปกใหม่
+  await db.q.run('UPDATE submissions SET cover_ref = ? WHERE id = ?', 'old-cover', done.id);
+  const thumb = await uploadOne(a, new Blob([Buffer.from([0xff, 0xd8, 0xff, 0xe0, 0, 16, 0x4a, 0x46, 0x49, 0x46, 0, 1, 1, 0, 0, 1, 0, 1, 0, 0, 0xff, 0xd9])], { type: 'image/jpeg' }), 'cover.jpg', { form: `/s/${done.id}/oldfile/${old.id}`, field: 'cover_thumb' });
+  const r = await a.req('POST', `/s/${done.id}/oldfile/${old.id}`, new URLSearchParams({ upload_cover_thumb: thumb }), XHR);
+  assert.equal(r.status, 200, r.text);
+  assert.deepEqual((await currentFiles(done.id)).map((f) => f.id), [old.id], 'ไฟล์รุ่นก่อนกลับมาเป็นไฟล์ที่ส่ง');
+  assert.equal((await db.q.get('SELECT is_current FROM files WHERE id = ?', before.id)).is_current, 0, 'ไฟล์ที่ใช้อยู่กลายเป็นรุ่นก่อน');
+  assert.equal((await db.q.get('SELECT COUNT(*)::int AS n FROM files WHERE submission_id = ?', done.id)).n, nAll, 'ไม่ลบไฟล์ใด');
+  assert.equal((await subOf(done.id)).status, 'approved', 'ยังผ่านครบเหมือนเดิม');
+  assert.notEqual((await db.q.get('SELECT cover_ref FROM submissions WHERE id = ?', done.id)).cover_ref, 'old-cover', 'รูปปกในคลังเปลี่ยนเป็นรูปใหม่');
+  const rev = await db.q.get("SELECT step_label, comment FROM reviews WHERE submission_id = ? AND action = 'oldfile' ORDER BY id DESC LIMIT 1", done.id);
+  assert.equal(rev.step_label, 'ผู้ดูแลระบบ');
+  assert.ok(await db.q.get("SELECT 1 AS x FROM audit_log WHERE action LIKE 'ใช้ไฟล์รุ่นก่อน%'"));
+  assert.match((await a.get(`/s/${done.id}`)).text, /กลับไปใช้ไฟล์รุ่นก่อน \(ไฟล์ที่ใช้อยู่เก็บไว้ในประวัติ\)/);
+
+  // กดสลับกลับได้ ไม่มีรูปปก ล้างรูปเดิม (ปุ่มสร้างปกของผู้ดูแลทำใหม่ได้)
+  assert.equal((await a.req('POST', `/s/${done.id}/oldfile/${before.id}`, new URLSearchParams(), XHR)).status, 200);
+  assert.deepEqual((await currentFiles(done.id)).map((f) => f.id), [before.id]);
+  assert.equal((await db.q.get('SELECT cover_ref FROM submissions WHERE id = ?', done.id)).cover_ref, null);
+
+  // ครูใช้ไฟล์รุ่นก่อนในงานที่รอตรวจของตัวเองได้
+  const mine = await db.q.get(
+    "SELECT s.id FROM submissions s JOIN users u ON u.id = s.teacher_id WHERE u.username = 'sci2' AND s.status = 'pending' AND s.doc_type IN ('manual', 'plan') ORDER BY s.id LIMIT 1"
+  );
+  const t = await as('sci2');
+  const tk2 = await uploadOne(t, await pdf(2), 'merged.pdf', { form: `/s/${mine.id}/cover`, field: 'main_files', merged: '2' });
+  assert.equal((await t.req('POST', `/s/${mine.id}/cover`, new URLSearchParams({ front: '1', removed: '1', upload_main_files: tk2 }), XHR)).status, 200);
+  const mineOld = await db.q.get("SELECT id FROM files WHERE submission_id = ? AND kind = 'main' AND is_current = 0 ORDER BY id DESC LIMIT 1", mine.id);
+  assert.match((await t.get(`/s/${mine.id}`)).text, />ใช้ไฟล์นี้</);
+  assert.equal((await t.req('POST', `/s/${mine.id}/oldfile/${mineOld.id}`, new URLSearchParams(), XHR)).status, 200);
+  assert.equal((await subOf(mine.id)).status, 'pending');
+  const tr = await db.q.get("SELECT step_label FROM reviews WHERE submission_id = ? AND action = 'oldfile' ORDER BY id DESC LIMIT 1", mine.id);
+  assert.equal(tr.step_label, 'ครูผู้สอน');
+
+  await db.setSetting('ff_oldfile', '0');
+  assert.doesNotMatch((await a.get(`/s/${done.id}`)).text, /\/oldfile\//);
+  assert.notEqual((await a.req('POST', `/s/${done.id}/oldfile/${old.id}`, new URLSearchParams(), XHR)).status, 200);
+  await db.setSetting('ff_oldfile', '1');
+});
