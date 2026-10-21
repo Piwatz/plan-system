@@ -367,3 +367,24 @@ test('เลขที่บันทึกข้อความ: ผู้ดู
   await db.setSetting('docno_prefix', 'วก.');
   await db.setSetting('docno_year', 'academic');
 });
+
+test('หน้างานของฉันบนมือถือเป็นกล่องสีตามสถานะ ปุ่มหลักปุ่มเดียว ปิดสวิตช์แล้วเหลือตาราง (mycards)', async () => {
+  const w = await db.q.get(
+    "SELECT s.id, u.username FROM submissions s JOIN users u ON u.id = s.teacher_id WHERE s.subject_code = 'ว39011' AND s.status <> 'draft'"
+  );
+  const t = await as(w.username);
+  let my = (await t.get('/my')).text;
+  assert.match(my, /class="card has-boxes"/);
+  assert.match(my, /class="my-box tone-wait">\s*<div class="mb-head"><b>คู่มือรายวิชา<\/b>/, 'รอตรวจเป็นสีเหลือง');
+  assert.ok(my.includes(`class="btn btn-block btn-ghost" href="/s/${w.id}">ดูรายละเอียด</a>`), 'ปุ่มหลักปุ่มเดียว');
+  assert.ok(my.includes(`<div class="mb-links"><a href="/s/${w.id}/print"`), 'ปุ่มพิมพ์เป็นลิงก์เล็ก');
+  assert.match(my, /<table class="table">/, 'จอกว้างยังมีตาราง');
+  await db.setSetting('ff_mycards', '0');
+  try {
+    my = (await t.get('/my')).text;
+    assert.doesNotMatch(my, /my-box|has-boxes/);
+    assert.match(my, /<table class="table">/);
+  } finally {
+    await db.setSetting('ff_mycards', '1');
+  }
+});

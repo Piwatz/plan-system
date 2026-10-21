@@ -1326,3 +1326,18 @@ dialog.front-dlg { width: min(720px, calc(100vw - 24px)); max-height: calc(100vh
 .fc-acts { display: flex; gap: 6px; flex: none; }
 .fc-acts form { margin: 0; }
 @media (max-width: 600px) { .fc-row { flex-wrap: wrap; } .fc-acts { width: 100%; padding-left: 56px; } }
+
+/* หน้างานของฉันบนมือถือ (ฟังก์ชันเสริม mycards): กล่องละงาน ขอบซ้ายสีตามสถานะ แทนตาราง */
+.my-boxes { display: none; }
+@media (max-width: 640px) {
+  .has-boxes .table-wrap { display: none; }
+  .has-boxes .my-boxes { display: grid; gap: 8px; }
+}
+.my-box { border: 1px solid var(--line); border-left: 5px solid var(--line); border-radius: 10px; padding: 9px 11px; display: grid; gap: 7px; }
+.my-box.tone-ok { border-left-color: var(--ok); }
+.my-box.tone-wait { border-left-color: var(--wait); }
+.my-box.tone-back { border-left-color: var(--back); }
+.my-box .mb-head { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.my-box .mb-head b { margin-right: auto; }
+.my-box .mb-links { display: flex; flex-wrap: wrap; gap: 4px 16px; font-size: 0.86em; font-weight: 600; }
+.my-box .mb-links a { color: var(--link); padding: 2px 0; }
