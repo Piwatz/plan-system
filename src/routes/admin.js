@@ -12,6 +12,7 @@ const features = require('../features');
 const themes = require('../themes');
 const library = require('../library');
 const precheck = require('../precheck');
+const docno = require('../docno');
 
 const router = express.Router();
 router.use(auth.requireLogin, auth.requireAdmin);
@@ -771,9 +772,30 @@ const logoUpload = multer({ storage: multer.memoryStorage(), limits: { fileSize:
   { name: 'memo_logo', maxCount: 1 },
 ]);
 
-router.get('/settings', (req, res) => {
+// แผนและคู่มือที่มีเลขที่บันทึกข้อความ สำหรับปรับเลขย้อนหลัง (docno.reformat)
+function docNoRows() {
+  return q.all("SELECT id, doc_no, academic_year, submitted_at FROM submissions WHERE doc_type IN ('plan', 'manual') AND COALESCE(doc_no, '') != '' ORDER BY id");
+}
+
+router.get('/settings', async (req, res) => {
   const site = require('../site');
-  res.render('admin/settings', { title: 'ตั้งค่าโรงเรียน', themeList: themes.list(), themeOf: (k) => themes.resolve(k), siteFields: site.FIELDS, siteIcons: site.ICONS });
+  // ปุ่มปรับเลขย้อนหลัง: บอกจำนวนและตัวอย่างก่อนกด
+  const docnoFix = req.ff.docnoreq ? docno.reformat(req.settings, await docNoRows()) : [];
+  res.render('admin/settings', { title: 'ตั้งค่าโรงเรียน', themeList: themes.list(), themeOf: (k) => themes.resolve(k), siteFields: site.FIELDS, siteIcons: site.ICONS, docnoFix });
+});
+
+// ปรับเลขที่บันทึกข้อความทุกงานให้เป็นรูปแบบปัจจุบัน (คำนำหน้าและปีที่ตั้งไว้) เฉพาะเลขรูปแบบ คำนำหน้า+ตัวเลข/ปี 4 หลัก คำสั่งเดียว
+router.post('/docno/reformat', async (req, res) => {
+  if (!req.ff.docnoreq) return fail(req, res, '/admin/settings', 'ฟังก์ชันบังคับกรอกเลขที่บันทึกข้อความปิดอยู่');
+  const list = docno.reformat(req.settings, await docNoRows());
+  if (!list.length) return done(req, res, '/admin/settings', 'เลขทุกงานเป็นรูปแบบปัจจุบันอยู่แล้ว');
+  await q.run(
+    'UPDATE submissions s SET doc_no = v.no FROM unnest(?::int[], ?::text[]) AS v(id, no) WHERE s.id = v.id',
+    list.map((x) => x.id),
+    list.map((x) => x.to)
+  );
+  await features.audit(req.me, `ปรับเลขที่บันทึกข้อความย้อนหลัง ${list.length} งาน เป็นรูปแบบ ${docno.format(req.settings, '214', docno.yearMode(req.settings) === 'calendar' ? 'ปี พ.ศ. ที่ส่ง' : 'ปีการศึกษา')}`, list.slice(0, 40).map((x) => `${x.from} เป็น ${x.to}`).join(', '));
+  done(req, res, '/admin/settings', `ปรับเลขที่บันทึกข้อความแล้ว ${list.length} งาน`);
 });
 
 // บันทึกค่าตั้ง คืนข้อความผิดพลาดถ้ามี (ไม่มีคือสำเร็จ)
@@ -782,6 +804,7 @@ async function saveSettings(req) {
   const b = req.body || {};
   const year = Number(b.academic_year);
   if (!(year >= 2500 && year <= 2700)) return 'ปีการศึกษาต้องเป็นปี พ.ศ. เช่น 2569';
+  if (b.docno_prefix !== undefined && !docno.PREFIX_RE.test(String(b.docno_prefix).trim())) return 'คำนำหน้าเลขที่บันทึกข้อความต้องมีตัวหนังสือ ไม่มีตัวเลขและเครื่องหมายทับ เช่น วก.';
   const date = (v) => (/^\d{4}-\d{2}-\d{2}$/.test(v || '') ? v : '');
   await setSetting('school_name', String(b.school_name || '').trim().slice(0, 200) || 'โรงเรียนของเรา');
   await setSetting('school_location', String(b.school_location || '').trim().slice(0, 200));
@@ -791,6 +814,10 @@ async function saveSettings(req) {
   await setSetting('submit_start', date(b.submit_start));
   await setSetting('submit_end', date(b.submit_end));
   await setSetting('max_upload_mb', Math.min(100, Math.max(1, Number(b.max_upload_mb) || 20)));
+  if (b.docno_prefix !== undefined) {
+    await setSetting('docno_prefix', String(b.docno_prefix).trim());
+    await setSetting('docno_year', b.docno_year === 'calendar' ? 'calendar' : 'academic');
+  }
   if (b.min_pages !== undefined) await setSetting('min_pages', Math.min(500, Math.max(0, parseInt(b.min_pages, 10) || 0)));
   await setSetting('grade_levels', util.lines(b.grade_levels).join('\n'));
   await setSetting('teaching_methods', util.lines(b.teaching_methods).join('\n'));

@@ -41,12 +41,12 @@
           <% for (const g of util.lines(settings.grade_levels)) { %><option <%= sub.grade_level === g ? 'selected' : '' %>><%= g %></option><% } %>
         </select>
       </div>
-      <% if (ff.docnoreq) { const need = !sub.submitted_at; const shared = typeof sharedNo !== 'undefined' && sharedNo; const num = (sub.doc_no || (shared && shared.no) || '').match(/^\s*วก\.?\s*([0-9]+)\s*\/\s*[0-9]{4}\s*$/); %>
+      <% if (ff.docnoreq) { const need = !sub.submitted_at; const shared = typeof sharedNo !== 'undefined' && sharedNo; const num = docno.numOf(sub.doc_no || (shared && shared.no) || ''); %>
       <div class="field">
         <label for="doc_no_num">เลขที่บันทึกข้อความ<% if (need) { %> <span class="req">*</span><% } %></label>
-        <div class="docno-in"><span>วก.</span><input type="text" id="doc_no_num" name="doc_no_num" inputmode="numeric" maxlength="6" value="<%= num ? num[1] : '' %>" placeholder="เลขที่ขอ" autocomplete="off" data-docno><span>/<%= sub.academic_year %></span></div>
+        <div class="docno-in"><span><%= docnoPre %></span><input type="text" id="doc_no_num" name="doc_no_num" inputmode="numeric" maxlength="6" value="<%= num %>" placeholder="เลขที่ขอ" autocomplete="off" data-docno><span>/<%= docnoYear %></span></div>
         <% if (shared && num) { %><div class="hint docno-shared"><%- icon('check', 14) %> ใช้เลขเดียวกับคู่มือ <%= shared.code %> ระบบเติมให้แล้ว ไม่ต้องขอเลขใหม่ (แก้ได้ถ้าห้องวิชาการให้เลขอื่น)</div><% } else { %>
-        <div class="hint">ขอเลขที่ห้องวิชาการก่อน แล้วพิมพ์เฉพาะตัวเลข ระบบเติม วก. และ /<%= sub.academic_year %> ให้<% if (sub.doc_no && !num) { %> (เลขเดิม <%= sub.doc_no %> พิมพ์ใหม่เฉพาะตัวเลข)<% } %></div><% } %>
+        <div class="hint">ขอเลขที่ห้องวิชาการก่อน แล้วพิมพ์เฉพาะตัวเลข ระบบเติม <%= docnoPre %> และ /<%= docnoYear %> ให้<% if (sub.doc_no && !num) { %> (เลขเดิม <%= sub.doc_no %> พิมพ์ใหม่เฉพาะตัวเลข)<% } %></div><% } %>
       </div>
       <% } else { %>
       <div class="field">

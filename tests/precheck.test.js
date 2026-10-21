@@ -301,3 +301,69 @@ test('หน้าแผนและคู่มือของฉันมี�
   assert.doesNotMatch((await t.get('/my')).text, /my-print/);
   await db.setSetting('ff_printrow', '1');
 });
+
+test('เลขที่บันทึกข้อความ: ผู้ดูแลเปลี่ยนคำนำหน้าและปีหลังทับได้ ปุ่มปรับเลขย้อนหลังเปลี่ยนเฉพาะเลขรูปแบบเดิม', async () => {
+  const docno = require('../src/docno');
+  // ตัวช่วยคิดเลข
+  assert.equal(docno.numOf('วก.214/2569'), '214');
+  assert.equal(docno.numOf('ศธ.ชว. 15 / 2568'), '15');
+  assert.equal(docno.numOf('ตามหนังสือเลขที่'), '');
+  assert.deepEqual(
+    docno.reformat({ docno_prefix: 'วก.ชว.', docno_year: 'calendar' }, [
+      { id: 1, doc_no: 'วก.214/2569', academic_year: 2569, submitted_at: '2027-01-15 09:00:00' },
+      { id: 2, doc_no: 'วก.5/2569', academic_year: 2569, submitted_at: null },
+      { id: 3, doc_no: 'อิสระ', academic_year: 2569, submitted_at: null },
+    ]),
+    [
+      { id: 1, from: 'วก.214/2569', to: 'วก.ชว.214/2570' },
+      { id: 2, from: 'วก.5/2569', to: 'วก.ชว.5/2569' },
+    ],
+    'ปี พ.ศ. ตามวันที่ส่ง งานที่ยังไม่ส่งคงปีเดิม เลขอิสระไม่แตะ'
+  );
+
+  const a = await as('admin');
+  let page = (await a.get('/admin/settings')).text;
+  assert.match(page, /name="docno_prefix" value="วก\."/);
+  assert.match(page, /ปรับเลขที่บันทึกข้อความย้อนหลัง/);
+  assert.match(page, /เลขทุกงานเป็นรูปแบบปัจจุบันแล้ว/);
+
+  // คำนำหน้าที่มีตัวเลขหรือทับ บันทึกไม่ได้ และไม่บันทึกค่าอื่นด้วย
+  const s0 = await db.getSettings();
+  const keep = { school_name: s0.school_name, school_location: s0.school_location, academic_year: s0.academic_year, semester: s0.semester, submit_open: s0.submit_open, max_upload_mb: s0.max_upload_mb, grade_levels: s0.grade_levels, teaching_methods: s0.teaching_methods, public_url: s0.public_url };
+  const bad = await a.post('/admin/settings', { ...keep, docno_prefix: 'วก/1', docno_year: 'calendar' });
+  assert.equal(bad.status, 302);
+  assert.equal(docno.prefix(await db.getSettings()), 'วก.');
+  const ok = await a.post('/admin/settings', { ...keep, docno_prefix: ' วก.ชว. ', docno_year: 'calendar' });
+  assert.equal(ok.status, 302);
+  const s1 = await db.getSettings();
+  assert.equal(s1.docno_prefix, 'วก.ชว.');
+  assert.equal(s1.docno_year, 'calendar');
+
+  // ฟอร์มของครูใช้คำนำหน้าใหม่ ปีเป็นปี พ.ศ. ของวันนี้
+  const be = String(Number(require('../src/time').todayStr().slice(0, 4)) + 543);
+  const t = await as('sci2');
+  const fp = (await t.get('/works/new?type=manual')).text;
+  assert.match(fp, new RegExp(`<span>วก\.ชว\.</span><input type="text" id="doc_no_num"[^>]*><span>/${be}</span>`));
+  const base = { doc_type: 'manual', subject_name: 'ทดสอบคำนำหน้า', grade_level: 'ม.4', action: 'draft' };
+  const r = await sendForm(t, '/works', { ...base, subject_code: 'ว39020', doc_no_num: '077' }, [[await pdf(6), 'คู่มือ.pdf']]);
+  const id = Number(/\/s\/(\d+)/.exec(JSON.parse(r.text).redirect)[1]);
+  assert.equal((await db.q.get('SELECT doc_no FROM submissions WHERE id = ?', id)).doc_no, `วก.ชว.77/${be}`);
+
+  // ปรับเลขย้อนหลัง: เลขเดิม วก.214/ปี เปลี่ยนเป็นรูปแบบใหม่ เลขอิสระไม่แตะ
+  await db.q.run("UPDATE submissions SET doc_no = 'เลขอิสระ' WHERE subject_code = 'ว39012'");
+  const before = await db.q.get("SELECT id, doc_no FROM submissions WHERE subject_code = 'ว39011'");
+  assert.match(before.doc_no, /^วก\.214\//);
+  page = (await a.get('/admin/settings')).text;
+  assert.match(page, /งานที่เลขยังไม่ตรงกับรูปแบบปัจจุบัน/);
+  assert.match(page, /data-confirm="ปรับเลขที่บันทึกข้อความ \d+ งาน/);
+  // ครูเรียกไม่ได้
+  assert.notEqual((await t.post('/admin/docno/reformat', {})).location, '/admin/settings');
+  assert.equal((await a.post('/admin/docno/reformat', {})).status, 302);
+  assert.match((await db.q.get('SELECT doc_no FROM submissions WHERE id = ?', before.id)).doc_no, /^วก\.ชว\.214\/\d{4}$/);
+  assert.equal((await db.q.get("SELECT doc_no FROM submissions WHERE subject_code = 'ว39012'")).doc_no, 'เลขอิสระ');
+  assert.ok(await db.q.get("SELECT 1 AS x FROM audit_log WHERE action LIKE 'ปรับเลขที่บันทึกข้อความย้อนหลัง%'"));
+  assert.match((await a.get('/admin/settings')).text, /เลขทุกงานเป็นรูปแบบปัจจุบันแล้ว/);
+
+  await db.setSetting('docno_prefix', 'วก.');
+  await db.setSetting('docno_year', 'academic');
+});

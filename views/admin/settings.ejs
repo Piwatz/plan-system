@@ -104,6 +104,15 @@
     </div>
     <p class="muted small">ปิดรับแล้วครูยังบันทึกร่างได้ งานที่ถูกส่งกลับให้แก้ไขและบันทึกหลังแผนยังส่งได้ตามปกติ</p>
 
+    <% if (ff.docnoreq) { const dpre = docno.prefix(settings); const dmode = docno.yearMode(settings); %>
+    <h3 style="margin-top:18px" id="docno">เลขที่บันทึกข้อความ</h3>
+    <div class="form-grid">
+      <div class="field"><label for="docno_prefix">คำนำหน้าเลข</label><input type="text" id="docno_prefix" name="docno_prefix" value="<%= dpre %>" maxlength="20" required><div class="hint">ครูพิมพ์เฉพาะตัวเลข ระบบเติมคำนำหน้านี้ให้ ห้ามมีตัวเลขและเครื่องหมายทับ</div></div>
+      <div class="field"><label for="docno_year">ปีหลังทับ</label><select id="docno_year" name="docno_year"><option value="academic"<%= dmode === 'academic' ? ' selected' : '' %>>ปีการศึกษาของงาน</option><option value="calendar"<%= dmode === 'calendar' ? ' selected' : '' %>>ปี พ.ศ. ตามวันที่ส่ง</option></select><div class="hint">ภาคเรียนที่ 2 ส่งช่วง ม.ค. ถึง มี.ค. ปีการศึกษากับปี พ.ศ. ต่างกัน 1 ปี</div></div>
+    </div>
+    <p class="muted small">ตัวอย่าง <%= docno.format(settings, '214', docno.yearOf(settings, { academic_year: settings.academic_year })) %> · เปลี่ยนแล้วมีผลกับงานที่ครูบันทึกหลังจากนี้ งานเดิมกดปุ่มปรับเลขย้อนหลังด้านล่าง</p>
+    <% } %>
+
     <h3 style="margin-top:18px">ตัวเลือกในแบบฟอร์ม</h3>
     <div class="form-grid">
       <div class="field"><label for="grade_levels">ระดับชั้น หนึ่งบรรทัดต่อหนึ่งชั้น</label><textarea id="grade_levels" name="grade_levels" style="min-height:150px"><%= settings.grade_levels %></textarea></div>
@@ -111,5 +120,18 @@
     </div>
     <button class="btn btn-primary" type="submit" data-confirm="บันทึกการตั้งค่าโรงเรียน">บันทึก</button>
   </form>
+  <% if (ff.docnoreq) { %>
+  <form class="card" method="post" action="/admin/docno/reformat" data-confirm="ปรับเลขที่บันทึกข้อความ <%= docnoFix.length %> งานให้เป็นรูปแบบปัจจุบัน ใช่ไหม
+ตัวเลขที่ครูกรอกไม่เปลี่ยน เปลี่ยนเฉพาะคำนำหน้าและปีหลังทับ ใบบันทึกข้อความที่พิมพ์ใหม่จะใช้เลขใหม่" data-ok-label="ปรับเลข">
+    <h3>ปรับเลขที่บันทึกข้อความย้อนหลัง</h3>
+    <% if (docnoFix.length) { %>
+      <p>มี <b><%= docnoFix.length %></b> งานที่เลขยังไม่ตรงกับรูปแบบปัจจุบัน เช่น <% for (const x of docnoFix.slice(0, 3)) { %><span class="badge"><%= x.from %> เป็น <%= x.to %></span> <% } %></p>
+      <p class="muted small">ปรับเฉพาะเลขรูปแบบ คำนำหน้า ตัวเลข ทับ ปี 4 หลัก เลขที่พิมพ์อิสระแบบอื่นไม่แตะ<%= docno.yearMode(settings) === 'calendar' ? ' งานที่ยังไม่เคยส่งคงปีเดิม' : '' %> บันทึกไว้ในประวัติการใช้งาน</p>
+      <button class="btn btn-primary" type="submit">ปรับเลข <%= docnoFix.length %> งาน</button>
+    <% } else { %>
+      <p class="muted">เลขทุกงานเป็นรูปแบบปัจจุบันแล้ว</p>
+    <% } %>
+  </form>
+  <% } %>
 </div>
 <%- include('../partials/bottom') %>

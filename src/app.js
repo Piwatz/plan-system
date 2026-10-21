@@ -9,6 +9,7 @@ const db = require('./db');
 const auth = require('./auth');
 const wf = require('./workflow');
 const util = require('./util');
+const docno = require('./docno');
 const features = require('./features');
 const themes = require('./themes');
 const icons = require('./icons');
@@ -130,6 +131,7 @@ function createApp(options = {}) {
       me: req.me,
       settings: pubSettings,
       util,
+      docno,
       wf,
       ff,
       icon: icons.icon,

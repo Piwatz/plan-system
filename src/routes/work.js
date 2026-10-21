@@ -17,6 +17,7 @@ const teaching = require('../teaching');
 const { qrSvg } = require('./verify');
 const library = require('../library');
 const precheck = require('../precheck');
+const docno = require('../docno');
 
 const router = express.Router();
 router.use(auth.requireLogin);
@@ -187,22 +188,8 @@ function methodsOf(b, ff = {}) {
   return [...new Set([...picked, ...other])];
 }
 
-// เลขที่บันทึกข้อความ (ฟังก์ชันเสริม docnoreq): ครูพิมพ์เฉพาะเลขที่ขอจากห้องวิชาการ ระบบเติม วก. และ /ปีการศึกษาของงาน
-const DOCNO_PREFIX = 'วก.';
-function docNoNum(docNo) {
-  const m = /^\s*วก\.?\s*([0-9]+)\s*\/\s*[0-9]{4}\s*$/.exec(String(docNo || ''));
-  return m ? m[1] : '';
-}
-function docNoOf(b, year) {
-  const num = String(b.doc_no_num || '')
-    .replace(/[๐-๙]/g, (d) => String(d.charCodeAt(0) - 0x0e50))
-    .replace(/[^0-9]/g, '')
-    .replace(/^0+(?=\d)/, '')
-    .slice(0, 6);
-  return num ? `${DOCNO_PREFIX}${num}/${year}` : '';
-}
-
-function workFields(b, docType, ff, year) {
+// docYear = ปีหลังทับของเลขที่บันทึกข้อความ (docno.yearOf)
+function workFields(b, docType, ff, settings, docYear) {
   return {
     subject_code: str(b.subject_code, 30),
     subject_name: str(b.subject_name, 200),
@@ -210,7 +197,7 @@ function workFields(b, docType, ff, year) {
     teaching_methods: docType === 'plan' ? JSON.stringify(methodsOf(b, ff)) : '[]',
     link_url: util.safeUrl(b.link_url).slice(0, 500),
     // ฟอร์มแบบใหม่ส่งช่อง doc_no_num ฟอร์มแบบเดิมส่ง doc_no ข้อความอิสระ
-    doc_no: ff.docnoreq && b.doc_no_num !== undefined ? docNoOf(b, year) : str(b.doc_no, 50),
+    doc_no: ff.docnoreq && b.doc_no_num !== undefined ? docno.format(settings, docno.cleanNum(b.doc_no_num), docYear) : str(b.doc_no, 50),
   };
 }
 
@@ -430,6 +417,8 @@ router.get('/works/new', async (req, res) => {
     isNew: true,
     pc: await checkInfo(req, sub),
     sharedNo: await sharedDocNo(req, sub, req.me.id),
+    docnoPre: docno.prefix(req.settings),
+    docnoYear: docno.yearOf(req.settings, sub),
   });
 });
 
@@ -438,7 +427,7 @@ router.post('/works', async (req, res) => {
   const type = WORK_TYPES.includes(b.doc_type) ? b.doc_type : null;
   const year = Number(req.settings.academic_year);
   const sem = Number(req.settings.semester);
-  const f = type ? workFields(b, type, req.ff, year) : null;
+  const f = type ? workFields(b, type, req.ff, req.settings, docno.yearOf(req.settings, { academic_year: year })) : null;
   const files = await up.take(req, 'main_files');
   // รูปปกเล็กสำหรับคลังงาน (ฟังก์ชันเสริม library) เบราว์เซอร์ทำจากหน้าแรกของ PDF
   const cover = type && req.ff.library ? await up.takeCover(req, library.COVER_MAX) : null;
@@ -730,6 +719,8 @@ router.get('/s/:id/edit', async (req, res) => {
       isNew: false,
       pc: await checkInfo(req, sub),
       sharedNo: await sharedDocNo(req, sub, sub.teacher_id),
+      docnoPre: docno.prefix(req.settings),
+      docnoYear: docno.yearOf(req.settings, sub),
     });
   }
   const plan = await q.get(`SELECT ${wf.subCols()} FROM submissions WHERE id = ?`, sub.parent_id);
@@ -748,7 +739,7 @@ async function saveEdit(req, sub, b, now, files, cover = null) {
         sub.id
       );
     } else {
-      const f = workFields(b, sub.doc_type, req.ff, sub.academic_year);
+      const f = workFields(b, sub.doc_type, req.ff, req.settings, docno.yearOf(req.settings, sub));
       if (teaching.skipActivity(f.subject_code) && f.subject_code !== sub.subject_code) throw new UserError('วิชากิจกรรมพัฒนาผู้เรียน (รหัสขึ้นต้นด้วย ก) ไม่ต้องส่งแผนและคู่มือ');
       // ล็อกครูก่อนตรวจซ้ำ เหมือนตอนส่งงานใหม่
       await lockTeacher(sub.teacher_id);

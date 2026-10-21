@@ -1493,7 +1493,7 @@
       if (!docNo || !item('docno')) return;
       docNo.value = docNo.value.replace(/[๐-๙]/g, (d) => String(d.charCodeAt(0) - 0x0e50)).replace(/[^0-9]/g, '');
       const tail = docNo.nextElementSibling ? docNo.nextElementSibling.textContent : '';
-      set('docno', docNo.value ? 'ok' : 'bad', docNo.value ? 'ที่ วก.' + docNo.value + tail : 'ขอเลขที่ห้องวิชาการ แล้วกรอกเฉพาะตัวเลข');
+      set('docno', docNo.value ? 'ok' : 'bad', docNo.value ? 'ที่ ' + (docNo.previousElementSibling ? docNo.previousElementSibling.textContent : '') + docNo.value + tail : 'ขอเลขที่ห้องวิชาการ แล้วกรอกเฉพาะตัวเลข');
     }
     if (docNo) docNo.addEventListener('input', checkDocNo);
     for (const [, el] of fields) {
