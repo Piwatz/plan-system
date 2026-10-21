@@ -11,6 +11,7 @@ const config = require('../config');
 const features = require('../features');
 const themes = require('../themes');
 const library = require('../library');
+const precheck = require('../precheck');
 
 const router = express.Router();
 router.use(auth.requireLogin, auth.requireAdmin);
@@ -61,7 +62,69 @@ router.get('/', async (req, res) => {
     backupInfo: await backupInfo(req),
     accounts: req.ff.unlock ? await accountInfo() : null,
     sigMissing: req.ff.siglist ? await require('../sigfill').missingList() : null,
+    front: req.ff.frontcheck ? await frontInfo() : null,
   });
+});
+
+// ---------- รายชื่องานที่หน้าแรกน่าจะไม่ใช่ปก (ฟังก์ชันเสริม frontcheck) ----------
+async function frontInfo() {
+  await db.ensureRefs();
+  const { bad, todo } = await precheck.frontRows();
+  return { bad: bad.map((r) => ({ ...r, status_text: wf.statusText(r), type_label: wf.DOC_TYPES[r.doc_type].label })), todo: todo.length };
+}
+
+function frontOn(req, res) {
+  if (req.ff.frontcheck) return true;
+  res.status(404).json({ error: 'ฟังก์ชันรายชื่องานที่หน้าแรกน่าจะไม่ใช่ปกปิดอยู่' });
+  return false;
+}
+
+// งานเดิมที่ยังไม่ได้ตรวจหน้าแรก เครื่องของผู้ดูแลเปิดไฟล์ทีละงานแล้วส่งผลกลับมาทีละไฟล์
+router.get('/frontcheck/todo', async (req, res) => {
+  if (!frontOn(req, res)) return;
+  const { todo } = await precheck.frontRows(true);
+  res.json({ items: todo.map((r) => ({ file: r.file, code: r.subject_code })) });
+});
+
+// ใส่ผลตรวจเฉพาะไฟล์ที่ยังไม่มีผล (ไม่ทับ ปกถูกแล้ว ที่ผู้ดูแลกดไว้ หรือผลที่ได้ตอนครูส่ง)
+router.post('/frontcheck/:file', async (req, res) => {
+  if (!frontOn(req, res)) return;
+  const id = util.idOrNull(req.params.file);
+  const v = (req.body || {}).v;
+  if (id === null || !precheck.FRONT_VALUES.includes(v)) return res.status(400).json({ error: 'ผลตรวจใช้ไม่ได้' });
+  await q.run("UPDATE files SET front_check = ? WHERE id = ? AND front_check IS NULL AND mime = 'application/pdf'", v, id);
+  res.json({ ok: true });
+});
+
+// จดประวัติหลังตรวจงานเดิมครบชุด (1 แถวต่อการกด 1 ครั้ง)
+router.post('/frontcheck-done', async (req, res) => {
+  if (!frontOn(req, res)) return;
+  const b = req.body || {};
+  await features.audit(req.me, `ตรวจหน้าแรกของงานเดิม ${Math.max(0, util.intOr(b.n, 0))} งาน พบหน้าแรกน่าจะไม่ใช่ปก ${Math.max(0, util.intOr(b.bad, 0))} งาน`, 'frontcheck');
+  res.json({ ok: true });
+});
+
+// ปกถูกแล้ว: ระบบเดาผิด เอางานออกจากรายการ (เปลี่ยนไฟล์ใหม่เมื่อไร ระบบตรวจไฟล์ใหม่อีกครั้ง)
+router.post('/frontcheck/:file/seen', async (req, res) => {
+  if (!req.ff.frontcheck) {
+    req.flash('error', 'ฟังก์ชันรายชื่องานที่หน้าแรกน่าจะไม่ใช่ปกปิดอยู่');
+    return res.redirect('/admin');
+  }
+  const id = util.idOrNull(req.params.file);
+  const r = id === null ? null : await q.get(
+    `SELECT s.doc_type, s.subject_code, u.full_name FROM files f JOIN submissions s ON s.id = f.submission_id JOIN users u ON u.id = s.teacher_id WHERE f.id = ?`,
+    id
+  );
+  if (!r) {
+    req.flash('error', 'ไม่พบไฟล์นี้');
+    return res.redirect('/admin#frontcheck');
+  }
+  await q.tx(async () => {
+    await q.run("UPDATE files SET front_check = 'seen' WHERE id = ?", id);
+    await features.audit(req.me, `ยืนยันว่าหน้าแรกเป็นปกถูกแล้ว ${wf.DOC_TYPES[r.doc_type].label} ${r.subject_code} ของ${r.full_name}`, `file ${id}`);
+  });
+  req.flash('success', `เอา ${r.subject_code} ออกจากรายการแล้ว`);
+  res.redirect('/admin#frontcheck');
 });
 
 // แจ้งเตือนในระบบถึงครูที่ส่งงานแล้วแต่ยังไม่มีลายเซ็น (ฟังก์ชันเสริม siglist) ผู้ดูแลระบบใส่ลายเซ็นแทนไม่ได้ ได้แค่ตามให้ครูเซ็นเอง

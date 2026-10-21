@@ -478,6 +478,7 @@ router.post('/works', async (req, res) => {
         now
       );
       await up.attach(r.id, files, 'main');
+      await precheck.setFront(req.ff, r.id, b.front_check);
       if (cover) await up.useCover(r.id, cover);
       await rememberSubject(req, { teacher_id: req.me.id, doc_type: type, academic_year: year, semester: sem }, f);
       return r.id;
@@ -783,6 +784,7 @@ async function saveEdit(req, sub, b, now, files, cover = null) {
         await q.run('UPDATE files SET is_current = 0 WHERE submission_id = ? AND is_current = 1', sub.id);
       }
       await up.attach(sub.id, files, 'main');
+      if (files.length) await precheck.setFront(req.ff, sub.id, b.front_check);
       // ปกใหม่แทนปกเดิม คืนที่อยู่รูปเดิมให้ย้ายไปถังขยะ
       if (cover) return up.useCover(sub.id, cover);
     }
@@ -842,6 +844,7 @@ router.post('/s/:id/cover', async (req, res) => {
     oldCover = await q.tx(async () => {
       await q.run("UPDATE files SET is_current = 0 WHERE submission_id = ? AND kind = 'main' AND is_current = 1", sub.id);
       await up.attach(sub.id, files, 'main');
+      await precheck.setFront(req.ff, sub.id, b.front_check);
       const byAdmin = !wf.isOwner(req.me, sub);
       await wf.log(sub.id, req.me, { step_label: byAdmin ? 'ผู้ดูแลระบบ' : 'ครูผู้สอน', action: front ? 'frontpages' : 'cover', comment: what });
       return cover ? up.useCover(sub.id, cover) : null;

@@ -133,8 +133,12 @@ create table if not exists files (
   mime text collate "C" not null default '',
   size integer not null default 0,
   is_current integer not null default 1,
-  uploaded_at text collate "C" not null
+  uploaded_at text collate "C" not null,
+  -- ผลตรวจหน้าแรกของ PDF จากเบราว์เซอร์ (ฟังก์ชันเสริม frontcheck) ok · blank หน้าแรกเกือบว่าง · nocode ไม่พบรหัสวิชาในหน้าแรก · seen ผู้ดูแลดูแล้วว่าปกถูก · ว่าง = ยังไม่ได้ตรวจ
+  front_check text collate "C"
 );
+-- ฐานที่สร้างก่อนรุ่น 3 (ในเครื่อง) เติมคอลัมน์ผลตรวจหน้าแรก · เว็บจริงรัน db/migrations/003_ตรวจหน้าแรก.sql
+alter table files add column if not exists front_check text collate "C";
 create index if not exists idx_files_sub on files (submission_id);
 
 create table if not exists reviews (
@@ -238,5 +242,5 @@ create or replace function to_int_lenient(t text) returns integer language sql i
   select coalesce(nullif(substring(t from '^\s*([0-9]{1,9})'), '')::integer, 0)
 $$;
 
-insert into schema_version (version) select 2 where not exists (select 1 from schema_version);
-update schema_version set version = 2 where version < 2;
+insert into schema_version (version) select 3 where not exists (select 1 from schema_version);
+update schema_version set version = 3 where version < 3;

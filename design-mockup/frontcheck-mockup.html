@@ -1,0 +1,66 @@
+<!doctype html><html lang="th"><head><meta charset="utf-8"><title>งานที่หน้าแรกน่าจะไม่ใช่ปก</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai+Looped:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#EEF2F7;--surface:#fff;--ink:#0F1E33;--muted:#4E5F78;--line:#D6DEE9;--primary:#1D3A66;--soft:#E4ECF7;--accent:#E3A21A;--ok:#1B7343;--okbg:#E4F4EA;--wait:#875700;--waitbg:#FFF2DA;--back:#B0341F;--backbg:#FDEAE4}
+body{margin:0;background:var(--bg);font-family:'Noto Sans Thai Looped',sans-serif;color:var(--ink);width:1280px;padding:22px 26px 28px;box-sizing:border-box}
+h1{font-size:22px;margin:0 0 4px}.sub{color:var(--muted);margin:0 0 16px;font-size:14.5px}
+.wrap{display:grid;grid-template-columns:1fr 1fr;gap:22px;align-items:start}
+.opt{font-weight:700;font-size:17px;margin:0 0 8px}.opt span{display:inline-grid;place-items:center;width:28px;height:28px;border-radius:50%;background:var(--accent);color:#fff;margin-right:8px}
+.card{background:var(--surface);border-radius:16px;padding:18px 20px;box-shadow:0 4px 14px rgba(15,30,51,.06)}
+h3{margin:0 0 6px;font-size:18px;display:flex;gap:8px;align-items:center}
+.chip{font-size:12.5px;background:var(--waitbg);color:var(--wait);border-radius:20px;padding:2px 10px;font-weight:600}
+.small{font-size:13px;color:var(--muted);margin:4px 0 10px}
+.scan{display:flex;gap:10px;align-items:center;background:var(--soft);border-radius:12px;padding:10px 12px;margin-bottom:12px;font-size:14px}
+.btn{display:inline-block;background:var(--primary);color:#fff;border-radius:10px;padding:7px 14px;font-weight:600;font-size:13.5px;white-space:nowrap}
+.btn.ghost{background:#fff;color:var(--primary);border:1px solid var(--line)}
+.bar{flex:1;height:8px;background:#fff;border-radius:8px;overflow:hidden}.bar i{display:block;height:100%;width:62%;background:var(--accent)}
+.tag{display:inline-block;font-size:12px;border-radius:6px;padding:1px 7px;font-weight:600;margin:2px 4px 0 0}
+.tag.blank{background:var(--backbg);color:var(--back)}.tag.code{background:var(--waitbg);color:var(--wait)}
+.pg{background:#fff;border:1px solid var(--line);box-shadow:0 1px 4px rgba(0,0,0,.12);position:relative;flex:none}
+.pg .l{position:absolute;left:12%;right:12%;height:3px;background:#cfd6e0;border-radius:2px}
+/* แบบ ก */
+.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+.gi{border:1px solid var(--line);border-radius:12px;padding:10px;font-size:13px;display:flex;flex-direction:column;gap:6px}
+.gi .pg{width:100%;aspect-ratio:210/297}
+.gi b{font-size:14px}.gi .m{color:var(--muted);font-size:12.5px}
+.gi .acts{display:flex;gap:6px;margin-top:auto}.gi .acts .btn{padding:5px 9px;font-size:12.5px;flex:1;text-align:center}
+/* แบบ ข */
+.row{display:flex;gap:12px;align-items:center;padding:9px 0;border-top:1px solid var(--line);font-size:14px}
+.row .pg{width:44px;height:62px}.row .pg .l{height:2px}
+.row .t{flex:1}.row .m{color:var(--muted);font-size:12.5px;display:block}
+.note{font-size:13px;color:var(--muted);margin-top:12px;line-height:1.6}
+.foot{margin-top:18px;background:#fff;border-radius:14px;padding:12px 18px;font-size:14px;line-height:1.75}
+</style></head><body>
+<h1>รายชื่องานที่หน้าแรกน่าจะไม่ใช่ปก (หน้าผู้ดูแลระบบ)</h1>
+<p class="sub">ทั้ง 2 แบบทำงานเหมือนกัน ต่างกันแค่การจัดหน้า · ชื่อครูเป็นชื่อสมมติ</p>
+<div class="wrap">
+<div>
+<p class="opt"><span>ก</span>แบบภาพใหญ่ เห็นหน้าแรกชัด</p>
+<div class="card">
+<h3>งานที่หน้าแรกน่าจะไม่ใช่ปก <span class="chip">5 งาน</span></h3>
+<div class="scan"><div>ตรวจงานเดิมแล้ว 186 จาก 300 งาน</div><div class="bar"><i></i></div><span class="btn ghost">หยุด</span></div>
+<div class="grid">
+ <div class="gi"><div class="pg"></div><b>ว21101 วิทยาศาสตร์</b><div class="m">ครูสมชาย ใจดี · คู่มือ</div><div><span class="tag blank">หน้าแรกเกือบว่าง</span></div><div class="acts"><span class="btn">เปลี่ยนปก</span><span class="btn ghost">ปกถูกแล้ว</span></div></div>
+ <div class="gi"><div class="pg"><i class="l" style="top:14%"></i><i class="l" style="top:20%"></i><i class="l" style="top:26%;right:30%"></i><i class="l" style="top:36%"></i><i class="l" style="top:42%"></i><i class="l" style="top:48%"></i><i class="l" style="top:54%;right:40%"></i></div><b>ค22102 คณิตศาสตร์</b><div class="m">ครูสมหญิง รักเรียน · แผน</div><div><span class="tag code">ไม่พบรหัส ค22102</span></div><div class="acts"><span class="btn">เปลี่ยนปก</span><span class="btn ghost">ปกถูกแล้ว</span></div></div>
+ <div class="gi"><div class="pg"><i class="l" style="top:80%;left:40%"></i></div><b>อ23101 ภาษาอังกฤษ</b><div class="m">ครูมานี มีสุข · คู่มือ</div><div><span class="tag blank">หน้าแรกเกือบว่าง</span><span class="tag code">ไม่พบรหัส</span></div><div class="acts"><span class="btn">เปลี่ยนปก</span><span class="btn ghost">ปกถูกแล้ว</span></div></div>
+</div>
+<p class="note">กด เปลี่ยนปก = เปิดหน้างานพร้อมกล่องเปลี่ยนปกให้เลย · กด ปกถูกแล้ว = เอาออกจากรายการ (ระบบเดาผิด) · งานที่ส่งใหม่ ระบบตรวจตอนครูกดส่งเอง</p>
+</div>
+</div>
+<div>
+<p class="opt"><span>ข</span>แบบรายการสั้น ภาพเล็ก ดูได้ทีละมาก ๆ</p>
+<div class="card">
+<h3>งานที่หน้าแรกน่าจะไม่ใช่ปก <span class="chip">5 งาน</span></h3>
+<div class="scan"><div>มีงานเดิมที่ยังไม่ได้ตรวจหน้าแรก 300 งาน</div><span class="btn">ตรวจหน้าแรกของงานเดิม</span></div>
+<div class="row"><div class="pg"></div><div class="t"><b>ว21101 วิทยาศาสตร์</b> <span class="tag blank">หน้าแรกเกือบว่าง</span><span class="m">ครูสมชาย ใจดี · คู่มือ · ผ่านครบแล้ว</span></div><span class="btn">เปลี่ยนปก</span><span class="btn ghost">ปกถูกแล้ว</span></div>
+<div class="row"><div class="pg"><i class="l" style="top:14%"></i><i class="l" style="top:22%"></i><i class="l" style="top:30%"></i><i class="l" style="top:38%"></i><i class="l" style="top:46%"></i></div><div class="t"><b>ค22102 คณิตศาสตร์</b> <span class="tag code">ไม่พบรหัส ค22102</span><span class="m">ครูสมหญิง รักเรียน · แผน · รอหัวหน้ากลุ่มสาระ</span></div><span class="btn">เปลี่ยนปก</span><span class="btn ghost">ปกถูกแล้ว</span></div>
+<div class="row"><div class="pg"><i class="l" style="top:80%;left:40%"></i></div><div class="t"><b>อ23101 ภาษาอังกฤษ</b> <span class="tag blank">หน้าแรกเกือบว่าง</span><span class="tag code">ไม่พบรหัส</span><span class="m">ครูมานี มีสุข · คู่มือ · ผ่านครบแล้ว</span></div><span class="btn">เปลี่ยนปก</span><span class="btn ghost">ปกถูกแล้ว</span></div>
+<div class="row"><div class="pg"></div><div class="t"><b>ส21101 สังคมศึกษา</b> <span class="tag blank">หน้าแรกเกือบว่าง</span><span class="m">ครูวิชัย ตั้งใจ · คู่มือ · รอรองผู้อำนวยการ</span></div><span class="btn">เปลี่ยนปก</span><span class="btn ghost">ปกถูกแล้ว</span></div>
+<div class="row"><div class="pg"><i class="l" style="top:20%"></i><i class="l" style="top:28%"></i></div><div class="t"><b>พ21101 สุขศึกษา</b> <span class="tag code">ไม่พบรหัส พ21101</span><span class="m">ครูสุดา แข็งแรง · แผน · ผ่านครบแล้ว</span></div><span class="btn">เปลี่ยนปก</span><span class="btn ghost">ปกถูกแล้ว</span></div>
+<p class="note">เหมือนแบบ ก ทุกอย่าง ภาพเล็กกว่า เห็นสถานะงานด้วย</p>
+</div>
+</div>
+</div>
+<div class="foot"><b>ระบบเดาอย่างไร</b> หน้าแรกเกือบว่าง = มีจุดสีเข้มน้อยมาก (เกณฑ์เดียวกับคำเตือนในหน้าส่ง) · ไม่พบรหัส = หน้าแรกมีตัวหนังสือ แต่ไม่มีรหัสวิชาของงาน (ไฟล์สแกนไม่มีตัวหนังสือ ระบบไม่เตือนข้อนี้)<br>
+<b>งานเก่าที่ส่งไปแล้ว</b> เครื่องของผู้ดูแลเปิดไฟล์ทีละงานแล้วจำผลไว้ ทำครั้งเดียว ปิดหน้าแล้วกลับมาทำต่อได้ · เปลี่ยนปกแล้ว งานหลุดจากรายการเอง</div>
+</body></html>

@@ -147,6 +147,7 @@
 <% if (locals.pc) { %>
     <% if (ff.coverconfirm) { %><input type="hidden" name="cover_check" value="1"><% } %>
     <%- include('partials/precheck', { pc, sub, files, mode: 'form' }) %>
+    <% if (ff.frontcheck) { %><input type="hidden" name="front_check" data-front-check><% } %>
 <% } else if (ff.coverconfirm) { %>
     <input type="hidden" name="cover_check" value="1">
     <label class="check cover-ok"><input type="checkbox" name="cover_ok" value="1"> <span>ฉันตรวจแล้ว <b>ไฟล์นี้มีหน้าปก</b> และ<b>หน้าปกอยู่หน้าแรก</b><% if (ff.coverpreview) { %> ตามภาพหน้าปกที่จะส่งด้านบน<% } %></span></label>

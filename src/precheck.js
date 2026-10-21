@@ -57,4 +57,37 @@ async function dupList(sub) {
   return (await otherFiles(sub)).map((r) => ({ id: r.id, size: Number(r.size), label: r.label }));
 }
 
-module.exports = { minPages, otherFiles, sameBytes, duplicateOf, dupList };
+// ---------- รายชื่องานที่หน้าแรกน่าจะไม่ใช่ปก (ฟังก์ชันเสริม frontcheck) ----------
+// เซิร์ฟเวอร์บนคลาวด์ไม่เปิด PDF เอง เบราว์เซอร์ตรวจหน้าแรก (ตอนครูกดส่ง เปลี่ยนปก หรือผู้ดูแลกดตรวจงานเดิม) แล้วส่งผลมาเก็บใน files.front_check
+// ok · blank หน้าแรกเกือบว่าง · nocode หน้าแรกมีตัวหนังสือแต่ไม่มีรหัสวิชา · seen ผู้ดูแลกด ปกถูกแล้ว · ว่าง = ยังไม่ได้ตรวจ
+const FRONT_VALUES = ['ok', 'blank', 'nocode', 'blank nocode'];
+const FRONT_BAD = ['blank', 'nocode', 'blank nocode'];
+// ไฟล์หน้าแรกของงาน = PDF หลักไฟล์แรกที่ใช้อยู่ (แบบเดียวกับรูปปกในคลังงาน)
+const FRONT_FILE = `(SELECT MIN(x.id) FROM files x WHERE x.submission_id = s.id AND x.kind = 'main' AND x.is_current = 1 AND x.mime = 'application/pdf')`;
+
+// ใส่ผลตรวจให้ไฟล์ที่เพิ่งแนบ (เรียกหลัง up.attach ใน transaction) เฉพาะเมื่อไฟล์ใหม่ล่าสุดเป็นไฟล์หน้าแรกของงาน
+async function setFront(ff, subId, v) {
+  if (!ff.frontcheck || !FRONT_VALUES.includes(v)) return;
+  await q.run(
+    `UPDATE files SET front_check = ? WHERE id = (SELECT MAX(id) FROM files WHERE submission_id = ? AND kind = 'main' AND is_current = 1)
+       AND id = (SELECT MIN(id) FROM files WHERE submission_id = ? AND kind = 'main' AND is_current = 1 AND mime = 'application/pdf')`,
+    v,
+    subId,
+    subId
+  );
+}
+
+// แผนและคู่มือที่ส่งแล้ว ซึ่งหน้าแรกน่าจะไม่ใช่ปก (bad) และที่ยังไม่ได้ตรวจ (todo ใช้กับปุ่มตรวจหน้าแรกของงานเดิม)
+async function frontRows(onlyTodo = false) {
+  const rows = await q.all(
+    `SELECT s.id, s.doc_type, s.subject_code, s.subject_name, s.status, s."current_role", s.teacher_id, u.full_name AS teacher_name, f.id AS file, f.front_check
+     FROM submissions s JOIN users u ON u.id = s.teacher_id JOIN files f ON f.id = ${FRONT_FILE}
+     WHERE s.doc_type IN ('manual', 'plan') AND s.status != 'draft'
+       AND (f.front_check IS NULL${onlyTodo ? '' : ` OR f.front_check IN (${FRONT_BAD.map(() => '?').join(', ')})`})
+     ORDER BY s.id DESC LIMIT 2000`,
+    ...(onlyTodo ? [] : FRONT_BAD)
+  );
+  return { bad: rows.filter((r) => r.front_check), todo: rows.filter((r) => !r.front_check) };
+}
+
+module.exports = { minPages, otherFiles, sameBytes, duplicateOf, dupList, FRONT_VALUES, setFront, frontRows };

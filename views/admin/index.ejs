@@ -87,5 +87,35 @@
 <% } %>
   </div>
 <% } %>
+<% if (front) { %>
+  <div class="card" id="frontcheck">
+    <h3 class="acct-head">งานที่หน้าแรกน่าจะไม่ใช่ปก<% if (front.bad.length) { %> <span class="acct-chip"><%= front.bad.length %> งาน</span><% } %></h3>
+<% if (front.todo) { %>
+    <div class="fc-scan" data-fc-scan>
+      <div class="fc-scan-text" data-fc-text>มีงานเดิมที่ยังไม่ได้ตรวจหน้าแรก <%= front.todo %> งาน</div>
+      <div class="fc-bar" data-fc-bar hidden><i></i></div>
+      <button type="button" class="btn btn-primary btn-sm" data-fc-start data-ask="ให้เครื่องนี้เปิดไฟล์งานเดิม <%= front.todo %> งานทีละไฟล์เพื่อตรวจหน้าแรก ใช้เวลาสักครู่ ระหว่างตรวจอย่าปิดหน้านี้ ปิดแล้วกลับมาทำต่อได้">ตรวจหน้าแรกของงานเดิม</button>
+      <button type="button" class="btn btn-ghost btn-sm" data-fc-stop hidden>หยุด</button>
+    </div>
+<% } %>
+<% if (front.bad.length) { %>
+<% for (const r of front.bad) { %>
+    <div class="fc-row">
+      <span class="fc-pg" data-fc-thumb="/f/<%= r.file %>/raw"></span>
+      <div class="fc-t"><b><a href="/s/<%= r.id %>"><%= r.subject_code %> <%= r.subject_name %></a></b>
+        <% if (r.front_check.includes('blank')) { %><span class="fc-tag blank">หน้าแรกเกือบว่าง</span><% } %><% if (r.front_check.includes('nocode')) { %><span class="fc-tag code">ไม่พบรหัส <%= r.subject_code %></span><% } %>
+        <span class="fc-m"><%= r.teacher_name %> · <%= r.type_label %> · <%= r.status_text %></span></div>
+      <div class="fc-acts">
+        <a class="btn btn-primary btn-sm" href="/s/<%= r.id %><%= ff.coverpdf ? '?front=1' : '' %>"><%= ff.coverpdf ? 'เปลี่ยนปก' : 'เปิดงาน' %></a>
+        <form method="post" action="/admin/frontcheck/<%= r.file %>/seen" data-confirm="หน้าแรกของ <%= r.subject_code %> ของ<%= r.teacher_name %> เป็นปกถูกแล้ว เอาออกจากรายการ ถ้าเปลี่ยนไฟล์ใหม่ ระบบตรวจไฟล์ใหม่อีกครั้ง" data-ok-label="ปกถูกแล้ว"><button class="btn btn-ghost btn-sm" type="submit">ปกถูกแล้ว</button></form>
+      </div>
+    </div>
+<% } %>
+    <p class="muted small">ระบบเดาจากหน้าแรกของไฟล์ เกือบว่าง คือแทบไม่มีตัวหนังสือ ไม่พบรหัส คือมีตัวหนังสือแต่ไม่มีรหัสวิชาของงาน กด เปลี่ยนปก แล้วติ๊กหน้าที่ผิดหรือต่อปกใหม่ ถ้าระบบเดาผิดกด ปกถูกแล้ว</p>
+<% } else { %>
+    <div class="bk-row"><span class="bk-dot ok"></span><div><b><%= front.todo ? 'งานที่ตรวจแล้วหน้าแรกเป็นปกทุกงาน' : 'หน้าแรกของทุกงานที่ส่งแล้วเป็นปก' %></b><span>ระบบตรวจหน้าแรกตอนครูกดส่ง งานที่หน้าแรกเกือบว่างหรือไม่มีรหัสวิชาจะขึ้นที่นี่</span></div></div>
+<% } %>
+  </div>
+<% } %>
 </div>
 <%- include('../partials/bottom') %>

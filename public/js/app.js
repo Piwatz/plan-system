@@ -597,6 +597,8 @@
         await sendChunks(start.token, merged, start.chunk, (n) => setProgress(Math.min(99, Math.round((n / all) * 100))));
         const data = new URLSearchParams({ front: '1', removed: del.join(','), drawn: mode === 'drawn' ? '1' : '', newcover: mode === 'file' ? '1' : '' });
         data.append('upload_main_files', start.token);
+        // ผลตรวจหน้าแรกของไฟล์ใหม่ (ฟังก์ชันเสริม frontcheck) ปกที่ระบบวาดถือว่าเป็นปกแน่นอน
+        if (dlg.dataset.frontcheck) data.append('front_check', mode === 'drawn' ? 'ok' : await frontCheck(new Uint8Array(m.bytes), dlg.dataset.code));
         if (thumb) data.append('upload_cover_thumb', await uploadBlob(thumb, { form: url, field: 'cover_thumb', name: 'cover.jpg' }));
         setProgress(100);
         const r = await request('POST', url, data, { 'Content-Type': 'application/x-www-form-urlencoded' });
@@ -604,6 +606,68 @@
       } catch (err) {
         showPaused(false);
         hideBusy();
+        tell((err && err.userMessage) || NET_ERROR);
+      }
+    });
+    // มาจากรายชื่องานที่หน้าแรกน่าจะไม่ใช่ปก (หน้าผู้ดูแลระบบ) เปิดกล่องเปลี่ยนปกให้เลย
+    if (new URLSearchParams(window.location.search).get('front') === '1') btn.click();
+  });
+
+  // ---------- รายชื่องานที่หน้าแรกน่าจะไม่ใช่ปก (ฟังก์ชันเสริม frontcheck) หน้าผู้ดูแลระบบ ----------
+  // ภาพหน้าแรกเล็ก ๆ ของแต่ละงานในรายการ วาดทีละงานจากไฟล์จริง
+  (async () => {
+    for (const el of document.querySelectorAll('[data-fc-thumb]')) {
+      try {
+        const r = await renderFirstPage(el.dataset.fcThumb, 44, window.devicePixelRatio || 1);
+        if (!r) continue;
+        r.canvas.style.width = '';
+        r.canvas.style.height = '';
+        el.appendChild(r.canvas);
+      } catch {
+        // เปิดไฟล์ไม่ได้ เว้นกรอบว่างไว้ กดเปิดงานดูเองได้
+      }
+    }
+  })();
+  // ตรวจหน้าแรกของงานเดิม: เครื่องนี้เปิดไฟล์ทีละงาน (โหลดเฉพาะส่วนที่ใช้) แล้วส่งผลกลับทีละไฟล์ หยุดกลางคันแล้วกดต่อได้
+  document.querySelectorAll('[data-fc-scan]').forEach((box) => {
+    const start = box.querySelector('[data-fc-start]');
+    const stop = box.querySelector('[data-fc-stop]');
+    const text = box.querySelector('[data-fc-text]');
+    const bar = box.querySelector('[data-fc-bar]');
+    let stopped = false;
+    stop.addEventListener('click', () => {
+      stopped = true;
+      stop.disabled = true;
+      text.textContent = 'กำลังหยุด รอไฟล์ที่ตรวจอยู่ให้เสร็จก่อน';
+    });
+    start.addEventListener('click', async () => {
+      if (!(await ask(start.dataset.ask, { icon: 'eye', ok: 'เริ่มตรวจ' }))) return;
+      stopped = false;
+      start.hidden = true;
+      stop.hidden = false;
+      stop.disabled = false;
+      bar.hidden = false;
+      const form = { 'Content-Type': 'application/x-www-form-urlencoded' };
+      let done = 0;
+      let bad = 0;
+      try {
+        const res = await fetch('/admin/frontcheck/todo', { headers: { 'X-Requested-With': 'XMLHttpRequest' } });
+        const items = res.ok ? (await res.json()).items : [];
+        for (let i = 0; i < items.length && !stopped; i++) {
+          text.textContent = 'ตรวจงานเดิมแล้ว ' + i + ' จาก ' + items.length + ' งาน';
+          bar.firstElementChild.style.width = Math.round((i / items.length) * 100) + '%';
+          const v = await frontCheck('/f/' + items[i].file + '/raw', items[i].code);
+          if (!v) continue;
+          await request('POST', '/admin/frontcheck/' + items[i].file, new URLSearchParams({ v }), form);
+          done++;
+          if (v !== 'ok') bad++;
+        }
+        await request('POST', '/admin/frontcheck-done', new URLSearchParams({ n: String(done), bad: String(bad) }), form);
+        await tell((stopped ? 'หยุดตรวจแล้ว ' : 'ตรวจเสร็จแล้ว ') + done + ' งาน พบหน้าแรกน่าจะไม่ใช่ปก ' + bad + ' งาน', 'ok');
+        window.location.reload();
+      } catch (err) {
+        start.hidden = false;
+        stop.hidden = true;
         tell((err && err.userMessage) || NET_ERROR);
       }
     });
@@ -1264,6 +1328,21 @@
       if (task) task.destroy().catch(() => {});
     }
   }
+  // ผลตรวจหน้าแรก (ฟังก์ชันเสริม frontcheck) เก็บคู่กับไฟล์ ให้ผู้ดูแลเห็นรายชื่องานที่หน้าแรกน่าจะไม่ใช่ปก
+  // blank = หน้าแรกเกือบว่าง · nocode = หน้าแรกมีตัวหนังสือแต่ไม่มีรหัสวิชา (ไฟล์สแกนไม่มีตัวหนังสือ ไม่นับข้อนี้) · ok · ว่าง = วัดไม่ได้
+  function frontVerdict(ink, page1, code) {
+    if (ink == null) return '';
+    const c = normCode(code);
+    const t = normCode(page1);
+    const out = [];
+    if (ink < INK_MIN) out.push('blank');
+    if (c && t.length >= 30 && !t.includes(c)) out.push('nocode');
+    return out.join(' ') || 'ok';
+  }
+  async function frontCheck(src, code) {
+    const r = await inspectPdf(src, 1, true);
+    return r.error ? '' : frontVerdict(r.ink, r.text[0], code);
+  }
   function sameBytes(a, b) {
     if (a.length !== b.length) return false;
     for (let i = 0; i < a.length; i++) if (a[i] !== b[i]) return false;
@@ -1300,6 +1379,12 @@
     let text = null; // ตัวหนังสือ 3 หน้าแรก (null = ไฟล์สแกนหรือยังไม่รู้ ไม่เตือนเรื่องรหัสวิชา)
     let oldPages = null;
     const item = (k) => box.querySelector('[data-ck="' + k + '"]');
+    // ผลตรวจหน้าแรกของไฟล์ที่เพิ่งเลือก (ฟังก์ชันเสริม frontcheck) ส่งไปพร้อมฟอร์ม ไฟล์เดิมไม่ส่ง
+    const frontIn = form.querySelector('[data-front-check]');
+    let front = null;
+    function putFront() {
+      if (frontIn) frontIn.value = front ? frontVerdict(front.ink, front.page1, fCode && fCode.value) : '';
+    }
 
     function update() {
       const shown = Array.from(box.querySelectorAll('[data-ck]')).filter((x) => !x.hidden);
@@ -1374,6 +1459,7 @@
       set('fields', miss.length ? 'bad' : 'ok', miss.length ? 'ยังไม่ได้กรอก ' + miss.join(' ') : fields.map(([, el]) => el.value.trim()).join(' '));
       checkCode();
       checkNames();
+      putFront();
     }
     // เลขที่บันทึกข้อความ (ฟังก์ชันเสริม docnoreq) รับเฉพาะตัวเลข
     const docNo = form.querySelector('[data-docno]');
@@ -1414,6 +1500,8 @@
         return;
       }
       set('open', 'ok', r.pages + ' หน้า เปิดได้ ไม่ติดรหัสผ่าน');
+      front = isNew ? { ink: r.ink, page1: r.text[0] } : null;
+      putFront();
       const blank = blankOn && r.ink != null && r.ink < INK_MIN;
       show('blank', blank, 'หน้าแรกแทบไม่มีตัวหนังสือ ดูภาพหน้าปกด้านบนว่าเป็นหน้าปกจริง');
       if (warn) warn.hidden = !blank;
@@ -1458,6 +1546,8 @@
       const token = ++run;
       for (const k of ['cover', 'blank', 'code', 'fname', 'pages']) untick(k);
       text = null;
+      front = null;
+      putFront();
       names = files.map((f) => f.name);
       checkNames();
       if (!files.length) {
@@ -1480,7 +1570,7 @@
       set('open', 'wait', 'กำลังตรวจ');
       const all = { pages: 0, text: [], ink: null };
       for (let i = 0; i < pdfs.length; i++) {
-        const r = await inspectPdf(new Uint8Array(await pdfs[i].arrayBuffer()), 3 - all.text.length, i === 0 && blankOn);
+        const r = await inspectPdf(new Uint8Array(await pdfs[i].arrayBuffer()), 3 - all.text.length, i === 0 && (blankOn || Boolean(frontIn)));
         if (token !== run) return;
         if (r.error) return showInspect(token, { error: r.error, name: pdfs[i].name }, true);
         all.pages += r.pages;

@@ -1309,3 +1309,20 @@ dialog.front-dlg { width: min(720px, calc(100vw - 24px)); max-height: calc(100vh
 /* ปกตัวใหญ่ที่ซ่อนนอกจอ ใช้วาดลง PDF ไม่แสดงให้เห็น */
 .front-render { position: fixed; left: -10000px; top: 0; width: 620px; }
 .front-render .lib-cover { width: 620px; border-radius: 0; box-shadow: none; }
+
+/* รายชื่องานที่หน้าแรกน่าจะไม่ใช่ปก (ฟังก์ชันเสริม frontcheck) หน้าผู้ดูแลระบบ */
+.fc-scan { display: flex; flex-wrap: wrap; gap: 8px 10px; align-items: center; background: var(--soft); border-radius: var(--rs); padding: 10px 12px; margin: 6px 0 10px; }
+.fc-scan-text { flex: 1 1 220px; }
+.fc-bar { flex: 1 1 160px; height: 8px; background: var(--surface); border-radius: 8px; overflow: hidden; }
+.fc-bar i { display: block; height: 100%; width: 0; background: var(--accent); transition: width .2s; }
+.fc-row { display: flex; gap: 12px; align-items: center; padding: 9px 0; border-top: 1px solid var(--line); }
+.fc-pg { flex: none; width: 44px; height: 62px; background: #fff; border: 1px solid var(--line); box-shadow: 0 1px 4px rgba(0, 0, 0, .12); overflow: hidden; }
+.fc-pg canvas { display: block; width: 100%; height: 100%; object-fit: contain; }
+.fc-t { flex: 1; min-width: 0; }
+.fc-m { display: block; font-size: .88em; color: var(--muted); }
+.fc-tag { display: inline-block; font-size: .8em; font-weight: 600; border-radius: 6px; padding: 1px 7px; margin: 2px 4px 0 0; }
+.fc-tag.blank { background: var(--back-bg); color: var(--back); }
+.fc-tag.code { background: var(--wait-bg); color: var(--wait); }
+.fc-acts { display: flex; gap: 6px; flex: none; }
+.fc-acts form { margin: 0; }
+@media (max-width: 600px) { .fc-row { flex-wrap: wrap; } .fc-acts { width: 100%; padding-left: 56px; } }

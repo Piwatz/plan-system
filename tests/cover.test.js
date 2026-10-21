@@ -249,3 +249,63 @@ test('เปลี่ยนปก: ผู้ดูแลระบบต่อป
   assert.notEqual(x.status, 200);
   await db.setSetting('ff_coverpdf', '1');
 });
+
+test('รายชื่องานที่หน้าแรกน่าจะไม่ใช่ปก: เก็บผลตรวจตอนส่ง ผู้ดูแลเห็นรายการ ตรวจงานเดิม กดปกถูกแล้ว เปลี่ยนปกแล้วหลุดจากรายการ ปิดสวิตช์แล้วไม่มี', async () => {
+  const frontOf = async (id) => (await db.q.get("SELECT front_check FROM files WHERE submission_id = ? AND kind = 'main' AND is_current = 1 ORDER BY id LIMIT 1", id)).front_check;
+  const t = await as('sci2');
+  assert.match((await t.get('/works/new?type=manual')).text, /name="front_check" data-front-check/);
+  const fields = { doc_type: 'manual', subject_code: 'ว30198', subject_name: 'ทดสอบหน้าแรก', grade_level: 'ม.4', doc_no: '15', action: 'submit', front_check: 'blank' };
+  const r = await sendForm(t, '/works', fields, [[await pdf(6), 'คู่มือ.pdf']]);
+  const id = Number(/\/s\/(\d+)/.exec(JSON.parse(r.text).redirect)[1]);
+  assert.equal(await frontOf(id), 'blank', 'เก็บผลตรวจที่เบราว์เซอร์ส่งมา');
+  const sub = await db.q.get('SELECT status FROM submissions WHERE id = ?', id);
+  if (sub.status === 'draft') await t.post(`/s/${id}/submit`, { cover_check: '1', cover_ok: '1' });
+
+  // ค่าที่ไม่รู้จักไม่เก็บ (ครูส่งเองตั้งค่า seen ไม่ได้)
+  const r2 = await sendForm(t, '/works', { ...fields, subject_code: 'ว30197', front_check: 'seen' }, [[await pdf(6), 'คู่มือ2.pdf']]);
+  const id2 = Number(/\/s\/(\d+)/.exec(JSON.parse(r2.text).redirect)[1]);
+  assert.equal(await frontOf(id2), null);
+
+  // ครูเปิดหน้าผู้ดูแลระบบหรือส่งผลตรวจเองไม่ได้
+  assert.notEqual((await t.get('/admin/frontcheck/todo')).status, 200);
+
+  const a = await as('admin');
+  const page = (await a.get('/admin')).text;
+  assert.match(page, /id="frontcheck"/);
+  assert.match(page, /ว30198 ทดสอบหน้าแรก/);
+  assert.match(page, /หน้าแรกเกือบว่าง/);
+  assert.ok(page.includes(`href="/s/${id}?front=1">เปลี่ยนปก`), "ปุ่มเปลี่ยนปกเปิดกล่องให้เลย");
+  assert.match(page, /data-fc-start/, 'มีงานเดิมที่ยังไม่ได้ตรวจ');
+
+  // ตรวจงานเดิม: รายการเฉพาะที่ยังไม่มีผล ใส่ผลได้ครั้งเดียว ไม่ทับผลเดิม
+  const todo = JSON.parse((await a.get('/admin/frontcheck/todo')).text).items;
+  assert.ok(todo.length > 0);
+  assert.ok(!todo.some((x) => x.code === 'ว30198'));
+  const f2 = todo.find((x) => x.code === 'ว30197');
+  assert.ok(f2, 'งานที่ไม่มีผลตรวจอยู่ในรายการตรวจงานเดิม');
+  assert.equal((await a.req('POST', `/admin/frontcheck/${f2.file}`, new URLSearchParams({ v: 'nocode' }), XHR)).status, 200);
+  assert.equal((await a.req('POST', `/admin/frontcheck/${f2.file}`, new URLSearchParams({ v: 'ok' }), XHR)).status, 200);
+  assert.equal(await frontOf(id2), 'nocode', 'ไม่ทับผลเดิม');
+  assert.equal((await a.req('POST', `/admin/frontcheck/${f2.file}`, new URLSearchParams({ v: 'seen' }), XHR)).status, 400);
+  assert.match((await a.get('/admin')).text, /ไม่พบรหัส ว30197/);
+
+  // ปกถูกแล้ว: หลุดจากรายการ บันทึก audit_log
+  const s = await a.post(`/admin/frontcheck/${f2.file}/seen`, {});
+  assert.equal(s.status, 302);
+  assert.equal(await frontOf(id2), 'seen');
+  assert.doesNotMatch((await a.get('/admin')).text, /ไม่พบรหัส ว30197/);
+  assert.ok(await db.q.get("SELECT 1 AS x FROM audit_log WHERE action LIKE 'ยืนยันว่าหน้าแรกเป็นปกถูกแล้ว%ว30197%'"));
+
+  // เปลี่ยนปกด้วยปกที่ระบบวาด ไฟล์ใหม่ได้ผล ok หลุดจากรายการ
+  const tk = await uploadOne(a, await pdf(6), 'merged.pdf', { form: `/s/${id}/cover`, field: 'main_files', merged: '2' });
+  const x = await a.req('POST', `/s/${id}/cover`, new URLSearchParams({ front: '1', removed: '1', drawn: '1', front_check: 'ok', upload_main_files: tk }), XHR);
+  assert.equal(x.status, 200, x.text);
+  assert.equal(await frontOf(id), 'ok');
+  assert.doesNotMatch((await a.get('/admin')).text, /ว30198 ทดสอบหน้าแรก/);
+
+  await db.setSetting('ff_frontcheck', '0');
+  assert.doesNotMatch((await a.get('/admin')).text, /id="frontcheck"/);
+  assert.doesNotMatch((await t.get('/works/new?type=manual')).text, /data-front-check/);
+  assert.equal((await a.get('/admin/frontcheck/todo')).status, 404);
+  await db.setSetting('ff_frontcheck', '1');
+});
