@@ -97,6 +97,47 @@ router.post('/frontcheck/:file', async (req, res) => {
   res.json({ ok: true });
 });
 
+// ---------- ไฟล์ในถังขยะ (ฟังก์ชันเสริม trashbin src/trashbin.js) ----------
+function trashOn(req, res) {
+  if (req.ff.trashbin) return true;
+  fail(req, res, '/admin', 'ฟังก์ชันกู้ไฟล์งานจากถังขยะปิดอยู่');
+  return false;
+}
+
+router.get('/trash', async (req, res) => {
+  if (!trashOn(req, res)) return;
+  const trashbin = require('../trashbin');
+  res.render('admin/trash', { title: 'ไฟล์ในถังขยะ', trash: await trashbin.list(), keepDays: trashbin.KEEP_DAYS });
+});
+
+router.get('/trash/:key/file', async (req, res) => {
+  if (!trashOn(req, res)) return;
+  const it = await require('../trashbin').find(req.params.key);
+  if (!it) return fail(req, res, '/admin/trash', 'ไม่พบไฟล์นี้ในถังขยะ');
+  await require('./work').sendStored(req, res, { id: req.params.key, stored_name: it.at, size: it.size || 0 }, {
+    'Content-Type': it.mime || 'application/octet-stream',
+    'Content-Disposition': util.contentDisposition(it.name || 'file', 'attachment'),
+    'Cache-Control': 'private, no-store',
+  });
+});
+
+router.post('/trash/:key/restore', async (req, res) => {
+  if (!trashOn(req, res)) return;
+  const trashbin = require('../trashbin');
+  const it = await trashbin.find(req.params.key);
+  if (!it) return fail(req, res, '/admin/trash', 'ไม่พบไฟล์นี้ในถังขยะ');
+  try {
+    if (req.body && req.body.to === 'work') {
+      const id = await trashbin.restoreWork(it, req.me);
+      return done(req, res, `/s/${id}`, 'กู้กลับเป็นงานฉบับร่างแล้ว ครูเจ้าของงานตรวจแล้วกดส่งเอง ผู้ตรวจต้องตรวจใหม่');
+    }
+    await trashbin.restoreDrive(it, req.me);
+    done(req, res, '/admin/trash', `กู้ ${it.name} คืนเข้า Google Drive แล้ว ไฟล์อยู่ในโฟลเดอร์เดิม`);
+  } catch (e) {
+    fail(req, res, '/admin/trash', 'กู้คืนไม่สำเร็จ ' + e.message);
+  }
+});
+
 // จดประวัติหลังตรวจงานเดิมครบชุด (1 แถวต่อการกด 1 ครั้ง)
 router.post('/frontcheck-done', async (req, res) => {
   if (!frontOn(req, res)) return;

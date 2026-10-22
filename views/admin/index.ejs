@@ -42,6 +42,9 @@
 <% } %>
     <div class="bk-btns">
       <a class="btn btn-primary" href="/admin/backup">ดาวน์โหลดสำรองฐานข้อมูล</a>
+<% if (ff.trashbin) { %>
+      <a class="btn" href="/admin/trash"><%- icon('undo', 18) %> ไฟล์ในถังขยะ กู้งานที่ลบผิด</a>
+<% } %>
 <% if (ff.backupkeep) { %>
       <form method="post" action="/admin/backup/term" data-confirm="เก็บสำรองข้อมูลฉบับปิดภาคเรียนที่ <%= b.term %> ไว้ถาวรในโฟลเดอร์ สำรองปิดภาคเรียน ใช่ไหม ระบบไม่ลบไฟล์นี้ทิ้ง กดซ้ำได้ จะได้อีกฉบับตามวันที่กด"><button class="btn" type="submit">เก็บสำรองฉบับปิดภาค <%= b.term %></button></form>
 <% } %>

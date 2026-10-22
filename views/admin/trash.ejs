@@ -1,0 +1,85 @@
+<%- include('../partials/top') %>
+<%# ไฟล์ในถังขยะ (ฟังก์ชันเสริม trashbin) รายการจาก src/trashbin.js list() · ตัวอย่างที่ครูเต้ยเลือก design-mockup/trash-mockup.jpg %>
+<%
+  const tone = (n) => (n > 14 ? 'badge-green' : n > 6 ? 'badge-amber' : 'badge-red');
+  const when = (x) => util.thaiDateTime(x.deleted_at);
+  const active = trash.items.filter((x) => !x.restored_at);
+  const restored = trash.items.filter((x) => x.restored_at);
+%>
+<div class="narrow" style="max-width:1100px">
+  <div class="page-head">
+    <div>
+      <div class="eyebrow">ผู้ดูแลระบบ</div>
+      <h1>ไฟล์ในถังขยะ</h1>
+      <div class="sub">ไฟล์งานที่ถูกลบ เก็บไว้ <%= keepDays %> วัน แล้ว Google Drive ลบถาวรเอง</div>
+    </div>
+    <div class="actions"><a class="btn btn-ghost" href="/admin"><%- icon('back', 18) %> กลับ</a></div>
+  </div>
+
+  <div class="call tip"><%- icon('undo') %>
+    <div><span class="call-tag">แนะนำ</span><b class="call-title">ลบงานผิด กู้ได้ภายใน <%= keepDays %> วัน</b>
+      <div class="small">กู้กลับเป็นงานเดิม ระบบสร้างฉบับร่างของครูคนเดิมพร้อมข้อมูลวิชาและไฟล์ ครูตรวจแล้วกดส่งเอง ลายเซ็นและคะแนนเดิมไม่กลับมา ผู้ตรวจต้องตรวจใหม่ · กู้คืนเข้า Drive อย่างเดียว ไฟล์กลับไปอยู่โฟลเดอร์เดิมใน Google Drive ไม่สร้างงาน</div></div>
+  </div>
+
+  <section class="card flush">
+    <div class="card-head"><h2>ถูกลบใน <%= keepDays %> วันล่าสุด <%= active.length %> ไฟล์</h2></div>
+    <% if (!active.length) { %>
+      <div class="empty" style="padding:24px 20px"><p>ไม่มีไฟล์งานที่ถูกลบ</p></div>
+    <% } else { %>
+    <div class="table-wrap"><table class="table trash-table">
+      <thead><tr><th>ไฟล์และงาน</th><th>ลบเมื่อ</th><th>เหลือเวลากู้</th><th class="tr-act">ทำอะไรได้</th></tr></thead>
+      <tbody>
+        <% for (const x of active) { const isNote = (() => { try { return JSON.parse(x.snapshot).doc_type === 'note'; } catch { return false; } })(); %>
+        <tr>
+          <td><b><%= x.name %></b><% if (!x.was_current) { %> <span class="badge">รุ่นก่อนแก้ไข</span><% } %><br><span class="muted small"><%= x.label %> · ลบงานโดย <%= x.deleted_by_name || 'ระบบ' %></span></td>
+          <td><%= when(x) %></td>
+          <td><span class="badge st <%= tone(x.left) %>">อีก <%= x.left %> วัน</span></td>
+          <td class="tr-act"><div class="btn-row">
+            <a class="btn btn-sm btn-ghost" href="/admin/trash/<%= x.key %>/file"><%- icon('download', 16) %> ดาวน์โหลด</a>
+            <form method="post" action="/admin/trash/<%= x.key %>/restore" data-confirm="กู้ <%= x.name %> กลับเป็นงานเดิม (ฉบับร่าง) <%= x.label %> ใช่ไหม<%= isNote ? ' บันทึกจะกลับไปอยู่ใต้แผนเดิม' : '' %> ครูเจ้าของงานต้องกดส่งเอง ผู้ตรวจต้องตรวจใหม่" data-ok-label="กู้เป็นงาน"><input type="hidden" name="to" value="work"><button class="btn btn-sm btn-primary" type="submit"><%- icon('undo', 16) %> กู้กลับเป็นงานเดิม (ฉบับร่าง)</button></form>
+            <form method="post" action="/admin/trash/<%= x.key %>/restore" data-confirm="กู้ <%= x.name %> คืนเข้า Google Drive อย่างเดียว ใช่ไหม ไฟล์กลับไปอยู่โฟลเดอร์เดิม ระบบไม่สร้างงาน" data-ok-label="กู้คืน"><input type="hidden" name="to" value="drive"><button class="btn btn-sm btn-ghost" type="submit">กู้คืนเข้า Drive อย่างเดียว</button></form>
+          </div></td>
+        </tr>
+        <% } %>
+      </tbody>
+    </table></div>
+    <% } %>
+  </section>
+
+  <section class="card flush">
+    <div class="card-head"><h2>ไฟล์อื่นในถังขยะ <%= trash.loose.length %> ไฟล์</h2></div>
+    <p class="muted small" style="padding:0 20px">ไฟล์ที่ถูกลบก่อนเปิดใช้หน้านี้ หรือไฟล์ที่ถูกแทนด้วยไฟล์ใหม่ ระบบไม่ได้จดว่าเป็นงานของใคร เห็นแค่ชื่อไฟล์ ดาวน์โหลดหรือกู้คืนเข้า Drive ได้ ไม่รวมไฟล์สำรองข้อมูลและรูปปก</p>
+    <% if (trash.looseError) { %><div class="alert alert-warn" style="margin:0 20px 16px"><%= trash.looseError %></div><% } %>
+    <% if (trash.loose.length) { %>
+    <div class="table-wrap"><table class="table trash-table">
+      <thead><tr><th>ชื่อไฟล์</th><th>ลบเมื่อ</th><th>เหลือเวลากู้</th><th class="tr-act">ทำอะไรได้</th></tr></thead>
+      <tbody>
+        <% for (const x of trash.loose) { %>
+        <tr>
+          <td><b><%= x.name %></b><% if (x.size) { %><br><span class="muted small"><%= util.fileSize(x.size) %></span><% } %></td>
+          <td><%= when(x) %></td>
+          <td><span class="badge st <%= tone(x.left) %>">อีก <%= x.left %> วัน</span></td>
+          <td class="tr-act"><div class="btn-row">
+            <a class="btn btn-sm btn-ghost" href="/admin/trash/<%= encodeURIComponent(x.key) %>/file"><%- icon('download', 16) %> ดาวน์โหลด</a>
+            <% if (x.ref.startsWith('gdrive:')) { %><form method="post" action="/admin/trash/<%= encodeURIComponent(x.key) %>/restore" data-confirm="กู้ <%= x.name %> คืนเข้า Google Drive ใช่ไหม ไฟล์กลับไปอยู่โฟลเดอร์เดิม ระบบไม่สร้างงาน" data-ok-label="กู้คืน"><input type="hidden" name="to" value="drive"><button class="btn btn-sm btn-ghost" type="submit">กู้คืนเข้า Drive</button></form><% } %>
+          </div></td>
+        </tr>
+        <% } %>
+      </tbody>
+    </table></div>
+    <% } %>
+  </section>
+
+  <% if (restored.length) { %>
+  <section class="card">
+    <h2>กู้คืนแล้ว</h2>
+    <ul class="feed">
+      <% for (const x of restored) { %>
+        <li><span class="fdot approve"></span><span class="fbody"><b><%= x.name %></b> <%= x.label %>
+          <span><%= x.restored_kind === 'work' ? 'กู้กลับเป็นงานฉบับร่าง' : 'กู้คืนเข้า Drive' %> โดย <%= x.restored_by_name %> <%= util.thaiDateTime(x.restored_at) %><% if (x.restored_sub) { %> · <a href="/s/<%= x.restored_sub %>">เปิดงาน</a><% } %></span></span></li>
+      <% } %>
+    </ul>
+  </section>
+  <% } %>
+</div>
+<%- include('../partials/bottom') %>

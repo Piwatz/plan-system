@@ -114,12 +114,36 @@ function localBackend(root = config.FILES_DIR) {
       const p = abs(ref);
       return { name: path.basename(p), size: fs.statSync(p).size };
     },
+    // คืนที่อยู่ในถังขยะ (ใช้กู้คืนและดาวน์โหลดจากหน้าไฟล์ในถังขยะ)
     async trash(ref) {
       const p = abs(ref);
       const dir = path.join(root, '.trash');
       fs.mkdirSync(dir, { recursive: true });
       const stamp = nowStr().replace(/\D/g, '');
-      fs.renameSync(p, path.join(dir, `${stamp}-${crypto.randomBytes(3).toString('hex')}-${path.basename(p)}`));
+      const to = path.join(dir, `${stamp}-${crypto.randomBytes(3).toString('hex')}-${path.basename(p)}`);
+      fs.renameSync(p, to);
+      return 'local:' + rel(to);
+    },
+    // ย้ายกลับที่เดิม (from = ที่อยู่ในถังขยะ) ที่เดิมมีไฟล์อื่นแล้วไม่ทับ
+    async untrash(ref, from) {
+      const p = abs(ref);
+      if (fs.existsSync(p)) throw new StorageError('ที่เดิมมีไฟล์อยู่แล้ว');
+      fs.mkdirSync(path.dirname(p), { recursive: true });
+      fs.renameSync(abs(from), p);
+    },
+    // ไฟล์ในถังขยะ ใหม่สุดก่อน (ชื่อตัดเวลาและรหัสสุ่มด้านหน้าออก)
+    async listTrash() {
+      const dir = path.join(root, '.trash');
+      if (!fs.existsSync(dir)) return [];
+      return fs
+        .readdirSync(dir, { withFileTypes: true })
+        .filter((d) => d.isFile())
+        .map((d) => {
+          const p = path.join(dir, d.name);
+          const st = fs.statSync(p);
+          return { ref: 'local:' + rel(p), name: d.name.replace(/^\d+-[0-9a-f]+-/, ''), size: st.size, mime: '', time: st.mtimeMs };
+        })
+        .sort((a, b) => b.time - a.time);
     },
     // ไฟล์เล็ก (สำรองข้อมูล) เขียนครั้งเดียว
     async putFile(folderPath, name, mime, body) {
@@ -337,6 +361,17 @@ function gdriveBackend(env = process.env, { oauth = 'https://oauth2.googleapis.c
     },
     async trash(ref) {
       await api(`${API}/${idOf(ref)}?fields=id`, { method: 'PATCH', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ trashed: true }) });
+      return 'gdrive:' + idOf(ref);
+    },
+    // เอาออกจากถังขยะ ไฟล์กลับไปอยู่โฟลเดอร์เดิม
+    async untrash(ref) {
+      await api(`${API}/${idOf(ref)}?fields=id`, { method: 'PATCH', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ trashed: false }) });
+    },
+    // ไฟล์ในถังขยะที่ระบบสร้าง (สิทธิ์ drive.file เห็นแค่ของระบบ) ใหม่สุดก่อน
+    async listTrash() {
+      const qs = `trashed = true and mimeType != '${FOLDER_MIME}'`;
+      const j = await (await api(`${API}?${new URLSearchParams({ q: qs, orderBy: 'modifiedTime desc', fields: 'files(id,name,size,mimeType,trashedTime,modifiedTime)', pageSize: '300' })}`)).json();
+      return (j.files || []).map((f) => ({ ref: 'gdrive:' + f.id, name: f.name, size: Number(f.size) || 0, mime: f.mimeType || '', time: Date.parse(f.trashedTime || f.modifiedTime) || 0 }));
     },
     async putFile(folderPath, name, mime, body) {
       return withFolder(folderPath, async (parent) => {
@@ -404,6 +439,7 @@ const api = {
   get: (stored, opts) => resolve(stored).backend.get(resolve(stored).ref, opts),
   head: (stored) => resolve(stored).backend.head(resolve(stored).ref),
   trash: (stored) => resolve(stored).backend.trash(resolve(stored).ref),
+  untrash: (stored, from) => resolve(stored).backend.untrash(resolve(stored).ref, from ? resolve(from).ref : undefined),
 };
 
 // ทดสอบใช้สลับที่เก็บ (เช่น local ในโฟลเดอร์ชั่วคราว) · ส่ง null คืนค่าเดิม

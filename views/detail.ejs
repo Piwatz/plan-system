@@ -56,7 +56,7 @@
     <% if (canDelete) { %>
       <form method="post" action="/s/<%= sub.id %>/delete" class="inline-form">
         <button class="btn btn-ghost" type="submit" data-danger="1" data-confirm="ลบงานนี้ถาวร<%= sub.doc_type === 'plan' ? ' รวมถึงบันทึกหลังแผนทั้งหมดของเล่มนี้' : '' %>
-ลบแล้วกู้คืนไม่ได้" data-ok-label="ลบ"><%- icon('trash', 18) %> ลบ</button>
+<%= ff.trashbin ? 'ลายเซ็นและคะแนนหายถาวร ส่วนไฟล์ผู้ดูแลระบบกู้คืนได้ภายใน 30 วัน' : 'ลบแล้วกู้คืนไม่ได้' %>" data-ok-label="ลบ"><%- icon('trash', 18) %> ลบ</button>
       </form>
     <% } %>
   </div>

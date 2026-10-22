@@ -1453,6 +1453,11 @@ dialog:has(> .fx-confetti) { overflow: visible; }
 @keyframes fxFall { 0% { opacity: 1; transform: translate3d(0, 0, 0) rotate3d(1, 1, 0, 0deg); } 85% { opacity: 1; } 100% { opacity: 0; transform: translate3d(var(--dx), 108vh, 0) rotate3d(1, 1, 0, var(--r)); } }
 @keyframes fxBurst { 0% { opacity: 1; transform: translate3d(0, 0, 0) scale(0.4); } 45% { opacity: 1; transform: translate3d(var(--bx), var(--by), 0) scale(1) rotate(var(--r)); } 100% { opacity: 0; transform: translate3d(calc(var(--bx) * 1.25), calc(var(--by) + 45vh), 0) scale(0.8) rotate(calc(var(--r) * 2)); } }
 
+/* หน้าไฟล์ในถังขยะ (ฟังก์ชันเสริม trashbin) */
+.trash-table .tr-act { text-align: right; }
+.trash-table .tr-act .btn-row { justify-content: flex-end; gap: 6px; }
+.trash-table form { margin: 0; }
+
 /* หน้าตั้งค่าโรงเรียน: ขีดบอกระดับสีสัน */
 .fx-meter { display: flex; gap: 4px; margin-bottom: 8px; }
 .fx-meter i { width: 26px; height: 10px; border-radius: 5px; background: var(--line); }

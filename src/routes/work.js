@@ -18,6 +18,7 @@ const { qrSvg } = require('./verify');
 const library = require('../library');
 const precheck = require('../precheck');
 const docno = require('../docno');
+const trashbin = require('../trashbin');
 
 const router = express.Router();
 router.use(auth.requireLogin);
@@ -918,24 +919,14 @@ router.post('/s/:id/withdraw', async (req, res) => {
   respond(req, res, `/s/${sub.id}`, 'success', 'ดึงงานกลับมาแก้ไขแล้ว แก้เสร็จอย่าลืมกดส่งอีกครั้ง');
 });
 
-async function deleteSubmission(id) {
-  const ids = [id, ...(await q.all('SELECT id FROM submissions WHERE parent_id = ?', id)).map((r) => r.id)];
-  const stored = [];
-  for (const sid of ids) for (const f of await q.all('SELECT stored_name FROM files WHERE submission_id = ?', sid)) stored.push(f.stored_name);
-  await q.tx(async () => {
-    await q.run('DELETE FROM submissions WHERE parent_id = ?', id);
-    await q.run('DELETE FROM submissions WHERE id = ?', id);
-  });
-  // ย้ายไฟล์ไปถังขยะหลังลบในฐานสำเร็จแล้วเท่านั้น
-  await up.trashAll(stored);
-}
 
 router.post('/s/:id/delete', async (req, res) => {
   const sub = await viewable(req, req.params.id);
   if (!sub) throw new UserError('ไม่พบงานนี้');
   const ownDraft = wf.isOwner(req.me, sub) && sub.status === 'draft' && !sub.submitted_at;
   if (!ownDraft && !req.me.is_admin) throw new UserError('ลบได้เฉพาะฉบับร่างที่ยังไม่เคยส่ง');
-  await deleteSubmission(sub.id);
+  // ไฟล์ย้ายไปถังขยะ เปิด trashbin จดไว้ให้ผู้ดูแลกู้คืนได้ 30 วัน (src/trashbin.js)
+  await trashbin.deleteWork(sub.id, req.me, { log: req.ff.trashbin });
   respond(req, res, sub.parent_id ? `/s/${sub.parent_id}` : '/my', 'success', 'ลบเรียบร้อย');
 });
 
