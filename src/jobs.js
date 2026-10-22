@@ -130,7 +130,9 @@ async function waitDigest() {
   return out.length;
 }
 
-async function morning() {
+// Workers: ไม่ใช้นาฬิกาปลุกเพิ่ม (โควตา Cron ของแบบฟรีนับรวมทั้งบัญชี) อาศัยรอบทุกชั่วโมง ส่งเฉพาะรอบ 7 โมงเช้าเวลาไทย
+async function morning(now = nowStr()) {
+  if (now.slice(11, 13) !== '07') return 0;
   return db.withScope(waitDigest);
 }
 
@@ -180,16 +182,18 @@ function start() {
 }
 
 // Workers: Cron Trigger ใน wrangler.jsonc (เวลา UTC) · ทุก 5 นาทีดูเวลาส่ง LINE (ส่งช้ากว่าเวลาที่ตั้งได้ไม่เกิน 5 นาที)
-// ทุกชั่วโมงล้างไฟล์ค้าง · 19:00 UTC = ตีสองเวลาไทย สำรองข้อมูล · 00:00 UTC = 7 โมงเช้าเวลาไทย แจ้งผู้ตรวจ
+// ทุกชั่วโมงล้างไฟล์ค้าง (รอบ 7 โมงเช้าเวลาไทยแจ้งผู้ตรวจด้วย) · 19:00 UTC = ตีสองเวลาไทย สำรองข้อมูล
 const CRONS = {
   '*/5 * * * *': () =>
     db.withScope(async () => {
       await db.ensureRefs();
       await require('./line').tick();
     }),
-  '0 * * * *': hourly,
+  '0 * * * *': async () => {
+    await hourly();
+    await morning().catch((e) => console.error('แจ้งงานรอลงนามไม่สำเร็จ', e.message));
+  },
   '0 19 * * *': nightly,
-  '0 0 * * *': morning,
 };
 
 async function runCron(cron) {

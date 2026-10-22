@@ -19,7 +19,7 @@
     }
   ],
   // เวลา UTC: ทุก 5 นาที LINE · ทุกชั่วโมงล้างไฟล์ค้าง · 19:00 UTC = ตีสองเวลาไทย สำรองข้อมูล (src/jobs.js CRONS)
-  "triggers": { "crons": ["*/5 * * * *", "0 * * * *", "0 19 * * *", "0 0 * * *"] },
+  "triggers": { "crons": ["*/5 * * * *", "0 * * * *", "0 19 * * *"] },
   "vars": { "APP_ENV": "production", "FILE_STORE": "gdrive" },
   "observability": { "enabled": true }
 }
