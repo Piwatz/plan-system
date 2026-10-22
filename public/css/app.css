@@ -1364,3 +1364,106 @@ dialog.front-dlg { width: min(720px, calc(100vw - 24px)); max-height: calc(100vh
 .my-box .mb-head b { margin-right: auto; }
 .my-box .mb-links { display: flex; flex-wrap: wrap; gap: 4px 16px; font-size: 0.86em; font-weight: 600; }
 .my-box .mb-links a { color: var(--link); padding: 2px 0; }
+
+/* ---------- สีสัน 4 ระดับ (ฟังก์ชันเสริม colorful) body มี fx fx1 fx2 fx3 ตามระดับ แบบเดิมไม่มี class เหล่านี้ ----------
+   สีเสริม --c-* มาจาก themes.js (กลางคืนใช้สีอ่อนลง) · ระดับสูงกว่ารวมของระดับต่ำกว่า */
+.fx-ic, .fx-bar, .fx-ring, .fx-medal, .fx-loadbar { display: none; }
+.sc-red { --sc: var(--c-red); }
+.sc-amber { --sc: var(--c-amber); }
+.sc-blue { --sc: var(--c-blue); }
+.sc-violet { --sc: var(--c-violet); }
+.sc-teal { --sc: var(--c-teal); }
+.sc-orange { --sc: var(--c-orange); }
+.sc-pink { --sc: var(--c-pink); }
+.sc-green { --sc: var(--c-green); }
+.st-sent { --stc: var(--c-green); }
+.st-wait { --stc: var(--c-amber); }
+.st-back { --stc: var(--c-red); }
+.st-note { --stc: var(--c-violet); }
+
+/* 1 แบบเบา: ไอคอนเมนูมีสี จุดสีหน้าสถานะ การ์ดตัวเลขมีขอบซ้ายสี */
+.fx1 .side-item[class*='sc-'] > .ic { color: color-mix(in srgb, var(--sc) 62%, #fff); }
+.fx1 .side-item.active[class*='sc-'] > .ic { color: var(--sc); }
+.fx1 .badge.st::before { content: ''; flex: none; width: 7px; height: 7px; border-radius: 50%; background: currentColor; }
+.fx1 .stat[class*='st-'] { border-left: 4px solid var(--stc); }
+.fx1 .fx-ic { display: inline-flex; align-items: center; justify-content: center; color: var(--stc); }
+.fx1 .stat .label { display: flex; align-items: center; gap: 6px; }
+
+/* 2 แบบกลาง: ไอคอนในกล่องสี การ์ดตัวเลขมีแถบสีบนและแถบความคืบหน้า ป้ายเป็นเม็ดยา วิชาหลักสีทอง */
+.fx2 .side-item[class*='sc-'] > .ic { box-sizing: content-box; padding: 5px; border-radius: 9px; background: var(--sc); color: #fff; }
+.fx2 .side-item.active[class*='sc-'] > .ic { color: #fff; box-shadow: 0 3px 8px color-mix(in srgb, var(--sc) 45%, transparent); }
+.fx2 .stat[class*='st-'] { border-left-width: 1px; border-top: 4px solid var(--stc); background: linear-gradient(180deg, color-mix(in srgb, var(--stc) 9%, var(--surface)), var(--surface) 70%); }
+.fx2 .stat[class*='st-'] .label { color: var(--ink); }
+.fx2 .fx-ic { width: 28px; height: 28px; border-radius: 8px; background: var(--stc); color: #fff; }
+.fx2 .fx-bar { display: block; height: 6px; margin: 6px 0 2px; border-radius: 3px; overflow: hidden; background: color-mix(in srgb, var(--stc) 18%, transparent); }
+.fx-bar i { display: block; height: 100%; border-radius: inherit; background: var(--stc); }
+.fx2 .badge.st { border-radius: 999px; border: 1px solid color-mix(in srgb, currentColor 28%, transparent); }
+.fx2 .badge.fx-main { border-radius: 999px; background: color-mix(in srgb, var(--c-gold) 24%, var(--surface)); color: color-mix(in srgb, var(--c-gold) 40%, var(--ink)); border: 1px solid color-mix(in srgb, var(--c-gold) 55%, transparent); }
+.fx2 .badge.fx-main .ic { color: var(--c-gold); fill: var(--c-gold); }
+.fx2 .todo-tag { border-radius: 999px; border: 1px solid color-mix(in srgb, currentColor 25%, transparent); }
+.fx2 .btn-primary { box-shadow: 0 2px 8px color-mix(in srgb, var(--primary) 32%, transparent); }
+.fx2 .btn-success { box-shadow: 0 2px 8px color-mix(in srgb, var(--ok) 32%, transparent); }
+
+/* 3 แบบจัดเต็ม: แถบต้อนรับไล่เฉด วงแหวน ปุ่มและการ์ดลอย ปกเอียง ป้ายกระพริบ แถบโหลด เหรียญ */
+.fx3 .fx-hello { position: relative; overflow: hidden; align-items: center; padding: 20px 24px; border-radius: var(--r); color: #fff; background: linear-gradient(115deg, var(--primary), color-mix(in srgb, var(--primary) 50%, var(--accent)) 62%, var(--accent)); box-shadow: 0 10px 28px color-mix(in srgb, var(--primary) 30%, transparent); }
+.fx3 .fx-hello::after { content: ''; position: absolute; right: -60px; top: -80px; width: 260px; height: 260px; border-radius: 50%; background: rgba(255, 255, 255, 0.1); pointer-events: none; }
+.fx3 .fx-hello > * { position: relative; z-index: 1; }
+.fx3 .fx-hello h1 { color: #fff; }
+.fx3 .fx-hello .muted { color: rgba(255, 255, 255, 0.82); }
+.fx3 .fx-hello .pill-note { background: rgba(255, 255, 255, 0.18); border-color: rgba(255, 255, 255, 0.4); color: #fff; }
+.fx3 .fx-ring { display: grid; place-content: center; position: relative; width: 84px; height: 84px; text-align: center; line-height: 1.1; color: #fff; animation: fxPop 0.6s 0.15s both; }
+.fx3 .fx-ring::before { content: ''; position: absolute; inset: 0; border-radius: 50%; background: conic-gradient(#fff calc(var(--p) * 1%), rgba(255, 255, 255, 0.25) 0); -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - 8px), #000 calc(100% - 7px)); mask: radial-gradient(farthest-side, transparent calc(100% - 8px), #000 calc(100% - 7px)); }
+.fx3 .fx-ring b { font-size: 1.2rem; }
+.fx3 .fx-ring small { font-size: 0.72rem; opacity: 0.85; }
+@media (max-width: 640px) {
+  .fx3 .fx-hello { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 12px; padding: 16px 18px; }
+  .fx3 .fx-hello .pill-note { grid-column: 1 / -1; grid-row: 2; }
+  .fx3 .fx-ring { width: 70px; height: 70px; }
+}
+.fx3 .grid-4 > .stat { animation: fxRise 0.45s both; }
+.fx3 .grid-4 > .stat:nth-child(2) { animation-delay: 0.06s; }
+.fx3 .grid-4 > .stat:nth-child(3) { animation-delay: 0.12s; }
+.fx3 .grid-4 > .stat:nth-child(4) { animation-delay: 0.18s; }
+.fx3 a.stat, .fx3 .btn { transition: transform 0.15s, box-shadow 0.15s, filter 0.15s; }
+.fx3 a.stat:hover { transform: translateY(-3px); box-shadow: 0 10px 22px rgba(15, 30, 51, 0.14); }
+.fx3 .btn:not(:disabled):hover { transform: translateY(-2px); box-shadow: 0 6px 14px rgba(15, 30, 51, 0.18); }
+.fx3 .btn:not(:disabled):active { transform: none; }
+.fx3 .lib-cv { transition: transform 0.2s, filter 0.2s; transform-origin: 50% 100%; }
+.fx3 a.lib-cv:hover { transform: rotate(-2.5deg) translateY(-5px); filter: drop-shadow(0 10px 14px rgba(15, 30, 51, 0.28)); }
+.fx3 .side-badge { background-image: linear-gradient(100deg, transparent 30%, rgba(255, 255, 255, 0.75) 50%, transparent 70%); background-size: 250% 100%; background-repeat: no-repeat; animation: fxShine 2.6s linear infinite; }
+.fx3 .due-alert > .ic { animation: fxBlink 1.2s ease-in-out infinite; }
+.fx3 .flash-msg { animation: fxDrop 0.45s cubic-bezier(0.2, 0.9, 0.3, 1.3) both; }
+.fx3 .fx-medal { display: inline-grid; place-items: center; width: 48px; height: 48px; margin-bottom: 6px; border-radius: 50%; color: #fff; background: radial-gradient(circle at 32% 30%, #fff5c2, var(--c-gold) 55%, color-mix(in srgb, var(--c-gold) 70%, #000)); box-shadow: 0 6px 16px color-mix(in srgb, var(--c-gold) 50%, transparent); animation: fxPop 0.7s both; }
+.fx3 .fx-medal .ic { fill: #fff; }
+.fx-loadbar { position: fixed; top: 0; left: 0; right: 0; height: 4px; z-index: 9999; pointer-events: none; transform-origin: 0 50%; background: linear-gradient(90deg, var(--c-red), var(--c-amber), var(--c-green), var(--c-blue), var(--c-violet), var(--c-red)); background-size: 200% 100%; }
+html.fx-leaving .fx-loadbar { display: block; animation: fxGrow 5s cubic-bezier(0.1, 0.8, 0.2, 1) both, fxSlide 1s linear infinite; }
+@keyframes fxRise { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: none; } }
+@keyframes fxPop { 0% { opacity: 0; transform: scale(0.4); } 70% { transform: scale(1.12); } 100% { opacity: 1; transform: none; } }
+@keyframes fxShine { 0% { background-position: 150% 0; } 60%, 100% { background-position: -100% 0; } }
+@keyframes fxBlink { 50% { opacity: 0.35; transform: scale(1.15); } }
+@keyframes fxDrop { from { opacity: 0; transform: translateY(-14px); } to { opacity: 1; transform: none; } }
+@keyframes fxGrow { from { transform: scaleX(0); } to { transform: scaleX(0.92); } }
+@keyframes fxSlide { to { background-position: -200% 0; } }
+
+/* พลุตอนกดส่งงาน (ฟังก์ชันเสริม confetti) app.js สร้างชิ้นกระดาษ ใส่ในป๊อปที่เปิดอยู่ให้ลอยเหนือฉากมืด */
+.fx-confetti { position: fixed; inset: 0; z-index: 10000; overflow: hidden; pointer-events: none; }
+dialog:has(> .fx-confetti) { overflow: visible; }
+.fx-confetti i { position: absolute; top: -16px; left: var(--x); width: var(--w); height: calc(var(--w) * 0.5); border-radius: 2px; background: var(--c); opacity: 0; animation: fxFall var(--d) cubic-bezier(0.25, 0.6, 0.45, 1) var(--dl) forwards; }
+.fx-confetti b { position: absolute; left: var(--ox); top: var(--oy); width: var(--w); height: var(--w); border-radius: var(--br); background: var(--c); opacity: 0; animation: fxBurst var(--d) cubic-bezier(0.15, 0.7, 0.4, 1) var(--dl) forwards; }
+@keyframes fxFall { 0% { opacity: 1; transform: translate3d(0, 0, 0) rotate3d(1, 1, 0, 0deg); } 85% { opacity: 1; } 100% { opacity: 0; transform: translate3d(var(--dx), 108vh, 0) rotate3d(1, 1, 0, var(--r)); } }
+@keyframes fxBurst { 0% { opacity: 1; transform: translate3d(0, 0, 0) scale(0.4); } 45% { opacity: 1; transform: translate3d(var(--bx), var(--by), 0) scale(1) rotate(var(--r)); } 100% { opacity: 0; transform: translate3d(calc(var(--bx) * 1.25), calc(var(--by) + 45vh), 0) scale(0.8) rotate(calc(var(--r) * 2)); } }
+
+/* หน้าตั้งค่าโรงเรียน: ขีดบอกระดับสีสัน */
+.fx-meter { display: flex; gap: 4px; margin-bottom: 8px; }
+.fx-meter i { width: 26px; height: 10px; border-radius: 5px; background: var(--line); }
+.fx-meter i.on:nth-child(1) { background: var(--c-blue); }
+.fx-meter i.on:nth-child(2) { background: var(--c-green); }
+.fx-meter i.on:nth-child(3) { background: var(--c-amber); }
+.fx-meter i.on:nth-child(4) { background: var(--c-red); }
+
+/* เครื่องที่ตั้งให้ลดภาพเคลื่อนไหว ไม่มีลูกเล่นเคลื่อนไหวและพลุ */
+@media (prefers-reduced-motion: reduce) {
+  .fx3 .fx-ring, .fx3 .grid-4 > .stat, .fx3 .side-badge, .fx3 .due-alert > .ic, .fx3 .flash-msg, .fx3 .fx-medal, html.fx-leaving .fx-loadbar { animation: none; }
+  .fx3 a.stat:hover, .fx3 .btn:not(:disabled):hover, .fx3 a.lib-cv:hover { transform: none; }
+  .fx-confetti { display: none; }
+}

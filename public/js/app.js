@@ -866,6 +866,81 @@
     sentPop.showModal();
   }
 
+  // ---------- พลุตอนกดส่งงาน (ฟังก์ชันเสริม confetti) กระดาษสีโปรยจากบน + พลุแตก 2 ลูก ราว 3 วินาที ----------
+  // ใส่ไว้ในป๊อปที่เปิดอยู่ (dialog อยู่ชั้นบนสุด) ไม่อย่างนั้นพลุจะอยู่ใต้ฉากมืด · เครื่องที่ตั้งลดภาพเคลื่อนไหวไม่แสดง
+  function confetti() {
+    try {
+      if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    } catch (e) {}
+    const css = getComputedStyle(document.documentElement);
+    const colors = ['--c-red', '--c-amber', '--c-blue', '--c-violet', '--c-teal', '--c-orange', '--c-pink', '--c-green', '--c-gold']
+      .map((v) => css.getPropertyValue(v).trim())
+      .filter(Boolean);
+    if (!colors.length) colors.push('#E5484D', '#E0A100', '#2F6FEB', '#20A35A');
+    const rnd = (a, b) => a + Math.random() * (b - a);
+    const pick = () => colors[Math.floor(Math.random() * colors.length)];
+    const layer = document.createElement('div');
+    layer.className = 'fx-confetti';
+    layer.setAttribute('aria-hidden', 'true');
+    const small = window.innerWidth < 640;
+    for (let n = 0; n < (small ? 70 : 120); n++) {
+      const i = document.createElement('i');
+      i.style.cssText = `--x:${rnd(0, 100)}%;--w:${rnd(7, 13)}px;--c:${pick()};--d:${rnd(2.2, 3.6)}s;--dl:${rnd(0, 0.9)}s;--dx:${rnd(-120, 120)}px;--r:${rnd(360, 1080)}deg`;
+      layer.appendChild(i);
+    }
+    for (const [ox, oy, dl] of [[small ? 30 : 25, 38, 0.1], [small ? 70 : 75, 30, 0.45]]) {
+      for (let n = 0; n < (small ? 22 : 34); n++) {
+        const a = rnd(0, Math.PI * 2);
+        const dist = rnd(60, small ? 150 : 230);
+        const b = document.createElement('b');
+        b.style.cssText = `--ox:${ox}%;--oy:${oy}%;--w:${rnd(5, 10)}px;--br:${Math.random() < 0.5 ? '50%' : '2px'};--c:${pick()};--d:${rnd(1.6, 2.4)}s;--dl:${dl}s;--bx:${Math.cos(a) * dist}px;--by:${Math.sin(a) * dist}px;--r:${rnd(90, 360)}deg`;
+        layer.appendChild(b);
+      }
+    }
+    const host = document.querySelector('dialog[open]') || document.body;
+    host.appendChild(layer);
+    setTimeout(() => layer.remove(), 5000);
+  }
+  if (document.querySelector('[data-confetti]')) setTimeout(confetti, 250);
+  // ส่งครบทุกงานของภาคเรียน: พลุที่หน้าแรกครั้งเดียว (จำในเครื่อง)
+  const allSent = document.querySelector('[data-confetti-once]');
+  if (allSent) {
+    const key = allSent.getAttribute('data-confetti-once');
+    try {
+      if (!localStorage.getItem(key)) {
+        localStorage.setItem(key, '1');
+        setTimeout(confetti, 400);
+      }
+    } catch (e) {}
+  }
+
+  // ---------- แถบโหลดสีรุ้งบนสุดตอนเปลี่ยนหน้า (สีสันแบบจัดเต็ม) ----------
+  if (document.querySelector('.fx-loadbar')) {
+    // ลิงก์ที่เป็นการดาวน์โหลดไฟล์ไม่เปลี่ยนหน้า จึงเอาแถบออกเองหลัง 8 วินาที
+    let leaveTimer = 0;
+    const leave = () => {
+      document.documentElement.classList.add('fx-leaving');
+      clearTimeout(leaveTimer);
+      leaveTimer = setTimeout(() => document.documentElement.classList.remove('fx-leaving'), 8000);
+    };
+    document.addEventListener('click', (e) => {
+      const a = e.target.closest && e.target.closest('a[href]');
+      if (!a || e.defaultPrevented || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+      if (a.target && a.target !== '_self') return;
+      if (a.hasAttribute('download')) return;
+      const href = a.getAttribute('href');
+      if (!href || href.startsWith('#') || href.startsWith('javascript:')) return;
+      if (a.origin !== window.location.origin) return;
+      if (a.pathname === window.location.pathname && a.search === window.location.search && a.hash) return;
+      leave();
+    });
+    document.addEventListener('submit', (e) => {
+      if (!e.defaultPrevented) leave();
+    });
+    // กลับมาด้วยปุ่มย้อนกลับ (หน้าที่เบราว์เซอร์จำไว้) ต้องเอาแถบออก
+    window.addEventListener('pageshow', () => document.documentElement.classList.remove('fx-leaving'));
+  }
+
   // ---------- ครั้งแรกที่เปิดหน้างานที่ส่งแล้ว: ป้ายสีทองชี้การ์ดพิมพ์ (printtip) และขอบเรือง (printglow) จำใน localStorage ----------
   const firstTime = (key) => {
     try {

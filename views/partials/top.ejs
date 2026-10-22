@@ -19,7 +19,8 @@
 <link rel="stylesheet" href="/static/css/app.css?v=<%= assetVersion %>">
 <link rel="icon" href="<%= logoUrl %>">
 </head>
-<body class="theme-<%= theme.key %> ml-<%= settings.mobile_layout === 'classic' ? 'classic' : 'simple' %>">
+<body class="theme-<%= theme.key %> ml-<%= settings.mobile_layout === 'classic' ? 'classic' : 'simple' %><%= locals.fxClass ? ' ' + fxClass : '' %>">
+<% if (locals.fxLevel >= 3) { %><div class="fx-loadbar" aria-hidden="true"></div><% } %>
 <% if (me && !locals.bare) {
   const p = currentPath;
   const steps = me.roles.map((r) => wf.stepOf(r)).filter(Boolean);
@@ -54,6 +55,8 @@
     more.push({ href: '/admin/features', icon: 'toggle', label: 'ฟังก์ชันเสริม', active: p.startsWith('/admin/features') });
   }
   groups.push({ label: 'ภาพรวม', items: more });
+  // สีไอคอนเมนู (สีสัน 4 ระดับ colorful) ตามหน้า ระดับแบบเดิมไม่ใช้
+  const SC = { '/': 'red', '/teaching': 'amber', '/my': 'blue', '/notes': 'violet', '/results': 'teal', '/pa': 'orange', '/alerts': 'pink', '/inbox': 'green', '/quicksign': 'blue', '/dept': 'teal', '/registry': 'violet', '/library': 'orange', '/stats': 'teal', '/about': 'amber', '/admin': 'red', '/admin/features': 'violet' };
 %>
 <div class="shell">
   <aside class="side" id="side" aria-label="เมนู">
@@ -72,7 +75,7 @@
       <% for (const g of groups) { %>
         <span class="side-label"><%= g.label %></span>
         <% for (const t of g.items) { %>
-          <a class="side-item<%= t.active ? ' active' : '' %>" href="<%= t.href %>"<%- t.active ? ' aria-current="page"' : '' %>>
+          <a class="side-item<%= t.active ? ' active' : '' %><%= locals.fxLevel && SC[t.href] ? ' sc-' + SC[t.href] : '' %>" href="<%= t.href %>"<%- t.active ? ' aria-current="page"' : '' %>>
             <%- icon(t.icon, 22) %><span class="side-text"><%= t.label %></span>
             <% if (t.badge) { %><span class="side-badge<%= t.warn ? ' warn' : '' %>"><%= t.badge %></span><% } %>
           </a>
@@ -105,5 +108,5 @@
 <% if (!locals.bare) { %><main class="container" id="content"><% } %>
 <%# กล่องเขียวหลังกดส่ง (sentbox) ขึ้นแทนแถบนี้ในหน้างาน %>
 <% if (flash && !locals.bare && !(flash.sent && ff.sentbox)) { %>
-  <div class="alert alert-<%= flash.type === 'error' ? 'error' : 'success' %>" role="status"><%- icon(flash.type === 'error' ? 'shield' : 'ok', 20) %> <span><%= flash.text %></span></div>
+  <div class="alert flash-msg alert-<%= flash.type === 'error' ? 'error' : 'success' %>" role="status"><%- icon(flash.type === 'error' ? 'shield' : 'ok', 20) %> <span><%= flash.text %></span></div>
 <% } %>

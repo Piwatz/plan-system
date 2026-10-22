@@ -81,6 +81,22 @@
       <% } %>
     </div>
 
+    <% if (ff.colorful) { const curFx = fxLevels.some((x) => x.key === settings.color_level) ? settings.color_level : fxDefault; %>
+    <h3 style="margin-top:18px" id="colorful">สีสันและลูกเล่นของหน้าเว็บ</h3>
+    <p class="muted small">เรียงจากน้อยไปมาก มีผลกับทุกคนทันทีหลังบันทึก ใช้ได้กับทุกธีมและโหมดกลางคืน</p>
+    <div class="theme-grid fx-grid" style="margin-bottom:8px">
+      <% fxLevels.forEach((x, i) => { %>
+        <label class="theme-card">
+          <input type="radio" name="color_level" value="<%= x.key %>" <%= curFx === x.key ? 'checked' : '' %>>
+          <span class="tc">
+            <span class="fx-meter" aria-hidden="true"><% for (let n = 0; n < 4; n++) { %><i class="<%= n <= i ? 'on' : '' %>"></i><% } %></span>
+            <span class="tc-text"><b><%= i + 1 %> <%= x.name %><%= x.key === fxDefault ? ' (ค่าเริ่มต้น)' : '' %></b><small><%= x.desc %></small></span>
+          </span>
+        </label>
+      <% }) %>
+    </div>
+    <% } %>
+
     <h3 style="margin-top:18px">ภาคเรียนปัจจุบัน</h3>
     <div class="form-grid">
       <div class="field">

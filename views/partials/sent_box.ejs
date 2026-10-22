@@ -8,6 +8,7 @@
   const head = (book ? 'ส่งบันทึกหลังแผนทั้งเล่มเรียบร้อย ' + s.book + ' แผ่น' : 'ส่งเรียบร้อยแล้ว') + (s.approved ? ' และผ่านครบทุกระดับแล้ว' : ' ขณะนี้' + s.wait);
   const later = ff.donenotify ? 'เมื่อผ่านครบ ระบบ<b>แจ้งที่การแจ้งเตือน</b>ให้เอง' : 'ดูความคืบหน้าได้ที่หน้า <b>งานของฉัน</b>';
 %>
+<% if (ff.confetti) { %><span hidden data-confetti></span><% } %>
 <% if (ff.sentbox) { %>
 <section class="sent-box" role="status">
   <div class="sx-head"><span class="sx-check"><%- icon('ok', 20) %></span><span><%= head %></span></div>

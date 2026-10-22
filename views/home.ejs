@@ -2,8 +2,10 @@
 <%
   const T = wf.DOC_TYPES;
   const first = me.full_name.replace(/^(นาย|นางสาว|นาง)\s*/, '').split(/\s+/)[0];
+  // ร้อยละที่ส่งแล้ว ใช้กับแถบความคืบหน้าและวงแหวน (สีสัน 4 ระดับ colorful)
+  const sentPct = me.is_teacher && stats.target ? Math.min(100, Math.round((stats.sent / stats.target) * 100)) : 0;
 %>
-<div class="hello">
+<div class="hello<%= locals.fxLevel >= 3 ? ' fx-hello' : '' %>">
   <div>
     <div class="muted">ภาคเรียนที่ <%= term.semester %>/<%= term.year %></div>
     <h1>สวัสดี <%= me.is_teacher ? 'ครู' : 'คุณ' %><%= first %></h1>
@@ -14,6 +16,9 @@
     <span class="pill-note ok">เปิดรับส่งแผนและคู่มือ</span>
   <% } else { %>
     <span class="pill-note back"><%= window.reason %></span>
+  <% } %>
+  <% if (locals.fxLevel >= 3 && me.is_teacher && stats.target) { %>
+    <span class="fx-ring" style="--p:<%= sentPct %>" role="img" aria-label="ส่งแล้วร้อยละ <%= sentPct %>"><b><%= sentPct %>%</b><small>ส่งแล้ว</small></span>
   <% } %>
 </div>
 
@@ -141,10 +146,10 @@
 
 <% if (me.is_teacher) { %>
   <div class="grid-4" style="margin-bottom:18px">
-    <a class="stat green" href="/my"><span class="label">ส่งแล้ว</span><b class="num"><%= stats.sent %> / <%= stats.target || 0 %></b><span class="sub">ผ่านครบทุกระดับ <%= stats.approved %> ชิ้น</span></a>
-    <a class="stat blue" href="/my"><span class="label">รอผู้ตรวจ</span><b class="num"><%= stats.pending %></b><span class="sub"><%= stats.pending ? 'อยู่ที่ ' + stats.pendingAt : 'ไม่มีงานค้างที่ผู้ตรวจ' %></span></a>
-    <a class="stat <%= stats.returned ? 'orange' : '' %>" href="/my"><span class="label">ต้องแก้ไข</span><b class="num"><%= stats.returned %></b><span class="sub"><%= stats.returned ? stats.returnedName : 'ไม่มีงานที่ต้องแก้' %></span></a>
-    <a class="stat" href="/notes"><span class="label">บันทึกหลังแผน</span><b class="num"><%= stats.notes %></b><span class="sub"><%= stats.notesTodo ? 'ยังไม่ส่ง ' + stats.notesTodo + ' ฉบับ' : 'ส่งครบทุกฉบับ' %></span></a>
+    <a class="stat green st-sent" href="/my"><span class="label"><span class="fx-ic"><%- icon('send', 16) %></span>ส่งแล้ว</span><b class="num"><%= stats.sent %> / <%= stats.target || 0 %></b><span class="fx-bar" aria-hidden="true"><i style="width:<%= sentPct %>%"></i></span><span class="sub">ผ่านครบทุกระดับ <%= stats.approved %> ชิ้น</span></a>
+    <a class="stat blue st-wait" href="/my"><span class="label"><span class="fx-ic"><%- icon('clock', 16) %></span>รอผู้ตรวจ</span><b class="num"><%= stats.pending %></b><span class="sub"><%= stats.pending ? 'อยู่ที่ ' + stats.pendingAt : 'ไม่มีงานค้างที่ผู้ตรวจ' %></span></a>
+    <a class="stat st-back <%= stats.returned ? 'orange' : '' %>" href="/my"><span class="label"><span class="fx-ic"><%- icon('undo', 16) %></span>ต้องแก้ไข</span><b class="num"><%= stats.returned %></b><span class="sub"><%= stats.returned ? stats.returnedName : 'ไม่มีงานที่ต้องแก้' %></span></a>
+    <a class="stat st-note" href="/notes"><span class="label"><span class="fx-ic"><%- icon('edit', 16) %></span>บันทึกหลังแผน</span><b class="num"><%= stats.notes %></b><span class="sub"><%= stats.notesTodo ? 'ยังไม่ส่ง ' + stats.notesTodo + ' ฉบับ' : 'ส่งครบทุกฉบับ' %></span></a>
   </div>
 
   <div class="grid-3">
@@ -173,14 +178,14 @@
         <div class="rows-head<%= ff.homeact ? ' rows-act' : '' %>" style="margin-top:12px"><span>รายวิชา</span><span>แผนการสอน</span><span>คู่มือรายวิชา</span><span>บันทึกหลังแผน</span><% if (!ff.homeact) { %><span></span><% } %></div>
         <% for (const r of subjects) { %>
           <div class="rows-item<%= ff.homeact ? ' rows-act' : '' %>">
-            <span class="subj"><b><%= r.code %><% if (ff.onemain && r.needPlan) { %> <span class="badge badge-blue" title="วิชาหลัก"><%- icon('star', 12) %> วิชาหลัก</span><% } %></b><span><%= r.name %> <%= r.grade %></span>
+            <span class="subj"><b><%= r.code %><% if (ff.onemain && r.needPlan) { %> <span class="badge badge-blue fx-main" title="วิชาหลัก"><%- icon('star', 12) %> วิชาหลัก</span><% } %></b><span><%= r.name %> <%= r.grade %></span>
               <% if (r.todoCount != null) { %><span class="todo-tag <%= r.todoCount ? '' : 'done' %>"><%= r.todoCount ? 'ต้องทำ ' + r.todoCount + ' อย่าง' : 'ทำครบแล้ว' %></span><% } %></span>
             <% r.cells.forEach((c, i) => { %>
               <span><span class="cell-label"><%= ['แผนการสอน', 'คู่มือรายวิชา', 'บันทึกหลังแผน'][i] %></span>
                 <% if (c.act) { %><a class="btn btn-sm cell-act <%= c.red ? 'btn-danger' : 'btn-primary' %>" href="<%= c.href %>"><%= c.text %></a>
                 <% } else if (c.wait) { %><a class="cell-wait" href="<%= c.href %>" title="ต้องเขียนบันทึกหลังแผน หลังส่งแผนแล้ว"><%- icon('clock', 15) %> <%= c.text %></a>
                 <% } else if (c.off) { %><span class="cell-off"><%= c.text %></span>
-                <% } else if (c.href) { %><a class="badge <%= c.cls %>" href="<%= c.href %>"><%= c.text %></a><% } else { %><span class="badge <%= c.cls %>"><%= c.text %></span><% } %>
+                <% } else if (c.href) { %><a class="badge st <%= c.cls %>" href="<%= c.href %>"><%= c.text %></a><% } else { %><span class="badge st <%= c.cls %>"><%= c.text %></span><% } %>
                 <% if (ff.homeact && i === 2 && r.action) { %><a class="cell-more" href="<%= r.action.href %>"><%- icon('plus', 14) %> เขียนฉบับถัดไป</a><% } %>
               </span>
             <% }) %>
@@ -217,6 +222,8 @@
         <b>ยังส่งไม่ครบ <%= todo.length %> รายการ</b>
         <span><%= todo.slice(0, 4).join('  ') %><%= todo.length > 4 ? ' และอีก ' + (todo.length - 4) + ' รายการ' : '' %></span>
       <% } else if (subjects.length) { %>
+        <% if (locals.fxLevel >= 3) { %><span class="fx-medal" aria-hidden="true"><%- icon('star', 26) %></span><% } %>
+        <% if (ff.confetti) { %><span hidden data-confetti-once="cw-allsent-<%= term.year %>-<%= term.semester %>-<%= me.id %>"></span><% } %>
         <b style="color:var(--ok)">ส่งครบทุกรายวิชาแล้ว</b>
         <span>อย่าลืมเขียนบันทึกหลังแผนหลังสอนแต่ละแผน</span>
       <% } else { %>

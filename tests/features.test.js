@@ -160,6 +160,43 @@ test('เปลี่ยนธีมแล้วสีและฟอนต์�
   assert.ok((await db.q.get("SELECT 1 AS x FROM audit_log WHERE action ILIKE 'เปลี่ยนธีมเป็น B%'")));
 });
 
+test('สีสัน 4 ระดับ (colorful): ค่าเริ่มต้นจัดเต็ม ผู้ดูแลเลือกระดับได้ ปิดสวิตช์กลับเป็นแบบเดิม', async () => {
+  const admin = await as('admin');
+  const t = await as('teacher');
+  const body = async () => (await t.get('/')).text.match(/<body class="([^"]*)"/)[1];
+  assert.match(await body(), / fx fx1 fx2 fx3$/);
+  const home = (await t.get('/')).text;
+  assert.match(home, /fx-hello/);
+  assert.match(home, /side-item[^"]* sc-red/);
+  assert.match(home, /badge st /);
+  assert.match((await admin.get('/admin/settings')).text, /name="color_level" value="full" checked/);
+  const fields = { school_name: 'โรงเรียนทดสอบ', academic_year: '2569', semester: '2', submit_open: '1', max_upload_mb: '20', grade_levels: 'ม.1', teaching_methods: 'Active Learning', theme: 'i' };
+  const save = (extra) => {
+    const fd = new FormData();
+    for (const [k, v] of Object.entries({ ...fields, ...extra })) fd.set(k, v);
+    return admin.post('/admin/settings', fd);
+  };
+  await save({ color_level: 'light' });
+  assert.equal(await setting('color_level'), 'light');
+  assert.match(await body(), / fx fx1$/);
+  assert.doesNotMatch((await t.get('/')).text, /fx-hello|fx-loadbar/);
+  assert.ok(await db.q.get("SELECT 1 AS x FROM audit_log WHERE action = 'เปลี่ยนสีสันของหน้าเว็บเป็นแบบเบา'"));
+  // ค่าที่ไม่รู้จักและฟอร์มที่ไม่มีช่องนี้ไม่แตะค่าเดิม
+  await save({ color_level: 'zzz' });
+  await save({});
+  assert.equal(await setting('color_level'), 'light');
+  await save({ color_level: 'classic' });
+  assert.doesNotMatch(await body(), /fx/);
+  assert.doesNotMatch((await t.get('/')).text, / sc-red/);
+  // ปิดสวิตช์ ทุกระดับกลายเป็นแบบเดิม และไม่มีช่องเลือกในหน้าตั้งค่า
+  await save({ color_level: 'full' });
+  await admin.post('/admin/features/colorful', { on: '0' });
+  assert.doesNotMatch(await body(), /fx/);
+  assert.doesNotMatch((await admin.get('/admin/settings')).text, /name="color_level"/);
+  await admin.post('/admin/features/colorful', { on: '1' });
+  assert.match(await body(), / fx3$/);
+});
+
 test('บันทึกหลังแผนแบบแนบไฟล์ของครูเอง และบังคับกรอกจำนวนนักเรียนเมื่อเปิดสวิตช์', async () => {
   const t = await as('teacher');
   const admin = await as('admin');

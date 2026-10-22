@@ -21,6 +21,34 @@ const FONTS = {
 const COVER_BASE = { cvPlan: '#1D3A66', cvManual: '#17694F', cvNote: '#8E1B2C' };
 const STATUS_BASE = { ok: '#1E6E50', okBg: '#E1F2EA', wait: '#7A5200', waitBg: '#FBEFD5', back: '#A61B1B', backBg: '#FCE7E5' };
 
+// สีเสริมของสีสัน 4 ระดับ (ฟังก์ชันเสริม colorful) ใช้กับไอคอนเมนู การ์ดสถิติ ป้าย และพลุ · กลางคืนใช้สีอ่อนลงให้เห็นบนพื้นมืด
+const FX_LIGHT = { cRed: '#E5484D', cAmber: '#E0A100', cBlue: '#2F6FEB', cViolet: '#7C4DDB', cTeal: '#12A594', cOrange: '#F07B12', cPink: '#E5468F', cGreen: '#20A35A', cGold: '#E8B524' };
+const FX_DARK = { cRed: '#FF6B6F', cAmber: '#F5C443', cBlue: '#6C9BFF', cViolet: '#A98BFF', cTeal: '#3DD6C3', cOrange: '#FF9F4A', cPink: '#FF7AB6', cGreen: '#4CD38A', cGold: '#F5CC4F' };
+
+// สีสัน 4 ระดับ เรียงน้อยไปมาก ผู้ดูแลระบบเลือกในหน้าตั้งค่าโรงเรียน · ระดับสูงกว่ารวมของระดับต่ำกว่าทั้งหมด
+const FX_LEVELS = [
+  { key: 'classic', name: 'แบบเดิม', desc: 'หน้าตาเดิม ไม่เปลี่ยนอะไร' },
+  { key: 'light', name: 'แบบเบา', desc: 'ไอคอนเมนูมีสี จุดสีหน้าสถานะ การ์ดตัวเลขมีขอบสี' },
+  { key: 'mid', name: 'แบบกลาง', desc: 'ไอคอนในกล่องสี การ์ดตัวเลขมีแถบสีและแถบความคืบหน้า ป้ายวิชาหลักสีทอง' },
+  { key: 'full', name: 'แบบจัดเต็ม', desc: 'แถบต้อนรับไล่เฉดพร้อมวงแหวนความคืบหน้า ปุ่มและการ์ดลอยเมื่อเอาเมาส์ชี้ ปกในคลังเอียง ป้ายด่วนกระพริบ แถบโหลดตอนเปลี่ยนหน้า เหรียญเมื่อส่งครบ' },
+];
+const FX_DEFAULT = 'full';
+
+// ระดับสีสันที่ใช้อยู่ 0 ถึง 3 (ปิดฟังก์ชันเสริม colorful = 0 แบบเดิม)
+function fxLevel(settings, ff) {
+  if (!ff || !ff.colorful) return 0;
+  const i = FX_LEVELS.findIndex((x) => x.key === (settings && settings.color_level));
+  return i >= 0 ? i : FX_LEVELS.findIndex((x) => x.key === FX_DEFAULT);
+}
+
+// class ที่ใส่ใน <body> เช่น ระดับกลางได้ fx fx1 fx2
+function fxClass(level) {
+  if (!level) return '';
+  let c = 'fx';
+  for (let i = 1; i <= level; i++) c += ' fx' + i;
+  return c;
+}
+
 const THEMES = {
   a: { name: 'ขาวแดงหรู', desc: 'แดงเลือดหมูตามสีโรงเรียน พื้นงาช้าง หัวเรื่องตัวมีเชิง', head: 'Noto Serif Thai', body: 'IBM Plex Sans Thai', bg: '#F7F3EF', surface: '#FFFFFF', ink: '#241517', muted: '#665558', line: '#E7DDD7', primary: '#8E1B2C', soft: '#F5E6E7', accent: '#A6834B', side: '#6E1422', r: 22, rs: 14 },
   b: { name: 'มินิมอลขาวสะอาด', desc: 'พื้นขาว แดงสดเป็นสีเน้นสีเดียว แบบแอปโทรศัพท์', head: 'Anuphan', body: 'Anuphan', bg: '#F4F4F6', surface: '#FFFFFF', ink: '#1C1C1E', muted: '#5C5C63', line: '#E3E3E8', primary: '#C8102E', soft: '#FCEBEE', accent: '#1C1C1E', side: '#1C1C1E', r: 18, rs: 12 },
@@ -42,7 +70,7 @@ function themeKey(k) {
 
 function resolve(key, { dark = false } = {}) {
   const k = dark && !THEMES[themeKey(key)].dark ? 'j' : themeKey(key);
-  const t = { ...COVER_BASE, ...STATUS_BASE, ...THEMES[k], key: k };
+  const t = { ...COVER_BASE, ...STATUS_BASE, ...(THEMES[k].dark ? FX_DARK : FX_LIGHT), ...THEMES[k], key: k };
   t.link = t.link || t.primary;
   t.sideMuted = t.sideMuted || 'rgba(255,255,255,.72)';
   t.sideBtn = t.sideBtn || 'rgba(0,0,0,.2)';
@@ -78,6 +106,15 @@ function cssVars(t, selector = ':root') {
     '--cv-plan': t.cvPlan,
     '--cv-manual': t.cvManual,
     '--cv-note': t.cvNote,
+    '--c-red': t.cRed,
+    '--c-amber': t.cAmber,
+    '--c-blue': t.cBlue,
+    '--c-violet': t.cViolet,
+    '--c-teal': t.cTeal,
+    '--c-orange': t.cOrange,
+    '--c-pink': t.cPink,
+    '--c-green': t.cGreen,
+    '--c-gold': t.cGold,
     '--r': `${t.r}px`,
     '--rs': `${t.rs}px`,
     '--font': fam(t.body),
@@ -108,4 +145,4 @@ function list() {
   return Object.entries(THEMES).map(([key, t]) => ({ key, letter: key.toUpperCase(), ...t }));
 }
 
-module.exports = { THEMES, FONTS, DEFAULT_THEME, themeKey, resolve, cssVars, fontFiles, list };
+module.exports = { FX_LEVELS, FX_DEFAULT, fxLevel, fxClass, THEMES, FONTS, DEFAULT_THEME, themeKey, resolve, cssVars, fontFiles, list };

@@ -126,8 +126,9 @@ test('ส่งทั้งเล่ม: ร่างผู้ตรวจไม
   assert.match(after, /class="sent-box"/);
   assert.match(after, /ส่งบันทึกหลังแผนทั้งเล่มเรียบร้อย [0-9]+ แผ่น ขณะนี้รอ/);
   assert.match(after, /data-sent-pop/);
+  assert.match(after, /data-confetti>/, "พลุตอนกดส่ง (confetti)");
   assert.match(after, new RegExp(`href="/s/${planId}/print-notes"`));
-  assert.doesNotMatch((await t.get(r.location)).text, /class="sent-box"|data-sent-pop/, "เปิดหน้าใหม่ไม่ขึ้นอีก");
+  assert.doesNotMatch((await t.get(r.location)).text, /class="sent-box"|data-sent-pop|data-confetti>/, "เปิดหน้าใหม่ไม่ขึ้นอีก");
   for (const id of todo) {
     const s = await statusOf(id);
     assert.equal(s.status, 'pending', `แผ่น ${id}`);

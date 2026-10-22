@@ -781,7 +781,7 @@ router.get('/settings', async (req, res) => {
   const site = require('../site');
   // ปุ่มปรับเลขย้อนหลัง: บอกจำนวนและตัวอย่างก่อนกด
   const docnoFix = req.ff.docnoreq ? docno.reformat(req.settings, await docNoRows()) : [];
-  res.render('admin/settings', { title: 'ตั้งค่าโรงเรียน', themeList: themes.list(), themeOf: (k) => themes.resolve(k), siteFields: site.FIELDS, siteIcons: site.ICONS, docnoFix });
+  res.render('admin/settings', { title: 'ตั้งค่าโรงเรียน', themeList: themes.list(), fxLevels: themes.FX_LEVELS, fxDefault: themes.FX_DEFAULT, themeOf: (k) => themes.resolve(k), siteFields: site.FIELDS, siteIcons: site.ICONS, docnoFix });
 });
 
 // ปรับเลขที่บันทึกข้อความทุกงานให้เป็นรูปแบบปัจจุบัน (คำนำหน้าและปีที่ตั้งไว้) เฉพาะเลขรูปแบบ คำนำหน้า+ตัวเลข/ปี 4 หลัก คำสั่งเดียว
@@ -836,6 +836,12 @@ async function saveSettings(req) {
     for (const [k, v] of site.fromForm(b)) await setSetting(k, v);
     const newIcon = site.iconKey(b.site_icon);
     if (newIcon !== oldIcon) await features.audit(req.me, `เปลี่ยนไอคอนแอปเป็นแบบ ${newIcon} ${site.ICONS[newIcon]}`, 'site_icon');
+  }
+  // สีสัน 4 ระดับ (colorful) ฟอร์มที่ไม่มีช่องนี้ไม่แตะค่าเดิม
+  const fx = themes.FX_LEVELS.find((x) => x.key === b.color_level);
+  if (fx && fx.key !== (req.settings.color_level || themes.FX_DEFAULT)) {
+    await setSetting('color_level', fx.key);
+    await features.audit(req.me, `เปลี่ยนสีสันของหน้าเว็บเป็น${fx.name}`, 'color_level');
   }
   const theme = themes.themeKey(b.theme);
   if (theme !== req.settings.theme) {

@@ -136,6 +136,9 @@ function createApp(options = {}) {
       ff,
       icon: icons.icon,
       theme,
+      // สีสัน 4 ระดับ (colorful) เป็น class ของ <body>
+      fxLevel: themes.fxLevel(settings, ff),
+      fxClass: themes.fxClass(themes.fxLevel(settings, ff)),
       themeCss: themes.cssVars(theme) + (ff.prefs && night.key !== theme.key ? themes.cssVars(night, 'html.dark') : ''),
       fontFiles: [...new Set([...themes.fontFiles(theme), ...(ff.prefs ? themes.fontFiles(night) : [])])],
       logoUrl: settings.school_logo || '/static/img/school-logo-sm.png',
