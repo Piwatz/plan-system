@@ -434,3 +434,45 @@ test("แจ้งเตือนเมื่อผ่านครบ (donenotif
   await db.setSetting("ff_printtip", "1");
   await db.ensureRefs();
 });
+
+test('แจ้งเตือนเมื่อถูกส่งกลับ (retnotify) และแจ้งผู้ตรวจวันละครั้ง (waitnotify)', async () => {
+  const sys = (uid, link) => db.q.all("SELECT * FROM notifications WHERE user_id = ? AND from_name = 'ระบบ' AND link = ? ORDER BY id", uid, link);
+  // ส่งกลับทั้งเล่มในข้อทดสอบก่อนหน้า ครูได้ข้อความเดียวต่อเล่ม
+  const teacher = await db.q.get("SELECT id FROM users WHERE username = 'teacher'");
+  const planId = await planOf('ว30203');
+  const book = (await sys(teacher.id, `/s/${planId}#notes`)).filter((n) => /^ส่งกลับให้แก้ไข/.test(n.text));
+  assert.ok(book.length >= 1);
+  const when = book.map((n) => n.created_at);
+  assert.equal(new Set(when).size, when.length, 'ส่งกลับทั้งเล่มแต่ละครั้งแจ้งข้อความเดียว');
+  assert.match(book[0].text, /ส่งกลับทั้งเล่ม/);
+
+  // ผู้ตรวจส่งกลับงานเดียว ครูได้ข้อความพร้อมความเห็น
+  const auth = require('../src/auth');
+  const sub = await db.q.get(
+    `SELECT s.*, u.id AS head_id FROM submissions s JOIN users u ON u.department_id = s.department_id AND u.id <> s.teacher_id
+     JOIN user_roles r ON r.user_id = u.id AND r.role = s.current_role
+     WHERE s.doc_type IN ('plan', 'manual') AND s.status = 'pending' AND s.current_role = 'dept_head' ORDER BY s.id LIMIT 1`
+  );
+  assert.ok(sub, 'มีงานรอหัวหน้ากลุ่มสาระ');
+  const head = { id: sub.head_id };
+  await wf.sendBack(sub.id, await auth.loadUser(head.id), { comment: 'เพิ่มหน้าปก' });
+  const got = await sys(sub.teacher_id, `/s/${sub.id}`);
+  assert.match(got.at(-1).text, /^ส่งกลับให้แก้ไข\n/);
+  assert.match(got.at(-1).text, /: เพิ่มหน้าปก/);
+
+  // แจ้งผู้ตรวจ: ทุกคนที่มีงานรอได้ข้อความเดียว รันซ้ำไม่กองซ้อน ปิดสวิตช์ไม่แจ้ง
+  const jobs = require('../src/jobs');
+  const n = await jobs.waitDigest();
+  assert.ok(n >= 1);
+  await jobs.waitDigest();
+  const rows = await db.q.all("SELECT user_id, COUNT(*)::int AS c FROM notifications WHERE from_name = 'ระบบ' AND link = '/inbox' AND read_at IS NULL GROUP BY user_id");
+  assert.equal(rows.length, n);
+  for (const r of rows) assert.equal(r.c, 1, 'ไม่กองซ้อน');
+  const scihead = await db.q.get("SELECT id FROM users WHERE username = 'scihead'");
+  const msg = (await sys(scihead.id, '/inbox')).at(-1);
+  if (msg) assert.match(msg.text, /^มีงานรอคุณลงนาม \d+ งาน/);
+  await db.setSetting('ff_waitnotify', '0');
+  assert.equal(await jobs.waitDigest(), 0);
+  await db.setSetting('ff_waitnotify', '1');
+  await db.ensureRefs();
+});

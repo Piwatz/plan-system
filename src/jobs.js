@@ -100,6 +100,40 @@ async function backupStatus(now = new Date()) {
   return null;
 }
 
+// แจ้งผู้ตรวจวันละครั้งตอนเช้า (ฟังก์ชันเสริม waitnotify) ว่ามีงานรอลงนามกี่งาน บันทึกหลังแผนนับเป็นเล่ม
+// ข้อความเก่าที่ยังไม่ได้อ่านถูกแทนด้วยข้อความใหม่ ไม่กองซ้อน · คำสั่งคงที่ไม่ว่าผู้ตรวจกี่คน · คืนจำนวนผู้ตรวจที่ได้แจ้ง
+const WAIT_LINK = '/inbox';
+async function waitDigest() {
+  await db.ensureRefs();
+  if (!features.isOn(null, 'waitnotify')) return 0;
+  const wf = require('./workflow');
+  const users = await q.all(
+    `SELECT u.id, u.department_id, array_agg(r.role) AS roles FROM users u JOIN user_roles r ON r.user_id = u.id
+     WHERE u.is_active = 1 GROUP BY u.id, u.department_id`
+  );
+  if (!users.length) return 0;
+  const subs = await q.all(
+    "SELECT id, doc_type, parent_id, teacher_id, department_id, status, current_role, plan_no, updated_at FROM submissions WHERE status = 'pending'"
+  );
+  const out = [];
+  for (const u of users) {
+    const mine = subs.filter((s) => wf.canReview(u, s));
+    const n = wf.groupBooks(mine).length;
+    if (n) out.push({ user: u.id, text: `มีงานรอคุณลงนาม ${n} งาน\nกดเปิด เพื่อดูรายการงานรอตรวจ`, link: WAIT_LINK });
+  }
+  await q.run(
+    "DELETE FROM notifications WHERE from_name = 'ระบบ' AND link = ? AND read_at IS NULL AND user_id = ANY(?)",
+    WAIT_LINK,
+    out.map((x) => x.user)
+  );
+  await wf.systemNotify(out);
+  return out.length;
+}
+
+async function morning() {
+  return db.withScope(waitDigest);
+}
+
 async function hourly() {
   return db.withScope(async () => {
     // ตัวนับรหัสผ่านผิดที่หมดอายุแล้ว
@@ -124,6 +158,11 @@ async function tick() {
   await db.withScope(async () => {
     const s = await getSettings();
     const today = now.slice(0, 10);
+    // แจ้งผู้ตรวจวันละครั้งหลัง 7 โมงเช้า
+    if (s.wait_last_date !== today && now.slice(11, 16) >= '07:00') {
+      await setSetting('wait_last_date', today);
+      await waitDigest().catch((e) => console.error('แจ้งงานรอลงนามไม่สำเร็จ', e.message));
+    }
     if (s.backup_last_date === today || now.slice(11, 16) < '02:00') return;
     await setSetting('backup_last_date', today);
     try {
@@ -141,7 +180,7 @@ function start() {
 }
 
 // Workers: Cron Trigger ใน wrangler.jsonc (เวลา UTC) · ทุก 5 นาทีดูเวลาส่ง LINE (ส่งช้ากว่าเวลาที่ตั้งได้ไม่เกิน 5 นาที)
-// ทุกชั่วโมงล้างไฟล์ค้าง · 19:00 UTC = ตีสองเวลาไทย สำรองข้อมูล
+// ทุกชั่วโมงล้างไฟล์ค้าง · 19:00 UTC = ตีสองเวลาไทย สำรองข้อมูล · 00:00 UTC = 7 โมงเช้าเวลาไทย แจ้งผู้ตรวจ
 const CRONS = {
   '*/5 * * * *': () =>
     db.withScope(async () => {
@@ -150,6 +189,7 @@ const CRONS = {
     }),
   '0 * * * *': hourly,
   '0 19 * * *': nightly,
+  '0 0 * * *': morning,
 };
 
 async function runCron(cron) {
@@ -163,4 +203,4 @@ async function runCron(cron) {
   }
 }
 
-module.exports = { BACKUP_FOLDER, MONTHLY_FOLDER, TERM_FOLDER, KEEP_BACKUPS, STALE_MS, CRONS, cleanupPending, nightlyBackup, termBackup, backupStatus, hourly, nightly, tick, start, runCron };
+module.exports = { BACKUP_FOLDER, MONTHLY_FOLDER, TERM_FOLDER, KEEP_BACKUPS, STALE_MS, CRONS, cleanupPending, nightlyBackup, termBackup, backupStatus, waitDigest, morning, hourly, nightly, tick, start, runCron };

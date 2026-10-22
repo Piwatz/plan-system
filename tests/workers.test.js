@@ -181,12 +181,13 @@ test('บน Workers ไม่ตั้ง SESSION_SECRET แล้วไม่�
   }
 });
 
-test('งานตามเวลาจาก Cron Trigger: รู้จัก 3 เวลา ปิดการเชื่อมต่อเมื่อจบ', async () => {
-  assert.deepEqual(Object.keys(jobs.CRONS), ['*/5 * * * *', '0 * * * *', '0 19 * * *']);
+test('งานตามเวลาจาก Cron Trigger: รู้จัก 4 เวลา ปิดการเชื่อมต่อเมื่อจบ', async () => {
+  assert.deepEqual(Object.keys(jobs.CRONS), ['*/5 * * * *', '0 * * * *', '0 19 * * *', '0 0 * * *']);
   const wrangler = fs.readFileSync(path.join(__dirname, '..', 'wrangler.jsonc'), 'utf8');
   for (const c of Object.keys(jobs.CRONS)) assert.ok(wrangler.includes(`"${c}"`), `wrangler.jsonc มี ${c}`);
   await jobs.runCron('*/5 * * * *'); // LINE ปิดอยู่ ไม่ส่งอะไร
   await jobs.runCron('0 * * * *');
+  await jobs.runCron('0 0 * * *');
   await assert.rejects(jobs.runCron('1 2 3 4 5'), /ไม่รู้จัก/);
   assert.equal(await settle(), 0);
 });

@@ -187,43 +187,66 @@ function planAdvance(sub, startSeq, hmap, self = selfSign()) {
   return { skips, role: null };
 }
 
+// ข้อความแจ้งเตือนของระบบถึงครูเจ้าของงาน แผนและคู่มือแจ้งงานละข้อความ บันทึกหลังแผนรวมเป็นข้อความเดียวต่อเล่ม
+// head = บรรทัดแรก · tail(งาน, เล่ม) = บรรทัดท้าย (เล่ม = จำนวนแผ่น หรือ 0 ถ้าเป็นแผนหรือคู่มือ) · คืน [{ user, text, link }]
+function ownerMessages(subs, head, tail) {
+  const out = [];
+  const books = new Map();
+  for (const s of subs) {
+    if (s.doc_type === 'note' && s.parent_id) {
+      const b = books.get(s.parent_id) || { ...s, n: 0 };
+      b.n += 1;
+      books.set(s.parent_id, b);
+    } else {
+      out.push({ user: s.teacher_id, text: `${head}
+${DOC_TYPES[s.doc_type].label} ${s.subject_code || ''} ${s.subject_name || ''}
+${tail(s, 0)}`, link: `/s/${s.id}` });
+    }
+  }
+  for (const [planId, b] of books) {
+    out.push({ user: b.teacher_id, text: `${head}
+บันทึกหลังแผน ${b.subject_code || ''} ${b.subject_name || ''} ${b.n} แผ่น
+${tail(b, b.n)}`, link: `/s/${planId}#notes` });
+  }
+  return out;
+}
+
+// เพิ่มข้อความแจ้งเตือนจาก ระบบ หลายแถวในคำสั่งเดียว (0 แถวก็ส่งคำสั่ง ให้จำนวนคำสั่งคงที่)
+function systemNotify(rows) {
+  return q.run(
+    `INSERT INTO notifications (user_id, from_user_id, from_name, text, link, created_at)
+     SELECT v.u, NULL, 'ระบบ', v.t, v.l, ? FROM unnest(?::int[], ?::text[], ?::text[]) AS v(u, t, l)`,
+    nowStr(),
+    rows.map((x) => x.user),
+    rows.map((x) => x.text),
+    rows.map((x) => x.link)
+  );
+}
+
 // แจ้งครูในหน้าการแจ้งเตือนเมื่องานผ่านครบทุกระดับ (ฟังก์ชันเสริม donenotify) อยู่ใน transaction เดียวกับการลงนาม
 // ไม่แจ้งเมื่อครูเจ้าของงานทำให้ผ่านเอง (ส่งแล้วผ่านทันที เห็นกล่องหลังกดส่งแล้ว) · ผู้ดูแลดันผ่านแทนก็แจ้ง ข้อความไม่บอกว่าใครดัน
-// บันทึกหลังแผนแจ้งครั้งเดียวต่อเล่มในการลงนามแต่ละครั้ง ไม่แจ้งทีละแผ่น · เพิ่มทุกแถวในคำสั่งเดียว
+// บันทึกหลังแผนแจ้งครั้งเดียวต่อเล่มในการลงนามแต่ละครั้ง ไม่แจ้งทีละแผ่น
 async function doneNotify(subs, actor, always = false) {
   if (!features.isOn(null, 'donenotify')) return;
   const list = subs.filter((s) => s && s.status === 'approved' && !(actor && actor.id === s.teacher_id));
   // always: ไม่มีงานที่ผ่านครบก็ยังส่งคำสั่ง (เพิ่ม 0 แถว) ให้ลงนามหลายงานใช้จำนวนคำสั่งคงที่
   if (!list.length && !always) return;
-  const out = [];
-  const books = new Map();
-  for (const s of list) {
-    if (s.doc_type === 'note' && s.parent_id) {
-      const b = books.get(s.parent_id) || { teacher: s.teacher_id, code: s.subject_code, name: s.subject_name, n: 0 };
-      b.n += 1;
-      books.set(s.parent_id, b);
-    } else {
-      out.push({
-        user: s.teacher_id,
-        text: `ผ่านครบทุกระดับแล้ว\n${DOC_TYPES[s.doc_type].label} ${s.subject_code || ''} ${s.subject_name || ''}\nพิมพ์บันทึกข้อความและแบบประเมินที่มีลายเซ็นครบได้แล้ว`,
-        link: `/s/${s.id}`,
-      });
-    }
-  }
-  for (const [planId, b] of books) {
-    out.push({
-      user: b.teacher,
-      text: `ผ่านครบทุกระดับแล้ว\nบันทึกหลังแผน ${b.code || ''} ${b.name || ''} ${b.n} แผ่น\nพิมพ์บันทึกหลังแผนที่มีลายเซ็นครบได้แล้ว`,
-      link: `/s/${planId}#notes`,
-    });
-  }
-  await q.run(
-    `INSERT INTO notifications (user_id, from_user_id, from_name, text, link, created_at)
-     SELECT v.u, NULL, 'ระบบ', v.t, v.l, ? FROM unnest(?::int[], ?::text[], ?::text[]) AS v(u, t, l)`,
-    nowStr(),
-    out.map((x) => x.user),
-    out.map((x) => x.text),
-    out.map((x) => x.link)
+  await systemNotify(
+    ownerMessages(list, 'ผ่านครบทุกระดับแล้ว', (s, n) => (n ? 'พิมพ์บันทึกหลังแผนที่มีลายเซ็นครบได้แล้ว' : 'พิมพ์บันทึกข้อความและแบบประเมินที่มีลายเซ็นครบได้แล้ว'))
+  );
+}
+
+// แจ้งครูเมื่อถูกส่งกลับให้แก้ (ฟังก์ชันเสริม retnotify) บอกระดับที่ส่งกลับและความเห็น · ส่งกลับทั้งเล่มแจ้งครั้งเดียว
+// subs = งานที่ส่งกลับ พร้อม ret_label (ระดับ) และ ret_comment (ความเห็น) · ส่งกลับงานของตัวเองไม่แจ้ง
+async function returnNotify(subs, actor) {
+  if (!features.isOn(null, 'retnotify')) return;
+  const list = subs.filter((s) => s && !(actor && actor.id === s.teacher_id));
+  if (!list.length) return;
+  await systemNotify(
+    ownerMessages(list, 'ส่งกลับให้แก้ไข', (s, n) =>
+      n ? `${s.ret_label} ส่งกลับทั้งเล่ม กดเปิดงานเพื่อดูแผ่นที่ต้องแก้` : `${s.ret_label}: ${s.ret_comment}
+กดเปิดงาน แก้ไขตามความเห็น แล้วส่งอีกครั้ง`
+    )
   );
 }
 
@@ -530,6 +553,7 @@ async function sendBackMany(ids, actor, { comments = {} } = {}) {
     const self = selfSign();
     const logs = [];
     const done = [];
+    const returned = [];
     for (const s of rows) {
       if (!canReview(actor, s, self)) continue;
       const text = String(comments[s.id] ?? '').trim();
@@ -537,6 +561,7 @@ async function sendBackMany(ids, actor, { comments = {} } = {}) {
       const st = stepOf(s.current_role);
       logs.push({ sub: s.id, actor, role: st.role, step_label: st.label, action: 'return', comment: text });
       done.push({ id: s.id, role: st.role });
+      returned.push({ ...s, ret_label: st.label, ret_comment: text });
     }
     if (!done.length) return 0;
     const now = nowStr();
@@ -548,6 +573,7 @@ async function sendBackMany(ids, actor, { comments = {} } = {}) {
       done.map((d) => d.id),
       done.map((d) => d.role)
     );
+    await returnNotify(returned, actor);
     return done.length;
   });
 }
@@ -592,6 +618,7 @@ async function sendBack(subId, actor, { comment = '' } = {}) {
       nowStr(),
       sub.id
     );
+    await returnNotify([{ ...sub, ret_label: st.label, ret_comment: text }], actor);
     return getSub(sub.id);
   });
 }
@@ -736,6 +763,7 @@ async function adminReturn(subId, actor, { comment = '' } = {}) {
     const st = stepOf(sub.current_role);
     await log(sub.id, actor, { role: st.role, step_label: `ผู้ดูแลระบบส่งกลับแทน${st.label}`, action: 'return', comment: text });
     await q.run("UPDATE submissions SET status = 'returned', returned_role = ?, current_role = NULL, updated_at = ? WHERE id = ?", st.role, nowStr(), sub.id);
+    await returnNotify([{ ...sub, ret_label: st.label, ret_comment: text }], actor);
     return getSub(sub.id);
   });
 }
@@ -859,6 +887,7 @@ async function inbox(user) {
 
 module.exports = {
   onAdvance,
+  systemNotify,
   withdrawMany,
   canWithdrawMany,
   DOC_TYPES,
