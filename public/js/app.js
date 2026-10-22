@@ -2387,8 +2387,15 @@
       if (!opt) return;
       const name = document.querySelector('[name=subject_name]');
       const grade = document.querySelector('[name=grade_level]');
-      if (name && !name.value) name.value = opt.dataset.name || '';
-      if (grade && opt.dataset.grade && !grade.value) grade.value = opt.dataset.grade;
+      // เติมด้วยสคริปต์ไม่เกิดเหตุการณ์ input เอง ต้องส่งต่อให้รายการตรวจก่อนส่ง (ข้อกรอกครบ) รู้ว่ากรอกแล้ว
+      if (name && !name.value) {
+        name.value = opt.dataset.name || '';
+        name.dispatchEvent(new Event('input', { bubbles: true }));
+      }
+      if (grade && opt.dataset.grade && !grade.value) {
+        grade.value = opt.dataset.grade;
+        grade.dispatchEvent(new Event('change', { bubbles: true }));
+      }
     });
   }
 
