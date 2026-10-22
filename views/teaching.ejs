@@ -9,8 +9,9 @@
     <div class="actions"><a class="btn btn-ghost" href="<%= forOther ? '/admin/users/' + who.id : '/' %>"><%- icon('back', 18) %> กลับ</a></div>
   </div>
 
+  <% const proxyNew = forOther && ff.proxynew && me.is_admin && who.is_teacher; %>
   <% if (forOther) { %>
-    <div class="alert alert-info"><%- icon('shield') %><span>ผู้ดูแลระบบกำลังแก้รายวิชาแทนครู ทุกครั้งที่เพิ่มหรือเปลี่ยนจะบันทึกในประวัติ</span></div>
+    <div class="alert alert-info"><%- icon('shield') %><span>ผู้ดูแลระบบกำลังแก้รายวิชาแทนครู ทุกครั้งที่เพิ่มหรือเปลี่ยนจะบันทึกในประวัติ<% if (proxyNew) { %><br><b>วิชาที่ยังไม่ส่ง กดปุ่ม สร้างแทนครู เพื่อส่งคู่มือหรือแผนในชื่อของครู</b> เช่น ครูลาคลอด ครูป่วย<% } %></span></div>
   <% } %>
 
   <section class="card flush">
@@ -27,13 +28,13 @@
         <span class="small">คู่มือ
           <% if (r.manual) { %><a class="badge <%= r.manualCell.cls %>" href="/s/<%= r.manual.id %>"><%= r.manualCell.text %></a>
           <% } else if (!forOther) { %><a class="badge badge-gray" href="/works/new?type=manual&code=<%= encodeURIComponent(r.subject_code) %>">ยังไม่ส่ง กดเพื่อส่ง</a>
-          <% } else { %><span class="badge badge-gray">ยังไม่ส่ง</span><% } %>
+          <% } else { %><span class="badge badge-gray">ยังไม่ส่ง</span><% if (proxyNew) { %> <a class="btn btn-sm btn-primary" href="/works/new?type=manual&code=<%= encodeURIComponent(r.subject_code) %>&for=<%= who.id %>"><%- icon('plus', 16) %> สร้างแทนครู</a><% } %><% } %>
         </span>
         <span class="small">แผน
           <% if (r.plan) { %><a class="badge <%= r.planCell.cls %>" href="/s/<%= r.plan.id %>"><%= r.planCell.text %></a>
           <% } else if (!r.needPlan) { %><span class="badge badge-gray">ไม่ต้องส่ง</span>
           <% } else if (!forOther) { %><a class="badge badge-gray" href="/works/new?type=plan&code=<%= encodeURIComponent(r.subject_code) %>">ยังไม่ส่ง กดเพื่อส่ง</a>
-          <% } else { %><span class="badge badge-gray">ยังไม่ส่ง</span><% } %>
+          <% } else { %><span class="badge badge-gray">ยังไม่ส่ง</span><% if (proxyNew) { %> <a class="btn btn-sm btn-primary" href="/works/new?type=plan&code=<%= encodeURIComponent(r.subject_code) %>&for=<%= who.id %>"><%- icon('plus', 16) %> สร้างแทนครู</a><% } %><% } %>
         </span>
         <span class="actions">
           <% if (ff.onemain && !r.is_main && canSetMain) { %>

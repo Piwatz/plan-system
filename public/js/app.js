@@ -334,7 +334,7 @@
       for (const j of jobs) {
         const info = new URLSearchParams({ form: url, field: j.field, name: j.name, size: String(j.blob.size), idx: String(j.idx || 0), count: String(j.count || 1) });
         if (j.merged) info.set('merged', String(j.merged));
-        ['doc_type', 'subject_code', 'subject_name', 'plan_id'].forEach((k) => data.has(k) && info.set(k, data.get(k)));
+        ['doc_type', 'subject_code', 'subject_name', 'plan_id', 'for_teacher'].forEach((k) => data.has(k) && info.set(k, data.get(k)));
         const start = await request('POST', '/upload/start', info, { 'Content-Type': 'application/x-www-form-urlencoded' });
         const base = sent;
         await sendChunks(start.token, j.blob, start.chunk, (n) => setProgress(Math.min(99, Math.round(((base + n) / total) * 100))));

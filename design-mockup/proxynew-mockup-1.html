@@ -1,0 +1,392 @@
+<!doctype html>
+<html lang="th">
+<head><base href="http://localhost:3110/">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>รายวิชาที่สอน | CW-Learn</title>
+
+<link rel="manifest" href="/manifest.webmanifest">
+<link rel="apple-touch-icon" href="/static/img/app/icon-A-180.png">
+<meta name="apple-mobile-web-app-title" content="CW-Learn">
+<meta name="application-name" content="CW-Learn">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#1B3762">
+
+<script>try{var p=JSON.parse(localStorage.getItem('plan-prefs')||'{}');if(p.dark)document.documentElement.classList.add('dark');if(p.big)document.documentElement.classList.add('big')}catch(e){}</script>
+<link rel="stylesheet" href="/vendor/fonts/noto-sans-thai-looped/400.css">
+<link rel="stylesheet" href="/vendor/fonts/noto-sans-thai-looped/500.css">
+<link rel="stylesheet" href="/vendor/fonts/noto-sans-thai-looped/700.css">
+<link rel="stylesheet" href="/vendor/fonts/noto-sans-thai-looped/600.css">
+<style>:root{--bg:#EEF2F7;--surface:#FFFFFF;--ink:#0F1E33;--muted:#4E5F78;--line:#D6DEE9;--primary:#1D3A66;--soft:#E4ECF7;--link:#1D3A66;--accent:#E3A21A;--side:#1B3762;--side-muted:#B9C7DB;--side-btn:#152E55;--side-active-bg:#FFFFFF;--side-active-fg:#1B3762;--ok:#1B7343;--ok-bg:#E4F4EA;--wait:#875700;--wait-bg:#FFF2DA;--back:#B0341F;--back-bg:#FDEAE4;--cv-plan:#1D3A66;--cv-manual:#17694F;--cv-note:#8E1B2C;--c-red:#E5484D;--c-amber:#E0A100;--c-blue:#2F6FEB;--c-violet:#7C4DDB;--c-teal:#12A594;--c-orange:#F07B12;--c-pink:#E5468F;--c-green:#20A35A;--c-gold:#E8B524;--r:16px;--rs:10px;--font:'Noto Sans Thai Looped', 'Noto Sans Thai Looped', 'Leelawadee UI', Tahoma, sans-serif;--font-head:'Noto Sans Thai Looped', 'Noto Sans Thai Looped', 'Leelawadee UI', Tahoma, sans-serif;--head-weight:700;--shadow:0 1px 2px rgba(15,30,51,.05), 0 4px 14px rgba(15,30,51,.05);--head-bg:rgba(15,30,51,.03);--input-bg:#FFFFFF;color-scheme:light}html.dark{--bg:#0C1626;--surface:#142139;--ink:#E9EFF8;--muted:#A3B3CA;--line:#25344F;--primary:#3D6BC0;--soft:#1B2D4D;--link:#8FB5F6;--accent:#F2B43A;--side:#08111F;--side-muted:#9AABC4;--side-btn:#13203A;--side-active-bg:#1F3966;--side-active-fg:#FFFFFF;--ok:#7FD4A2;--ok-bg:#163828;--wait:#F2C46B;--wait-bg:#3A2E12;--back:#FF9C88;--back-bg:#432019;--cv-plan:#1D3A66;--cv-manual:#17694F;--cv-note:#8E1B2C;--c-red:#FF6B6F;--c-amber:#F5C443;--c-blue:#6C9BFF;--c-violet:#A98BFF;--c-teal:#3DD6C3;--c-orange:#FF9F4A;--c-pink:#FF7AB6;--c-green:#4CD38A;--c-gold:#F5CC4F;--r:16px;--rs:10px;--font:'Noto Sans Thai Looped', 'Noto Sans Thai Looped', 'Leelawadee UI', Tahoma, sans-serif;--font-head:'Noto Sans Thai Looped', 'Noto Sans Thai Looped', 'Leelawadee UI', Tahoma, sans-serif;--head-weight:700;--shadow:0 1px 0 rgba(255,255,255,.03), 0 10px 26px rgba(0,0,0,.4);--head-bg:rgba(255,255,255,.04);--input-bg:rgba(0,0,0,.18);color-scheme:dark}</style>
+<link rel="stylesheet" href="/static/css/app.css?v=mvjvoj7w">
+<link rel="icon" href="/static/img/school-logo-sm.png">
+<style>*{animation:none!important;transition:none!important}.fx-loadbar{display:none!important}</style></head>
+<body class="theme-i ml-simple fx fx1 fx2 fx3">
+<div class="fx-loadbar" aria-hidden="true"></div>
+
+<div class="shell">
+  <aside class="side" id="side" aria-label="เมนู">
+    <a class="side-brand" href="/">
+      <img class="side-logo" src="/static/img/school-logo-sm.png" alt="ตราโรงเรียน">
+      <span class="side-brand-text">
+        <b>CW-Learn</b>
+        
+        <strong class="side-full">งานส่งเสริมพัฒนากระบวนการเรียนรู้</strong>
+        <span>Learning Process Development</span>
+        <span>โรงเรียนชานุมานวิทยาคม</span>
+      </span>
+    </a>
+    <button type="button" class="side-close" data-side-close aria-label="ปิดเมนู"><svg class="ic" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg></button>
+    <nav class="side-nav" aria-label="เมนูหลัก">
+      
+        <span class="side-label">ของฉัน</span>
+        
+          <a class="side-item sc-red" href="/">
+            <svg class="ic" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 10.5 12 3l9 7.5V20a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/></svg><span class="side-text">หน้าหลัก</span>
+            
+          </a>
+        
+          <a class="side-item sc-pink" href="/alerts">
+            <svg class="ic" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 16V11a6 6 0 0 1 12 0v5l2 2H4zM10 21h4"/></svg><span class="side-text">การแจ้งเตือน</span>
+            
+          </a>
+        
+      
+        <span class="side-label">งานตรวจ</span>
+        
+          <a class="side-item sc-teal" href="/dept">
+            <svg class="ic" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 4h7v7H4zM13 4h7v7h-7zM4 13h7v7H4zM13 13h7v7h-7z"/></svg><span class="side-text">สถานะกลุ่มสาระ</span>
+            
+          </a>
+        
+          <a class="side-item sc-violet" href="/registry">
+            <svg class="ic" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M11 18a7 7 0 1 0 0-14 7 7 0 0 0 0 14zM20 20l-4-4"/></svg><span class="side-text">ทะเบียนงาน</span>
+            
+          </a>
+        
+      
+        <span class="side-label">ภาพรวม</span>
+        
+          <a class="side-item sc-orange" href="/library">
+            <svg class="ic" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 5a2 2 0 0 1 2-2h13v16H6a2 2 0 0 0-2 2zM4 19V5M9 7h6"/></svg><span class="side-text">คลังงานการจัดการเรียนรู้</span>
+            
+          </a>
+        
+          <a class="side-item sc-teal" href="/stats">
+            <svg class="ic" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20V10M10 20V4M16 20v-7M21 20H3"/></svg><span class="side-text">สถิติโรงเรียน</span>
+            
+          </a>
+        
+          <a class="side-item sc-amber" href="/about">
+            <svg class="ic" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 21h18M5 21V10l7-5 7 5v11M10 21v-5h4v5"/></svg><span class="side-text">เกี่ยวกับ CW-Learn</span>
+            
+          </a>
+        
+          <a class="side-item sc-red" href="/admin">
+            <svg class="ic" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 21h18M5 21V10l7-5 7 5v11M10 21v-5h4v5"/></svg><span class="side-text">ผู้ดูแลระบบ</span>
+            
+          </a>
+        
+          <a class="side-item sc-violet" href="/admin/features">
+            <svg class="ic" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 7h8a5 5 0 0 1 0 10H8A5 5 0 0 1 8 7zM16 12h.01"/></svg><span class="side-text">ฟังก์ชันเสริม</span>
+            
+          </a>
+        
+      
+    </nav>
+    <div class="side-foot">
+      <a class="side-user" href="/profile">
+        <b>ผู้ดูแลระบบ ทดลอง</b>
+        <span>ผู้ดูแลระบบ</span>
+      </a>
+      
+        <div class="side-prefs">
+          <button type="button" class="side-btn" data-pref="dark" aria-pressed="false"><svg class="ic" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 14.5A8 8 0 0 1 9.5 4 8 8 0 1 0 20 14.5z"/></svg><span data-on="โหมดกลางวัน" data-off="โหมดกลางคืน">โหมดกลางคืน</span></button>
+          <button type="button" class="side-btn" data-pref="big" aria-pressed="false"><span class="aa"><small>ก</small>ก</span><span data-on="ตัวปกติ" data-off="ตัวใหญ่">ตัวใหญ่</span></button>
+        </div>
+      
+      <form method="post" action="/logout" data-nobusy><button type="submit" class="side-btn side-logout"><svg class="ic" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 4h4a1 1 0 0 1 1 1v14a1 1 0 0 1-1 1h-4M10 17l5-5-5-5M15 12H3"/></svg> ออกจากระบบ</button></form>
+    </div>
+  </aside>
+  <div class="side-scrim" data-side-close></div>
+  <div class="main">
+    <header class="mtop">
+      <button type="button" class="mtop-btn" data-side-open aria-label="เปิดเมนู"><svg class="ic" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16"/></svg></button>
+      <a class="mtop-brand" href="/"><img src="/static/img/school-logo-sm.png" alt=""><span><b>CW-Learn</b><small>ภาคเรียนที่ 2/2569 โหมดทดลอง</small></span></a>
+      <a class="mtop-btn" href="/alerts" aria-label="การแจ้งเตือน"><svg class="ic" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 16V11a6 6 0 0 1 12 0v5l2 2H4zM10 21h4"/></svg></a>
+    </header>
+    <div class="demo-strip">โหมดทดลอง ข้อมูลทั้งหมดเป็นชื่อสมมติ</div>
+
+<main class="container" id="content">
+
+
+
+<div class="narrow" style="max-width:900px">
+  <div style="background:#c62828;color:#fff;display:inline-block;padding:4px 12px;border-radius:8px;font-weight:700;margin-bottom:10px">ตัวอย่าง 1 · ผู้ดูแลเปิดรายวิชาที่สอนของครู (จากหน้าแก้ไขผู้ใช้)</div><div class="page-head">
+    <div>
+      <div class="eyebrow">ภาคเรียนที่ 2/2569</div>
+      <h1>รายวิชาที่สอน ของนายสมชาย ใจดี</h1>
+      <div class="sub">คู่มือรายวิชาส่งทุกวิชาที่สอน แผนการจัดการเรียนรู้ส่งเฉพาะวิชาหลัก 1 วิชา</div>
+    </div>
+    <div class="actions"><a class="btn btn-ghost" href="/admin/users/11"><svg class="ic" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m15 6-6 6 6 6"/></svg> กลับ</a></div>
+  </div>
+
+  
+    <div class="alert alert-info"><svg class="ic" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3 4 6v6c0 5 3.5 8 8 9 4.5-1 8-4 8-9V6z"/></svg><span>ผู้ดูแลระบบกำลังแก้รายวิชาแทนครู ทุกครั้งที่เพิ่มหรือเปลี่ยนจะบันทึกในประวัติ<br><b>วิชาที่ยังไม่ส่ง กดปุ่ม สร้างแทนครู เพื่อส่งคู่มือหรือแผนในชื่อของครู</b> เช่น ครูลาคลอด ครูป่วย</span></div>
+  
+
+  <section class="card flush">
+    <div class="card-head"><h2>วิชาที่สอน 3 วิชา</h2></div>
+    <p class="hint" style="padding:0 20px">ส่งแผนวิชาหลักครบ 1 วิชาแล้ว ถ้าต้องการเปลี่ยนวิชาหลัก ให้แจ้งผู้ดูแลระบบ</p>
+    
+    
+      <div class="teach-row">
+        <span class="subj"><b>ว30203</b>ฟิสิกส์เพิ่มเติม 3 <span class="muted">ม.5</span>
+          <span class="badge badge-blue"><svg class="ic" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.9 1-6.1L3.2 9.5l6.1-.9z"/></svg> วิชาหลัก</span>
+        </span>
+        <span class="small">คู่มือ
+          <a class="badge badge-green" href="/s/1">ผ่านแล้ว 95</a>
+          
+        </span>
+        <span class="small">แผน
+          <a class="badge badge-blue" href="/s/2">รอ รอง ผอ.</a>
+          
+        </span>
+        <span class="actions">
+          
+          
+        </span>
+      </div>
+    
+      <div class="teach-row">
+        <span class="subj"><b>ว30207</b>ฟิสิกส์ 1 <span class="muted">ม.4</span>
+          
+        </span>
+        <span class="small">คู่มือ
+          <a class="badge badge-red" href="/s/15">ส่งกลับแก้ไข</a>
+          
+        </span>
+        <span class="small">แผน
+          <span class="badge badge-gray">ไม่ต้องส่ง</span>
+          
+        </span>
+        <span class="actions">
+          
+          
+        </span>
+      </div>
+    
+      <div class="teach-row">
+        <span class="subj"><b>ว31101</b>วิทยาศาสตร์กายภาพ <span class="muted">ม.4</span>
+          
+        </span>
+        <span class="small">คู่มือ
+          <span class="badge badge-gray">ยังไม่ส่ง</span> <a class="btn btn-sm btn-primary" style="margin-left:6px"><svg class="ic" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg> สร้างแทนครู</a>
+        </span>
+        <span class="small">แผน
+          <span class="badge badge-gray">ไม่ต้องส่ง</span>
+          
+        </span>
+        <span class="actions">
+          
+          
+            <form method="post" action="/teaching/66/delete" data-confirm="เอาวิชา ว31101 ออกจากรายวิชาที่สอน" data-danger="1" data-ok-label="เอาออก">
+              <input type="hidden" name="u" value="11"><button class="btn btn-ghost btn-sm" type="submit"><svg class="ic" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"/></svg> เอาออก</button>
+            </form>
+          
+        </span>
+      </div>
+    
+  </section>
+
+  <form class="card" method="post" action="/teaching/add" data-confirm="เพิ่มวิชานี้ในรายวิชาที่สอน" data-ok-label="เพิ่มวิชา" style="margin-top:18px">
+    <input type="hidden" name="u" value="11">
+    <h2>เพิ่มวิชาที่สอน</h2>
+    <div class="form-grid">
+      <div class="field">
+        <label for="subject_code">รหัสวิชา <span class="req">*</span></label>
+        <input type="text" id="subject_code" name="subject_code" list="subject-list" placeholder="เช่น ว30203" data-subject-code autocomplete="off" required>
+        <datalist id="subject-list">
+          <option value="ค21101" data-name="คณิตศาสตร์ 1" data-grade="ม.1">คณิตศาสตร์ 1</option><option value="ท21101" data-name="ภาษาไทย 1" data-grade="ม.1">ภาษาไทย 1</option><option value="ว21101" data-name="วิทยาศาสตร์ 1" data-grade="ม.1">วิทยาศาสตร์ 1</option><option value="ว22201" data-name="โครงงานวิทยาศาสตร์ 1" data-grade="ม.2">โครงงานวิทยาศาสตร์ 1</option><option value="ว30203" data-name="ฟิสิกส์เพิ่มเติม 3" data-grade="ม.5">ฟิสิกส์เพิ่มเติม 3</option><option value="ว30207" data-name="ฟิสิกส์ 1" data-grade="ม.4">ฟิสิกส์ 1</option><option value="ว31101" data-name="วิทยาศาสตร์กายภาพ" data-grade="ม.4">วิทยาศาสตร์กายภาพ</option><option value="ส21101" data-name="สังคมศึกษา 1" data-grade="ม.1">สังคมศึกษา 1</option><option value="อ21101" data-name="ภาษาอังกฤษ 1" data-grade="ม.1">ภาษาอังกฤษ 1</option>
+        </datalist>
+      </div>
+      <div class="field" style="grid-column:span 2">
+        <label for="subject_name">ชื่อวิชา <span class="req">*</span></label>
+        <input type="text" id="subject_name" name="subject_name" placeholder="เช่น ฟิสิกส์เพิ่มเติม 3" required>
+      </div>
+      <div class="field">
+        <label for="grade_level">ระดับชั้น</label>
+        <select id="grade_level" name="grade_level">
+          <option value="">เลือกระดับชั้น</option>
+          <option>ม.1</option><option>ม.2</option><option>ม.3</option><option>ม.4</option><option>ม.5</option><option>ม.6</option>
+        </select>
+      </div>
+    </div>
+    
+    <div class="btn-row" style="margin-top:14px"><button class="btn btn-primary" type="submit"><svg class="ic" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg> เพิ่มวิชา</button></div>
+    <p class="hint">พิมพ์รหัสวิชาแล้วระบบเติมชื่อวิชาให้ ถ้าเป็นวิชาที่มีในรายวิชาของโรงเรียน</p>
+  </form>
+</div>
+</main>
+
+    
+
+<footer class="site-foot">
+  <div class="sf-cols">
+    <div class="sf-brand">
+      <img src="/static/img/school-logo-sm.png" alt="ตราโรงเรียน">
+      <div>
+        <b class="sf-app">CW-Learn</b>
+        <b>งานส่งเสริมพัฒนากระบวนการเรียนรู้</b>
+        <small>Learning Process Development</small>
+        <small>โรงเรียนชานุมานวิทยาคม</small>
+      </div>
+    </div>
+    
+    <div class="sf-col sf-contact">
+      <h4>ติดต่อ</h4>
+      <ul>
+        <li>เลขที่ 683 ตำบลชานุมาน อำเภอชานุมาน จังหวัดอำนาจเจริญ 37210</li>
+        <li>โทร <a href="tel:0934145385">093-414-5385</a></li>
+        <li>อีเมล <a href="mailto:chanumanwittayakom@chanu.ac.th">chanumanwittayakom@chanu.ac.th</a></li>
+      </ul>
+    </div>
+    
+    <div class="sf-col">
+      <h4>ลิงก์</h4>
+      <ul>
+        <li><a href="https://www.chanu.ac.th/home" target="_blank" rel="noopener">เว็บไซต์โรงเรียน</a></li>
+        <li><a href="https://www.facebook.com/chanumanwittayakom/" target="_blank" rel="noopener">เพจ Facebook โรงเรียน</a></li>
+        <li><a href="/about">เกี่ยวกับ CW-Learn</a></li>
+        <li><a href="/about#install">ติดตั้งเป็นแอป</a></li>
+      </ul>
+    </div>
+    
+    <div class="sf-col sf-admin">
+      <h4>ผู้ดูแลระบบ</h4>
+      <ul>
+        
+        <li><span class="sf-line">ฝ่ายวิชาการ</span><span class="sf-line">งานส่งเสริมพัฒนากระบวนการเรียนรู้</span></li>
+        
+        
+      </ul>
+    </div>
+    
+  </div>
+  <div class="sf-bar"><span>© 2569 งานส่งเสริมพัฒนากระบวนการเรียนรู้ โรงเรียนชานุมานวิทยาคม</span><span>CW-Learn รุ่น 23 ต.ค. 2569</span></div>
+</footer>
+
+  </div>
+</div>
+<nav class="bnav" aria-label="เมนูลัด">
+  
+    <a class="bnav-item" href="/"><svg class="ic" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 10.5 12 3l9 7.5V20a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/></svg><span>หน้าแรก</span></a>
+  
+    <a class="bnav-item" href="/admin"><svg class="ic" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 21h18M5 21V10l7-5 7 5v11M10 21v-5h4v5"/></svg><span>ผู้ดูแล</span></a>
+  
+    <a class="bnav-item" href="/admin/features"><svg class="ic" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 7h8a5 5 0 0 1 0 10H8A5 5 0 0 1 8 7zM16 12h.01"/></svg><span>ฟังก์ชันเสริม</span></a>
+  
+    <a class="bnav-item" href="/stats"><svg class="ic" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20V10M10 20V4M16 20v-7M21 20H3"/></svg><span>สถิติ</span></a>
+  
+  <button type="button" class="bnav-item" data-side-open><svg class="ic" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM4 21c1.5-4 4.5-6 8-6s6.5 2 8 6"/></svg><span>ฉัน</span></button>
+</nav>
+
+<dialog id="confirm-dialog" class="modal">
+  <form method="dialog">
+    <div class="modal-icon" data-icon></div>
+    <p class="modal-text" data-text></p>
+    <div class="modal-actions">
+      <button value="cancel" class="btn btn-ghost btn-lg" data-cancel>ยกเลิก</button>
+      <button value="ok" class="btn btn-primary btn-lg" data-ok>ยืนยัน</button>
+    </div>
+  </form>
+</dialog>
+
+
+<dialog id="sig-need" class="modal sig-need" data-require>
+  <h3 class="sig-need-title" data-sig-title>เซ็นชื่อก่อนส่งงาน</h3>
+  <p class="muted small" data-sig-text>ลายเซ็นนี้จะอยู่ในบันทึกข้อความและเอกสารที่พิมพ์จากระบบ</p>
+  
+
+<div class="sigpad" data-sigpad data-clean>
+  <canvas width="960" height="320" aria-label="ช่องเซ็นชื่อ"></canvas>
+
+  <div class="sig-note" data-clean-note hidden><span data-clean-text>ปรับรูปให้แล้ว ตัดขอบว่าง ลบพื้นกระดาษ</span> <button type="button" class="linkish" data-clean-toggle>ใช้รูปเดิมแทน</button></div>
+
+
+  <div class="sig-adjust" data-adjust hidden>
+    <div class="sig-adj-row"><span class="t">ขนาด</span>
+      <button type="button" class="btn btn-ghost sig-step" data-size="-1" aria-label="เล็กลง">−</button>
+      <input type="range" min="40" max="100" step="5" value="100" data-size-range aria-label="ขนาดลายเซ็น">
+      <button type="button" class="btn btn-ghost sig-step" data-size="1" aria-label="ใหญ่ขึ้น">+</button></div>
+    <div class="sig-adj-row"><span class="t">สีเส้น</span>
+      <button type="button" class="btn btn-ghost btn-sm" data-color="#1b2f9e"><span class="ink-dot ink-blue"></span> น้ำเงิน</button>
+      <button type="button" class="btn btn-ghost btn-sm" data-color="#111111"><span class="ink-dot ink-black"></span> ดำ</button></div>
+  </div>
+
+
+  <div class="btn-row" style="margin-top:8px">
+    <button type="button" class="btn btn-ghost btn-sm" data-clear>ล้าง</button>
+    <label class="btn btn-ghost btn-sm">ใช้รูปลายเซ็นจากไฟล์<input type="file" accept="image/png,image/jpeg" hidden data-file></label>
+
+
+    <small class="muted">เซ็นด้วยนิ้วหรือเมาส์ในกรอบ</small>
+  </div>
+
+  <input type="hidden" name="sig_choice" value="1">
+  <label class="check" style="margin-top:8px"><input type="checkbox" name="remember_signature" value="1" checked> จำลายเซ็นนี้ไว้ใช้ครั้งต่อไป</label>
+
+  <input type="hidden" name="signature" value="">
+</div>
+
+  <div class="modal-actions">
+    <button type="button" class="btn btn-ghost btn-lg" data-sig-cancel>ยกเลิก</button>
+    <button type="button" class="btn btn-primary btn-lg" data-sig-ok>เซ็นแล้ว ส่งงาน</button>
+  </div>
+</dialog>
+
+
+
+<dialog id="install-tip" class="modal install-tip" data-auto>
+  <img class="it-icon" src="/static/img/app/icon-A-180.png" alt="">
+  <h3 class="center">เพิ่ม CW-Learn ไว้ที่หน้าจอโฮม</h3>
+  <p class="center muted small">เปิดได้เต็มจอเหมือนแอป ไม่ต้องพิมพ์ที่อยู่เว็บอีก</p>
+  <ol class="it-steps" data-install-os="ios">
+    <li>แตะปุ่ม <b>แชร์</b> (สี่เหลี่ยมมีลูกศรชี้ขึ้น) ด้านล่างของ Safari หรือมุมขวาบนของ Chrome</li>
+    <li>เลื่อนลงแล้วแตะ <b>เพิ่มไปยังหน้าจอโฮม</b></li>
+    <li>แตะ <b>เพิ่ม</b> มุมขวาบน</li>
+  </ol>
+  <ol class="it-steps" data-install-os="android" hidden>
+    <li>แตะปุ่ม <b>เมนูจุดสามจุด</b> มุมขวาบนของ Chrome</li>
+    <li>แตะ <b>เพิ่มลงในหน้าจอหลัก</b> หรือ <b>ติดตั้งแอป</b></li>
+    <li>แตะ <b>ติดตั้ง</b> หรือ <b>เพิ่ม</b></li>
+  </ol>
+  <ol class="it-steps" data-install-os="desktop" hidden>
+    <li>Chrome หรือ Edge: กดไอคอน <b>ติดตั้ง</b> ท้ายช่องที่อยู่เว็บ หรือเมนูจุดสามจุด แล้วเลือก <b>ติดตั้ง CW-Learn</b></li>
+    <li>Safari บน Mac: เมนู <b>ไฟล์</b> แล้วเลือก <b>เพิ่มไปยัง Dock</b></li>
+    <li>ไอคอนจะอยู่บนเดสก์ท็อปหรือแถบงาน กดเปิดได้เลย</li>
+  </ol>
+  <div class="modal-actions">
+    <button type="button" class="btn btn-ghost btn-lg" data-install-close>ไว้ทีหลัง</button>
+    <button type="button" class="btn btn-primary btn-lg" data-install-close>เข้าใจแล้ว</button>
+  </div>
+  <button type="button" class="btn btn-success btn-lg it-now" data-install-now hidden>ติดตั้งเลย</button>
+</dialog>
+
+<div class="overlay" id="busy" data-resume>
+  <div class="overlay-box">
+    <div class="spinner"></div>
+    <b data-title>กำลังบันทึก</b>
+    <div class="progress" data-bar hidden><div></div></div>
+    <small class="muted" data-pct></small>
+
+    <div class="busy-net" data-net hidden><svg class="ic" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 8.8a15 15 0 0 1 20 0M5 12.5a10 10 0 0 1 14 0M8.5 16a5 5 0 0 1 7 0M12 19.5h.01M3 3l18 18"/></svg><div><b data-net-title></b><span data-net-text></span></div></div>
+    <div class="busy-btns" data-net-btns hidden><button type="button" class="btn btn-primary" data-resume-now hidden>ส่งต่อจากที่ค้าง</button><button type="button" class="btn" data-cancel-send>ยกเลิกการส่ง</button></div>
+
+  </div>
+</div>
+<script src="/static/js/app.js?v=mvjvoj7w"></script>
+</body>
+</html>
+

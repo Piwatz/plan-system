@@ -34,7 +34,7 @@ async function formWithFiles(client, url, fields, files = [], opts = {}) {
   const field = opts.field || 'main_files';
   const body = new URLSearchParams(fields);
   const info = { form: url, field, count: String(files.length) };
-  for (const k of ['doc_type', 'subject_code', 'subject_name', 'plan_id']) if (fields[k] != null) info[k] = String(fields[k]);
+  for (const k of ['doc_type', 'subject_code', 'subject_name', 'plan_id', 'for_teacher']) if (fields[k] != null) info[k] = String(fields[k]);
   if (opts.merge && files.length > 1 && files.every(([, n]) => /\.pdf$/i.test(n))) {
     const m = await mergeLikeBrowser(files);
     const token = await uploadOne(client, m.blob, 'merged.pdf', { ...info, count: '1', merged: String(files.length) });

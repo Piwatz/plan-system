@@ -3,8 +3,10 @@
 <div class="narrow" style="max-width:860px">
   <div class="page-head">
     <div>
-      <h1><%= isNew ? 'ส่ง' : 'แก้ไข' %><%= T.label %></h1>
-      <div class="sub">ภาคเรียนที่ <%= sub.semester %>/<%= sub.academic_year %> ส่ง 1 รายวิชาต่อ 1 ครั้ง<%= ff.onemain ? (sub.doc_type === 'plan' ? ' แผนส่งเฉพาะวิชาหลัก' : ' คู่มือส่งทุกวิชาที่สอน') : '' %></div>
+      <% if (locals.proxy) { %><div class="eyebrow">ผู้ดูแลระบบ</div><% } %>
+      <h1><%= isNew ? 'ส่ง' : 'แก้ไข' %><%= T.label %><%= locals.proxy ? 'แทนครู' : '' %></h1>
+      <% if (locals.proxy) { %><div class="sub">ในชื่อของ <b><%= proxy.full_name %></b> ภาคเรียนที่ <%= sub.semester %>/<%= sub.academic_year %></div><% } else { %>
+      <div class="sub">ภาคเรียนที่ <%= sub.semester %>/<%= sub.academic_year %> ส่ง 1 รายวิชาต่อ 1 ครั้ง<%= ff.onemain ? (sub.doc_type === 'plan' ? ' แผนส่งเฉพาะวิชาหลัก' : ' คู่มือส่งทุกวิชาที่สอน') : '' %></div><% } %>
     </div>
     <% if (!isNew) { %><div class="actions"><a class="btn btn-ghost" href="/s/<%= sub.id %>">ยกเลิก</a></div><% } %>
   </div>
@@ -15,12 +17,15 @@
     <div class="alert alert-error"><%- icon('undo') %><div><b><%= lastReturn.user_name %></b> (<%= lastReturn.step_label %>) ส่งกลับให้แก้ไข
       <div class="pre" style="margin-top:6px;color:var(--ink)"><%= lastReturn.comment %></div></div></div>
   <% } %>
-  <% if (!window.open && sub.status !== 'returned') { %>
+  <% if (locals.proxy) { %>
+    <div class="alert alert-info"><%- icon('shield') %><span><b>งานนี้เป็นชื่อของ <%= proxy.full_name %></b> ครูเห็นงานนี้ในหน้าของตัวเองเหมือนส่งเอง<br>ระบบไม่ใส่ลายเซ็นครูแทน ช่องลายเซ็นครูในบันทึกข้อความเว้นว่างไว้ให้เซ็นมือ หรือครูกลับมาเข้าระบบแล้วกดยืนยันและใส่ลายเซ็นของตัวเอง<br>ระบบจดในประวัติของงานว่า ผู้ดูแลระบบสร้างและส่งแทน ส่งได้แม้ปิดรับแล้ว</span></div>
+  <% } else if (!window.open && sub.status !== 'returned') { %>
     <div class="alert alert-warn"><%- icon('clock') %><span><%= window.reason %> ตอนนี้บันทึกร่างไว้ก่อนได้</span></div>
   <% } %>
 
   <form class="card js-upload" method="post" action="<%= isNew ? '/works' : '/s/' + sub.id %>" enctype="multipart/form-data">
     <input type="hidden" name="doc_type" value="<%= sub.doc_type %>">
+    <% if (locals.proxy) { %><input type="hidden" name="for_teacher" value="<%= proxy.id %>"><% } %>
     <h2>ข้อมูลรายวิชา</h2>
     <div class="form-grid">
       <div class="field">
@@ -157,7 +162,7 @@
       <button class="btn btn-ghost btn-lg" type="submit" name="action" value="draft">บันทึกร่าง</button>
       <button class="btn btn-primary btn-lg" type="submit" name="action" value="submit"<% if (ff.coverconfirm) { %> data-need-checked="cover_ok" data-need-message="ติ๊กยืนยันก่อนว่าไฟล์นี้มีหน้าปก และหน้าปกอยู่หน้าแรก ถ้ายังไม่มีปก ให้ทำปกก่อน หรือกดบันทึกร่างไว้ก่อน"<% } %>
         data-confirm="ยืนยันส่ง<%= T.label %>ให้ผู้ตรวจ
-หลังส่งแล้วจะแก้ไขได้เมื่อถูกส่งกลับ หรือดึงกลับก่อนมีผู้ลงนาม" data-ok-label="ส่งเลย" data-need-sig<%- locals.pc ? ' data-precheck-btn' : '' %>><%- icon('send', 20) %> <%= sub.status === 'returned' ? 'ส่งอีกครั้งหลังแก้ไข' : 'ส่งให้ผู้ตรวจ' %></button>
+หลังส่งแล้วจะแก้ไขได้เมื่อถูกส่งกลับ หรือดึงกลับก่อนมีผู้ลงนาม" data-ok-label="ส่งเลย"<%= sub.teacher_id && sub.teacher_id !== me.id ? '' : ' data-need-sig' %><%- locals.pc ? ' data-precheck-btn' : '' %>><%- icon('send', 20) %> <%= sub.status === 'returned' ? 'ส่งอีกครั้งหลังแก้ไข' : 'ส่งให้ผู้ตรวจ' %></button>
     </div>
     <% if (locals.pc) { %><p class="hint ck-btn-note" data-ck-note hidden></p><% } %>
   </form>

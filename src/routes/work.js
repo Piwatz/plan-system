@@ -338,8 +338,8 @@ function submittedMessage(sub) {
 
 // บันทึกแล้ว ถ้าครูกดส่งด้วยให้ส่งต่อ ส่งไม่ผ่านก็ยังเก็บร่างไว้ แล้วพากลับไปหน้าแก้ไข
 // รายวิชาที่ใช้ในช่องรหัสวิชา: วิชาที่ครูสอนขึ้นก่อน ตามด้วยรายวิชาของโรงเรียน
-async function subjectChoices(req) {
-  const mine = req.ff.teachlist ? await teaching.list(req.me.id, Number(req.settings.academic_year), Number(req.settings.semester)) : [];
+async function subjectChoices(req, teacherId = req.me.id) {
+  const mine = req.ff.teachlist ? await teaching.list(teacherId, Number(req.settings.academic_year), Number(req.settings.semester)) : [];
   const out = mine.map((x) => ({ code: x.subject_code, name: x.subject_name, grade: x.grade_level }));
   const seen = new Set(out.map((x) => x.code));
   for (const x of await q.all('SELECT * FROM subjects ORDER BY code')) if (!seen.has(x.code)) out.push(x);
@@ -398,20 +398,40 @@ async function sharedDocNo(req, sub, teacherId) {
   return r ? { no: r.doc_no, code: r.subject_code } : null;
 }
 
+// สร้างงานแทนครู (ฟังก์ชันเสริม proxynew) เช่น ครูลาคลอด: ผู้ดูแลระบบสร้างคู่มือหรือแผนในชื่อครู ไม่ใส่ลายเซ็นครู
+// คืนครูเจ้าของงาน หรือ null = สร้างงานของตัวเอง (ห้ามทำแทนในงานของตัวเอง จึงไม่นับ id ของตัวเอง)
+async function proxyOwner(req, id) {
+  const uid = util.idOrNull(id);
+  if (uid === null || uid === req.me.id) return null;
+  if (!req.ff.proxynew || !req.me.is_admin) throw new UserError('สร้างงานแทนครูได้เฉพาะผู้ดูแลระบบ');
+  const u = await q.get(
+    'SELECT u.id, u.full_name, u.position, u.department_id, u.plan_quota, d.name AS dept_name FROM users u LEFT JOIN departments d ON d.id = u.department_id WHERE u.id = ? AND u.is_active = 1 AND u.is_teacher = 1',
+    uid
+  );
+  if (!u) throw new UserError('ไม่พบครูคนนี้');
+  return u;
+}
+
+function noDepartment(proxy) {
+  return proxy ? `${proxy.full_name} ยังไม่ได้กำหนดกลุ่มสาระ กำหนดในหน้าแก้ไขผู้ใช้ก่อน` : 'บัญชีของคุณยังไม่ได้กำหนดกลุ่มสาระ กรุณาแจ้งผู้ดูแลระบบ';
+}
+
 router.get('/works/new', async (req, res) => {
   const type = WORK_TYPES.includes(req.query.type) ? req.query.type : 'manual';
-  if (!req.me.department_id) throw new UserError('บัญชีของคุณยังไม่ได้กำหนดกลุ่มสาระ กรุณาแจ้งผู้ดูแลระบบ');
+  const proxy = await proxyOwner(req, req.query.for);
+  const owner = proxy || req.me;
+  if (!owner.department_id) throw new UserError(noDepartment(proxy));
   const year = Number(req.settings.academic_year);
   const sem = Number(req.settings.semester);
   if (type === 'plan' && req.ff.onemain) {
-    const why = await teaching.planBlocked(req.me, year, sem);
+    const why = await teaching.planBlocked(owner, year, sem);
     if (why) throw new UserError(why);
   }
-  const sub = { doc_type: type, academic_year: year, semester: sem, teaching_methods: '[]' };
+  const sub = { doc_type: type, teacher_id: owner.id, academic_year: year, semester: sem, teaching_methods: '[]' };
   // กดมาจากรายวิชาที่มีอยู่แล้ว ให้กรอกรหัสและชื่อวิชาให้เลย
   const fromId = util.idOrNull(req.query.from);
-  const from = fromId ? await q.get(`SELECT ${wf.subCols()} FROM submissions WHERE id = ? AND teacher_id = ?`, fromId, req.me.id) : null;
-  const subjects = await subjectChoices(req);
+  const from = fromId ? await q.get(`SELECT ${wf.subCols()} FROM submissions WHERE id = ? AND teacher_id = ?`, fromId, owner.id) : null;
+  const subjects = await subjectChoices(req, owner.id);
   if (from) Object.assign(sub, { subject_code: from.subject_code, subject_name: from.subject_name, grade_level: from.grade_level });
   else if (req.query.code) {
     const code = str(req.query.code, 30);
@@ -419,14 +439,15 @@ router.get('/works/new', async (req, res) => {
     Object.assign(sub, { subject_code: code, subject_name: x ? x.name : '', grade_level: x ? x.grade : '' });
   }
   res.render('work_form', {
-    title: `ส่ง${wf.DOC_TYPES[type].label}`,
+    title: `ส่ง${wf.DOC_TYPES[type].label}${proxy ? 'แทนครู' : ''}`,
     sub,
+    proxy,
     files: [],
     subjects,
     window: submitWindow(req.settings),
     isNew: true,
     pc: await checkInfo(req, sub),
-    sharedNo: await sharedDocNo(req, sub, req.me.id),
+    sharedNo: await sharedDocNo(req, sub, owner.id),
     docnoPre: docno.prefix(req.settings),
     docnoYear: docno.yearOf(req.settings, sub),
   });
@@ -443,10 +464,13 @@ router.post('/works', async (req, res) => {
   const cover = type && req.ff.library ? await up.takeCover(req, library.COVER_MAX) : null;
   let id;
   let mergedMsg;
+  let proxy = null;
   try {
+    proxy = await proxyOwner(req, b.for_teacher);
+    const owner = proxy || req.me;
     let problem = null;
     if (!type) problem = 'ไม่รู้จักชนิดงาน';
-    else if (!req.me.department_id) problem = 'บัญชีของคุณยังไม่ได้กำหนดกลุ่มสาระ กรุณาแจ้งผู้ดูแลระบบ';
+    else if (!owner.department_id) problem = noDepartment(proxy);
     else if (teaching.skipActivity(f.subject_code)) problem = 'วิชากิจกรรมพัฒนาผู้เรียน (รหัสขึ้นต้นด้วย ก) ไม่ต้องส่งแผนและคู่มือ';
     if (problem) throw new UserError(problem);
     await rejectBadFiles(req, files);
@@ -454,12 +478,12 @@ router.post('/works', async (req, res) => {
     const now = nowStr();
     id = await q.tx(async () => {
       // ตรวจงานซ้ำและโควตาแผนหลังล็อกครู กดส่งสองครั้งพร้อมกัน คำขอที่สองต้องรอแล้วเห็นงานแรก
-      await lockTeacher(req.me.id);
-      if (await findDuplicate(req.me.id, year, sem, type, f.subject_code)) {
+      await lockTeacher(owner.id);
+      if (await findDuplicate(owner.id, year, sem, type, f.subject_code)) {
         throw new UserError(`${wf.DOC_TYPES[type].label}วิชา ${f.subject_code} ส่งไว้แล้วในภาคเรียนนี้ ให้เปิดงานเดิมแล้วกดแก้ไขแทน`);
       }
       if (type === 'plan' && req.ff.onemain) {
-        const why = await teaching.planBlocked(req.me, year, sem);
+        const why = await teaching.planBlocked(owner, year, sem);
         if (why) throw new UserError(why);
       }
       const r = await q.get(
@@ -467,8 +491,8 @@ router.post('/works', async (req, res) => {
            grade_level, teaching_methods, link_url, doc_no, created_at, updated_at)
          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) RETURNING id`,
         type,
-        req.me.id,
-        req.me.department_id,
+        owner.id,
+        owner.department_id,
         year,
         sem,
         f.subject_code,
@@ -483,13 +507,15 @@ router.post('/works', async (req, res) => {
       await up.attach(r.id, files, 'main');
       await precheck.setFront(req.ff, r.id, b.front_check);
       if (cover) await up.useCover(r.id, cover);
-      await rememberSubject(req, { teacher_id: req.me.id, doc_type: type, academic_year: year, semester: sem }, f);
+      await rememberSubject(req, { teacher_id: owner.id, doc_type: type, academic_year: year, semester: sem }, f);
+      if (proxy) await wf.log(r.id, req.me, { step_label: 'ผู้ดูแลระบบ', action: 'proxynew', comment: `สร้างงานแทน ${proxy.full_name}` });
       return r.id;
     });
   } catch (e) {
     await dropFiles(req, cover ? [...files, cover] : files);
     throw e;
   }
+  if (proxy) await features.audit(req.me, `สร้าง${wf.DOC_TYPES[type].label} ${f.subject_code} แทน ${proxy.full_name}`, `submission ${id}`);
   await finishSave(req, res, id, b.action === 'submit', `บันทึกร่างเรียบร้อย${mergedMsg} ยังไม่ได้ส่งให้ผู้ตรวจ`);
 });
 
@@ -971,15 +997,18 @@ async function uploadTarget(req, b) {
     return { ...plan, doc_type: 'note', teacher_name: req.me.full_name, dept_name: req.me.dept_name };
   }
   if (form === '/works' && WORK_TYPES.includes(b.doc_type)) {
-    if (!req.me.department_id) throw new UserError('บัญชีของคุณยังไม่ได้กำหนดกลุ่มสาระ กรุณาแจ้งผู้ดูแลระบบ');
+    // สร้างงานแทนครู ไฟล์อยู่ในโฟลเดอร์ของครูเจ้าของงาน
+    const proxy = await proxyOwner(req, b.for_teacher);
+    const owner = proxy || req.me;
+    if (!owner.department_id) throw new UserError(noDepartment(proxy));
     return {
       doc_type: b.doc_type,
       academic_year: Number(req.settings.academic_year),
       semester: Number(req.settings.semester),
       subject_code: str(b.subject_code, 30),
       subject_name: str(b.subject_name, 200),
-      teacher_name: req.me.full_name,
-      dept_name: req.me.dept_name,
+      teacher_name: owner.full_name,
+      dept_name: owner.dept_name,
     };
   }
   throw new UserError('ส่งไฟล์ไม่สำเร็จ ลองใหม่อีกครั้ง');
