@@ -475,7 +475,8 @@
 
   // ---------- ใช้ไฟล์รุ่นก่อน (ฟังก์ชันเสริม oldfile) ----------
   // ไฟล์ PDF: ทำรูปปกในคลังจากไฟล์ที่กลับไปใช้ในเครื่องนี้ส่งไปด้วย ทำรูปไม่ได้ก็ยังส่งได้ (ระบบใช้ปกที่วาดให้แทน)
-  document.querySelectorAll('[data-old-file]').forEach((form) => {
+  // เฉพาะฟอร์ม: รายการตรวจก่อนส่งในหน้าแก้ไขก็มี data-old-file (เลขไฟล์เดิม) แต่ไม่มีปุ่ม
+  document.querySelectorAll('form[data-old-file]').forEach((form) => {
     form.querySelector('button').addEventListener('click', async () => {
       const ok = await ask(form.dataset.text, { icon: 'note', ok: 'ใช้ไฟล์นี้' });
       if (!ok) return;
@@ -857,6 +858,43 @@
       f.submit();
     });
   });
+
+  // ---------- หลังครูกดส่ง: ป๊อปกลางจอ (ฟังก์ชันเสริม sentpop) ขึ้นครั้งเดียว ครูกดปิดเอง ----------
+  const sentPop = document.querySelector('[data-sent-pop]');
+  if (sentPop && typeof sentPop.showModal === 'function') {
+    sentPop.querySelectorAll('[data-sent-close]').forEach((b) => b.addEventListener('click', () => sentPop.close()));
+    sentPop.showModal();
+  }
+
+  // ---------- ครั้งแรกที่เปิดหน้างานที่ส่งแล้ว: ป้ายสีทองชี้การ์ดพิมพ์ (printtip) และขอบเรือง (printglow) จำใน localStorage ----------
+  const firstTime = (key) => {
+    try {
+      return !localStorage.getItem(key);
+    } catch (e) {
+      return false; // เครื่องที่จำไม่ได้ ไม่ขึ้นทุกครั้งให้รำคาญ
+    }
+  };
+  const remember = (key) => {
+    try {
+      localStorage.setItem(key, '1');
+    } catch (e) {}
+  };
+  const pTip = document.querySelector('[data-print-tip]');
+  const pCard = document.querySelector('.print-card');
+  if (pTip && firstTime('cw-print-tip')) {
+    pTip.hidden = false;
+    if (pCard) pCard.classList.add('pc-hold');
+    pTip.querySelector('[data-print-tip-ok]').addEventListener('click', () => {
+      remember('cw-print-tip');
+      pTip.hidden = true;
+      if (pCard) pCard.classList.remove('pc-hold');
+    });
+  }
+  if (pCard && pCard.hasAttribute('data-print-glow') && firstTime('cw-print-glow')) {
+    remember('cw-print-glow');
+    pCard.classList.add('pc-glow');
+    pCard.addEventListener('animationend', () => pCard.classList.remove('pc-glow'));
+  }
 
   // ---------- วิธีติดตั้งเป็นแอป (ฟังก์ชันเสริม appicon installtip aboutpage) ----------
   // ขึ้นเองครั้งแรกครั้งเดียวต่อเครื่อง เฉพาะไอโฟน ไอแพด แอนดรอยด์ที่ยังไม่ได้เปิดจากไอคอนแอป (จำใน localStorage)

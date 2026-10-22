@@ -1269,6 +1269,29 @@ a.lib-cv:hover .lib-cover { box-shadow: 0 0 0 3px var(--primary); }
   body:has(.print-bar) .container { padding-bottom: calc(var(--bnav-h) + 90px); }
 }
 @media print { .print-bar, .print-card { display: none !important; } }
+/* ป้ายสีทองชี้การ์ดพิมพ์ครั้งแรก (printtip) และขอบเรือง (printglow) */
+.print-tip { position: relative; display: flex; flex-wrap: wrap; gap: 8px 12px; align-items: center; max-width: 420px; margin: 0 0 14px; padding: 10px 14px; border-radius: var(--rs); background: var(--accent); color: #1b1300; font-weight: 600; box-shadow: var(--shadow); }
+.print-tip[hidden] { display: none; }
+.print-tip::after { content: ''; position: absolute; left: 30px; bottom: -11px; border: 12px solid transparent; border-bottom: 0; border-top-color: var(--accent); }
+.pt-ok { border: 0; border-radius: 8px; padding: 4px 14px; background: #1b1300; color: #fff; font: inherit; font-size: 0.92rem; cursor: pointer; }
+.print-card.pc-glow { animation: pc-glow 1.2s ease-in-out 3; }
+.print-card.pc-hold { box-shadow: 0 0 0 4px var(--accent); }
+@keyframes pc-glow { 0%, 100% { box-shadow: 0 0 0 0 transparent; } 50% { box-shadow: 0 0 0 5px var(--accent), 0 0 18px 6px color-mix(in srgb, var(--accent) 45%, transparent); } }
+@media (prefers-reduced-motion: reduce) { .print-card.pc-glow { animation: none; box-shadow: 0 0 0 4px var(--accent); } }
+
+/* หลังครูกดส่ง: กล่องเขียวบอกขั้นต่อไป (sentbox) และป๊อปกลางจอ (sentpop) */
+.sent-box { margin-bottom: 16px; padding: 16px 18px; border: 2px solid var(--ok); border-radius: var(--rs); background: var(--ok-bg); color: var(--ink); }
+.sx-head { display: flex; gap: 10px; align-items: center; color: var(--ok); font-size: 1.2rem; font-weight: 700; }
+.sx-check { flex: none; display: grid; place-items: center; width: 32px; height: 32px; border-radius: 50%; background: var(--ok); color: #fff; }
+.sx-steps { margin: 10px 0 4px; padding-left: 24px; line-height: 1.75; }
+.sx-one { margin: 10px 0 4px; }
+.sx-btns { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+@media (max-width: 640px) { .sx-btns .btn { flex: 1 1 100%; justify-content: center; } }
+.sent-pop .sp-ok { background: var(--ok); color: #fff; }
+.sent-pop .sp-title { color: var(--ok); margin: 4px 0 6px; }
+.sent-pop p { margin: 0; line-height: 1.7; }
+.sent-pop .modal-actions .btn { justify-content: center; }
+@media print { .sent-box, .print-tip { display: none !important; } }
 
 /* เลขที่บันทึกข้อความ (docnoreq) วก.[เลข]/ปี */
 .docno-in { display: flex; align-items: stretch; border: 1px solid var(--line); border-radius: var(--rs); overflow: hidden; background: var(--input-bg); }

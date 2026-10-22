@@ -62,6 +62,7 @@
   </div>
 </div>
 
+<% if (flash && flash.sent && flash.sent.id === sub.id) { %><%- include('partials/sent_box') %><% } %>
 <% if (sub.status === 'returned' && lastReturn && ff.retfocus) { %>
   <%- include('partials/return_box', { r: lastReturn, hint: !isOwner ? '' : bookMode ? 'กด <b>แก้ไข</b> ปรับตามความเห็น แล้วกด <b>ส่งทั้งเล่ม</b> ในหน้ารายวิชา' : 'กด <b>แก้ไข</b> ปรับตามความเห็น แล้วกดส่งอีกครั้ง งานจะกลับไปที่ผู้ส่งคืนโดยตรง' }) %>
 <% } else if (sub.status === 'returned' && lastReturn) { %>
@@ -78,7 +79,7 @@
   <div class="alert alert-success"><%- icon('ok') %><span><%= isNote ? 'ลงความเห็นครบทุกระดับแล้ว' : 'ผ่านการพิจารณาครบทุกระดับแล้ว' %> เมื่อ <%= util.thaiDateTime(sub.completed_at) %></span></div>
 <% } %>
 
-<%- include('partials/print_card', { hideBar: canReview || bookSign }) %>
+<%- include('partials/print_card', { hideBar: canReview || bookSign, firstTip: isOwner && sub.status !== 'draft' && !(flash && flash.sent) }) %>
 <% if (locals.pc) { %><%- include('partials/precheck', { pc, sub, files: current, mode: 'detail' }) %><% } %>
 
 <div class="card">

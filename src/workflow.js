@@ -187,8 +187,48 @@ function planAdvance(sub, startSeq, hmap, self = selfSign()) {
   return { skips, role: null };
 }
 
+// แจ้งครูในหน้าการแจ้งเตือนเมื่องานผ่านครบทุกระดับ (ฟังก์ชันเสริม donenotify) อยู่ใน transaction เดียวกับการลงนาม
+// ไม่แจ้งเมื่อครูเจ้าของงานทำให้ผ่านเอง (ส่งแล้วผ่านทันที เห็นกล่องหลังกดส่งแล้ว) · ผู้ดูแลดันผ่านแทนก็แจ้ง ข้อความไม่บอกว่าใครดัน
+// บันทึกหลังแผนแจ้งครั้งเดียวต่อเล่มในการลงนามแต่ละครั้ง ไม่แจ้งทีละแผ่น · เพิ่มทุกแถวในคำสั่งเดียว
+async function doneNotify(subs, actor, always = false) {
+  if (!features.isOn(null, 'donenotify')) return;
+  const list = subs.filter((s) => s && s.status === 'approved' && !(actor && actor.id === s.teacher_id));
+  // always: ไม่มีงานที่ผ่านครบก็ยังส่งคำสั่ง (เพิ่ม 0 แถว) ให้ลงนามหลายงานใช้จำนวนคำสั่งคงที่
+  if (!list.length && !always) return;
+  const out = [];
+  const books = new Map();
+  for (const s of list) {
+    if (s.doc_type === 'note' && s.parent_id) {
+      const b = books.get(s.parent_id) || { teacher: s.teacher_id, code: s.subject_code, name: s.subject_name, n: 0 };
+      b.n += 1;
+      books.set(s.parent_id, b);
+    } else {
+      out.push({
+        user: s.teacher_id,
+        text: `ผ่านครบทุกระดับแล้ว\n${DOC_TYPES[s.doc_type].label} ${s.subject_code || ''} ${s.subject_name || ''}\nพิมพ์บันทึกข้อความและแบบประเมินที่มีลายเซ็นครบได้แล้ว`,
+        link: `/s/${s.id}`,
+      });
+    }
+  }
+  for (const [planId, b] of books) {
+    out.push({
+      user: b.teacher,
+      text: `ผ่านครบทุกระดับแล้ว\nบันทึกหลังแผน ${b.code || ''} ${b.name || ''} ${b.n} แผ่น\nพิมพ์บันทึกหลังแผนที่มีลายเซ็นครบได้แล้ว`,
+      link: `/s/${planId}#notes`,
+    });
+  }
+  await q.run(
+    `INSERT INTO notifications (user_id, from_user_id, from_name, text, link, created_at)
+     SELECT v.u, NULL, 'ระบบ', v.t, v.l, ? FROM unnest(?::int[], ?::text[], ?::text[]) AS v(u, t, l)`,
+    nowStr(),
+    out.map((x) => x.user),
+    out.map((x) => x.text),
+    out.map((x) => x.link)
+  );
+}
+
 // เดินหน้าไปยังระดับถัดไปที่ต้องตรวจ แล้วคืนงานฉบับล่าสุด (ต้องอยู่ใน transaction ที่ล็อกแถวงานแล้ว)
-async function advance(sub, startSeq) {
+async function advance(sub, startSeq, actor = null) {
   const now = nowStr();
   const next = planAdvance(sub, startSeq, await holdersByRole());
   for (const s of next.skips) await log(sub.id, null, s);
@@ -200,6 +240,7 @@ async function advance(sub, startSeq) {
         now,
         sub.id
       );
+  if (after.status === 'approved') await doneNotify([after], actor);
   notify(sub.id);
   return after;
 }
@@ -285,7 +326,7 @@ async function submit(subId, actor) {
       const st = stepOf(sub.returned_role);
       if (st) startSeq = st.seq;
     }
-    return advance(sub, startSeq);
+    return advance(sub, startSeq, actor);
   });
 }
 
@@ -320,7 +361,7 @@ async function approve(subId, actor, { comment = '', scores = null, signature = 
       );
     }
     await log(sub.id, actor, fields);
-    return advance(sub, st.seq + 1);
+    return advance(sub, st.seq + 1, actor);
   });
 }
 
@@ -381,6 +422,7 @@ async function approveMany(ids, actor, { comment = '', comments = {} } = {}) {
         list.map((s) => s.status),
         list.map((s) => s.current_role)
       );
+      await doneNotify(list, actor, true);
       for (const s of list) notify(s.id);
     }
     return { done, skipped };
@@ -472,6 +514,7 @@ async function submitMany(ids, actor) {
       rows.map((s) => s.status),
       rows.map((s) => s.current_role)
     );
+    await doneNotify(out, actor);
     for (const s of rows) notify(s.id);
     return out.sort((a, b) => a.id - b.id);
   });
@@ -665,7 +708,7 @@ async function submitAs(subId, actor) {
       const st = stepOf(sub.returned_role);
       if (st) startSeq = st.seq;
     }
-    return advance(sub, startSeq);
+    return advance(sub, startSeq, actor);
   });
 }
 
@@ -677,7 +720,7 @@ async function overrideStep(subId, actor, { comment = '' } = {}) {
     if (sub.status !== 'pending' || !sub.current_role) throw new WorkflowError('งานนี้ไม่ได้รอผู้ตรวจอยู่');
     const st = stepOf(sub.current_role);
     await log(sub.id, actor, { role: st.role, step_label: st.label, action: 'override', comment: String(comment).trim() });
-    return advance(sub, st.seq + 1);
+    return advance(sub, st.seq + 1, actor);
   });
 }
 

@@ -120,7 +120,14 @@ test('ส่งทั้งเล่ม: ร่างผู้ตรวจไม
   // แก้ให้ครบแล้วส่งทั้งเล่ม ทุกแผ่นไปรอหัวหน้ากลุ่มสาระพร้อมลายเซ็นครู
   await t.post(`/s/${id42}`, { plan_no: '42', topic: 'ร่างที่สอง', result_k: 'ทำแบบฝึกได้', action: 'draft' });
   const r = await t.post(`/s/${planId}/submit-book`, {});
-  assert.equal(r.location, `/s/${planId}#notes`);
+  // กล่องเขียวบอกขั้นต่อไป (sentbox) อยู่บนสุดของหน้า จึงไม่เลื่อนลงไปที่ #notes · ขึ้นครั้งเดียว
+  assert.equal(r.location, `/s/${planId}`);
+  const after = (await t.get(r.location)).text;
+  assert.match(after, /class="sent-box"/);
+  assert.match(after, /ส่งบันทึกหลังแผนทั้งเล่มเรียบร้อย [0-9]+ แผ่น ขณะนี้รอ/);
+  assert.match(after, /data-sent-pop/);
+  assert.match(after, new RegExp(`href="/s/${planId}/print-notes"`));
+  assert.doesNotMatch((await t.get(r.location)).text, /class="sent-box"|data-sent-pop/, "เปิดหน้าใหม่ไม่ขึ้นอีก");
   for (const id of todo) {
     const s = await statusOf(id);
     assert.equal(s.status, 'pending', `แผ่น ${id}`);
@@ -359,4 +366,71 @@ test('ดูตัวอย่างจัดหน้าลงนามจา�
   // ครูเปิดหน้าตัวอย่างไม่ได้ · แบบที่ไม่รู้จักพากลับ
   assert.notEqual((await t.get('/admin/notesign/preview?web=bar')).status, 200);
   assert.equal((await admin.get('/admin/notesign/preview?web=zzz')).status, 302);
+});
+
+test("แจ้งเตือนเมื่อผ่านครบ (donenotify) ป้ายชี้การ์ดพิมพ์ครั้งแรก (printtip printglow)", async () => {
+  const admin = await db.q.get("SELECT * FROM users WHERE username = 'admin'");
+  const notifs = (uid) => db.q.all("SELECT * FROM notifications WHERE user_id = ? AND from_name = 'ระบบ' ORDER BY id", uid);
+  const pend = await db.q.all("SELECT id, teacher_id, subject_code FROM submissions WHERE doc_type IN ('plan', 'manual') AND status = 'pending' ORDER BY id");
+  assert.ok(pend.length >= 2);
+  const [a, b] = pend;
+  const before = (await notifs(a.teacher_id)).length;
+  // ผู้ดูแลดันผ่านแทน ครูได้แจ้งเตือน 1 ข้อความ ลิงก์ไปหน้างาน
+  assert.equal((await wf.overrideAll(a.id, admin)).status, "approved");
+  const got = await notifs(a.teacher_id);
+  assert.equal(got.length, before + 1);
+  assert.equal(got.at(-1).link, `/s/${a.id}`);
+  assert.match(got.at(-1).text, /ผ่านครบทุกระดับแล้ว/);
+  assert.match(got.at(-1).text, new RegExp(a.subject_code));
+  // ปิดสวิตช์ ไม่แจ้ง
+  await db.setSetting("ff_donenotify", "0");
+  await db.ensureRefs();
+  const n2 = (await notifs(b.teacher_id)).length;
+  assert.equal((await wf.overrideAll(b.id, admin)).status, "approved");
+  assert.equal((await notifs(b.teacher_id)).length, n2);
+  await db.setSetting("ff_donenotify", "1");
+  await db.ensureRefs();
+
+  // ลงนามบันทึกทั้งเล่มจนผ่านครบ แจ้งครั้งเดียวต่อเล่ม
+  const book = await db.q.all("SELECT id, parent_id, teacher_id FROM submissions WHERE doc_type = 'note' AND status = 'pending' ORDER BY parent_id, id");
+  if (book.length) {
+    const planId = book[0].parent_id;
+    const ids = book.filter((x) => x.parent_id === planId).map((x) => x.id);
+    const n3 = (await notifs(book[0].teacher_id)).length;
+    for (let i = 0; i < 10; i++) {
+      const left = (await db.q.all("SELECT id FROM submissions WHERE id = ANY(?) AND status = 'pending'", ids)).map((x) => x.id);
+      if (!left.length) break;
+      const st = wf.stepOf((await db.q.get("SELECT current_role FROM submissions WHERE id = ?", left[0])).current_role);
+      const holders = await db.q.all("SELECT u.* FROM users u JOIN user_roles r ON r.user_id = u.id WHERE r.role = ? AND u.id <> ?", st.role, book[0].teacher_id);
+      let signed = 0;
+      for (const h of holders) {
+        const user = await require("../src/auth").loadUser(h.id);
+        signed += (await wf.approveMany(left, user, { comment: "รับทราบ" })).done;
+        if (signed) break;
+      }
+      if (!signed) break;
+    }
+    const done = (await db.q.all("SELECT id FROM submissions WHERE id = ANY(?) AND status = 'approved'", ids)).length;
+    if (done === ids.length) {
+      const got3 = await notifs(book[0].teacher_id);
+      assert.equal(got3.length, n3 + 1, "บันทึกทั้งเล่มแจ้งครั้งเดียว");
+      assert.equal(got3.at(-1).link, `/s/${planId}#notes`);
+    }
+  }
+
+  // หน้าการแจ้งเตือน ปุ่มเปิดงาน
+  const owner = await db.q.get("SELECT username FROM users WHERE id = ?", a.teacher_id);
+  const c = await as(owner.username);
+  assert.match((await c.get("/alerts")).text, new RegExp(`href="/s/${a.id}">เปิดงาน`));
+  // หน้างานที่ส่งแล้วของเจ้าของ มีป้ายชี้และขอบเรือง ผู้อื่นไม่มี
+  const page = (await c.get(`/s/${a.id}`)).text;
+  assert.match(page, /data-print-tip /);
+  assert.match(page, /data-print-glow/);
+  const other = await as("admin");
+  assert.doesNotMatch((await other.get(`/s/${a.id}`)).text, /data-print-tip |data-print-glow/);
+  await db.setSetting("ff_printtip", "0");
+  await db.ensureRefs();
+  assert.doesNotMatch((await c.get(`/s/${a.id}`)).text, /data-print-tip /);
+  await db.setSetting("ff_printtip", "1");
+  await db.ensureRefs();
 });

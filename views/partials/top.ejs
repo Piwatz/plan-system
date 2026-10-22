@@ -103,6 +103,7 @@
     <% if (demo) { %><div class="demo-strip">โหมดทดลอง ข้อมูลทั้งหมดเป็นชื่อสมมติ</div><% } %>
 <% } %>
 <% if (!locals.bare) { %><main class="container" id="content"><% } %>
-<% if (flash && !locals.bare) { %>
+<%# กล่องเขียวหลังกดส่ง (sentbox) ขึ้นแทนแถบนี้ในหน้างาน %>
+<% if (flash && !locals.bare && !(flash.sent && ff.sentbox)) { %>
   <div class="alert alert-<%= flash.type === 'error' ? 'error' : 'success' %>" role="status"><%- icon(flash.type === 'error' ? 'shield' : 'ok', 20) %> <span><%= flash.text %></span></div>
 <% } %>

@@ -52,8 +52,10 @@ class UserError extends Error {
 }
 
 // ตอบกลับหลังบันทึก: ฟอร์มที่ส่งด้วย JavaScript (มีแถบความคืบหน้า) รับเป็น JSON แล้วเปลี่ยนหน้าเอง
-function respond(req, res, url, type, text) {
+// sent = งานที่ครูเพิ่งกดส่งเอง (sentInfo) หน้างานขึ้นกล่องเขียวหรือป๊อปบอกขั้นต่อไปครั้งเดียว
+function respond(req, res, url, type, text, sent = null) {
   if (text) req.flash(type, text);
+  if (sent && req.session && req.session.flash) req.session.flash.sent = sent;
   if (req.xhr) return res.json({ ok: true, redirect: url });
   res.redirect(url);
 }
@@ -321,6 +323,13 @@ async function checkInfo(req, sub, { miss = false } = {}) {
   };
 }
 
+// ข้อมูลสำหรับกล่องเขียวและป๊อปหลังกดส่ง (ฟังก์ชันเสริม sentbox sentpop) เฉพาะครูส่งงานของตัวเอง ผู้ดูแลส่งแทนไม่ขึ้น
+// book = จำนวนแผ่นเมื่อส่งบันทึกหลังแผนทั้งเล่ม (id เป็นแผนของเล่ม)
+function sentInfo(req, sub, id = sub.id, book = 0) {
+  if (!(req.ff.sentbox || req.ff.sentpop) || !wf.isOwner(req.me, sub)) return null;
+  return { id: Number(id), doc: sub.doc_type, approved: sub.status === 'approved', wait: wf.statusText(sub), steps: wf.activeSteps(sub.doc_type).length, book };
+}
+
 function submittedMessage(sub) {
   if (sub.status === 'approved') return 'ส่งเรียบร้อย และผ่านครบทุกระดับแล้ว';
   return `ส่งเรียบร้อย ขณะนี้${wf.statusText(sub)}`;
@@ -347,7 +356,7 @@ async function finishSave(req, res, id, wantSubmit, savedMsg) {
   if (!wantSubmit) return respond(req, res, `/s/${id}`, 'success', savedMsg);
   try {
     const sub = await trySubmit(req, id);
-    return respond(req, res, `/s/${id}`, 'success', submittedMessage(sub));
+    return respond(req, res, `/s/${id}`, 'success', submittedMessage(sub), sentInfo(req, sub));
   } catch (e) {
     if (e instanceof UserError || e instanceof wf.WorkflowError) return respond(req, res, `/s/${id}/edit`, 'error', e.message);
     throw e;
@@ -815,7 +824,7 @@ router.post('/s/:id/submit', async (req, res) => {
   if (!editable(req, sub)) throw new UserError('ส่งได้เฉพาะงานของตนเองที่เป็นฉบับร่างหรือถูกส่งกลับ');
   if (bookMode(req, sub)) throw new UserError('บันทึกหลังแผนส่งทั้งเล่ม กดปุ่ม ส่งทั้งเล่ม ในหน้ารายวิชา');
   const after = await trySubmit(req, sub.id);
-  respond(req, res, `/s/${sub.id}`, 'success', submittedMessage(after));
+  respond(req, res, `/s/${sub.id}`, 'success', submittedMessage(after), sentInfo(req, after));
 });
 
 // เพิ่มหน้าปก: เบราว์เซอร์รวมไฟล์ปกไว้หน้าแรกของไฟล์เดิมแล้วส่งมาเป็นไฟล์ใหม่ (upload_main_files) ไม่เปลี่ยนขั้นการตรวจ
@@ -1240,7 +1249,9 @@ router.post('/s/:id/submit-book', async (req, res) => {
     req.me
   );
   const where = [...new Set(after.map((n) => wf.statusText(n)))].join(' และ ');
-  respond(req, res, `/s/${plan.id}#notes`, 'success', `ส่งบันทึกหลังแผนทั้งเล่มเรียบร้อย ${after.length} แผ่น ขณะนี้${where}`);
+  // กล่องเขียวอยู่บนสุดของหน้า จึงไม่เลื่อนลงไปที่รายการบันทึก (ในกล่องมีปุ่มไปดู)
+  const sent = sentInfo(req, after[0], plan.id, after.length);
+  respond(req, res, `/s/${plan.id}${sent ? '' : '#notes'}`, 'success', `ส่งบันทึกหลังแผนทั้งเล่มเรียบร้อย ${after.length} แผ่น ขณะนี้${where}`, sent);
 });
 
 router.get('/s/:id/book', async (req, res) => {

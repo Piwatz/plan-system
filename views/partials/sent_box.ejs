@@ -1,0 +1,41 @@
+<%# หลังครูกดส่งงานของตัวเอง ขึ้นครั้งเดียว (ข้อมูลมากับ flash.sent จาก sentInfo ใน work.js)
+   กล่องเขียวบอกขั้นต่อไป (ฟังก์ชันเสริม sentbox) และป๊อปกลางจอ (sentpop) เปิดด้วย app.js · ใช้คู่กันได้ ปิดป๊อปแล้วกล่องยังอยู่ %>
+<%
+  const s = flash.sent;
+  const book = s.book > 0;
+  const printHref = book ? '/s/' + s.id + '/print-notes' : '/s/' + s.id + '/print';
+  const printText = book ? 'พิมพ์บันทึกหลังแผนทั้งเล่ม' : s.doc === 'note' ? 'พิมพ์บันทึก' : 'พิมพ์บันทึกข้อความ';
+  const head = (book ? 'ส่งบันทึกหลังแผนทั้งเล่มเรียบร้อย ' + s.book + ' แผ่น' : 'ส่งเรียบร้อยแล้ว') + (s.approved ? ' และผ่านครบทุกระดับแล้ว' : ' ขณะนี้' + s.wait);
+  const later = ff.donenotify ? 'เมื่อผ่านครบ ระบบ<b>แจ้งที่การแจ้งเตือน</b>ให้เอง' : 'ดูความคืบหน้าได้ที่หน้า <b>งานของฉัน</b>';
+%>
+<% if (ff.sentbox) { %>
+<section class="sent-box" role="status">
+  <div class="sx-head"><span class="sx-check"><%- icon('ok', 20) %></span><span><%= head %></span></div>
+  <% if (s.approved) { %>
+    <p class="sx-one">ไม่มีผู้ตรวจที่ต้องรอ <b>พิมพ์เอกสารที่มีลายเซ็นครบได้เลย</b></p>
+  <% } else { %>
+    <ol class="sx-steps">
+      <li><b>ไม่ต้องทำอะไรเพิ่ม</b> รอผู้ตรวจลงนามตามลำดับ<%= s.steps > 1 ? ' ' + s.steps + ' ระดับ' : '' %></li>
+      <li><% if (book || s.doc === 'note') { %>ถ้าต้องการกระดาษ กด <b><%= printText %></b> ได้ทุกเมื่อ<% } else { %>ถ้าห้องวิชาการขอกระดาษ กด <b>พิมพ์บันทึกข้อความ</b> เก็บไว้เป็นหลักฐาน<% } %></li>
+      <li><%- later %></li>
+    </ol>
+  <% } %>
+  <div class="sx-btns">
+    <a class="btn btn-primary" href="<%= printHref %>" target="_blank" rel="noopener"><%- icon('print', 18) %> <%= printText %></a>
+    <% if (book) { %><a class="btn btn-ghost" href="#notes">ดูบันทึกหลังแผน</a><% } %>
+    <a class="btn btn-ghost" href="/my">กลับไปงานของฉัน</a>
+    <% if (!book && s.doc !== 'note') { %><a class="btn btn-ghost" href="/send">ส่งงานต่อไป</a><% } %>
+  </div>
+</section>
+<% } %>
+<% if (ff.sentpop) { %>
+<dialog class="modal sent-pop" data-sent-pop>
+  <div class="modal-icon sp-ok"><%- icon('ok', 30) %></div>
+  <h3 class="center sp-title"><%= book ? 'ส่งทั้งเล่มเรียบร้อยแล้ว' : 'ส่งเรียบร้อยแล้ว' %></h3>
+  <p class="center"><%= s.approved ? 'ผ่านครบทุกระดับแล้ว พิมพ์ได้เลย' : 'ขณะนี้' + s.wait + ' ไม่ต้องทำอะไรเพิ่ม' %><% if (!s.approved && ff.donenotify) { %><br>เมื่อผ่านครบ ระบบแจ้งที่การแจ้งเตือนให้เอง<% } %></p>
+  <div class="modal-actions">
+    <a class="btn btn-primary btn-lg" href="<%= printHref %>" target="_blank" rel="noopener" data-sent-close><%- icon('print', 18) %> <%= book ? 'พิมพ์ทั้งเล่ม' : printText %></a>
+    <button type="button" class="btn btn-ghost btn-lg" data-sent-close>ปิด</button>
+  </div>
+</dialog>
+<% } %>

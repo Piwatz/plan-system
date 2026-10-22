@@ -13,7 +13,10 @@
   }
 %>
 <% if (ff.printcard && !locals.hideBar) { %>
-<section class="card print-card">
+<%# ครั้งแรกที่ครูเปิดหน้างานที่ส่งแล้ว (firstTip) ป้ายสีทองชี้การ์ด (printtip) และขอบเรือง (printglow) app.js เปิดและจำในเครื่อง %>
+<% const tipOn = locals.firstTip && ff.printtip, glowOn = locals.firstTip && ff.printglow; %>
+<% if (tipOn) { %><div class="print-tip" data-print-tip hidden><%= sub.doc_type === 'note' ? 'พิมพ์บันทึกหลังแผนได้จากตรงนี้' : 'พิมพ์บันทึกข้อความและแบบประเมิน ส่งห้องวิชาการได้จากตรงนี้' %><button type="button" class="pt-ok" data-print-tip-ok>เข้าใจแล้ว</button></div><% } %>
+<section class="card print-card"<%- glowOn ? ' data-print-glow' : '' %>>
   <h3><%- icon('print', 20) %> เอกสารสำหรับพิมพ์</h3>
   <div class="pc-tiles">
     <% for (const x of pc) { %>
