@@ -424,7 +424,7 @@ router.get('/works/new', async (req, res) => {
   const year = Number(req.settings.academic_year);
   const sem = Number(req.settings.semester);
   if (type === 'plan' && req.ff.onemain) {
-    const why = await teaching.planBlocked(owner, year, sem);
+    const why = await teaching.planBlocked(owner, year, sem, !!proxy);
     if (why) throw new UserError(why);
   }
   const sub = { doc_type: type, teacher_id: owner.id, academic_year: year, semester: sem, teaching_methods: '[]' };
@@ -483,7 +483,7 @@ router.post('/works', async (req, res) => {
         throw new UserError(`${wf.DOC_TYPES[type].label}วิชา ${f.subject_code} ส่งไว้แล้วในภาคเรียนนี้ ให้เปิดงานเดิมแล้วกดแก้ไขแทน`);
       }
       if (type === 'plan' && req.ff.onemain) {
-        const why = await teaching.planBlocked(owner, year, sem);
+        const why = await teaching.planBlocked(owner, year, sem, !!proxy);
         if (why) throw new UserError(why);
       }
       const r = await q.get(

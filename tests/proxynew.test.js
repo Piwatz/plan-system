@@ -127,3 +127,29 @@ test('สร้างงานแทนครู: ครูทำแทนคน
   }
   assert.equal(await countOf('ว30182'), 0);
 });
+
+test('สร้างแผนแทนครูที่ส่งแผนครบแล้ว: ข้อความโควตาใช้ชื่อครู ไม่ใช่คำว่า คุณ', async () => {
+  const t = await db.q.get("SELECT id, full_name, department_id, plan_quota FROM users WHERE username = 'teacher'");
+  const st = await db.getSettings();
+  const year = Number(st.academic_year);
+  const sem = Number(st.semester);
+  const have = await db.q.get("SELECT COUNT(*) AS n FROM submissions WHERE doc_type = 'plan' AND teacher_id = ? AND academic_year = ? AND semester = ?", t.id, year, sem);
+  for (let i = Number(have.n); i < Math.max(1, Number(t.plan_quota) || 1); i++) {
+    await db.q.run(
+      "INSERT INTO submissions (doc_type, teacher_id, department_id, academic_year, semester, subject_code, subject_name, created_at, updated_at) VALUES ('plan', ?, ?, ?, ?, ?, 'ทดสอบโควตา', '2569-10-23 08:00:00', '2569-10-23 08:00:00')",
+      t.id,
+      t.department_id,
+      year,
+      sem,
+      `ว3019${i}`
+    );
+  }
+  const a = await as('admin');
+  const page = (await a.get(`/works/new?type=plan&for=${t.id}`)).text;
+  assert.ok(page.includes(`${t.full_name} มีแผนวิชา`), 'ใช้ชื่อครู');
+  assert.ok(page.includes('หน้าแก้ไขผู้ใช้'));
+  assert.doesNotMatch(page, /คุณมีแผนวิชา/);
+  // ครูเปิดเองยังเห็นคำว่า คุณ เหมือนเดิม
+  const mine = await as('teacher');
+  assert.match((await mine.get('/works/new?type=plan')).text, /คุณมีแผนวิชา/);
+});

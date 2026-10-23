@@ -51,11 +51,15 @@ function plansOf(teacherId, year, sem) {
 }
 
 // ข้อความบอกว่าทำไมสร้างแผนใหม่ไม่ได้ (ส่งครบจำนวนวิชาหลักแล้ว) ว่างเปล่าแปลว่าสร้างได้
-async function planBlocked(user, year, sem) {
+// proxy = ผู้ดูแลระบบสร้างแทนครู ข้อความใช้ชื่อครูแทนคำว่า คุณ
+async function planBlocked(user, year, sem, proxy = false) {
   const plans = await plansOf(user.id, year, sem);
   const quota = planQuota(user);
   if (plans.length < quota) return '';
   const codes = plans.map((p) => p.subject_code).filter(Boolean).join(' ');
+  if (proxy) {
+    return `ภาคเรียนนี้ส่งแผนการจัดการเรียนรู้ได้ ${quota} วิชา (วิชาหลัก) ${user.full_name} มีแผนวิชา ${codes} อยู่แล้ว ถ้าต้องการเปลี่ยนวิชาหลัก ให้เปิดแผนเดิมแล้วแก้รหัสวิชา หรือเพิ่มจำนวนแผนที่ส่งได้ในหน้าแก้ไขผู้ใช้`;
+  }
   return `ภาคเรียนนี้ส่งแผนการจัดการเรียนรู้ได้ ${quota} วิชา (วิชาหลัก) คุณมีแผนวิชา ${codes} อยู่แล้ว ถ้าต้องการเปลี่ยนวิชาหลัก ให้เปิดแผนเดิมแล้วแก้รหัสวิชา หรือแจ้งผู้ดูแลระบบ`;
 }
 
