@@ -304,3 +304,30 @@ test('ไฟล์ใน Drive: ย้ายไปโฟลเดอร์ขอ
   assert.deepEqual(moves.map((x) => x[0]), ['good', 'bad']);
   assert.equal(await require('../src/transfer').driveLeft(), 0);
 });
+
+test('หน้าแก้ไขผู้ใช้มีปุ่มโอนงานของครูคนนี้ ครูที่ปิดบัญชีแล้วยังโอนงานออกได้', async () => {
+  const thai2 = await user('thai2');
+  const eng2 = await user('eng2');
+  const a = await as('admin');
+  const form = (await a.get(`/admin/users/${thai2.id}`)).text;
+  assert.ok(form.includes(`href="/admin/transfer?from=${thai2.id}"`), 'มีปุ่มโอนงานของครูคนนี้');
+  const st = await db.getSettings();
+  const w = await db.q.get(
+    `INSERT INTO submissions (doc_type, teacher_id, department_id, academic_year, semester, subject_code, subject_name, status, created_at, updated_at)
+     VALUES ('manual', ?, ?, ?, ?, 'ท39901', 'ทดสอบลาออก', 'pending', '2569-10-23 08:00:00', '2569-10-23 08:00:00') RETURNING id`,
+    thai2.id,
+    thai2.department_id,
+    Number(st.academic_year),
+    Number(st.semester)
+  );
+  await db.q.run('UPDATE users SET is_active = 0 WHERE id = ?', thai2.id);
+  const page = (await a.get(`/admin/transfer?from=${thai2.id}&to=${eng2.id}`)).text;
+  assert.match(page, /ปิดบัญชีแล้ว/);
+  assert.ok(page.includes(`value="${w.id}"`), 'เห็นงานของครูที่ปิดบัญชีแล้ว');
+  await a.post('/admin/transfer', { ids: String(w.id), to: String(eng2.id), back: '/admin/transfer' });
+  assert.equal((await sub(w.id)).teacher_id, eng2.id);
+  await db.q.run('UPDATE users SET is_active = 1 WHERE id = ?', thai2.id);
+  // ไม่มีปุ่มในหน้าของผู้ดูแลระบบเอง
+  const admin = await user('admin');
+  assert.doesNotMatch((await a.get(`/admin/users/${admin.id}`)).text, /โอนงานของครูคนนี้/);
+});

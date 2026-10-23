@@ -1,6 +1,7 @@
 // โอนงานระหว่างครู (ฟังก์ชันเสริม transfer) เฉพาะผู้ดูแลระบบ
 // หน้า /admin/transfer เลือกครูต้นทางกับครูผู้รับ ติ๊กได้หลายงาน (แบบ ข) · กล่องในหน้างาน /s/<id> โอนทีละงาน (แบบ ก) ส่งมาที่ POST เดียวกัน
 const express = require('express');
+const { q } = require('../db');
 const auth = require('../auth');
 const util = require('../util');
 const transfer = require('../transfer');
@@ -32,7 +33,17 @@ router.get('/transfer', async (req, res) => {
   const { teachers, driveLeft } = await transfer.choices();
   const fromId = util.intOr(req.query.from, 0);
   const toId = util.intOr(req.query.to, 0);
-  const from = teachers.find((x) => x.id === fromId) || null;
+  // ครูที่ปิดบัญชีแล้ว (ลาออก ย้ายโรงเรียน) ไม่อยู่ในรายชื่อผู้รับ แต่ยังโอนงานออกได้
+  const from =
+    teachers.find((x) => x.id === fromId) ||
+    (fromId
+      ? await q.get(
+          `SELECT u.id, u.full_name, d.name AS dept_name, true AS inactive FROM users u LEFT JOIN departments d ON d.id = u.department_id
+           WHERE u.id = ? AND u.is_teacher = 1`,
+          fromId
+        )
+      : null) ||
+    null;
   res.render('admin/transfer', {
     title: 'โอนงานระหว่างครู',
     term: t,

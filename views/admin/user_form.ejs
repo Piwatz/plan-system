@@ -71,6 +71,14 @@
       <% if (ff.teachlist) { %><a class="btn btn-ghost" href="/teaching?u=<%= u.id %>" style="margin-top:10px"><%- icon('star', 18) %> ดูและแก้รายวิชาที่สอนของครูคนนี้</a><% } %>
     </form>
   <% } %>
+  <% if (!isNew && ff.transfer && u.is_teacher && u.id !== me.id) { %>
+    <%# โอนงานของครูคนนี้ (ฟังก์ชันเสริม transfer) พาไปหน้าโอนงานที่เลือกครูต้นทางไว้แล้ว เช่น ครูลาออกหรือย้ายโรงเรียน %>
+    <div class="card">
+      <h3>โอนงานของครูคนนี้</h3>
+      <div class="hint">เช่น ครูลาออก ย้ายโรงเรียน หรือมีครูสอนแทน โอนแผนและคู่มือให้ครูคนอื่นได้หลายงานพร้อมกัน</div>
+      <a class="btn btn-ghost" href="/admin/transfer?from=<%= u.id %>" style="margin-top:10px"><%- icon('users', 18) %> โอนงานของ <%= u.full_name %></a>
+    </div>
+  <% } %>
   <% if (!isNew) { %>
     <form class="card" method="post" action="/admin/users/<%= u.id %>/reset">
       <h3>ตั้งรหัสผ่านใหม่ให้ผู้ใช้</h3>

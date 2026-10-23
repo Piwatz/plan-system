@@ -24,6 +24,7 @@
       <input type="hidden" name="year" value="<%= term.year %>"><input type="hidden" name="semester" value="<%= term.semester %>">
       <div class="field"><label for="tf-from">จากครู</label>
         <select id="tf-from" name="from"><option value="">เลือกครูเจ้าของงานตอนนี้</option>
+          <% if (from && from.inactive) { %><option value="<%= from.id %>" selected><%= from.full_name %> (ปิดบัญชีแล้ว)</option><% } %>
           <% for (const t of teachers) { if (t.id === me.id) continue; %><option value="<%= t.id %>" <%= from && from.id === t.id ? 'selected' : '' %>><%= t.full_name %> (<%= t.dept_name || 'ไม่ระบุกลุ่มสาระ' %>)</option><% } %>
         </select></div>
       <span class="tf-arrow" aria-hidden="true"><%- icon('next', 22) %></span>
