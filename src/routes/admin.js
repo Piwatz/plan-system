@@ -934,6 +934,7 @@ router.get('/features', async (req, res) => {
     libViews: features.LIBRARY_VIEWS,
     libView: features.libraryView(req.settings),
     coverStyles: features.COVER_STYLES,
+    teachStyles: features.TEACH_STYLES,
     showModes: library.SHOW_MODES,
     showRule: library.showRule(req.settings),
     showTeachers: req.ff.libshow
@@ -1029,6 +1030,19 @@ router.post('/coverstyle', async (req, res) => {
     await features.audit(req.me, `ตั้งแบบปกที่ระบบวาด ${opt.label}`, 'cover_style');
   });
   done(req, res, '/admin/features#coverstyle', 'บันทึกแบบปกที่ระบบวาดเรียบร้อย');
+});
+
+// แบบหน้ารายวิชาที่สอนบนมือถือ (ฟังก์ชันเสริม teachcards) มีผลกับทุกคนทันที
+router.post('/teachstyle', async (req, res) => {
+  if (!req.ff.teachcards) return fail(req, res, '/admin/features', 'เปิดฟังก์ชันรายวิชาที่สอนเป็นกล่องบนมือถือก่อน');
+  const opt = features.TEACH_STYLES.find((o) => o.key === String((req.body || {}).teach_style || ''));
+  if (!opt) return fail(req, res, '/admin/features#teachcards', 'ไม่พบแบบที่เลือก');
+  if (opt.key === features.teachStyle(req.settings)) return done(req, res, '/admin/features#teachcards', 'ไม่มีอะไรเปลี่ยน');
+  await q.tx(async () => {
+    await setSetting('teach_style', opt.key);
+    await features.audit(req.me, `ตั้งแบบหน้ารายวิชาที่สอนบนมือถือ ${opt.label}`, 'teach_style');
+  });
+  done(req, res, '/admin/features#teachcards', 'บันทึกแบบหน้ารายวิชาที่สอนเรียบร้อย');
 });
 
 // ดูตัวอย่างการจัดหน้าลงนามแบบหนึ่งจากเล่มจริง ไม่เปลี่ยนค่าที่ทุกคนใช้ ?web=bar หรือ ?pdf=summary · book = รหัสแผน (เล่ม)

@@ -14,7 +14,7 @@
     <div class="alert alert-info"><%- icon('shield') %><span>ผู้ดูแลระบบกำลังแก้รายวิชาแทนครู ทุกครั้งที่เพิ่มหรือเปลี่ยนจะบันทึกในประวัติ<% if (proxyNew) { %><br><b>วิชาที่ยังไม่ส่ง กดปุ่ม สร้างแทนครู เพื่อส่งคู่มือหรือแผนในชื่อของครู</b> เช่น ครูลาคลอด ครูป่วย<% } %></span></div>
   <% } %>
 
-  <section class="card flush">
+  <section class="card flush<%= teachStyle ? ' has-tc tc-' + teachStyle : '' %>">
     <div class="card-head"><h2>วิชาที่สอน <%= rows.length %> วิชา</h2></div>
     <% if (ff.onemain && !canSetMain) { %><p class="hint" style="padding:0 20px">ส่งแผนวิชาหลักครบ <%= quota %> วิชาแล้ว ถ้าต้องการเปลี่ยนวิชาหลัก ให้แจ้งผู้ดูแลระบบ</p><% } %>
     <% if (!rows.length) { %>
@@ -36,27 +36,37 @@
           <% } else if (!forOther) { %><a class="badge badge-gray" href="/works/new?type=plan&code=<%= encodeURIComponent(r.subject_code) %>">ยังไม่ส่ง กดเพื่อส่ง</a>
           <% } else { %><span class="badge badge-gray">ยังไม่ส่ง</span><% if (proxyNew) { %> <a class="btn btn-sm btn-primary" href="/works/new?type=plan&code=<%= encodeURIComponent(r.subject_code) %>&for=<%= who.id %>"><%- icon('plus', 16) %> สร้างแทนครู</a><% } %><% } %>
         </span>
-        <span class="actions">
-          <% if (ff.onemain && !r.is_main && canSetMain) { %>
-            <form method="post" action="/teaching/<%= r.id %>/main" data-confirm="ตั้ง <%= r.subject_code %> <%= r.subject_name %> เป็นวิชาหลักสำหรับส่งแผนการจัดการเรียนรู้<%= quota === 1 ? '\nวิชาหลักเดิมที่ยังไม่ได้ส่งแผนจะถูกยกเลิก' : '' %>" data-ok-label="ตั้งเป็นวิชาหลัก">
-              <input type="hidden" name="u" value="<%= who.id %>"><button class="btn btn-ghost btn-sm" type="submit"><%- icon('star', 16) %> ตั้งเป็นวิชาหลัก</button>
-            </form>
-          <% } else if (ff.onemain && r.is_main && !r.plan) { %>
-            <form method="post" action="/teaching/<%= r.id %>/unmain" data-confirm="ยกเลิกวิชาหลัก <%= r.subject_code %>" data-ok-label="ยกเลิกวิชาหลัก">
-              <input type="hidden" name="u" value="<%= who.id %>"><button class="btn btn-ghost btn-sm" type="submit">ยกเลิกวิชาหลัก</button>
-            </form>
-          <% } %>
-          <% if (!r.manual && !r.plan) { %>
-            <form method="post" action="/teaching/<%= r.id %>/delete" data-confirm="เอาวิชา <%= r.subject_code %> ออกจากรายวิชาที่สอน" data-danger="1" data-ok-label="เอาออก">
-              <input type="hidden" name="u" value="<%= who.id %>"><button class="btn btn-ghost btn-sm" type="submit"><%- icon('trash', 16) %> เอาออก</button>
-            </form>
-          <% } %>
-        </span>
+        <span class="actions"><%- include('partials/teach_acts', { r, link: false }) %></span>
       </div>
+    <% } %>
+    <% if (teachStyle && rows.length) { %>
+    <%# จอมือถือ (ฟังก์ชันเสริม teachcards): วิชาละกล่อง คู่มือกับแผนแยกกัน หน้าตา 3 แบบอยู่ใน app.css (.tc-a .tc-b .tc-c) · จอกว้างยังเป็นแถวแบบเดิม %>
+    <div class="tc-list">
+      <% for (const r of rows) { %>
+        <div class="tc-subj">
+          <div class="tc-head"><b><%= r.subject_code %> <%= r.subject_name %></b><% if (r.grade_level) { %><span class="badge badge-gray"><%= r.grade_level %></span><% } %><% if (ff.onemain && r.is_main) { %><span class="badge badge-blue"><%- icon('star', 14) %> วิชาหลัก</span><% } %></div>
+          <div class="tc-docs">
+            <% for (const [type, long, short, w, c, need] of [['manual', 'คู่มือรายวิชา', 'คู่มือ', r.manual, r.manualCell, true], ['plan', 'แผนการจัดการเรียนรู้', 'แผน', r.plan, r.planCell, r.needPlan]]) {
+              const send = w || !need ? '' : !forOther ? '/works/new?type=' + type + '&code=' + encodeURIComponent(r.subject_code) : proxyNew ? '/works/new?type=' + type + '&code=' + encodeURIComponent(r.subject_code) + '&for=' + who.id : '';
+              const href = w ? '/s/' + w.id : send;
+              const tone = !w ? (send ? 'go' : 'none') : { approved: 'ok', returned: 'back', pending: 'wait' }[w.status] || 'none';
+              const go = send ? ['btn-primary', forOther ? 'สร้างแทนครู' : 'ส่ง' + short] : w && !forOther && w.status === 'returned' ? ['btn-danger', 'แก้ไขแล้วส่งใหม่'] : w && !forOther && w.status === 'draft' ? ['btn-primary', 'เปิดร่าง'] : null; %>
+              <<%= href ? 'a' : 'div' %> class="tc-doc tone-<%= tone %>"<% if (href) { %> href="<%= href %>"<% } %>>
+                <span class="tc-name"><b class="tc-l"><%= long %></b><b class="tc-sl"><%= short %></b></span>
+                <% if (w || need) { %><span class="badge <%= c.cls %> tc-st"><%= c.text %></span><% } else { %><span class="muted small tc-st">ไม่ต้องส่ง</span><% } %>
+                <% if (go) { %><span class="btn btn-sm <%= go[0] %> tc-go"><% if (send) { %><%- icon('plus', 16) %><% } %> <%= go[1] %></span><% } else if (w) { %><span class="tc-arr"><%- icon('next', 18) %></span><% } %>
+              </<%= href ? 'a' : 'div' %>>
+            <% } %>
+          </div>
+          <div class="tc-foot"><%- include('partials/teach_acts', { r, link: true }) %></div>
+        </div>
+      <% } %>
+    </div>
     <% } %>
   </section>
 
-  <form class="card" method="post" action="/teaching/add" data-confirm="เพิ่มวิชานี้ในรายวิชาที่สอน" data-ok-label="เพิ่มวิชา" style="margin-top:18px">
+  <% if (teachStyle && rows.length) { %><button class="tc-addbtn" type="button" data-tc-add><%- icon('plus', 18) %> เพิ่มวิชาที่สอน</button><% } %>
+  <form class="card<%= teachStyle && rows.length ? ' tc-addform' : '' %>" id="teach-add" method="post" action="/teaching/add" data-confirm="เพิ่มวิชานี้ในรายวิชาที่สอน" data-ok-label="เพิ่มวิชา" style="margin-top:18px">
     <input type="hidden" name="u" value="<%= who.id %>">
     <h2>เพิ่มวิชาที่สอน</h2>
     <div class="form-grid">
@@ -85,5 +95,6 @@
     <div class="btn-row" style="margin-top:14px"><button class="btn btn-primary" type="submit"><%- icon('plus', 18) %> เพิ่มวิชา</button></div>
     <p class="hint">พิมพ์รหัสวิชาแล้วระบบเติมชื่อวิชาให้ ถ้าเป็นวิชาที่มีในรายวิชาของโรงเรียน</p>
   </form>
+  <% if (teachStyle && rows.length) { %><script>(function(){var b=document.querySelector('[data-tc-add]'),f=document.getElementById('teach-add');if(!b||!f)return;b.addEventListener('click',function(){f.classList.add('tc-open');b.hidden=true;var i=document.getElementById('subject_code');if(i)i.focus()})})();</script><% } %>
 </div>
 <%- include('partials/bottom') %>

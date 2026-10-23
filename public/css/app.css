@@ -1043,6 +1043,11 @@ body:has(.viewer.is-full) { overflow: hidden; }
 .cvs-pick { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; margin-bottom: 14px; }
 .cvs-opt { display: flex; flex-direction: column; gap: 6px; cursor: pointer; }
 .cvs-opt .lib-cover { max-width: 170px; }
+.tcs-pick { display: grid; grid-template-columns: repeat(3, minmax(0, 200px)); gap: 10px; margin-bottom: 14px; }
+@media (max-width: 640px) { .tcs-opt { font-size: 0.86em; } }
+.tcs-opt { display: flex; flex-direction: column; gap: 6px; cursor: pointer; }
+.tcs-opt img { width: 100%; max-width: 200px; height: auto; border-radius: 12px; border: 1px solid var(--line); }
+.tcs-opt:has(input:checked) img { outline: 3px solid var(--primary); outline-offset: 3px; }
 .cvs-opt:has(input:checked) .lib-cover { outline: 3px solid var(--primary); outline-offset: 3px; }
 .lib-lock { position: absolute; right: 6px; bottom: 6px; width: 26px; height: 26px; border-radius: 50%; display: grid; place-items: center; background: color-mix(in srgb, var(--ink) 78%, transparent); color: var(--surface); }
 .lib-cv { display: block; color: inherit; }
@@ -1364,6 +1369,55 @@ dialog.front-dlg { width: min(720px, calc(100vw - 24px)); max-height: calc(100vh
 .my-box .mb-head b { margin-right: auto; }
 .my-box .mb-links { display: flex; flex-wrap: wrap; gap: 4px 16px; font-size: 0.86em; font-weight: 600; }
 .my-box .mb-links a { color: var(--link); padding: 2px 0; }
+
+/* รายวิชาที่สอนบนมือถือ (ฟังก์ชันเสริม teachcards): วิชาละกล่อง แทนแถวเดิม · HTML ชุดเดียว หน้าตา 3 แบบตาม class ของ section
+   tc-a กล่องสีตามสถานะ ปุ่มใหญ่ · tc-b แถวย่อ ปุ่มท้ายแถว · tc-c 2 ช่องเคียงกัน · จอกว้างกว่า 640 px ใช้แถวแบบเดิม */
+.tc-list, .tc-addbtn { display: none; }
+@media (max-width: 640px) {
+  .has-tc .teach-row { display: none; }
+  .has-tc .tc-list { display: grid; gap: 10px; padding: 0 12px 12px; }
+  .tc-addbtn { display: flex; align-items: center; justify-content: center; gap: 6px; width: 100%; margin-top: 14px; padding: 13px; border: 2px dashed var(--line); border-radius: 14px; background: var(--surface); color: var(--link); font: inherit; font-weight: 700; cursor: pointer; }
+  .tc-addbtn[hidden] { display: none; }
+  .tc-addform:not(.tc-open) { display: none; }
+}
+.tc-subj { border: 1px solid var(--line); border-radius: 12px; padding: 11px 12px; display: grid; gap: 8px; }
+.tc-head { display: flex; align-items: center; flex-wrap: wrap; gap: 6px; }
+.tc-head b { font-size: 1.05em; margin-right: 2px; }
+.tc-docs { display: grid; gap: 8px; }
+.tc-doc { color: inherit; text-decoration: none; }
+.tc-sl, .tc-arr { display: none; }
+.tc-arr { color: var(--muted); line-height: 0; }
+.tc-foot { display: flex; flex-wrap: wrap; gap: 2px 18px; }
+.tc-foot:empty { display: none; }
+.tc-foot form { margin: 0; }
+.tc-link { display: inline-flex; align-items: center; gap: 4px; padding: 4px 0; border: 0; background: none; color: var(--link); font: inherit; font-size: 0.88em; font-weight: 600; cursor: pointer; }
+.tc-link.tc-del { color: var(--back); }
+/* ก กล่องสีตามสถานะ */
+.tc-a .tc-doc { display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 8px; border: 1px solid var(--line); border-left: 5px solid var(--line); border-radius: 10px; padding: 9px 11px; }
+.tc-a .tc-doc .tc-go { grid-column: 1 / -1; width: 100%; min-height: 42px; }
+.tc-a .tc-doc .tc-arr { display: none; }
+.tc-doc.tone-ok { border-left-color: var(--ok); }
+.tc-doc.tone-wait { border-left-color: var(--wait); }
+.tc-doc.tone-back { border-left-color: var(--back); }
+.tc-doc.tone-go { border-left-color: var(--primary); }
+/* ข แถวย่อ */
+.tc-b .tc-docs { gap: 0; }
+.tc-b .tc-doc { display: flex; align-items: center; gap: 8px; padding: 10px 0; border-top: 1px solid var(--line); min-height: 48px; }
+.tc-b .tc-name { flex: 1; }
+.tc-b .tc-arr { display: inline-flex; }
+.tc-b .tc-go { padding-inline: 14px; }
+.tc-b .tc-doc .badge-gray.tc-st:has(+ .tc-go) { display: none; }
+/* ค 2 ช่องเคียงกัน */
+.tc-c .tc-docs { grid-template-columns: 1fr 1fr; }
+.tc-c .tc-doc { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; text-align: center; border-radius: 12px; padding: 10px 8px; min-height: 76px; background: var(--head-bg); }
+.tc-c .tc-l { display: none; }
+.tc-c .tc-sl { display: inline; font-size: 0.9em; color: var(--muted); }
+.tc-c .tc-doc .badge { background: none; padding: 0; font-size: 1em; font-weight: 700; }
+.tc-c .tc-doc.tone-ok { background: var(--ok-bg); }
+.tc-c .tc-doc.tone-wait { background: var(--wait-bg); }
+.tc-c .tc-doc.tone-back { background: var(--back-bg); }
+.tc-c .tc-doc.tone-go { background: var(--soft); }
+.tc-c .tc-go { width: 100%; }
 
 /* ---------- สีสัน 4 ระดับ (ฟังก์ชันเสริม colorful) body มี fx fx1 fx2 fx3 ตามระดับ แบบเดิมไม่มี class เหล่านี้ ----------
    สีเสริม --c-* มาจาก themes.js (กลางคืนใช้สีอ่อนลง) · ระดับสูงกว่ารวมของระดับต่ำกว่า */

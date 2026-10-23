@@ -143,6 +143,7 @@ function createApp(options = {}) {
       fontFiles: [...new Set([...themes.fontFiles(theme), ...(ff.prefs ? themes.fontFiles(night) : [])])],
       logoUrl: settings.school_logo || '/static/img/school-logo-sm.png',
       coverStyle: features.coverStyle(settings),
+      teachStyle: features.teachStyle(settings),
       // ชื่อระบบ ข้อมูลท้ายเว็บ และไอคอนแอป (src/site.js)
       site: site.of(settings),
       demo: config.DEMO,

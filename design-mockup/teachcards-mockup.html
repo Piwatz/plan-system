@@ -1,0 +1,109 @@
+<!doctype html><html lang="th"><head><meta charset="utf-8"><title>รายวิชาที่สอนบนมือถือ</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai+Looped:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#EEF2F7;--surface:#fff;--ink:#0F1E33;--muted:#4E5F78;--line:#D6DEE9;--primary:#1D3A66;--soft:#E4ECF7;--accent:#E3A21A;--ok:#1B7343;--okbg:#E4F4EA;--wait:#875700;--waitbg:#FFF2DA;--back:#B0322A;--backbg:#FBE6E4;--gray:#5B6B80;--graybg:#EEF1F5}
+*{box-sizing:border-box}
+body{margin:0;background:#DCE3EC;font-family:'Noto Sans Thai Looped',sans-serif;color:var(--ink);width:1280px;padding:20px 22px 26px}
+h1{font-size:22px;margin:0 0 4px}.sub{color:var(--muted);margin:0 0 14px;font-size:14.5px}
+.wrap{display:grid;grid-template-columns:repeat(3,1fr);gap:22px;align-items:start}
+.opt{font-weight:700;font-size:17px;margin:0 0 4px}.opt span{display:inline-grid;place-items:center;width:28px;height:28px;border-radius:50%;background:var(--accent);color:#fff;margin-right:8px}
+.why{font-size:13px;color:var(--muted);margin:0 0 10px;min-height:56px}
+.phone{width:375px;background:var(--bg);border-radius:26px;border:8px solid #1b2433;overflow:hidden}
+.top{background:var(--primary);color:#fff;padding:10px 14px;font-weight:700;font-size:15px}
+.scr{padding:12px}
+.ph{font-size:20px;font-weight:700;margin:2px 2px 2px}.phs{font-size:12.5px;color:var(--muted);margin:0 2px 10px}
+.card{background:var(--surface);border-radius:14px;padding:12px 14px;box-shadow:0 3px 10px rgba(15,30,51,.06);margin-bottom:12px}
+.ch{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:4px}.ch b{font-size:16px}
+.g{font-size:12px;background:var(--soft);color:var(--primary);border-radius:8px;padding:1px 8px;font-weight:600}
+.star{font-size:12px;background:var(--accent);color:#2a1d00;border-radius:8px;padding:1px 8px;font-weight:700}
+.chip{font-size:12.5px;border-radius:20px;padding:2px 10px;font-weight:600;white-space:nowrap}
+.ok{background:var(--okbg);color:var(--ok)}.wait{background:var(--waitbg);color:var(--wait)}.back{background:var(--backbg);color:var(--back)}.dr{background:var(--graybg);color:var(--gray)}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:4px;background:var(--primary);color:#fff;border-radius:10px;padding:7px 12px;font-weight:600;font-size:13px;white-space:nowrap}
+.btn.gh{background:#fff;color:var(--primary);border:1px solid var(--line)}
+.m{color:var(--muted);font-size:12.5px}
+.foot{display:flex;gap:16px;margin-top:8px;font-size:12.5px;color:var(--primary);font-weight:600}.foot .del{color:var(--back)}
+.addbtn{display:flex;justify-content:center;border:2px dashed var(--line);border-radius:14px;padding:12px;color:var(--primary);font-weight:700;font-size:15px;background:#fff}
+/* ก */
+.bx{border:1px solid var(--line);border-left:5px solid var(--ok);border-radius:10px;padding:8px 10px;margin-top:8px}
+.bx.w{border-left-color:var(--accent)}.bx.r{border-left-color:var(--back)}.bx.d{border-left-color:#AEB8C6}.bx.n{border-left-color:var(--primary)}
+.bx .l{display:flex;align-items:center;gap:6px;font-size:14px}.bx .l b{margin-right:auto}
+.bx .big{display:flex;margin-top:7px}.bx .big .btn{flex:1;padding:9px}
+/* ข */
+.rc{display:flex;align-items:center;gap:8px;border-top:1px solid var(--line);padding:10px 0;font-size:14px}
+.rc b{flex:1}.rc .ar{color:var(--muted);font-size:20px;line-height:1}
+/* ค */
+.tiles{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px}
+.tile{border-radius:12px;padding:9px 10px;text-align:center;border:1px solid var(--line)}
+.tile .t{font-size:12.5px;color:var(--muted);font-weight:600}
+.tile .s{font-size:14px;font-weight:700;margin-top:3px}
+.tile.ok{background:var(--okbg);border-color:transparent}.tile.wait{background:var(--waitbg);border-color:transparent}.tile.dr{background:var(--graybg);border-color:transparent}
+.tile.go{background:var(--primary);color:#fff;border-color:transparent}.tile.go .t{color:#cfdcf0}
+.note{font-size:12.5px;background:var(--soft);border-radius:10px;padding:8px 10px;margin-top:10px;color:var(--primary)}
+</style></head><body>
+<h1>หน้า รายวิชาที่สอน บนมือถือ เลือก 1 แบบ</h1>
+<p class="sub">ตอนนี้คู่มือ แผน และปุ่ม ปนกันเป็นป้ายเล็ก ๆ ปุ่มส่งดูเหมือนป้ายเทา ไม่รู้ว่ากดได้ (ภาพ teachcards-now.jpg) · ทุกแบบ ช่องเพิ่มวิชาพับเป็นปุ่มเดียว กดแล้วค่อยกางออก · บนคอมยังเป็นแบบเดิม</p>
+<div class="wrap">
+
+<div>
+<p class="opt"><span>ก</span>กล่องสีตามสถานะ เหมือนหน้างานของฉัน</p>
+<p class="why">หน้าตาเดียวกับหน้างานของฉันบนมือถือที่ใช้อยู่ ครูคุ้นแล้ว ขอบซ้ายบอกสถานะ งานที่ยังไม่ส่งมีปุ่มใหญ่ ส่งคู่มือ ส่งแผน</p>
+<div class="phone"><div class="top">รายวิชาที่สอน</div><div class="scr">
+ <div class="ph">รายวิชาที่สอน 3 วิชา</div><div class="phs">คู่มือส่งทุกวิชา แผนส่งเฉพาะวิชาหลัก 1 วิชา</div>
+ <div class="card"><div class="ch"><b>ว21101 วิทยาศาสตร์ 1</b><span class="g">ม.1</span><span class="star">วิชาหลัก</span></div>
+  <div class="bx w"><div class="l"><b>คู่มือรายวิชา</b><span class="chip wait">รอหัวหน้ากลุ่มสาระ</span></div></div>
+  <div class="bx"><div class="l"><b>แผนการจัดการเรียนรู้</b><span class="chip ok">ผ่านครบ</span></div></div>
+ </div>
+ <div class="card"><div class="ch"><b>ว22201 โครงงานวิทยาศาสตร์ 1</b><span class="g">ม.2</span></div>
+  <div class="bx n"><div class="l"><b>คู่มือรายวิชา</b><span class="chip dr">ยังไม่ส่ง</span></div>
+   <div class="big"><span class="btn">+ ส่งคู่มือวิชานี้</span></div></div>
+  <div class="bx d"><div class="l"><b>แผนการจัดการเรียนรู้</b><span class="m">ไม่ต้องส่ง</span></div></div>
+  <div class="foot"><span>ตั้งเป็นวิชาหลัก</span><span class="del">เอาวิชานี้ออก</span></div>
+ </div>
+ <div class="addbtn">+ เพิ่มวิชาที่สอน</div>
+</div></div>
+</div>
+
+<div>
+<p class="opt"><span>ข</span>แถวย่อ กดทั้งแถว</p>
+<p class="why">สั้นที่สุด วิชาละ 2 บรรทัด กดแถวที่ส่งแล้วเปิดดูงาน แถวที่ยังไม่ส่งมีปุ่ม ส่ง สีเข้มอยู่ท้ายแถว</p>
+<div class="phone"><div class="top">รายวิชาที่สอน</div><div class="scr">
+ <div class="ph">รายวิชาที่สอน 3 วิชา</div><div class="phs">คู่มือส่งทุกวิชา แผนส่งเฉพาะวิชาหลัก 1 วิชา</div>
+ <div class="card"><div class="ch"><b>ว21101 วิทยาศาสตร์ 1</b><span class="g">ม.1</span><span class="star">วิชาหลัก</span></div>
+  <div class="rc"><b>คู่มือรายวิชา</b><span class="chip wait">รอตรวจ</span><span class="ar">›</span></div>
+  <div class="rc"><b>แผนการจัดการเรียนรู้</b><span class="chip ok">ผ่านครบ</span><span class="ar">›</span></div>
+ </div>
+ <div class="card"><div class="ch"><b>ว22201 โครงงานวิทยาศาสตร์ 1</b><span class="g">ม.2</span></div>
+  <div class="rc"><b>คู่มือรายวิชา</b><span class="m">ยังไม่ส่ง</span><span class="btn" style="padding:5px 12px">ส่ง</span></div>
+  <div class="rc"><b>แผนการจัดการเรียนรู้</b><span class="m">ไม่ต้องส่ง</span></div>
+  <div class="foot"><span>ตั้งเป็นวิชาหลัก</span><span class="del">เอาวิชานี้ออก</span></div>
+ </div>
+ <div class="card"><div class="ch"><b>ว23101 วิทยาศาสตร์ 5</b><span class="g">ม.3</span></div>
+  <div class="rc"><b>คู่มือรายวิชา</b><span class="chip back">ต้องแก้ไข</span><span class="ar">›</span></div>
+  <div class="rc"><b>แผนการจัดการเรียนรู้</b><span class="m">ไม่ต้องส่ง</span></div>
+ </div>
+ <div class="addbtn">+ เพิ่มวิชาที่สอน</div>
+</div></div>
+</div>
+
+<div>
+<p class="opt"><span>ค</span>2 ช่องเคียงกัน คู่มือ กับ แผน</p>
+<p class="why">แต่ละวิชามี 2 ช่องใหญ่ ซ้ายคู่มือ ขวาแผน สีพื้นบอกสถานะ ช่องที่ต้องส่งเป็นสีเข้มกดได้ทั้งช่อง เห็นภาพรวมเร็ว</p>
+<div class="phone"><div class="top">รายวิชาที่สอน</div><div class="scr">
+ <div class="ph">รายวิชาที่สอน 3 วิชา</div><div class="phs">คู่มือส่งทุกวิชา แผนส่งเฉพาะวิชาหลัก 1 วิชา</div>
+ <div class="card"><div class="ch"><b>ว21101 วิทยาศาสตร์ 1</b><span class="g">ม.1</span><span class="star">วิชาหลัก</span></div>
+  <div class="tiles"><div class="tile wait"><div class="t">คู่มือ</div><div class="s">รอตรวจ</div></div><div class="tile ok"><div class="t">แผน</div><div class="s">ผ่านครบ</div></div></div>
+ </div>
+ <div class="card"><div class="ch"><b>ว22201 โครงงานวิทยาศาสตร์ 1</b><span class="g">ม.2</span></div>
+  <div class="tiles"><div class="tile go"><div class="t">คู่มือ ยังไม่ส่ง</div><div class="s">+ กดเพื่อส่ง</div></div><div class="tile dr"><div class="t">แผน</div><div class="s">ไม่ต้องส่ง</div></div></div>
+  <div class="foot"><span>ตั้งเป็นวิชาหลัก</span><span class="del">เอาวิชานี้ออก</span></div>
+ </div>
+ <div class="card"><div class="ch"><b>ว23101 วิทยาศาสตร์ 5</b><span class="g">ม.3</span></div>
+  <div class="tiles"><div class="tile" style="background:var(--backbg);border-color:transparent"><div class="t">คู่มือ</div><div class="s" style="color:var(--back)">ต้องแก้ไข</div></div><div class="tile dr"><div class="t">แผน</div><div class="s">ไม่ต้องส่ง</div></div></div>
+ </div>
+ <div class="addbtn">+ เพิ่มวิชาที่สอน</div>
+ <div class="note">ผู้ดูแลระบบเปิดหน้านี้ของครู ปุ่ม ส่ง เปลี่ยนเป็น สร้างแทนครู (ใช้ได้ทุกแบบ)</div>
+</div></div>
+</div>
+
+</div>
+</body></html>

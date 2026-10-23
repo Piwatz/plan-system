@@ -1,6 +1,6 @@
 <%- include('../partials/top') %>
 <%
-  const ICON = { mobilesheet: 'eye', chips: 'chips', notefile: 'file', counts: 'chart', quicksign: 'cards', voice: 'mic', filecheck: 'check', board: 'board', results: 'chart', pa: 'folder', qr: 'qr', prefs: 'moon', line: 'chat', teachlist: 'books', onemain: 'star', pdfonly: 'file', pdfmerge: 'copy', selfsign: 'edit', noactivity: 'close', ttimport: 'download', coverpreview: 'eye', namepick: 'users', pin: 'shield', namefix: 'edit', methodother: 'edit', notebook: 'books', notepdf: 'file', notesign: 'edit', homeact: 'check', library: 'books', libread: 'eye', coverswap: 'copy', coverstyle: 'books', libshow: 'eye' };
+  const ICON = { mobilesheet: 'eye', chips: 'chips', notefile: 'file', counts: 'chart', quicksign: 'cards', voice: 'mic', filecheck: 'check', board: 'board', results: 'chart', pa: 'folder', qr: 'qr', prefs: 'moon', line: 'chat', teachlist: 'books', onemain: 'star', pdfonly: 'file', pdfmerge: 'copy', selfsign: 'edit', noactivity: 'close', ttimport: 'download', coverpreview: 'eye', namepick: 'users', pin: 'shield', namefix: 'edit', methodother: 'edit', notebook: 'books', notepdf: 'file', notesign: 'edit', homeact: 'check', library: 'books', libread: 'eye', coverswap: 'copy', coverstyle: 'books', libshow: 'eye', teachcards: 'books' };
 %>
 <div class="page-head">
   <div>
@@ -115,6 +115,24 @@
             <% }) %>
           </div>
           <button class="btn btn-primary" type="submit">บันทึกแบบปก</button>
+        </form>
+      </section>
+    <% } %>
+
+    <% if (ff.teachcards) { %>
+      <section class="card" id="teachcards">
+        <h2>แบบหน้ารายวิชาที่สอนบนมือถือ</h2>
+        <p class="muted small">ใช้กับหน้ารายวิชาที่สอนเมื่อเปิดบนมือถือ จอคอมเป็นแบบเดิมเสมอ ภาพตัวอย่างเป็นข้อมูลสมมติ เปลี่ยนเมื่อไรก็ได้ มีผลกับทุกคนทันที</p>
+        <form method="post" action="/admin/teachstyle" data-confirm="เปลี่ยนแบบหน้ารายวิชาที่สอนบนมือถือ มีผลกับทุกคนทันที" data-ok-label="บันทึก">
+          <div class="tcs-pick">
+            <% teachStyles.forEach((o) => { %>
+              <label class="tcs-opt">
+                <img src="/static/img/teachstyle-<%= o.key %>.jpg" alt="<%= o.label %>" width="250" height="400" loading="lazy">
+                <span class="check"><input type="radio" name="teach_style" value="<%= o.key %>" <%= teachStyle === o.key ? 'checked' : '' %>> <%= o.label %></span>
+              </label>
+            <% }) %>
+          </div>
+          <button class="btn btn-primary" type="submit">บันทึกแบบหน้ารายวิชา</button>
         </form>
       </section>
     <% } %>

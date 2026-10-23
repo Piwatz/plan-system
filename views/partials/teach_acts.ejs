@@ -1,0 +1,15 @@
+<%# ปุ่มตั้งวิชาหลัก ยกเลิกวิชาหลัก เอาวิชาออก ของรายวิชาที่สอน · link = แบบลิงก์เล็กในกล่องบนมือถือ (teachcards) %>
+<% if (ff.onemain && !r.is_main && canSetMain) { %>
+  <form method="post" action="/teaching/<%= r.id %>/main" data-confirm="ตั้ง <%= r.subject_code %> <%= r.subject_name %> เป็นวิชาหลักสำหรับส่งแผนการจัดการเรียนรู้<%= quota === 1 ? '\nวิชาหลักเดิมที่ยังไม่ได้ส่งแผนจะถูกยกเลิก' : '' %>" data-ok-label="ตั้งเป็นวิชาหลัก">
+    <input type="hidden" name="u" value="<%= who.id %>"><button class="<%= link ? 'tc-link' : 'btn btn-ghost btn-sm' %>" type="submit"><%- icon('star', 16) %> ตั้งเป็นวิชาหลัก</button>
+  </form>
+<% } else if (ff.onemain && r.is_main && !r.plan) { %>
+  <form method="post" action="/teaching/<%= r.id %>/unmain" data-confirm="ยกเลิกวิชาหลัก <%= r.subject_code %>" data-ok-label="ยกเลิกวิชาหลัก">
+    <input type="hidden" name="u" value="<%= who.id %>"><button class="<%= link ? 'tc-link' : 'btn btn-ghost btn-sm' %>" type="submit">ยกเลิกวิชาหลัก</button>
+  </form>
+<% } %>
+<% if (!r.manual && !r.plan) { %>
+  <form method="post" action="/teaching/<%= r.id %>/delete" data-confirm="เอาวิชา <%= r.subject_code %> ออกจากรายวิชาที่สอน" data-danger="1" data-ok-label="เอาออก">
+    <input type="hidden" name="u" value="<%= who.id %>"><button class="<%= link ? 'tc-link tc-del' : 'btn btn-ghost btn-sm' %>" type="submit"><%- icon('trash', 16) %> <%= link ? 'เอาวิชานี้ออก' : 'เอาออก' %></button>
+  </form>
+<% } %>
