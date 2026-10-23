@@ -48,7 +48,7 @@
   <form id="lib-show-hide" method="post" action="/library/show"><input type="hidden" name="want" value="hide"><input type="hidden" name="back" value="<%= back %>"></form>
 <% } %>
 
-<% const swap = books.some((b) => b.swap); %>
+<% const swap = books.some((b) => b.swap); const pdfCover = books.some((b) => b.pdfCover); %>
 <% if (swap) { const back = '/library?' + qs({}); %>
   <%# ผู้ดูแลระบบเปลี่ยนปก (coverswap): 2 โหมด สลับได้ เครื่องจำไว้ ปุ่มบนปกทีละเล่ม หรือเลือกหลายเล่มพร้อมกัน %>
   <div class="lib-swapbar" data-swapbar>
@@ -61,8 +61,34 @@
       <span data-swap-count>ยังไม่ได้เลือก</span>
       <button type="submit" class="btn btn-sm btn-primary" form="lib-drawn" data-swap-go="drawn" data-confirm="เปลี่ยนเล่มที่เลือกเป็นปกที่ระบบวาดจากชื่อวิชาและชื่อครู แทนรูปหน้าแรกของไฟล์ ไฟล์งานไม่เปลี่ยน กดกลับไปใช้รูปจากไฟล์ได้ภายหลัง" data-ok-label="เปลี่ยนปก" disabled><%- icon('copy', 16) %> ใช้ปกระบบ</button>
       <button type="button" class="btn btn-sm btn-ghost" data-swap-go="file" disabled><%- icon('file', 16) %> ใช้รูปจากไฟล์</button>
+      <% if (pdfCover) { %><button type="button" class="btn btn-sm btn-ghost" data-swap-go="pdf" disabled><%- icon('edit', 16) %> ต่อปกลงในไฟล์ PDF</button><% } %>
     </span>
   </div>
+  <% if (pdfCover) { %>
+    <%# ต่อปกที่ระบบวาดลงในไฟล์ทีละหลายเล่ม (libcoverpdf) 2 แบบ สลับได้ เครื่องจำไว้ · all ใช้กับทุกเล่ม · each ดูหน้า 1 ของทุกเล่มแล้วเลือกทีละเล่ม
+        แต่ละเล่มส่งทางเดียวกับปุ่มเปลี่ยนปกในหน้างาน (POST /s/<id>/cover) ประวัติและ audit_log จดรายเล่ม %>
+    <dialog class="modal front-dlg lp-dlg" id="lp-dlg" data-library="1" data-frontcheck="<%= ff.frontcheck ? '1' : '' %>">
+      <h3 data-lp-title>ต่อปกที่ระบบวาดลงในไฟล์</h3>
+      <p class="muted small">ปกแบบเดียวกับคลังงานเป็นหน้า 1 ของไฟล์ ไฟล์เดิมเก็บไว้ในไฟล์รุ่นก่อนแก้ไข ผู้ตรวจไม่ต้องลงนามใหม่</p>
+      <div class="lib-swap-mode lp-mode" role="group" aria-label="วิธีเลือก">
+        <button type="button" class="btn btn-sm btn-ghost" data-lp-mode="all" aria-pressed="true"><%- icon('check', 16) %> ใช้กับทุกเล่ม</button>
+        <button type="button" class="btn btn-sm btn-ghost" data-lp-mode="each" aria-pressed="false"><%- icon('eye', 16) %> ดูหน้า 1 ทีละเล่ม</button>
+      </div>
+      <div class="lp-all" data-lp-all>
+        <p class="front-step">หน้า 1 เดิมของไฟล์</p>
+        <div class="front-opts">
+          <label><input type="radio" name="lp_old" value="keep" checked> เก็บไว้ ต่อปกเพิ่มเป็นหน้าแรก <span class="muted small">ไฟล์ละ 1 หน้าเพิ่มขึ้น</span></label>
+          <label><input type="radio" name="lp_old" value="del"> ลบหน้า 1 เดิม แล้วต่อปกแทน <span class="muted small">ใช้เมื่อหน้า 1 เดิมเป็นปกที่ผิด</span></label>
+        </div>
+      </div>
+      <p class="front-step" data-lp-hint>เล่มที่เลือก</p>
+      <div class="lp-list" data-lp-list></div>
+      <div class="modal-actions">
+        <button type="button" class="btn btn-ghost btn-lg" data-lp-cancel>ยกเลิก</button>
+        <button type="button" class="btn btn-primary btn-lg" data-lp-ok>ต่อปก</button>
+      </div>
+    </dialog>
+  <% } %>
   <form id="lib-drawn1" method="post" action="/library/covers/drawn"><input type="hidden" name="back" value="<%= back %>"></form>
   <form id="lib-drawn" method="post" action="/library/covers/drawn"><input type="hidden" name="back" value="<%= back %>"></form>
 <% } %>

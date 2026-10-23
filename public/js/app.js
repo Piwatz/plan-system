@@ -12,6 +12,7 @@
     warn: 'M12 3 2 20h20zM12 10v4M12 17h.01',
     ok: 'M5 12.5 10 17l9-10',
     close: 'M6 6l12 12M18 6 6 18',
+    next: 'm9 6 6 6-6 6',
     eye: 'M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12zM12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6z',
     clock: 'M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18zM12 7v5l3 2',
   };
@@ -382,6 +383,162 @@
     }
   }
 
+  // ---------- ต่อปกที่ระบบวาดลงในไฟล์ทีละหลายเล่ม (ฟังก์ชันเสริม libcoverpdf) หน้าคลังงาน ----------
+  // 2 แบบ สลับได้ เครื่องจำไว้: all ใช้กับทุกเล่ม (เก็บหรือลบหน้า 1 เดิม) · each ดูหน้า 1 ของทุกเล่มแล้วเลือกทีละเล่ม
+  // แต่ละเล่ม: เปิดไฟล์ในเครื่องนี้ ต่อปก (pdf-lib) แล้วส่งทางเดียวกับปุ่มเปลี่ยนปกในหน้างาน POST /s/<id>/cover
+  const LP_MODE = 'plan-libpdf';
+  const LP_SKIP = { done: 'ต่อปกระบบไว้แล้ว ข้าม', nopdf: 'ไม่มีไฟล์ PDF ข้าม', own: 'งานของตัวเองที่ผ่านครบแล้ว ข้าม' };
+  function libCoverPdf(btn, checks) {
+    const dlg = document.getElementById('lp-dlg');
+    if (!dlg) return;
+    const list = dlg.querySelector('[data-lp-list]');
+    const okBtn = dlg.querySelector('[data-lp-ok]');
+    const modeBtns = dlg.querySelectorAll('[data-lp-mode]');
+    let items = [];
+    let mode = 'all';
+    try {
+      mode = localStorage.getItem(LP_MODE) === 'each' ? 'each' : 'all';
+    } catch {
+      // ใช้ค่าเริ่มต้น
+    }
+    const oldDel = () => dlg.querySelector('input[name=lp_old]:checked').value === 'del';
+    const skipped = (it) => mode === 'each' && it.row.querySelector('[data-lp-skip]').checked;
+    // เล่มที่จะต่อจริงตามแบบที่เลือก { it, del }
+    const plan = () =>
+      items
+        .filter((it) => it.st === 'ok' && !skipped(it))
+        .map((it) => ({ it, del: mode === 'each' ? it.row.querySelector('[data-lp-del]').checked : oldDel() }));
+    const refresh = () => {
+      dlg.setAttribute('data-lp', mode);
+      modeBtns.forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.lpMode === mode)));
+      dlg.querySelector('[data-lp-all]').hidden = mode !== 'all';
+      dlg.querySelector('[data-lp-hint]').textContent = mode === 'each' ? 'ซ้าย หน้า 1 ตอนนี้ ขวา ปกใหม่ ติ๊กลบหน้า 1 เดิมเฉพาะเล่มที่ปกผิด' : 'เล่มที่เลือก';
+      items.forEach((it) => {
+        it.row.classList.toggle('off', it.st !== 'ok' || skipped(it));
+        if (it.st === 'ok') it.row.querySelector('[data-lp-old]').classList.toggle('del', mode === 'each' ? it.row.querySelector('[data-lp-del]').checked && !skipped(it) : false);
+      });
+      const n = plan().length;
+      okBtn.textContent = n ? 'ต่อปก ' + n + ' เล่ม' : 'ต่อปก';
+      okBtn.disabled = !n;
+      if (mode === 'each') thumbs();
+    };
+    // ภาพหน้า 1 ตอนนี้ของทุกเล่ม เปิดเฉพาะส่วนที่ใช้ของไฟล์ วาดครั้งเดียวต่อการเปิดกล่อง
+    let drawing = false;
+    async function thumbs() {
+      if (drawing) return;
+      drawing = true;
+      const open = items;
+      for (const it of open) {
+        if (items !== open) break;
+        if (it.thumbDone || it.st !== 'ok') continue;
+        it.thumbDone = true;
+        const box = it.row.querySelector('[data-lp-old]');
+        try {
+          const r = await renderFirstPage('/f/' + it.file + '/raw', 64, window.devicePixelRatio || 1);
+          box.textContent = '';
+          if (r) {
+            r.canvas.style.width = '';
+            r.canvas.style.height = '';
+            box.appendChild(r.canvas);
+            it.row.querySelector('[data-lp-pages]').textContent = r.pages + ' หน้า';
+          }
+        } catch {
+          box.textContent = 'เปิดไม่ได้';
+        }
+      }
+      drawing = false;
+    }
+    modeBtns.forEach((b) =>
+      b.addEventListener('click', () => {
+        mode = b.dataset.lpMode;
+        try {
+          localStorage.setItem(LP_MODE, mode);
+        } catch {
+          // เครื่องนี้ไม่ให้จำ ไม่เป็นไร
+        }
+        refresh();
+      })
+    );
+    dlg.addEventListener('change', refresh);
+    dlg.querySelector('[data-lp-cancel]').addEventListener('click', () => dlg.close());
+    btn.addEventListener('click', () => {
+      items = checks()
+        .filter((c) => c.dataset.pdf)
+        .map((c) => ({ id: c.value, file: c.dataset.pdfFile, code: c.dataset.code, who: c.dataset.who, st: c.dataset.pdf }));
+      if (!items.length) return;
+      list.textContent = '';
+      for (const it of items) {
+        const row = document.createElement('div');
+        row.className = 'lp-row';
+        const tpl = document.querySelector('template[data-pdf-cover="' + it.id + '"]');
+        it.cover = tpl ? tpl.content.querySelector('.lib-cover') : null;
+        row.innerHTML =
+          '<span class="lp-th" data-lp-old></span><span class="lp-ar">' + svg('next', 18) + '</span><span class="lp-th lp-new"></span>' +
+          '<span class="lp-info"><b></b><span class="muted small" data-lp-pages></span>' +
+          (it.st === 'ok'
+            ? '<span class="lp-each"><label><input type="checkbox" data-lp-del> ลบหน้า 1 เดิม</label><label><input type="checkbox" data-lp-skip> ไม่ต่อเล่มนี้</label></span><span class="badge badge-green lp-go">จะต่อปก</span>'
+            : '<span class="badge badge-gray">' + LP_SKIP[it.st] + '</span>') +
+          '</span>';
+        row.querySelector('b').textContent = it.who;
+        if (it.cover) row.querySelector('.lp-new').appendChild(it.cover.cloneNode(true));
+        it.row = row;
+        list.appendChild(row);
+      }
+      dlg.querySelector('[data-lp-title]').textContent = 'ต่อปกที่ระบบวาดลงในไฟล์ ' + items.length + ' เล่ม';
+      dlg.showModal();
+      refresh();
+    });
+    okBtn.addEventListener('click', async () => {
+      const todo = plan();
+      if (!todo.length) return;
+      const dels = todo.filter((x) => x.del).length;
+      dlg.close();
+      const msg = 'ต่อปกที่ระบบวาดเป็นหน้า 1 ของไฟล์ ' + todo.length + ' เล่ม' + (dels ? ' ลบหน้า 1 เดิม ' + dels + ' เล่ม' : '') + '\nไฟล์เดิมเก็บไว้ในไฟล์รุ่นก่อนแก้ไข ผู้ตรวจไม่ต้องลงนามใหม่ ห้ามปิดหน้านี้จนกว่าจะเสร็จ';
+      if (!(await ask(msg, { icon: 'note', ok: 'ต่อปก' }))) return dlg.showModal();
+      let made = 0;
+      const failed = [];
+      try {
+        showBusy('กำลังต่อปก', true);
+        if (!window.PDFLib) await loadScript('/vendor/pdf-lib/pdf-lib.min.js');
+        if (!window.PdfMerge) await loadScript('/static/js/pdfmerge.js');
+        for (let i = 0; i < todo.length; i++) {
+          const { it, del } = todo[i];
+          busy.querySelector('[data-pct]').textContent = 'เล่มที่ ' + (i + 1) + ' จาก ' + todo.length + ' ' + it.code;
+          busy.querySelector('[data-bar] > div').style.width = Math.round((i / todo.length) * 100) + '%';
+          try {
+            await coverOne(it, del);
+            made++;
+          } catch (err) {
+            if (err && err.net) throw err;
+            failed.push(it.code + ' ' + ((err && err.userMessage) || 'ทำไม่ได้'));
+          }
+        }
+        hideBusy();
+        const skip = items.length - todo.length;
+        await tell('ต่อปกเรียบร้อย ' + made + ' เล่ม' + (skip ? ' ข้าม ' + skip + ' เล่ม' : '') + (failed.length ? '\nทำไม่ได้ ' + failed.length + ' เล่ม ' + failed.join(' · ') : ''), made && !failed.length ? 'ok' : 'warn');
+        window.location.reload();
+      } catch (err) {
+        hideBusy();
+        await tell(((err && err.userMessage) || NET_ERROR) + (made ? '\nต่อปกแล้ว ' + made + ' เล่ม กดต่อปกเล่มที่เหลือได้อีกครั้ง' : ''));
+        if (made) window.location.reload();
+      }
+    });
+    // ต่อปก 1 เล่ม: ไฟล์ใหม่ + รูปปกเล็กในคลังจากไฟล์ใหม่ · หน้าแรกเป็นปกที่ระบบวาด เซิร์ฟเวอร์จดไว้เอง (ครั้งหน้าข้ามเล่มนี้)
+    async function coverOne(it, del) {
+      if (!it.cover) throw new SendError('ไม่พบปกที่ระบบวาด');
+      const res = await fetch('/f/' + it.file + '/raw');
+      if (!res.ok) throw new SendError('เปิดไฟล์เดิมไม่ได้');
+      const bytes = new Uint8Array(await res.arrayBuffer());
+      const m = await window.PdfMerge.editFront(window.PDFLib, bytes, { remove: del ? [1] : [], coverPng: await drawnPng(it.cover), coverPdf: null });
+      const url = '/s/' + it.id + '/cover';
+      const data = new URLSearchParams({ front: '1', removed: del ? '1' : '', drawn: '1', newcover: '' });
+      data.append('upload_main_files', await uploadBlob(new Blob([m.bytes], { type: 'application/pdf' }), { form: url, field: 'main_files', name: 'merged.pdf', merged: '2' }));
+      const thumb = await makeThumb(new Uint8Array(m.bytes));
+      if (thumb) data.append('upload_cover_thumb', await uploadBlob(thumb, { form: url, field: 'cover_thumb', name: 'cover.jpg' }));
+      await request('POST', url, data, { 'Content-Type': 'application/x-www-form-urlencoded' });
+    }
+  }
+
   // ผู้ดูแลระบบ (coverswap) เปลี่ยนเล่มที่เลือกปกระบบไว้ กลับไปใช้รูปจากไฟล์ · items = [{ id, file, code }]
   async function coversBackToFile(items) {
     let made = 0;
@@ -431,6 +588,24 @@
     } catch (err) {
       hideBusy();
       tell((err && err.userMessage) || NET_ERROR);
+    }
+  }
+
+  // ปกที่ระบบวาดเป็นรูป PNG สำหรับต่อเป็นหน้าแรกของ PDF (coverpdf libcoverpdf) · cover = .lib-cover ของงานนั้น
+  // วาดจากปกตัวใหญ่ที่ซ่อนไว้นอกจอ ตัวหนังสือจึงคมและตัดบรรทัดเหมือนในคลังงาน
+  async function drawnPng(cover) {
+    if (!window.CoverDraw) await loadScript('/static/js/coverdraw.js');
+    const wrap = document.createElement('div');
+    wrap.className = 'front-render';
+    wrap.appendChild(cover.cloneNode(true));
+    document.body.appendChild(wrap);
+    try {
+      const canvas = await window.CoverDraw.draw(wrap.firstChild, 1654);
+      const png = await new Promise((r) => canvas.toBlob(r, 'image/png'));
+      if (!png) throw new SendError('วาดปกไม่สำเร็จ ลองใหม่อีกครั้ง');
+      return new Uint8Array(await png.arrayBuffer());
+    } finally {
+      wrap.remove();
     }
   }
 
@@ -596,23 +771,7 @@
         showBusy('กำลังเปลี่ยนปก', false);
         if (!window.PDFLib) await loadScript('/vendor/pdf-lib/pdf-lib.min.js');
         if (!window.PdfMerge) await loadScript('/static/js/pdfmerge.js');
-        let coverPng = null;
-        if (mode === 'drawn') {
-          if (!window.CoverDraw) await loadScript('/static/js/coverdraw.js');
-          // วาดจากปกตัวใหญ่ที่ซ่อนไว้นอกจอ ตัวหนังสือจึงคมและตัดบรรทัดเหมือนในคลังงาน
-          const wrap = document.createElement('div');
-          wrap.className = 'front-render';
-          wrap.appendChild(drawnBox.querySelector('.lib-cover').cloneNode(true));
-          document.body.appendChild(wrap);
-          try {
-            const canvas = await window.CoverDraw.draw(wrap.firstChild, 1654);
-            const png = await new Promise((r) => canvas.toBlob(r, 'image/png'));
-            if (!png) throw new SendError('วาดปกไม่สำเร็จ ลองใหม่อีกครั้ง');
-            coverPng = new Uint8Array(await png.arrayBuffer());
-          } finally {
-            wrap.remove();
-          }
-        }
+        const coverPng = mode === 'drawn' ? await drawnPng(drawnBox.querySelector('.lib-cover')) : null;
         const coverPdf = mode === 'file' ? new Uint8Array(await coverFile.arrayBuffer()) : null;
         const m = await window.PdfMerge.editFront(window.PDFLib, bytes.slice(), { remove: del, coverPng, coverPdf });
         const merged = new Blob([m.bytes], { type: 'application/pdf' });
@@ -1170,6 +1329,8 @@
         bar.querySelector('[data-swap-count]').textContent = on.length ? 'เลือกแล้ว ' + on.length + ' เล่ม' : 'กดที่ปกเพื่อเลือกเล่ม';
         bar.querySelector('[data-swap-go="drawn"]').disabled = !on.some((c) => c.dataset.is !== 'drawn');
         bar.querySelector('[data-swap-go="file"]').disabled = !on.some((c) => c.dataset.is !== 'img');
+        const pdf = bar.querySelector('[data-swap-go="pdf"]');
+        if (pdf) pdf.disabled = !on.some((c) => c.dataset.pdf);
       };
       const setMode = (m, save) => {
         lib.setAttribute('data-swap', m);
@@ -1222,6 +1383,8 @@
         const ok = await ask('เปลี่ยนเล่มที่เลือก ' + items.length + ' เล่ม กลับไปใช้รูปหน้าแรกของไฟล์เป็นปก เครื่องนี้จะเปิดไฟล์ทีละเล่มแล้วทำรูปปกใหม่ ห้ามปิดหน้านี้จนกว่าจะเสร็จ', { ok: 'ใช้รูปจากไฟล์' });
         if (ok) coversBackToFile(items);
       });
+      const pdfBtn = bar.querySelector('[data-swap-go="pdf"]');
+      if (pdfBtn) libCoverPdf(pdfBtn, checks);
     }
   }
 

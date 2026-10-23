@@ -296,11 +296,11 @@ test('รายชื่องานที่หน้าแรกน่าจ�
   assert.doesNotMatch((await a.get('/admin')).text, /ไม่พบรหัส ว30197/);
   assert.ok(await db.q.get("SELECT 1 AS x FROM audit_log WHERE action LIKE 'ยืนยันว่าหน้าแรกเป็นปกถูกแล้ว%ว30197%'"));
 
-  // เปลี่ยนปกด้วยปกที่ระบบวาด ไฟล์ใหม่ได้ผล ok หลุดจากรายการ
+  // เปลี่ยนปกด้วยปกที่ระบบวาด ไฟล์ใหม่จดว่าเป็นปกที่ระบบวาด (ไม่ใช้ผลที่เบราว์เซอร์ส่งมา) หลุดจากรายการ
   const tk = await uploadOne(a, await pdf(6), 'merged.pdf', { form: `/s/${id}/cover`, field: 'main_files', merged: '2' });
   const x = await a.req('POST', `/s/${id}/cover`, new URLSearchParams({ front: '1', removed: '1', drawn: '1', front_check: 'ok', upload_main_files: tk }), XHR);
   assert.equal(x.status, 200, x.text);
-  assert.equal(await frontOf(id), 'ok');
+  assert.equal(await frontOf(id), 'drawn');
   assert.doesNotMatch((await a.get('/admin')).text, /ว30198 ทดสอบหน้าแรก/);
 
   await db.setSetting('ff_frontcheck', '0');
@@ -374,4 +374,64 @@ test('ใช้ไฟล์รุ่นก่อน: สลับไฟล์ท
   assert.doesNotMatch((await a.get(`/s/${done.id}`)).text, /\/oldfile\//);
   assert.notEqual((await a.req('POST', `/s/${done.id}/oldfile/${old.id}`, new URLSearchParams(), XHR)).status, 200);
   await db.setSetting('ff_oldfile', '1');
+});
+
+test('ต่อปกที่ระบบวาดลงในไฟล์ทีละหลายเล่มในคลัง: ผู้ดูแลเห็นปุ่มและกล่อง 2 แบบ ต่อแล้วจดไว้ ครั้งหน้าข้าม ครูไม่เห็น ปิดสวิตช์แล้วไม่มี (libcoverpdf)', async () => {
+  const library = require('../src/library');
+  await db.ensureRefs();
+  const cur = await db.q.all("SELECT key, value FROM settings WHERE key IN ('academic_year', 'semester')");
+  const term = Object.fromEntries(cur.map((r) => [r.key === 'academic_year' ? 'year' : 'semester', Number(r.value)]));
+  const admin = await db.q.get("SELECT id FROM users WHERE username = 'admin'");
+  const book = (await library.page('manual', { term })).rows.find((r) => r.st === 'approved' && r.pdf_id && r.pdf_front !== 'drawn' && r.teacher_id !== admin.id);
+  assert.ok(book, 'มีคู่มือที่ผ่านครบในหน้าแรกของคลัง');
+  const qs = `/library?shelf=manual&year=${term.year}&semester=${term.semester}`;
+  const a = await as('admin');
+  let page = (await a.get(qs)).text;
+  assert.match(page, /data-swap-go="pdf" disabled/);
+  assert.match(page, /id="lp-dlg"/);
+  assert.match(page, /data-lp-mode="all"/);
+  assert.match(page, /data-lp-mode="each"/);
+  assert.match(page, new RegExp(`value="${book.id}"[^>]*data-pdf="ok" data-pdf-file="${book.pdf_id}"`));
+  assert.match(page, new RegExp(`<template data-pdf-cover="${book.id}">\\s*<span class="lib-cover drawn cv cv-d k-manual">[\\s\\S]*?school-logo\\.png`), 'ปกที่ระบบวาดตราใหญ่');
+
+  // ครูไม่เห็นปุ่มและกล่อง
+  const t = await as('sci2');
+  assert.doesNotMatch((await t.get(qs)).text, /lp-dlg|data-pdf=|data-pdf-cover/);
+
+  // ต่อปก (ทางเดียวกับปุ่มเปลี่ยนปกในหน้างาน) ไฟล์ใหม่จดว่าหน้าแรกเป็นปกที่ระบบวาด เล่มนี้ขึ้นว่าต่อแล้ว ไม่มีปกให้ต่อซ้ำ
+  const url = `/s/${book.id}/cover`;
+  let tk = await uploadOne(a, await pdf(3), 'merged.pdf', { form: url, field: 'main_files', merged: '2' });
+  let r = await a.req('POST', url, new URLSearchParams({ front: '1', removed: '', drawn: '1', newcover: '', upload_main_files: tk }), XHR);
+  assert.equal(r.status, 200, r.text);
+  const f = await db.q.get("SELECT id, front_check FROM files WHERE submission_id = ? AND kind = 'main' AND is_current = 1", book.id);
+  assert.equal(f.front_check, 'drawn');
+  assert.equal((await db.q.get('SELECT status FROM submissions WHERE id = ?', book.id)).status, 'approved');
+  page = (await a.get(qs)).text;
+  assert.match(page, new RegExp(`value="${book.id}"[^>]*data-pdf="done" data-pdf-file="${f.id}"`));
+  assert.doesNotMatch(page, new RegExp(`data-pdf-cover="${book.id}"`));
+  // หน้าแรกเป็นปกระบบ ไม่อยู่ในรายชื่อหน้าแรกน่าจะไม่ใช่ปก
+  assert.ok(!(await require('../src/precheck').frontRows()).bad.some((x) => x.id === book.id));
+
+  // ลบปกนั้นออกในหน้างาน (ไม่ต่อปกใหม่) เล่มกลับมาต่อได้อีก
+  tk = await uploadOne(a, await pdf(2), 'merged.pdf', { form: url, field: 'main_files', merged: '2' });
+  r = await a.req('POST', url, new URLSearchParams({ front: '1', removed: '1', upload_main_files: tk }), XHR);
+  assert.equal(r.status, 200, r.text);
+  assert.match((await a.get(qs)).text, new RegExp(`value="${book.id}"[^>]*data-pdf="ok"`));
+
+  // ปิดสวิตช์: ไม่มีปุ่ม กล่อง และข้อมูลต่อปก แถบเปลี่ยนปกเดิมยังอยู่
+  await db.setSetting('ff_libcoverpdf', '0');
+  try {
+    page = (await a.get(qs)).text;
+    assert.match(page, /data-swapbar/);
+    assert.doesNotMatch(page, /lp-dlg|data-pdf=|data-pdf-cover|data-swap-go="pdf"/);
+  } finally {
+    await db.setSetting('ff_libcoverpdf', '1');
+  }
+  // ปิดเปลี่ยนปกในไฟล์ PDF ก็ไม่มีเหมือนกัน
+  await db.setSetting('ff_coverpdf', '0');
+  try {
+    assert.doesNotMatch((await a.get(qs)).text, /lp-dlg|data-pdf=/);
+  } finally {
+    await db.setSetting('ff_coverpdf', '1');
+  }
 });

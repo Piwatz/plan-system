@@ -1,0 +1,129 @@
+<!doctype html><html lang="th"><head><meta charset="utf-8"><title>ต่อปกหลายเล่มในคลัง</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai+Looped:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#EEF2F7;--surface:#fff;--ink:#0F1E33;--muted:#4E5F78;--line:#D6DEE9;--primary:#1D3A66;--soft:#E4ECF7;--accent:#E3A21A;--ok:#1B7343;--okbg:#E4F4EA;--wait:#875700;--waitbg:#FFF2DA;--back:#B0322A;--backbg:#FBE6E4;--gray:#5B6B80;--graybg:#EEF1F5}
+*{box-sizing:border-box}
+body{margin:0;background:#DCE3EC;font-family:'Noto Sans Thai Looped',sans-serif;color:var(--ink);width:1320px;padding:20px 22px 26px}
+h1{font-size:22px;margin:0 0 4px}.sub{color:var(--muted);margin:0 0 14px;font-size:14.5px}
+.top{background:var(--surface);border-radius:14px;padding:12px 16px;margin-bottom:18px}
+.top h2{font-size:16px;margin:0 0 8px}
+.swapbar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;font-size:14px;background:var(--soft);border-radius:12px;padding:8px 12px}
+.b{display:inline-flex;align-items:center;gap:5px;border-radius:9px;padding:6px 12px;font-weight:700;font-size:13.5px;border:1px solid var(--line);background:#fff;color:var(--primary)}
+.b.p{background:var(--primary);color:#fff;border-color:var(--primary)}
+.b.new{background:var(--accent);color:#2a1d00;border-color:var(--accent);box-shadow:0 0 0 3px #fff,0 0 0 5px var(--accent)}
+.b.on{background:var(--primary);color:#fff}
+.new-tag{font-size:11px;background:var(--back);color:#fff;border-radius:6px;padding:1px 6px;margin-left:4px}
+.shelf{display:flex;gap:14px;margin-top:10px}
+.bk{width:96px;font-size:12px}
+.cvr{position:relative;width:96px;height:136px;border-radius:6px;overflow:hidden;border:1px solid var(--line);background:#fff}
+.cvr.sel{outline:3px solid var(--primary);outline-offset:2px}
+.ck{position:absolute;left:5px;top:5px;width:20px;height:20px;border-radius:5px;background:#fff;border:2px solid var(--primary);display:grid;place-items:center;font-size:13px;font-weight:700;color:#fff}
+.sel .ck{background:var(--primary)}
+.pg{padding:10px 8px;font-size:9px;color:#888;line-height:1.5}
+.pg i{display:block;height:5px;background:#e3e6ea;border-radius:3px;margin:5px 0}
+.dr{height:100%;background:linear-gradient(#fff 0 22%,#1D3A66 22% 30%,#fff 30%);text-align:center;padding-top:6px;font-size:8.5px;color:#1D3A66;font-weight:700}
+.dr.m{background:linear-gradient(#fff 0 22%,#17694F 22% 30%,#fff 30%);color:#17694F}
+.dr .lg{width:20px;height:20px;border-radius:50%;background:#E3A21A;margin:0 auto 14px}
+.dr .nm{margin-top:20px;font-size:9.5px;color:#0F1E33}
+.wrap{display:grid;grid-template-columns:1fr 1fr;gap:24px;align-items:start}
+.opt{font-weight:700;font-size:18px;margin:0 0 4px}.opt span{display:inline-grid;place-items:center;width:30px;height:30px;border-radius:50%;background:var(--accent);color:#fff;margin-right:8px}
+.why{font-size:13.5px;color:var(--muted);margin:0 0 10px;min-height:62px}
+.dlg{background:var(--surface);border-radius:16px;box-shadow:0 10px 30px rgba(15,30,51,.2);padding:16px 18px}
+.dlg h3{margin:0 0 4px;font-size:18px}
+.m{color:var(--muted);font-size:13px}
+.lab{font-weight:700;font-size:14px;margin:12px 0 6px}
+.rad{display:flex;gap:9px;align-items:flex-start;font-size:14px;margin:7px 0}
+.rd{width:19px;height:19px;border-radius:50%;border:2px solid var(--primary);flex:none;margin-top:2px;display:grid;place-items:center}
+.rd.on::after{content:'';width:9px;height:9px;border-radius:50%;background:var(--primary)}
+.list{border:1px solid var(--line);border-radius:10px;margin-top:6px}
+.li{display:flex;gap:10px;align-items:center;padding:7px 10px;border-top:1px solid var(--line);font-size:13.5px}
+.li:first-child{border-top:0}
+.li b{flex:1}
+.chip{font-size:12px;border-radius:20px;padding:2px 10px;font-weight:600;white-space:nowrap}
+.ok{background:var(--okbg);color:var(--ok)}.wait{background:var(--waitbg);color:var(--wait)}.gray{background:var(--graybg);color:var(--gray)}.red{background:var(--backbg);color:var(--back)}
+.foot{display:flex;justify-content:flex-end;gap:8px;margin-top:14px}
+.info{background:var(--soft);border-radius:10px;padding:8px 11px;font-size:13px;color:var(--primary);margin-top:10px}
+.grid{display:grid;grid-template-columns:1fr;gap:8px;margin-top:8px}
+.row{display:grid;grid-template-columns:58px 18px 58px 1fr;gap:8px;align-items:center;border:1px solid var(--line);border-radius:10px;padding:7px 9px;font-size:13px}
+.row.skip{opacity:.55;background:var(--graybg)}
+.th{width:58px;height:82px;border:1px solid var(--line);border-radius:4px;overflow:hidden;background:#fff;position:relative}
+.th .pg{padding:6px 5px;font-size:7px}
+.th .dr{font-size:6px;padding-top:4px}.th .dr .lg{width:12px;height:12px;margin-bottom:8px}.th .dr .nm{margin-top:10px;font-size:6.5px}
+.th.del::after{content:'ลบ';position:absolute;inset:0;background:rgba(176,50,42,.55);color:#fff;font-weight:700;display:grid;place-items:center;font-size:14px}
+.ar{color:var(--muted);font-size:16px;text-align:center}
+.tg{display:flex;gap:6px;align-items:center;margin-top:4px}
+.bx{width:17px;height:17px;border-radius:4px;border:2px solid var(--primary);display:grid;place-items:center;color:#fff;font-size:11px;font-weight:700}
+.bx.on{background:var(--primary)}
+.prog{margin-top:18px;background:var(--surface);border-radius:14px;padding:14px 18px;display:grid;grid-template-columns:1fr 1fr;gap:24px}
+.prog h4{margin:0 0 6px;font-size:15px}
+.pb{height:10px;border-radius:6px;background:var(--line);overflow:hidden;margin:8px 0}.pb div{height:100%;width:60%;background:var(--primary)}
+.res{border-left:5px solid var(--ok);background:var(--okbg);border-radius:10px;padding:9px 12px;font-size:13.5px}
+</style></head><body>
+<h1>ต่อปกที่ระบบวาดลงในไฟล์ PDF ทีละหลายเล่ม (หน้าคลังงาน เฉพาะผู้ดูแลระบบ)</h1>
+<p class="sub">ใช้แถบ เปลี่ยนปก โหมด เลือกหลายเล่ม ที่มีอยู่แล้ว เพิ่มปุ่มใหม่ 1 ปุ่ม ทั้งสองแบบต่างกันที่กล่องที่เด้งขึ้นมาหลังกดปุ่ม</p>
+
+<div class="top">
+  <h2>แถบเปลี่ยนปกในหน้าคลังงาน (เหมือนกันทั้งสองแบบ)</h2>
+  <div class="swapbar">
+    <b>เปลี่ยนปก</b>
+    <span class="b">ปุ่มบนปก</span><span class="b on">เลือกหลายเล่ม</span>
+    <span style="margin-left:10px">เลือกแล้ว 4 เล่ม</span>
+    <span class="b p">ใช้ปกระบบ</span><span class="b">ใช้รูปจากไฟล์</span>
+    <span class="b new">ต่อปกลงในไฟล์ PDF<span class="new-tag">ใหม่</span></span>
+  </div>
+  <div class="shelf">
+    <div class="bk"><div class="cvr sel"><span class="ck">✓</span><div class="pg">คำนำ<i></i><i></i><i></i><i></i><i></i></div></div>ว31101 ครูสมมติ ก</div>
+    <div class="bk"><div class="cvr sel"><span class="ck">✓</span><div class="pg">หน่วยที่ 1<i></i><i></i><i></i><i></i></div></div>ว32201 ครูสมมติ ข</div>
+    <div class="bk"><div class="cvr sel"><span class="ck">✓</span><div class="dr m"><div class="lg"></div>คู่มือรายวิชา<div class="nm">ค21101 คณิตศาสตร์</div></div></div>ค21101 ครูสมมติ ค</div>
+    <div class="bk"><div class="cvr sel"><span class="ck">✓</span><div class="pg" style="background:#f6f0e4">ปกที่ครูทำเอง<i></i><i></i></div></div>ส21101 ครูสมมติ ง</div>
+    <div class="bk"><div class="cvr"><span class="ck"></span><div class="pg">สารบัญ<i></i><i></i><i></i></div></div>อ31101 ครูสมมติ จ</div>
+  </div>
+</div>
+
+<div class="wrap">
+<div>
+  <p class="opt"><span>ก</span>เลือกครั้งเดียวใช้กับทุกเล่ม</p>
+  <p class="why">กดน้อยที่สุด เลือกครั้งเดียวว่าหน้า 1 เดิมจะลบหรือเก็บไว้ ใช้กับทุกเล่มที่ติ๊ก เหมาะเมื่อเล่มที่เลือกเป็นแบบเดียวกันหมด เช่น ไม่มีปกทั้งหมด เล่มที่ต่อปกระบบไว้แล้วข้ามเอง</p>
+  <div class="dlg">
+    <h3>ต่อปกที่ระบบวาดลงในไฟล์ 4 เล่ม</h3>
+    <div class="m">ปกเป็นแบบเดียวกับคลังงาน ไฟล์เดิมเก็บไว้ในไฟล์รุ่นก่อนแก้ไข ผู้ตรวจไม่ต้องลงนามใหม่</div>
+    <div class="lab">หน้า 1 เดิมของไฟล์</div>
+    <div class="rad"><span class="rd on"></span><div>เก็บไว้ ต่อปกเพิ่มเป็นหน้าแรก<div class="m">ไฟล์ละ 1 หน้าเพิ่มขึ้น</div></div></div>
+    <div class="rad"><span class="rd"></span><div>ลบหน้า 1 เดิม แล้วต่อปกแทน<div class="m">ใช้เมื่อหน้า 1 เดิมเป็นปกที่ผิด</div></div></div>
+    <div class="lab">เล่มที่เลือก</div>
+    <div class="list">
+      <div class="li"><b>ว31101 ฟิสิกส์ 1 ครูสมมติ ก</b><span class="chip ok">จะต่อปก</span></div>
+      <div class="li"><b>ว32201 เคมี 2 ครูสมมติ ข</b><span class="chip ok">จะต่อปก</span></div>
+      <div class="li"><b>ค21101 คณิตศาสตร์ ครูสมมติ ค</b><span class="chip gray">ต่อปกระบบไว้แล้ว ข้าม</span></div>
+      <div class="li"><b>ส21101 สังคมศึกษา ครูสมมติ ง</b><span class="chip ok">จะต่อปก</span></div>
+    </div>
+    <div class="foot"><span class="b">ยกเลิก</span><span class="b p">ต่อปก 3 เล่ม</span></div>
+  </div>
+</div>
+
+<div>
+  <p class="opt"><span>ข</span>เห็นหน้า 1 ของทุกเล่มก่อน ติ๊กลบรายเล่ม</p>
+  <p class="why">เห็นหน้าแรกจริงของแต่ละเล่มคู่กับปกใหม่ ติ๊ก ลบหน้า 1 เดิม เฉพาะเล่มที่ปกผิด เล่มที่ปกถูกอยู่แล้วติ๊ก ไม่ต่อ ได้ ช้ากว่านิดหน่อยเพราะเครื่องต้องเปิดไฟล์ทุกเล่มก่อน</p>
+  <div class="dlg">
+    <h3>ต่อปกที่ระบบวาดลงในไฟล์ 4 เล่ม</h3>
+    <div class="m">ซ้าย หน้า 1 ตอนนี้ ขวา ปกใหม่ ไฟล์เดิมเก็บไว้ในไฟล์รุ่นก่อนแก้ไข</div>
+    <div class="grid">
+      <div class="row"><div class="th"><div class="pg">คำนำ<i></i><i></i><i></i></div></div><span class="ar">→</span><div class="th"><div class="dr"><div class="lg"></div>แผน<div class="nm">ว31101</div></div></div>
+        <div><b>ว31101 ฟิสิกส์ 1</b><div class="m">ครูสมมติ ก · 24 หน้า</div><div class="tg"><span class="bx"></span>ลบหน้า 1 เดิม</div></div></div>
+      <div class="row"><div class="th del"><div class="pg">หน่วยที่ 1<i></i><i></i></div></div><span class="ar">→</span><div class="th"><div class="dr"><div class="lg"></div>แผน<div class="nm">ว32201</div></div></div>
+        <div><b>ว32201 เคมี 2</b><div class="m">ครูสมมติ ข · 31 หน้า</div><div class="tg"><span class="bx on">✓</span>ลบหน้า 1 เดิม</div></div></div>
+      <div class="row skip"><div class="th"><div class="dr m"><div class="lg"></div>คู่มือ<div class="nm">ค21101</div></div></div><span class="ar">→</span><div class="th"></div>
+        <div><b>ค21101 คณิตศาสตร์</b><div class="m">ครูสมมติ ค</div><span class="chip gray">ต่อปกระบบไว้แล้ว ข้าม</span></div></div>
+      <div class="row skip"><div class="th"><div class="pg" style="background:#f6f0e4">ปกที่ครูทำเอง<i></i></div></div><span class="ar">→</span><div class="th"></div>
+        <div><b>ส21101 สังคมศึกษา</b><div class="m">ครูสมมติ ง · 18 หน้า</div><div class="tg"><span class="bx on">✓</span>ไม่ต่อ ปกเดิมถูกแล้ว</div></div></div>
+    </div>
+    <div class="foot"><span class="b">ยกเลิก</span><span class="b p">ต่อปก 2 เล่ม</span></div>
+  </div>
+</div>
+</div>
+
+<div class="prog">
+  <div><h4>ระหว่างทำ (ทั้งสองแบบ)</h4><div class="m">กำลังต่อปก เล่มที่ 2 จาก 3 ว32201 เคมี 2</div><div class="pb"><div></div></div><div class="m">ห้ามปิดหน้านี้จนกว่าจะเสร็จ</div></div>
+  <div><h4>เสร็จแล้ว</h4><div class="res">ต่อปกเรียบร้อย 3 เล่ม ข้าม 1 เล่ม (ต่อปกระบบไว้แล้ว)<br>ทำไม่ได้ 0 เล่ม · ประวัติของแต่ละงานจดว่า ผู้ดูแลระบบ ต่อปกที่ระบบวาด</div></div>
+</div>
+</body></html>

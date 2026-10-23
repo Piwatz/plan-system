@@ -1335,6 +1335,32 @@ dialog.front-dlg { width: min(720px, calc(100vw - 24px)); max-height: calc(100vh
 .front-sum { margin: 12px 0 0; padding: 8px 10px; border-radius: var(--rs); background: var(--head-bg); font-weight: 600; }
 .front-sum:empty { display: none; }
 /* ปกตัวใหญ่ที่ซ่อนนอกจอ ใช้วาดลง PDF ไม่แสดงให้เห็น */
+/* ต่อปกที่ระบบวาดลงในไฟล์ทีละหลายเล่ม (libcoverpdf) กล่องในหน้าคลังงาน · all ใช้กับทุกเล่ม · each ดูหน้า 1 ทีละเล่ม */
+.lp-mode { margin: 10px 0 2px; }
+.lp-all[hidden] { display: none; }
+.lp-list { display: flex; flex-direction: column; gap: 8px; }
+.lp-row { display: flex; gap: 10px; align-items: center; padding: 8px 10px; border: 1px solid var(--line); border-radius: var(--rs); }
+.lp-row.off { background: var(--head-bg); }
+.lp-row.off .lp-th, .lp-row.off .lp-ar, .lp-row.off b { opacity: 0.5; }
+.lp-th, .lp-ar { display: none; }
+.lp-dlg[data-lp="each"] .lp-th { position: relative; display: grid; place-items: center; flex: none; width: 64px; height: 90px; overflow: hidden; border: 1px solid var(--line); border-radius: 4px; background: #fff; color: var(--muted); font-size: 0.7rem; text-align: center; }
+.lp-dlg[data-lp="each"] .lp-ar { display: inline-flex; flex: none; color: var(--muted); }
+.lp-th canvas { width: 100%; height: auto; }
+.lp-th.del::after { content: 'ลบ'; position: absolute; inset: 0; display: grid; place-items: center; background: color-mix(in srgb, var(--back) 55%, transparent); color: #fff; font-weight: 700; font-size: 0.95rem; }
+.lp-new .lib-cover { width: 64px; border-radius: 0; box-shadow: none; }
+.lp-info { display: flex; flex-direction: column; gap: 3px; min-width: 0; flex: 1; }
+.lp-info b { overflow-wrap: anywhere; }
+.lp-info .badge { align-self: flex-start; }
+.lp-each { display: none; flex-wrap: wrap; gap: 4px 14px; }
+.lp-each label { display: inline-flex; gap: 6px; align-items: center; cursor: pointer; }
+.lp-each input { width: 18px; height: 18px; accent-color: var(--primary); }
+.lp-dlg[data-lp="each"] .lp-each { display: flex; }
+.lp-dlg[data-lp="each"] .lp-go, .lp-dlg:not([data-lp="each"]) [data-lp-pages] { display: none; }
+.lp-row.off .lp-go { display: none; }
+@media (max-width: 480px) {
+  .lp-dlg[data-lp="each"] .lp-th { width: 48px; height: 68px; }
+  .lp-new .lib-cover { width: 48px; }
+}
 .front-render { position: fixed; left: -10000px; top: 0; width: 620px; }
 .front-render .lib-cover { width: 620px; border-radius: 0; box-shadow: none; }
 

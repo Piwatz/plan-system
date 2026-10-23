@@ -60,6 +60,7 @@ async function dupList(sub) {
 // ---------- รายชื่องานที่หน้าแรกน่าจะไม่ใช่ปก (ฟังก์ชันเสริม frontcheck) ----------
 // เซิร์ฟเวอร์บนคลาวด์ไม่เปิด PDF เอง เบราว์เซอร์ตรวจหน้าแรก (ตอนครูกดส่ง เปลี่ยนปก หรือผู้ดูแลกดตรวจงานเดิม) แล้วส่งผลมาเก็บใน files.front_check
 // ok · blank หน้าแรกเกือบว่าง · nocode หน้าแรกมีตัวหนังสือแต่ไม่มีรหัสวิชา · seen ผู้ดูแลกด ปกถูกแล้ว · ว่าง = ยังไม่ได้ตรวจ
+// drawn = หน้าแรกเป็นปกที่ระบบวาด เซิร์ฟเวอร์ใส่เองตอนต่อปก (ไม่รับจากเบราว์เซอร์) คลังงานใช้ข้ามเล่มที่ต่อแล้ว (ฟังก์ชันเสริม libcoverpdf)
 const FRONT_VALUES = ['ok', 'blank', 'nocode', 'blank nocode'];
 const FRONT_BAD = ['blank', 'nocode', 'blank nocode'];
 // ไฟล์หน้าแรกของงาน = PDF หลักไฟล์แรกที่ใช้อยู่ (แบบเดียวกับรูปปกในคลังงาน)
@@ -68,7 +69,14 @@ const FRONT_FILE = `(SELECT MIN(x.id) FROM files x WHERE x.submission_id = s.id 
 // ใส่ผลตรวจให้ไฟล์ที่เพิ่งแนบ (เรียกหลัง up.attach ใน transaction) เฉพาะเมื่อไฟล์ใหม่ล่าสุดเป็นไฟล์หน้าแรกของงาน
 async function setFront(ff, subId, v) {
   if (!ff.frontcheck || !FRONT_VALUES.includes(v)) return;
-  await q.run(
+  await frontValue(subId, v);
+}
+// ต่อปกที่ระบบวาดเป็นหน้าแรก จดไว้เสมอแม้ปิด frontcheck
+function markDrawn(subId) {
+  return frontValue(subId, 'drawn');
+}
+function frontValue(subId, v) {
+  return q.run(
     `UPDATE files SET front_check = ? WHERE id = (SELECT MAX(id) FROM files WHERE submission_id = ? AND kind = 'main' AND is_current = 1)
        AND id = (SELECT MIN(id) FROM files WHERE submission_id = ? AND kind = 'main' AND is_current = 1 AND mime = 'application/pdf')`,
     v,
@@ -90,4 +98,4 @@ async function frontRows(onlyTodo = false) {
   return { bad: rows.filter((r) => r.front_check), todo: rows.filter((r) => !r.front_check) };
 }
 
-module.exports = { minPages, otherFiles, sameBytes, duplicateOf, dupList, FRONT_VALUES, setFront, frontRows };
+module.exports = { minPages, otherFiles, sameBytes, duplicateOf, dupList, FRONT_VALUES, setFront, markDrawn, frontRows };

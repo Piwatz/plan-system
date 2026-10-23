@@ -16,7 +16,11 @@
       <% } else { %>
         <button type="button" class="lib-swap" data-cover-file="<%= b.id %>" data-file="<%= b.file_id || '' %>" data-code="<%= b.subject_code %>" data-who="<%= who %>" title="ใช้รูปจากไฟล์"><%- icon('file', 13) %><span>ใช้รูปจากไฟล์</span></button>
       <% } %>
-      <label class="lib-ck" title="เลือกเล่มนี้"><input type="checkbox" name="ids" value="<%= b.id %>" form="lib-drawn" data-file="<%= b.file_id || '' %>" data-code="<%= b.subject_code %>" data-is="<%= b.swap %>" aria-label="เลือก <%= who %>"></label>
+      <label class="lib-ck" title="เลือกเล่มนี้"><input type="checkbox" name="ids" value="<%= b.id %>" form="lib-drawn" data-file="<%= b.file_id || '' %>" data-code="<%= b.subject_code %>" data-is="<%= b.swap %>"<% if (b.pdfCover) { %> data-pdf="<%= b.pdfCover %>" data-pdf-file="<%= b.pdf_id || '' %>" data-who="<%= who %>"<% } %> aria-label="เลือก <%= who %>"></label>
+      <% if (b.pdfCover === 'ok') { %>
+        <%# ปกที่ระบบวาดของเล่มนี้สำหรับต่อลงในไฟล์ (libcoverpdf) ตราใช้รูปใหญ่ให้คมตอนพิมพ์ หน้าเว็บวาดเป็นรูปเมื่อกดต่อปก %>
+        <template data-pdf-cover="<%= b.id %>"><%- include('lib_cover', { b: { ...b, cover: null, open: true }, logoUrl: settings.school_logo || '/static/img/school-logo.png' }) %></template>
+      <% } %>
     <% } %>
     </div>
     <div class="lib-meta">

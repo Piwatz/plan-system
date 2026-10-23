@@ -13,14 +13,17 @@ const COVER_MAX = 300 * 1024;
 
 // คอลัมน์ที่ทุกชั้นต้องคืน (ชนิดเดียวกัน ใช้ UNION ALL ในแถบเล่มใหม่ได้)
 // id = งานที่เปิด (บันทึกหลังแผนเป็นรหัสแผนของเล่ม) · kind = ชั้น · sheets = จำนวนแผ่น (บันทึกหลังแผน) · done_at = วันที่ผ่านครบ (ยังไม่ผ่านใช้วันที่ส่ง)
+// pdf_id = PDF หลักไฟล์แรก (ไฟล์ที่ต่อปก) · pdf_front = ผลตรวจหน้าแรก drawn คือต่อปกที่ระบบวาดไว้แล้ว (ฟังก์ชันเสริม libcoverpdf)
 // st = approved ผ่านครบ · pending รอลงนาม · returned ส่งกลับแก้ไข (งานร่างไม่มาถึงที่นี่) ใครเห็นเล่มไหนตัดสินใน visibleSql (ฟังก์ชันเสริม libshow)
 function workSql(docType, where) {
   return {
     sql: `SELECT s.id, s.doc_type AS kind, s.academic_year, s.semester, s.subject_code, s.subject_name, s.grade_level, s.teacher_id, s.department_id,
          u.full_name AS teacher_name, d.name AS dept_name, d.sort AS dept_sort, s.cover_ref,
          (SELECT f.id FROM files f WHERE f.submission_id = s.id AND f.is_current = 1 ORDER BY (f.mime = 'application/pdf') DESC, f.id LIMIT 1) AS file_id,
+         pf.id AS pdf_id, pf.front_check AS pdf_front,
          0 AS sheets, 0 AS sheets_done, COALESCE(s.completed_at, s.submitted_at) AS done_at, s.status AS st, s.current_role
        FROM submissions s JOIN users u ON u.id = s.teacher_id LEFT JOIN departments d ON d.id = s.department_id
+         LEFT JOIN files pf ON pf.id = (SELECT MIN(x.id) FROM files x WHERE x.submission_id = s.id AND x.kind = 'main' AND x.is_current = 1 AND x.mime = 'application/pdf')
        WHERE s.doc_type = ? AND s.status != 'draft'${where.sql('s')}`,
     params: [docType, ...where.params],
   };
@@ -30,7 +33,7 @@ function workSql(docType, where) {
 function noteSql(where) {
   return {
     sql: `SELECT p.id, 'note' AS kind, p.academic_year, p.semester, p.subject_code, p.subject_name, p.grade_level, p.teacher_id, p.department_id,
-         u.full_name AS teacher_name, d.name AS dept_name, d.sort AS dept_sort, NULL::text AS cover_ref, NULL::integer AS file_id,
+         u.full_name AS teacher_name, d.name AS dept_name, d.sort AS dept_sort, NULL::text AS cover_ref, NULL::integer AS file_id, NULL::integer AS pdf_id, NULL::text AS pdf_front,
          COUNT(n.id)::int AS sheets, SUM(CASE WHEN n.status = 'approved' THEN 1 ELSE 0 END)::int AS sheets_done,
          COALESCE(MAX(n.completed_at), MAX(n.submitted_at)) AS done_at,
          CASE WHEN SUM(CASE WHEN n.status = 'approved' THEN 0 ELSE 1 END) = 0 THEN 'approved'
@@ -182,6 +185,15 @@ function swapOf(row, me, ff) {
   return row.cover_ref === DRAWN ? 'drawn' : row.cover_ref ? 'img' : 'none';
 }
 
+// ต่อปกที่ระบบวาดลงในไฟล์ทีละหลายเล่ม (ฟังก์ชันเสริม libcoverpdf) อยู่ในโหมดเลือกหลายเล่มของ coverswap ใช้กติกาเดียวกับปุ่มเปลี่ยนปกในหน้างาน (coverpdf)
+// ok ต่อได้ · done ต่อปกระบบไว้แล้ว · nopdf ไม่มีไฟล์ PDF · own งานของตัวเองที่ผ่านครบแล้ว (ผู้ดูแลระบบดำเนินการแทนในงานของตัวเองไม่ได้)
+function pdfCoverOf(row, me, ff) {
+  if (!swapOf(row, me, ff) || !ff.coverpdf || !ff.libcoverpdf) return null;
+  if (!row.pdf_id) return 'nopdf';
+  if (me.id === row.teacher_id && row.st === 'approved') return 'own';
+  return row.pdf_front === 'drawn' ? 'done' : 'ok';
+}
+
 // ระดับชั้นบนปกที่ระบบวาด ม.5 เป็น ชั้นมัธยมศึกษาปีที่ 5 · ป.3 เป็น ชั้นประถมศึกษาปีที่ 3 · แบบอื่น (เช่น ม.4/1) ใส่ ชั้น นำหน้าตามที่กรอก
 function gradeText(g) {
   const v = String(g || '').trim();
@@ -218,7 +230,7 @@ function termText(r) {
 // rule ใส่เมื่อผู้ดูแลระบบจัดการการแสดงได้ (ปุ่มซ่อนหรือแสดงเล่มนี้ ฟังก์ชันเสริม libshow)
 function decorate(rows, me, ff, rule = null) {
   const admin = Boolean(rule && me.is_admin && ff.libshow);
-  return rows.map((r) => ({ ...r, gradeText: gradeText(r.grade_level), termText: termText(r), waitText: waitText(r), hiddenWhy: admin ? hiddenWhy(r, rule) : '', showBtn: admin ? (r.shown === false ? 'show' : 'hide') : '', open: canOpen(me, r, ff), href: openHref(r), cover: coverUrl(r), swap: swapOf(r, me, ff), mine: me.id === r.teacher_id, shelfLabel: (SHELF[r.kind] || {}).label || '' }));
+  return rows.map((r) => ({ ...r, gradeText: gradeText(r.grade_level), termText: termText(r), waitText: waitText(r), hiddenWhy: admin ? hiddenWhy(r, rule) : '', showBtn: admin ? (r.shown === false ? 'show' : 'hide') : '', open: canOpen(me, r, ff), href: openHref(r), cover: coverUrl(r), swap: swapOf(r, me, ff), pdfCover: pdfCoverOf(r, me, ff), mine: me.id === r.teacher_id, shelfLabel: (SHELF[r.kind] || {}).label || '' }));
 }
 
 // เปิดอ่านงานคนอื่นจากคลังได้ไหม (สวิตช์ libread) ใช้กับไฟล์งานและหน้าพิมพ์บันทึกหลังแผนทั้งเล่ม
