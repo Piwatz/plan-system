@@ -12,7 +12,7 @@
   <%- include('qr_corner') %>
   <h2 class="doc">แบบประเมิน<%= T.label %></h2>
   <div class="row"><span class="k"><%= T.label %>รายวิชา</span><span class="line"><%= sub.subject_name %></span><span class="k">รหัสวิชา</span><span class="line" style="max-width:35%"><%= sub.subject_code %></span></div>
-  <div class="row"><span class="k">ครูผู้สอน</span><span class="line"><%= sub.teacher_name %></span><span class="k">กลุ่มสาระการเรียนรู้</span><span class="line"><%= sub.dept_name %></span></div>
+  <div class="row"><span class="k">ครูผู้สอน</span><span class="line"><%= sub.doc_name || sub.teacher_name %></span><span class="k">กลุ่มสาระการเรียนรู้</span><span class="line"><%= sub.dept_name %></span></div>
   <p style="margin:8px 0 2px"><b>คำชี้แจง</b> โปรดทำเครื่องหมาย ✓ ลงในช่องระดับการประเมินที่ตรงกับความคิดเห็นของท่าน</p>
   <div class="small" style="display:grid;grid-template-columns:1fr 1fr;gap:0 16px">
     <div>5 หมายถึง มีความสอดคล้อง/เชื่อมโยง/ครอบคลุม/เหมาะสม มากที่สุด</div>

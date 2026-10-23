@@ -222,6 +222,26 @@
   </form>
 <% } %>
 
+<% if (locals.transferTo) { %>
+  <%# โอนงานนี้ให้ครูคนอื่น แบบ ก (ฟังก์ชันเสริม transfer) หลายงานพร้อมกันใช้หน้า /admin/transfer %>
+  <details class="card tf-card">
+    <summary class="card-head"><h3><%- icon('users', 20) %> โอนงานนี้ให้ครูคนอื่น</h3><span class="badge badge-amber">เฉพาะผู้ดูแลระบบเห็น</span></summary>
+    <form method="post" action="/admin/transfer" data-busy="กำลังโอนงาน" data-confirm="โอน<%= T.label %> <%= sub.subject_code %> ของ <%= sub.teacher_name %> ให้ครูที่เลือก ระบบจดในประวัติของงาน" data-ok-label="โอนงาน">
+      <input type="hidden" name="ids" value="<%= sub.id %>"><input type="hidden" name="back" value="/s/<%= sub.id %>">
+      <p class="muted small">เช่น ครูสอนแทนส่งไว้ แล้วครูเจ้าของวิชากลับมา โอนได้ทุกสถานะ ลายเซ็นผู้ตรวจอยู่ครบ โอนหลายงานพร้อมกันใช้ <a href="/admin/transfer?from=<%= sub.teacher_id %>&year=<%= sub.academic_year %>&semester=<%= sub.semester %>">หน้าโอนงานระหว่างครู</a></p>
+      <div class="field"><label for="tf-to">โอนให้ครู</label>
+        <select id="tf-to" name="to" required><option value="">เลือกครูผู้รับ</option>
+          <% for (const t of transferTo) { %><option value="<%= t.id %>"><%= t.full_name %> (<%= t.dept_name || 'ไม่ระบุกลุ่มสาระ' %>)</option><% } %>
+        </select></div>
+      <%- include('partials/transfer_opts', { notes: sub.doc_type === 'plan' ? notes.length : 0, code: sub.subject_code }) %>
+      <button class="btn btn-warn" type="submit"><%- icon('send', 18) %> โอนงาน</button>
+    </form>
+    <% if (driveLeft) { %>
+      <form method="post" action="/admin/transfer/drive" data-confirm="ย้ายไฟล์ใน Google Drive ที่รออยู่ไปโฟลเดอร์ของครูเจ้าของงานตอนนี้" data-ok-label="ย้ายไฟล์" class="tf-drive"><input type="hidden" name="back" value="/s/<%= sub.id %>"><span class="muted small">ไฟล์ใน Drive รอย้าย <%= driveLeft %> ไฟล์ ระบบย้ายต่อเองทุกชั่วโมง</span> <button class="btn btn-sm btn-ghost" type="submit">ย้ายไฟล์ต่อ</button></form>
+    <% } %>
+  </details>
+<% } %>
+
 <%# แสดงไฟล์ที่ครูส่งให้อ่านในหน้านี้เลย เลื่อนดูได้ทุกหน้า (ผู้ตรวจที่กำลังให้คะแนนเห็นแบบแบ่งจอด้านบนอยู่แล้ว) %>
 <% if (!split && !noteReview && viewable.length) { %><%- include('partials/file_viewer', { files: viewable, cls: 'inline' }) %><% } %>
 

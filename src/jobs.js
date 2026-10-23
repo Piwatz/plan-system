@@ -140,6 +140,10 @@ async function hourly() {
   return db.withScope(async () => {
     // ตัวนับรหัสผ่านผิดที่หมดอายุแล้ว
     await require('./auth').cleanupAttempts();
+    // ไฟล์ใน Drive ที่ค้างย้ายหลังโอนงาน (ฟังก์ชันเสริม transfer) ย้ายต่อทีละชุด ไม่สำเร็จก็รอรอบหน้า
+    await require('./transfer')
+      .runDrive()
+      .catch((e) => console.error('ย้ายไฟล์ที่โอนงานไม่สำเร็จ', e.message));
     return cleanupPending();
   });
 }

@@ -1,0 +1,65 @@
+<%- include('../partials/top') %>
+<%# โอนงานระหว่างครู แบบ ข (ฟังก์ชันเสริม transfer) เลือกครูต้นทางกับครูผู้รับ ติ๊กได้หลายงาน · ตัวอย่างที่ครูเต้ยเลือก design-mockup/transfer-mockup.png %>
+<% const to = teachers.find((x) => x.id === toId); %>
+<div class="narrow" style="max-width:900px">
+  <div class="page-head">
+    <div>
+      <div class="eyebrow">ผู้ดูแลระบบ</div>
+      <h1>โอนงานระหว่างครู</h1>
+      <div class="sub">เช่น ครูสอนแทนส่งงานไว้ แล้วครูเจ้าของวิชากลับมารับช่วงต่อ โอนได้ทุกสถานะ ลายเซ็นผู้ตรวจอยู่ครบ</div>
+    </div>
+    <div class="actions"><%- include('../partials/term_select', { keep: { from: from ? from.id : '', to: toId || '' } }) %><a class="btn btn-ghost" href="/admin"><%- icon('back', 18) %> กลับ</a></div>
+  </div>
+
+  <% if (driveLeft) { %>
+    <div class="call check"><%- icon('clock') %>
+      <div><b class="call-title">ไฟล์ใน Google Drive รอย้าย <%= driveLeft %> ไฟล์</b>
+        <div class="small">ระบบย้ายต่อเองทุกชั่วโมง ในระบบยังเปิดไฟล์ได้ตามปกติ</div>
+        <form method="post" action="/admin/transfer/drive" data-confirm="ย้ายไฟล์ใน Google Drive ที่รออยู่ไปโฟลเดอร์ของครูเจ้าของงานตอนนี้" data-ok-label="ย้ายไฟล์" style="margin-top:8px"><input type="hidden" name="back" value="/admin/transfer"><button class="btn btn-sm btn-primary" type="submit">ย้ายไฟล์ต่อ</button></form></div>
+    </div>
+  <% } %>
+
+  <section class="card">
+    <form method="get" class="tf-pick" data-autosubmit>
+      <input type="hidden" name="year" value="<%= term.year %>"><input type="hidden" name="semester" value="<%= term.semester %>">
+      <div class="field"><label for="tf-from">จากครู</label>
+        <select id="tf-from" name="from"><option value="">เลือกครูเจ้าของงานตอนนี้</option>
+          <% for (const t of teachers) { if (t.id === me.id) continue; %><option value="<%= t.id %>" <%= from && from.id === t.id ? 'selected' : '' %>><%= t.full_name %> (<%= t.dept_name || 'ไม่ระบุกลุ่มสาระ' %>)</option><% } %>
+        </select></div>
+      <span class="tf-arrow" aria-hidden="true"><%- icon('next', 22) %></span>
+      <div class="field"><label for="tf-to">ให้ครู</label>
+        <select id="tf-to" name="to"><option value="">เลือกครูผู้รับ</option>
+          <% for (const t of teachers) { if (t.id === me.id || (from && t.id === from.id)) continue; %><option value="<%= t.id %>" <%= toId === t.id ? 'selected' : '' %>><%= t.full_name %> (<%= t.dept_name || 'ไม่ระบุกลุ่มสาระ' %>)</option><% } %>
+        </select></div>
+      <noscript><button class="btn" type="submit">แสดงงาน</button></noscript>
+    </form>
+  </section>
+
+  <% if (from) { %>
+  <form class="card" method="post" action="/admin/transfer" data-busy="กำลังโอนงาน" data-confirm="โอนงานที่ติ๊กไว้ของ <%= from.full_name %> ให้ <%= to ? to.full_name : '' %> ระบบจดในประวัติของงานทุกงาน" data-ok-label="โอนงาน">
+    <input type="hidden" name="to" value="<%= toId || '' %>">
+    <input type="hidden" name="back" value="/admin/transfer?from=<%= from.id %>&to=<%= toId || '' %>&year=<%= term.year %>&semester=<%= term.semester %>">
+    <div class="card-head"><h2>งานภาคเรียนที่ <%= term.semester %>/<%= term.year %> ของ <%= from.full_name %></h2></div>
+    <% if (!works.length) { %>
+      <div class="empty" style="padding:16px 4px"><p>ครูคนนี้ไม่มีคู่มือรายวิชาหรือแผนในภาคเรียนนี้ ลองเลือกภาคเรียนอื่นด้านบน</p></div>
+    <% } else { %>
+      <div class="tf-list">
+        <% for (const w of works) { %>
+          <label class="check tf-row"><input type="checkbox" name="ids" value="<%= w.id %>" checked>
+            <span class="tf-name"><b><%= wf.DOC_TYPES[w.doc_type].label %> <%= w.subject_code %> <%= w.subject_name %></b><% if (w.notes) { %> <span class="muted small">บันทึกหลังแผน <%= w.notes %> ฉบับ</span><% } %><% if (w.doc_name) { %> <span class="muted small">เอกสารเป็นชื่อ <%= w.doc_name %></span><% } %></span>
+            <span class="badge st <%= util.STATUS_CLASS[w.status] %>"><%= wf.statusText(w) %></span>
+            <a class="small" href="/s/<%= w.id %>">เปิดดู</a>
+          </label>
+        <% } %>
+      </div>
+      <%- include('../partials/transfer_opts', { notes: works.some((w) => w.doc_type === 'plan') ? null : 0 }) %>
+      <% if (to) { %>
+        <button class="btn btn-warn" type="submit"><%- icon('send', 18) %> โอนงานที่ติ๊กให้ <%= to.full_name %></button>
+      <% } else { %>
+        <div class="alert alert-info">เลือกครูผู้รับด้านบนก่อน แล้วปุ่มโอนงานจะขึ้น</div>
+      <% } %>
+    <% } %>
+  </form>
+  <% } %>
+</div>
+<%- include('../partials/bottom') %>

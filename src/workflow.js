@@ -18,6 +18,7 @@ const ACTION_LABELS = {
   oldfile: 'กลับไปใช้ไฟล์รุ่นก่อน (ไฟล์ที่ใช้อยู่เก็บไว้ในประวัติ)',
   sigconfirm: 'ครูยืนยันงานที่ผู้ดูแลระบบส่งแทน และใส่ลายเซ็นของตัวเอง',
   proxynew: 'ผู้ดูแลระบบสร้างงานแทนครู',
+  transfer: 'ผู้ดูแลระบบโอนงานให้ครูคนอื่น',
 };
 
 // ชนิดงาน: คู่มือรายวิชาและแผน ส่งทีละรายวิชาต่อภาคเรียน บันทึกหลังแผนผูกกับแผนแต่ละเล่ม
@@ -42,7 +43,7 @@ const SUB_COLUMNS = [
   'grade_level', 'teaching_methods', 'link_url', 'doc_no', 'plan_no', 'topic', 'unit_no', 'unit_name', 'hours', 'class_room',
   'teach_date', 'result_k', 'result_p', 'result_a', 'problems', 'suggestions', 'students_total', 'students_passed', 'status',
   'current_role', 'returned_role', 'score_total', 'score_max', 'score_detail', 'score_role', 'created_at', 'submitted_at',
-  'updated_at', 'completed_at', 'note_mode', 'verify_code',
+  'updated_at', 'completed_at', 'note_mode', 'verify_code', 'doc_name', 'doc_position',
 ];
 const REVIEW_COLUMNS = [
   'id', 'submission_id', 'role', 'step_label', 'user_id', 'user_name', 'user_position', 'action', 'comment',
@@ -338,7 +339,8 @@ async function submit(subId, actor) {
     const first = sub.status === 'draft' && !(await q.get("SELECT 1 AS x FROM reviews WHERE submission_id = ? AND action IN ('submit','resubmit') LIMIT 1", sub.id));
     const sig = await signatureOf(actor);
     await q.run(
-      'UPDATE submissions SET teacher_signature = ?, submitted_at = COALESCE(submitted_at, ?), updated_at = ? WHERE id = ?',
+      // งานที่โอนมาแบบคงชื่อครูคนเดิม (doc_name) เอกสารยังเป็นชื่อครูคนเดิม จึงคงลายเซ็นเดิม ไม่ใส่ลายเซ็นของผู้ส่ง
+      "UPDATE submissions SET teacher_signature = CASE WHEN doc_name <> '' THEN teacher_signature ELSE ?::text END, submitted_at = COALESCE(submitted_at, ?), updated_at = ? WHERE id = ?",
       sig,
       now,
       now,
@@ -525,7 +527,7 @@ async function submitMany(ids, actor) {
     await logMany(logs, sig, now);
     const out = await q.all(
       `UPDATE submissions s SET status = v.status, current_role = v.cur, updated_at = ?, submitted_at = COALESCE(s.submitted_at, ?),
-         teacher_signature = CASE WHEN ? = 1 THEN s.teacher_signature ELSE ?::text END,
+         teacher_signature = CASE WHEN ? = 1 OR s.doc_name <> '' THEN s.teacher_signature ELSE ?::text END,
          completed_at = CASE WHEN v.status = 'approved' THEN ? ELSE s.completed_at END
        FROM unnest(?::int[], ?::text[], ?::text[]) AS v(id, status, cur)
        WHERE s.id = v.id RETURNING ${subCols('s')}`,

@@ -25,7 +25,7 @@
   <div class="row"><span class="k">กลุ่มสาระการเรียนรู้</span><span class="line"><%= sub.dept_name %></span><span class="k">ชั้น</span><span class="line" style="max-width:30%"><%= it.gradeFull %><%= sub.class_room ? ' (' + sub.class_room + ')' : '' %></span></div>
   <div class="row"><span class="k">รายวิชา</span><span class="line"><%= sub.subject_name %></span><span class="k">รหัสวิชา</span><span class="line" style="max-width:25%"><%= sub.subject_code %></span></div>
   <div class="row"><span class="k">หน่วยการเรียนรู้ที่</span><span class="line" style="max-width:12%"><%= sub.unit_no %></span><span class="k">เรื่อง</span><span class="line"><%= sub.unit_name %></span><span class="k">จำนวน</span><span class="line" style="max-width:10%"><%= sub.hours %></span><span>ชั่วโมง</span></div>
-  <div class="row"><span class="k">ครูผู้สอน</span><span class="line"><%= sub.teacher_name %></span><span class="k">วันที่สอน</span><span class="line" style="max-width:30%"><%= util.thaiDate(sub.teach_date) %></span></div>
+  <div class="row"><span class="k">ครูผู้สอน</span><span class="line"><%= sub.doc_name || sub.teacher_name %></span><span class="k">วันที่สอน</span><span class="line" style="max-width:30%"><%= util.thaiDate(sub.teach_date) %></span></div>
 
   <% if (isFile) { %>
     <div class="sec">บันทึกหลังแผน</div>
@@ -47,7 +47,7 @@
 
   <div class="sign" style="width:50%;margin-left:auto">
     <div class="sigline">ลงชื่อ <% if (sub.teacher_signature) { %><img src="<%= sub.teacher_signature %>" alt="ลายเซ็นผู้สอน"><% } else { %><span>..........................................</span><% } %> ครูผู้สอน</div>
-    <div>(<%= sub.teacher_name %>)</div>
+    <div>(<%= sub.doc_name || sub.teacher_name %>)</div>
   </div>
 
   <% if (layout === 'bar') { %>

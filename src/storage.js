@@ -153,6 +153,10 @@ function localBackend(root = config.FILES_DIR) {
       return 'local:' + target;
     },
     // ไฟล์ในโฟลเดอร์ ใหม่สุดก่อน
+    // ไฟล์ในเครื่องไม่ย้ายโฟลเดอร์ตอนโอนงาน (ใช้ทดสอบและเปิดในเครื่อง) ระบบอ้างไฟล์ด้วยตำแหน่งที่เก็บไว้ จึงเปิดได้เหมือนเดิม
+    async move() {
+      return false;
+    },
     async list(folderPath) {
       const dir = abs(folderOf(folderPath).join('/'));
       if (!fs.existsSync(dir)) return [];
@@ -373,6 +377,18 @@ function gdriveBackend(env = process.env, { oauth = 'https://oauth2.googleapis.c
       const j = await (await api(`${API}?${new URLSearchParams({ q: qs, orderBy: 'modifiedTime desc', fields: 'files(id,name,size,mimeType,trashedTime,modifiedTime)', pageSize: '300' })}`)).json();
       return (j.files || []).map((f) => ({ ref: 'gdrive:' + f.id, name: f.name, size: Number(f.size) || 0, mime: f.mimeType || '', time: Date.parse(f.trashedTime || f.modifiedTime) || 0 }));
     },
+    // ย้ายไฟล์ไปโฟลเดอร์ตามตำแหน่ง (โอนงานให้ครูคนอื่น ฟังก์ชันเสริม transfer) ไฟล์ยังเป็น id เดิม ระบบเปิดได้เหมือนเดิม
+    // คืน false เมื่ออยู่ในโฟลเดอร์นั้นแล้ว
+    async move(ref, folderPath) {
+      return withFolder(folderPath, async (parent) => {
+        const j = await (await api(`${API}/${idOf(ref)}?fields=parents`)).json();
+        const old = (j.parents || []).filter((p) => p !== parent);
+        if (!old.length && (j.parents || []).includes(parent)) return false;
+        const qs = new URLSearchParams({ addParents: parent, ...(old.length ? { removeParents: old.join(',') } : {}), fields: 'id' });
+        await api(`${API}/${idOf(ref)}?${qs}`, { method: 'PATCH', headers: { 'content-type': 'application/json' }, body: '{}' });
+        return true;
+      });
+    },
     async putFile(folderPath, name, mime, body) {
       return withFolder(folderPath, async (parent) => {
         const boundary = 'b' + crypto.randomBytes(12).toString('hex');
@@ -439,6 +455,7 @@ const api = {
   get: (stored, opts) => resolve(stored).backend.get(resolve(stored).ref, opts),
   head: (stored) => resolve(stored).backend.head(resolve(stored).ref),
   trash: (stored) => resolve(stored).backend.trash(resolve(stored).ref),
+  move: (stored, folderPath) => resolve(stored).backend.move(resolve(stored).ref, folderPath),
   untrash: (stored, from) => resolve(stored).backend.untrash(resolve(stored).ref, from ? resolve(from).ref : undefined),
 };
 

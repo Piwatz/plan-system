@@ -311,7 +311,7 @@ test('สำรองข้อมูล: ได้ JSON ครบ 13 ตาร�
   assert.match(decodeURIComponent(r.headers.get('content-disposition')), /สำรองข้อมูลระบบส่งแผน_\d{4}-\d{2}-\d{2}\.json$/);
   const j = JSON.parse(await r.text());
   assert.equal(j.format, 'plan-system-backup');
-  assert.equal(j.schema_version, 4);
+  assert.equal(j.schema_version, 5);
   assert.deepEqual(Object.keys(j.tables), require('../src/backup').TABLES);
   assert.equal(Object.keys(j.tables).length, 13);
   assert.equal(j.tables.users.length, (await db.q.get('SELECT COUNT(*) AS n FROM users')).n);

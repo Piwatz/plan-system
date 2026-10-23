@@ -1,0 +1,16 @@
+<%# ตัวเลือกการโอนงาน (ฟังก์ชันเสริม transfer) ใช้ทั้งกล่องในหน้างานและหน้าโอนงาน · notes = จำนวนบันทึกหลังแผน (กล่องในหน้างาน) หรือ null %>
+<% const n = locals.notes; %>
+<div class="tf-opts">
+<div class="field">
+  <label>ชื่อบนบันทึกข้อความและแบบประเมิน</label>
+  <label class="check ls-mode"><input type="radio" name="name_mode" value="change" checked> <span><b>เปลี่ยนเป็นชื่อครูผู้รับ</b><span class="muted small">เอาลายเซ็นครูคนเดิมออก ครูผู้รับใส่ลายเซ็นของตัวเองในระบบภายหลัง หรือเซ็นด้วยมือ ลายเซ็นผู้ตรวจอยู่ครบ</span></span></label>
+  <label class="check ls-mode"><input type="radio" name="name_mode" value="keep"> <span><b>คงชื่อและลายเซ็นครูคนเดิม</b><span class="muted small">ย้ายแค่รายการงานไปอยู่กับครูผู้รับ เอกสารยังเป็นชื่อครูคนเดิม</span></span></label>
+</div>
+<div class="field">
+  <label>โอนไปด้วย</label>
+  <% if (n !== 0) { %><label class="check"><input type="checkbox" name="with_notes" value="1" checked> บันทึกหลังแผนของ<%= n ? 'แผนนี้ ' + n + ' ฉบับ' : 'แผนที่เลือก' %></label><% } %>
+  <label class="check"><input type="checkbox" name="with_teach" value="1" checked> รายวิชาที่สอน<%= locals.code ? ' ' + code : 'ของงานที่เลือก' %> ในภาคเรียนเดียวกัน</label>
+  <label class="check"><input type="checkbox" name="move_drive" value="1" checked> ย้ายไฟล์ใน Google Drive ไปโฟลเดอร์ของครูผู้รับ</label>
+  <label class="check"><input type="checkbox" name="notify" value="1" checked> แจ้งครูผู้รับว่าได้รับงาน</label>
+</div>
+</div>

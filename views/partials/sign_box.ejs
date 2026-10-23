@@ -7,7 +7,7 @@
   const by = st.review && st.review.action === 'override' ? st.review : null;
   const r = by ? null : st.review;
   const self = !r && !by && st.state === 'skipped';
-  const name = r ? r.user_name : self ? sub.teacher_name : '';
+  const name = r ? r.user_name : self ? sub.doc_name || sub.teacher_name : '';
   const sig = r ? r.signature : self ? sub.teacher_signature : null;
   const when = r ? r.created_at : self ? submitDate : null;
   const comment = r ? r.comment || (sub.doc_type === 'note' ? 'รับทราบ' : st.role === 'director' ? 'อนุญาต' : 'เห็นชอบ') : '';

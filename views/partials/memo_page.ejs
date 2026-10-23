@@ -14,7 +14,7 @@
   <div class="mrow subject"><b class="mk">เรื่อง</b><span>ขออนุญาตใช้<%= T.label %></span></div>
   <div class="mrow to"><b class="mk">เรียน</b><span>ผู้อำนวยการ<%= settings.school_name %></span></div>
 
-  <p class="indent">ตามที่ข้าพเจ้า <%= sub.teacher_name %> ตำแหน่ง <%= sub.teacher_position || 'ครู' %>  ได้จัดทำ<%= sub.doc_type === 'plan' ? 'แผนการจัดการเรียนรู้รายวิชา' : 'คู่มือรายวิชา' %><%= subj %> ระดับชั้น<%= gradeFull %> <%= deptFull %> ประจำ<%= term %> จำนวน 1 เล่ม</p>
+  <p class="indent">ตามที่ข้าพเจ้า <%= sub.doc_name || sub.teacher_name %> ตำแหน่ง <%= (sub.doc_name ? sub.doc_position : sub.teacher_position) || 'ครู' %>  ได้จัดทำ<%= sub.doc_type === 'plan' ? 'แผนการจัดการเรียนรู้รายวิชา' : 'คู่มือรายวิชา' %><%= subj %> ระดับชั้น<%= gradeFull %> <%= deptFull %> ประจำ<%= term %> จำนวน 1 เล่ม</p>
   <% if (sub.doc_type === 'plan') { %>
     <p class="indent">ข้าพเจ้าได้วิเคราะห์ผลการเรียนรู้ คำอธิบายรายวิชา โครงสร้างรายวิชา เพื่อจัดทำแผนการจัดการเรียนรู้รายหน่วยการเรียนรู้และรายคาบ ข้าพเจ้าจึงขออนุญาตใช้แผนการจัดการเรียนรู้รายวิชา<%= subj %> ตามเอกสารที่แนบมาพร้อมนี้เพื่อจัดการเรียนการสอนใน<%= term %> ต่อไป</p>
   <% } else { %>
@@ -24,8 +24,8 @@
 
   <div class="tsign">
     <div class="tsig"><% if (sub.teacher_signature) { %><img src="<%= sub.teacher_signature %>" alt="ลายเซ็นผู้สอน"><% } else if (ff.sigprint) { %><%# ยังไม่มีลายเซ็นผู้สอน (ฟังก์ชันเสริม sigprint) เว้นเส้นจุดให้เซ็นด้วยปากกา %><span class="tsig-dots">ลงชื่อ ..................................................</span><% } %></div>
-    <div>(<%= sub.teacher_name %>)</div>
-    <div>ตำแหน่ง <%= sub.teacher_position || 'ครู' %></div>
+    <div>(<%= sub.doc_name || sub.teacher_name %>)</div>
+    <div>ตำแหน่ง <%= (sub.doc_name ? sub.doc_position : sub.teacher_position) || 'ครู' %></div>
   </div>
 
   <div class="boxes">

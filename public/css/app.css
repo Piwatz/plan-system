@@ -1526,3 +1526,21 @@ dialog:has(> .fx-confetti) { overflow: visible; }
   .fx3 a.stat:hover, .fx3 .btn:not(:disabled):hover, .fx3 a.lib-cv:hover { transform: none; }
   .fx-confetti { display: none; }
 }
+
+/* โอนงานระหว่างครู (ฟังก์ชันเสริม transfer) กล่องในหน้างานและหน้า /admin/transfer */
+.tf-card > summary { cursor: pointer; list-style: none; display: flex; align-items: center; gap: 8px; }
+.tf-card > summary::-webkit-details-marker { display: none; }
+.tf-card > summary h3 { flex: 1; margin: 0; }
+.tf-card[open] > summary { margin-bottom: 10px; }
+.tf-opts .check { display: flex; margin: 0 0 8px; }
+.tf-pick { display: grid; grid-template-columns: 1fr auto 1fr; gap: 10px; align-items: end; }
+.tf-pick .field { margin: 0; }
+.tf-arrow { padding-bottom: 10px; color: var(--muted); }
+.tf-list { display: flex; flex-direction: column; gap: 8px; margin-bottom: 14px; }
+.tf-row { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; }
+.tf-name { flex: 1; min-width: 200px; }
+.tf-drive { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-top: 12px; padding-top: 10px; border-top: 1px dashed var(--line); }
+@media (max-width: 640px) {
+  .tf-pick { grid-template-columns: 1fr; }
+  .tf-arrow { justify-self: center; padding: 0; transform: rotate(90deg); }
+}

@@ -19,6 +19,7 @@ const library = require('../library');
 const precheck = require('../precheck');
 const docno = require('../docno');
 const trashbin = require('../trashbin');
+const transfer = require('../transfer');
 
 const router = express.Router();
 router.use(auth.requireLogin);
@@ -663,6 +664,7 @@ router.get('/s/:id', async (req, res) => {
   // ดึงทั้งเล่มกลับ: เจ้าของเล่ม มีแผ่นรอตรวจ และยังไม่มีผู้ตรวจลงนามแผ่นใดหลังส่งครั้งล่าสุด
   const pendingMine = req.ff.notebook && wf.isOwner(req.me, sub) ? notes.filter((n) => n.status === 'pending').map((n) => n.id) : [];
   const bookPull = (await wf.canWithdrawMany(pendingMine)) ? pendingMine.length : 0;
+  const tf = req.ff.transfer && req.me.is_admin && !wf.isOwner(req.me, sub) && WORK_TYPES.includes(sub.doc_type) ? await transfer.choices() : null;
   res.render('detail', {
     title: `${wf.DOC_TYPES[sub.doc_type].label} ${sub.subject_code}`,
     bookPull,
@@ -703,6 +705,9 @@ router.get('/s/:id', async (req, res) => {
     // งานของฉันที่ส่งตอนยังไม่มีลายเซ็น (ฟังก์ชันเสริม sigfill) มีปุ่มใส่ลายเซ็นของฉันในงานนี้
     // งานที่ผู้ดูแลระบบส่งแทน (sigconfirm) ปุ่มยืนยันงานนี้และใส่ลายเซ็น
     sigBlank: wf.isOwner(req.me, sub) ? sigBlankOf(req, await sigfill.blankWorks(req.me.id, sub.id)) : null,
+    // โอนงานนี้ให้ครูคนอื่น (ฟังก์ชันเสริม transfer) เฉพาะผู้ดูแลระบบ งานคู่มือหรือแผนของคนอื่น
+    transferTo: tf ? tf.teachers.filter((t) => t.id !== sub.teacher_id && t.id !== req.me.id) : null,
+    driveLeft: tf ? tf.driveLeft : 0,
   });
 });
 

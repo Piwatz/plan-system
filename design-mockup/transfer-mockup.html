@@ -1,0 +1,100 @@
+<!doctype html><html lang="th"><head><meta charset="utf-8"><title>โอนงานระหว่างครู</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai+Looped:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#EEF2F7;--surface:#fff;--ink:#0F1E33;--muted:#4E5F78;--line:#D6DEE9;--primary:#1D3A66;--soft:#E4ECF7;--accent:#E3A21A;--ok:#1B7343;--okbg:#E4F4EA;--wait:#875700;--waitbg:#FFF2DA;--back:#B0322A;--backbg:#FBE6E4;--gray:#5B6B80;--graybg:#EEF1F5}
+*{box-sizing:border-box}
+body{margin:0;background:#DCE3EC;font-family:'Noto Sans Thai Looped',sans-serif;color:var(--ink);width:1320px;padding:20px 22px 26px}
+h1{font-size:22px;margin:0 0 4px}.sub{color:var(--muted);margin:0 0 14px;font-size:14.5px}
+.wrap{display:grid;grid-template-columns:1fr 1fr;gap:24px;align-items:start}
+.opt{font-weight:700;font-size:18px;margin:0 0 4px}.opt span{display:inline-grid;place-items:center;width:30px;height:30px;border-radius:50%;background:var(--accent);color:#fff;margin-right:8px}
+.why{font-size:13.5px;color:var(--muted);margin:0 0 10px;min-height:60px}
+.scr{background:var(--bg);border-radius:14px;border:1px solid #c3ccd8;overflow:hidden}
+.bar{background:var(--primary);color:#fff;padding:10px 16px;font-weight:700;font-size:15px}
+.in{padding:14px}
+.card{background:var(--surface);border-radius:14px;padding:14px 16px;box-shadow:0 3px 10px rgba(15,30,51,.06);margin-bottom:12px}
+.ch{display:flex;align-items:center;gap:8px;margin-bottom:8px}.ch h3{margin:0;font-size:16.5px;flex:1}
+.bdg{font-size:12px;background:var(--waitbg);color:var(--wait);border-radius:8px;padding:2px 9px;font-weight:700}
+.m{color:var(--muted);font-size:13px}
+.lab{font-weight:600;font-size:14px;margin:10px 0 4px}
+.sel{border:1px solid var(--line);border-radius:10px;padding:8px 12px;font-size:14.5px;display:flex;justify-content:space-between;background:#fff}
+.chk{display:flex;gap:9px;align-items:flex-start;font-size:14px;margin:7px 0}
+.box{width:19px;height:19px;border-radius:5px;border:2px solid var(--primary);flex:none;margin-top:2px;display:grid;place-items:center;color:#fff;font-size:13px;font-weight:700}
+.box.on{background:var(--primary)}
+.rad{width:19px;height:19px;border-radius:50%;border:2px solid var(--primary);flex:none;margin-top:2px;display:grid;place-items:center}
+.rad.on::after{content:'';width:9px;height:9px;border-radius:50%;background:var(--primary)}
+.btn{display:inline-flex;align-items:center;justify-content:center;background:var(--primary);color:#fff;border-radius:10px;padding:9px 16px;font-weight:700;font-size:14px}
+.btn.warn{background:var(--accent);color:#2a1d00}
+.info{background:var(--soft);border-radius:10px;padding:8px 11px;font-size:13px;color:var(--primary);margin-top:8px}
+.head{font-size:19px;font-weight:700;margin:0 0 2px}
+.row{display:grid;grid-template-columns:26px 1fr auto;gap:8px;align-items:center;border-top:1px solid var(--line);padding:8px 0;font-size:14px}
+.chip{font-size:12px;border-radius:20px;padding:2px 10px;font-weight:600;white-space:nowrap}
+.ok{background:var(--okbg);color:var(--ok)}.wait{background:var(--waitbg);color:var(--wait)}
+.arrow{display:grid;grid-template-columns:1fr 30px 1fr;gap:8px;align-items:end}
+.arrow .x{text-align:center;font-size:22px;color:var(--muted);padding-bottom:6px}
+.res{border-left:5px solid var(--ok);background:var(--okbg);border-radius:10px;padding:9px 12px;font-size:13.5px;margin-top:8px}
+.hist{font-size:13px;border-top:1px dashed var(--line);padding:6px 0}
+.sec{font-weight:700;font-size:15px;margin:16px 0 6px;color:var(--primary)}
+</style></head><body>
+<h1>โอนงานระหว่างครู ภาพตัวอย่าง 2 แบบ</h1>
+<p class="sub">ข้อมูลในภาพเป็นชื่อสมมติ · ทั้งสองแบบมีตัวเลือกเหมือนกัน (ชื่อบนเอกสาร บันทึกหลังแผน รายวิชาที่สอน ไฟล์ใน Drive แจ้งครูผู้รับ) ต่างกันที่ตำแหน่งปุ่มและจำนวนงานที่โอนได้ในครั้งเดียว</p>
+<div class="wrap">
+
+<div>
+  <p class="opt"><span>ก</span>กล่องในหน้างาน โอนทีละงาน</p>
+  <p class="why">ผู้ดูแลเปิดงานที่ต้องการ เลื่อนลงมาจะเห็นกล่อง โอนงานนี้ให้ครูคนอื่น ใต้เครื่องมือผู้ดูแลระบบ เหมาะเมื่อโอนไม่กี่งาน</p>
+  <div class="scr"><div class="bar">แผนการจัดการเรียนรู้ ว31201 ฟิสิกส์ 1</div><div class="in">
+    <div class="card"><div class="m">ครูผู้ส่ง นางสาวสมใจ ทดลองสอน (ครูสอนแทน) · ผ่านครบแล้ว 92 คะแนน ดีมาก</div></div>
+    <div class="card">
+      <div class="ch"><h3>โอนงานนี้ให้ครูคนอื่น</h3><span class="bdg">เฉพาะผู้ดูแลระบบเห็น</span></div>
+      <div class="lab">โอนให้ครู</div>
+      <div class="sel"><span>นายสมมติ ใจดี (วิทยาศาสตร์และเทคโนโลยี)</span><span>▾</span></div>
+      <div class="lab">ชื่อบนบันทึกข้อความ</div>
+      <div class="chk"><span class="rad on"></span><span><b>เปลี่ยนเป็นชื่อครูผู้รับ</b><br><span class="m">ลายเซ็นครูคนเดิมถูกเอาออก ครูผู้รับเซ็นในระบบภายหลัง หรือเซ็นมือ ลายเซ็นผู้ตรวจอยู่ครบ</span></span></div>
+      <div class="chk"><span class="rad"></span><span>คงชื่อและลายเซ็นครูคนเดิม ย้ายแค่รายการงาน</span></div>
+      <div class="lab">โอนไปด้วย</div>
+      <div class="chk"><span class="box on">✓</span><span>บันทึกหลังแผนของแผนนี้ 6 ฉบับ</span></div>
+      <div class="chk"><span class="box on">✓</span><span>รายวิชาที่สอน ว31201 ในภาค 2/2569</span></div>
+      <div class="chk"><span class="box on">✓</span><span>ย้ายไฟล์ใน Google Drive ไปโฟลเดอร์ของครูผู้รับ</span></div>
+      <div class="chk"><span class="box on">✓</span><span>แจ้งครูผู้รับว่าได้รับงานนี้</span></div>
+      <div style="margin-top:10px"><span class="btn warn">โอนงาน</span></div>
+      <div class="info">กดแล้วมีป๊อปถามยืนยันก่อน ระบบจดลงประวัติงานและบันทึกการใช้งานเสมอ</div>
+    </div>
+    <div class="sec">หลังโอน ประวัติงานจะมีแถวนี้</div>
+    <div class="card">
+      <div class="hist"><b>ผู้ดูแลระบบ</b> โอนงานจาก นางสาวสมใจ ทดลองสอน ให้ นายสมมติ ใจดี พร้อมบันทึกหลังแผน 6 ฉบับ · 23 ต.ค. 2569 14:05</div>
+    </div>
+  </div></div>
+</div>
+
+<div>
+  <p class="opt"><span>ข</span>หน้าโอนงาน เลือกครูแล้วติ๊กได้หลายงาน</p>
+  <p class="why">เมนูผู้ดูแลระบบมีหน้า โอนงานระหว่างครู เลือกครูต้นทางกับครูผู้รับ ระบบแสดงงานทั้งหมดของภาคนั้นให้ติ๊ก เหมาะเมื่อครูสอนแทนส่งไว้หลายงานแล้วครูเจ้าของวิชากลับมา โอนครั้งเดียวจบ</p>
+  <div class="scr"><div class="bar">โอนงานระหว่างครู</div><div class="in">
+    <div class="card">
+      <div class="arrow">
+        <div><div class="lab" style="margin-top:0">จากครู</div><div class="sel"><span>นางสาวสมใจ ทดลองสอน</span><span>▾</span></div></div>
+        <div class="x">→</div>
+        <div><div class="lab" style="margin-top:0">ให้ครู</div><div class="sel"><span>นายสมมติ ใจดี</span><span>▾</span></div></div>
+      </div>
+      <div class="lab">งานภาค 2/2569 ของนางสาวสมใจ ทดลองสอน</div>
+      <div class="row"><span class="box on">✓</span><span>คู่มือรายวิชา ว31201 ฟิสิกส์ 1</span><span class="chip ok">ผ่านครบ</span></div>
+      <div class="row"><span class="box on">✓</span><span>แผนการจัดการเรียนรู้ ว31201 ฟิสิกส์ 1 <span class="m">บันทึกหลังแผน 6 ฉบับ</span></span><span class="chip ok">ผ่านครบ</span></div>
+      <div class="row"><span class="box on">✓</span><span>คู่มือรายวิชา ว32202 ฟิสิกส์ 3</span><span class="chip wait">รอรองผู้อำนวยการ</span></div>
+      <div class="row"><span class="box"></span><span>คู่มือรายวิชา ว30101 วิทยาศาสตร์กายภาพ</span><span class="chip wait">รอหัวหน้ากลุ่มสาระ</span></div>
+      <div class="lab">ชื่อบนบันทึกข้อความ</div>
+      <div class="chk"><span class="rad on"></span><span><b>เปลี่ยนเป็นชื่อครูผู้รับ</b> <span class="m">เอาลายเซ็นครูคนเดิมออก ลายเซ็นผู้ตรวจอยู่ครบ</span></span></div>
+      <div class="chk"><span class="rad"></span><span>คงชื่อและลายเซ็นครูคนเดิม</span></div>
+      <div class="lab">โอนไปด้วย</div>
+      <div class="chk"><span class="box on">✓</span><span>บันทึกหลังแผนของแผนที่เลือก</span></div>
+      <div class="chk"><span class="box on">✓</span><span>รายวิชาที่สอนของงานที่เลือก</span></div>
+      <div class="chk"><span class="box on">✓</span><span>ย้ายไฟล์ใน Google Drive ไปโฟลเดอร์ของครูผู้รับ</span></div>
+      <div class="chk"><span class="box on">✓</span><span>แจ้งครูผู้รับ</span></div>
+      <div style="margin-top:10px"><span class="btn warn">โอน 3 งาน</span></div>
+    </div>
+    <div class="res">โอนแล้ว 3 งาน ให้ นายสมมติ ใจดี · ย้ายไฟล์ใน Drive สำเร็จ 3 ไฟล์</div>
+  </div></div>
+</div>
+
+</div>
+<p class="sub" style="margin-top:14px">เลือกได้ทั้งสองแบบพร้อมกัน แบบ ก ในหน้างานมีลิงก์ไปหน้า แบบ ข ด้วยก็ได้</p>
+</body></html>

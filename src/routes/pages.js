@@ -657,3 +657,6 @@ module.exports.subjectRows = subjectRows;
 module.exports.cell = cell;
 module.exports.registryScope = registryScope;
 module.exports.currentTerm = currentTerm;
+module.exports.term = term;
+module.exports.withCurrent = withCurrent;
+module.exports.termOptions = termOptions;

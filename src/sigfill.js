@@ -1,5 +1,6 @@
 // งานที่ครูส่งไปตอนยังไม่มีลายเซ็น (submissions.teacher_signature ว่าง) ฟังก์ชันเสริม sigfill sigfillauto siglist
 // เติมได้เฉพาะลายเซ็นของเจ้าของงานเอง จากข้อมูลส่วนตัวของผู้ใช้คนนั้น ผู้ดูแลระบบใส่ลายเซ็นแทนครูไม่ได้ (เอกสารราชการ)
+// งานที่โอนมาแบบคงชื่อครูคนเดิม (doc_name) เอกสารเป็นชื่อคนอื่น ไม่เติมลายเซ็นของเจ้าของงานคนใหม่
 const { q } = require('./db');
 
 // งานที่ผู้ดูแลระบบส่งแทนครู: การส่งครั้งล่าสุดไม่ใช่เจ้าของงาน (ฟังก์ชันเสริม sigconfirm ครูต้องเปิดหน้างานแล้วกดยืนยันเอง)
@@ -9,7 +10,7 @@ const PROXY = `COALESCE((SELECT r.user_id FROM reviews r WHERE r.submission_id =
 async function blankWorks(userId, subId = null) {
   return q.all(
     `SELECT s.id, s.doc_type, s.subject_code, s.subject_name, s.plan_no, s.topic, (${PROXY}) AS proxy
-     FROM submissions s WHERE s.teacher_id = ? AND s.status <> 'draft' AND (s.teacher_signature IS NULL OR s.teacher_signature = '')
+     FROM submissions s WHERE s.teacher_id = ? AND s.status <> 'draft' AND s.doc_name = '' AND (s.teacher_signature IS NULL OR s.teacher_signature = '')
      ${subId == null ? '' : 'AND s.id = ?'} ORDER BY s.id`,
     userId,
     ...(subId == null ? [] : [subId])
@@ -21,7 +22,7 @@ async function fill(userId, subId = null, { skipProxy = false } = {}) {
   const rows = await q.all(
     `UPDATE submissions s SET teacher_signature = u.signature FROM users u
      WHERE u.id = s.teacher_id AND s.teacher_id = ? AND u.signature IS NOT NULL AND u.signature <> ''
-       AND s.status <> 'draft' AND (s.teacher_signature IS NULL OR s.teacher_signature = '')
+       AND s.status <> 'draft' AND s.doc_name = '' AND (s.teacher_signature IS NULL OR s.teacher_signature = '')
        ${subId == null ? '' : 'AND s.id = ?'} ${skipProxy ? `AND NOT (${PROXY})` : ''}
      RETURNING s.id`,
     userId,
@@ -44,7 +45,7 @@ async function missingList() {
     `SELECT u.id, u.full_name, d.name AS dept, COUNT(s.id)::int AS n,
        (u.signature IS NOT NULL AND u.signature <> '') AS has_sig, COUNT(s.id) FILTER (WHERE ${PROXY})::int AS proxy_n
      FROM submissions s JOIN users u ON u.id = s.teacher_id LEFT JOIN departments d ON d.id = u.department_id
-     WHERE s.status <> 'draft' AND (s.teacher_signature IS NULL OR s.teacher_signature = '') AND u.is_active = 1
+     WHERE s.status <> 'draft' AND s.doc_name = '' AND (s.teacher_signature IS NULL OR s.teacher_signature = '') AND u.is_active = 1
      GROUP BY u.id, u.full_name, d.name, u.signature
      ORDER BY d.name NULLS LAST, u.full_name`
   );

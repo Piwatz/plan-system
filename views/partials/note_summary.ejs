@@ -28,7 +28,7 @@
   <%- include('qr_corner', { qr: items[0].qr }) %>
   <h2 class="doc">บันทึกหลังแผนการจัดการเรียนรู้ หน้ารวมลงนาม</h2>
   <div class="center">รายวิชา<%= first.subject_name %> รหัสวิชา <%= first.subject_code %> ชั้น <%= items[0].gradeFull %> ภาคเรียนที่ <%= first.semester %> ปีการศึกษา <%= first.academic_year %></div>
-  <div class="center">ครูผู้สอน <%= first.teacher_name %> <%= first.dept_name ? items[0].deptFull : '' %></div>
+  <div class="center">ครูผู้สอน <%= first.doc_name || first.teacher_name %> <%= first.dept_name ? items[0].deptFull : '' %></div>
   <table class="grid sum">
     <thead><tr><th style="width:14mm">แผนที่</th><th>เรื่อง</th><th style="width:30mm">วันที่สอน</th><th style="width:48mm">ความเห็น</th></tr></thead>
     <tbody>

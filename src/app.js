@@ -198,6 +198,7 @@ function createApp(options = {}) {
   app.use(require('./routes/library'));
   app.use(require('./routes/work'));
   app.use('/admin', require('./routes/ttimport'));
+  app.use('/admin', require('./routes/transfer'));
   app.use('/admin', require('./routes/admin'));
 
   app.use((req, res) => {
