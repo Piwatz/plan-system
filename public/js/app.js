@@ -2439,6 +2439,47 @@
   document.querySelectorAll('input[name=plan_scope]').forEach((r) => r.addEventListener('change', applyScope));
   applyScope();
 
+  // ---------- จำนวนนักเรียนแยกรายห้อง (ฟังก์ชันเสริม noterooms) ----------
+  // แถวเดียวไม่ใส่ห้อง = ยอดรวม · เพิ่มห้องคัดลอกแถวสุดท้ายแบบว่าง · สรุปยอดรวมใต้ตาราง (เซิร์ฟเวอร์คิดซ้ำตอนบันทึก)
+  document.querySelectorAll('[data-rooms]').forEach((grid) => {
+    const card = grid.parentElement;
+    const add = card.querySelector('[data-room-add]');
+    const sum = card.querySelector('[data-room-sum]');
+    const rows = () => [...grid.querySelectorAll('[data-room-row]')];
+    const num = (el) => (el.value.trim() === '' ? null : Number(el.value));
+    function update() {
+      const list = rows();
+      list.forEach((r) => (r.querySelector('[data-room-del]').hidden = list.length < 2));
+      if (add) add.hidden = list.length >= Number(add.dataset.max || 20);
+      const filled = list.map((r) => ({ total: num(r.querySelector('[name=room_total]')), passed: num(r.querySelector('[name=room_passed]')) })).filter((x) => x.total != null);
+      if (!sum) return;
+      sum.hidden = !filled.length;
+      if (!filled.length) return;
+      const total = filled.reduce((a, x) => a + x.total, 0);
+      const done = filled.every((x) => x.passed != null);
+      const passed = filled.reduce((a, x) => a + (x.passed || 0), 0);
+      const head = (list.length > 1 ? 'รวม ' + list.length + ' ห้อง ' : '') + 'นักเรียน ' + total + ' คน';
+      sum.textContent = done ? head + ' ผ่าน ' + passed + ' คน' + (total ? ' (' + Math.round((passed / total) * 100) + '%)' : '') : head + ' ยังกรอกจำนวนที่ผ่านไม่ครบทุกห้อง';
+    }
+    if (add)
+      add.addEventListener('click', () => {
+        const last = rows().pop();
+        const row = last.cloneNode(true);
+        row.querySelectorAll('input').forEach((i) => (i.value = ''));
+        last.after(row);
+        row.querySelector('input').focus();
+        update();
+      });
+    grid.addEventListener('click', (e) => {
+      const del = e.target.closest('[data-room-del]');
+      if (!del || rows().length < 2) return;
+      del.closest('[data-room-row]').remove();
+      update();
+    });
+    grid.addEventListener('input', update);
+    update();
+  });
+
   // ---------- เปิดไฟล์ในกรอบดูไฟล์ ----------
   // ปุ่มเลือกไฟล์ และปุ่ม "เปิดดู" ในรายการไฟล์ เปิดไฟล์ในกรอบแสดงไฟล์ของหน้านี้ (ไม่ดาวน์โหลด)
   document.querySelectorAll('[data-view-file]').forEach((b) =>

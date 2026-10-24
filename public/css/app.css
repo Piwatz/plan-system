@@ -1307,6 +1307,13 @@ a.lib-cv:hover .lib-cover { box-shadow: 0 0 0 3px var(--primary); }
 .memo-box .mb-t { flex-basis: 100%; display: flex; align-items: center; gap: 6px; }
 .memo-box .mb-no { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin: 0; }
 .memo-box .mb-no .docno-in { width: 210px; }
+/* จำนวนนักเรียนแยกรายห้อง ในฟอร์มบันทึกหลังแผน (ฟังก์ชันเสริม noterooms) */
+.room-grid { display: grid; gap: 8px; margin-bottom: 8px; }
+.room-row { display: grid; grid-template-columns: 1.2fr 1fr 1fr 40px; gap: 8px; align-items: center; }
+.room-row input { min-width: 0; }
+.room-head { font-weight: 700; font-size: .92rem; }
+.room-sum { margin: 10px 0 0; }
+@media (max-width: 480px) { .room-row { grid-template-columns: 1fr 1fr 1fr 36px; gap: 6px; } .room-head { font-size: .8rem; } }
 .docno-in:focus-within { outline: 2px solid var(--primary); outline-offset: 1px; }
 /* ปุ่มพิมพ์ในรายการงาน (printrow) */
 .my-print { display: flex; flex-wrap: wrap; gap: 6px; justify-content: flex-end; margin-top: 6px; white-space: normal; }

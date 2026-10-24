@@ -20,6 +20,7 @@ const precheck = require('../precheck');
 const docno = require('../docno');
 const notememo = require('../notememo');
 const planrange = require('../planrange');
+const rooms = require('../rooms');
 const trashbin = require('../trashbin');
 const transfer = require('../transfer');
 
@@ -223,6 +224,7 @@ const NOTE_COLS = [
   'students_total',
   'students_passed',
   'note_mode',
+  'student_rooms',
 ];
 
 function noteFields(b, ff) {
@@ -233,6 +235,11 @@ function noteFields(b, ff) {
     f.plan_no = scope === 'book' ? planrange.BOOK : planrange.fromForm(b.plan_from, b.plan_to);
     Object.assign(f, { unit_no: '', unit_name: '', hours: '', teach_date: '' });
   } else if (planrange.scopeOf(f.plan_no) !== 'one') f.plan_no = '';
+  // จำนวนนักเรียนแยกรายห้อง (ฟังก์ชันเสริม noterooms) ยอดรวมลงช่องเดิม
+  if (ff.noterooms && (b.room_total !== undefined || b.room_name !== undefined)) {
+    const r = rooms.fromForm(b);
+    Object.assign(f, { students_total: r.total, students_passed: r.passed, student_rooms: r.rooms });
+  }
   return f;
 }
 
@@ -253,6 +260,7 @@ function noteFieldsRaw(b, ff) {
     suggestions: str(b.suggestions),
     students_total: intOrNull(b.students_total),
     students_passed: intOrNull(b.students_passed),
+    student_rooms: '',
   };
 }
 
@@ -268,7 +276,9 @@ async function missingForSubmit(sub, ff, { proxy = false } = {}) {
       else if (ff.notepdf && cur.some((x) => x.mime !== 'application/pdf')) miss.push('ไฟล์ PDF แทนไฟล์ Word หรือรูปภาพที่แนบไว้');
     } else if (!sub.result_k && !sub.result_p && !sub.result_a) miss.push('ผลการจัดการเรียนรู้อย่างน้อย 1 ด้าน');
     if (ff.counts && (sub.students_total == null || sub.students_passed == null)) miss.push('จำนวนนักเรียนทั้งหมดและจำนวนที่ผ่านจุดประสงค์');
-    if (sub.students_total != null && sub.students_passed != null && sub.students_passed > sub.students_total) {
+    const over = rooms.overflow(sub.student_rooms);
+    if (over.length) miss.push(`จำนวนที่ผ่านต้องไม่มากกว่าจำนวนนักเรียน ห้อง ${over.map((r) => r.room || '').join(' ')}`.trim());
+    else if (sub.students_total != null && sub.students_passed != null && sub.students_passed > sub.students_total) {
       miss.push('จำนวนนักเรียนที่ผ่านเกณฑ์ต้องไม่มากกว่าจำนวนทั้งหมด');
     }
   } else {
@@ -552,6 +562,10 @@ router.get('/notes/new', async (req, res) => {
   const maxNo = nos.length ? Math.max(...nos) : 0;
   const sub = { plan_no: String(maxNo + 1), note_mode: last && req.ff.notefile ? last.note_mode : 'type' };
   if (last) Object.assign(sub, { unit_no: last.unit_no, unit_name: last.unit_name, class_room: last.class_room, hours: last.hours, students_total: last.students_total });
+  // ห้องและจำนวนนักเรียนตั้งต้นจากฉบับก่อน ช่องผ่านเว้นว่างให้กรอกใหม่ (ฟังก์ชันเสริม noterooms)
+  if (last && req.ff.noterooms && last.student_rooms) {
+    sub.student_rooms = JSON.stringify(rooms.parse(last.student_rooms).map((r) => ({ room: r.room, total: r.total, passed: null })));
+  }
   res.render('note_form', { title: 'เขียนบันทึกหลังแผน', plan, sub, files: [], isNew: true, ...(await noteHelpers(req, plan.id, 0)) });
 });
 

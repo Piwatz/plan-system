@@ -43,7 +43,7 @@ const SUB_COLUMNS = [
   'grade_level', 'teaching_methods', 'link_url', 'doc_no', 'plan_no', 'topic', 'unit_no', 'unit_name', 'hours', 'class_room',
   'teach_date', 'result_k', 'result_p', 'result_a', 'problems', 'suggestions', 'students_total', 'students_passed', 'status',
   'current_role', 'returned_role', 'score_total', 'score_max', 'score_detail', 'score_role', 'created_at', 'submitted_at',
-  'updated_at', 'completed_at', 'note_mode', 'verify_code', 'doc_name', 'doc_position',
+  'updated_at', 'completed_at', 'note_mode', 'verify_code', 'doc_name', 'doc_position', 'student_rooms',
 ];
 const REVIEW_COLUMNS = [
   'id', 'submission_id', 'role', 'step_label', 'user_id', 'user_name', 'user_position', 'action', 'comment',

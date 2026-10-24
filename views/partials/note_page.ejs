@@ -38,7 +38,7 @@
     <% } %>
   <% } %>
   <% if (sub.students_total != null) { %>
-    <div class="text" style="margin-top:4px">นักเรียนทั้งหมด <%= sub.students_total %> คน ผ่านเกณฑ์ <%= sub.students_passed ?? '-' %> คน<%= sub.students_total ? ' คิดเป็นร้อยละ ' + ((sub.students_passed || 0) / sub.students_total * 100).toFixed(2) : '' %></div>
+    <div class="text" style="margin-top:4px">นักเรียนทั้งหมด <%= sub.students_total %> คน ผ่านเกณฑ์ <%= sub.students_passed ?? '-' %> คน<%= sub.students_total ? ' คิดเป็นร้อยละ ' + ((sub.students_passed || 0) / sub.students_total * 100).toFixed(2) : '' %><% if (sub.student_rooms) { %> (รายห้อง ผ่าน/ทั้งหมด <%= rooms.parse(sub.student_rooms).map((r) => (r.room || 'ห้องไม่ระบุ') + ' ' + (r.passed ?? '-') + '/' + (r.total ?? '-')).join('  ') %>)<% } %></div>
   <% } %>
   <% if (!isFile) { %>
     <div class="sec">ปัญหา / อุปสรรค / แนวทางแก้ไข</div><div class="text"><%= sub.problems || '-' %></div>

@@ -140,6 +140,24 @@
         <b>จำนวนนักเรียน</b>
         <span class="badge <%= ff.counts ? 'badge-red' : 'badge-gray' %>"><%= ff.counts ? 'ต้องกรอก' : 'ไม่บังคับ' %></span>
       </div>
+      <% if (ff.noterooms) { %>
+        <%# จำนวนนักเรียนแยกรายห้อง (ฟังก์ชันเสริม noterooms) แถวเดียวไม่ใส่ห้อง = ยอดรวม กด เพิ่มห้อง แยกทีละห้อง app.js บวกยอดรวมให้ดู %>
+        <% let roomRows = rooms.parse(sub.student_rooms); if (!roomRows.length) roomRows = [{ room: '', total: sub.students_total, passed: sub.students_passed }]; %>
+        <div class="room-grid" data-rooms>
+          <div class="room-row room-head" aria-hidden="true"><span>ห้อง</span><span>นักเรียน (คน)</span><span>ผ่านจุดประสงค์ (คน)</span><span></span></div>
+          <% roomRows.forEach((r, i) => { %>
+            <div class="room-row" data-room-row>
+              <input type="text" name="room_name" value="<%= r.room || '' %>" maxlength="30" placeholder="เช่น ม.5/1 (ไม่ใส่ก็ได้)" aria-label="ห้อง">
+              <input type="number" min="0" name="room_total" value="<%= r.total ?? '' %>" inputmode="numeric" aria-label="จำนวนนักเรียน">
+              <input type="number" min="0" name="room_passed" value="<%= r.passed ?? '' %>" inputmode="numeric" aria-label="จำนวนที่ผ่านจุดประสงค์">
+              <button type="button" class="btn btn-ghost btn-sm" data-room-del aria-label="ลบห้องนี้"<%= roomRows.length > 1 ? '' : ' hidden' %>><%- icon('close', 16) %></button>
+            </div>
+          <% }) %>
+        </div>
+        <button type="button" class="btn btn-soft btn-sm" data-room-add data-max="<%= rooms.MAX_ROOMS %>"><%- icon('plus', 16) %> เพิ่มห้อง</button>
+        <div class="alert alert-info room-sum" data-room-sum hidden></div>
+        <p class="hint" style="margin:8px 0 0">สอนหลายห้อง กรอกยอดรวมทุกห้องในแถวเดียวได้ หรือกด เพิ่มห้อง แยกทีละห้อง ระบบรวมยอดให้เอง</p>
+      <% } else { %>
       <div class="form-grid">
         <div class="field" style="margin:0">
           <label for="students_total">ทั้งห้อง (คน)</label>
@@ -151,6 +169,7 @@
         </div>
       </div>
       <p class="hint" style="margin:8px 0 0">ระบบคิดร้อยละให้เอง ใช้ทำกราฟผลการสอนรายแผนของครู</p>
+      <% } %>
     </div>
 
     <h2 style="margin-top:12px" data-mode="type" <%= fileMode ? 'hidden' : '' %>>รูปภาพหรือไฟล์ประกอบ</h2>

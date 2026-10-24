@@ -118,13 +118,17 @@ create table if not exists submissions (
   cover_ref text collate "C",
   -- ชื่อและตำแหน่งครูที่พิมพ์บนเอกสาร เมื่อผู้ดูแลระบบโอนงานแบบคงชื่อครูคนเดิม (ฟังก์ชันเสริม transfer) ว่าง = ใช้ชื่อครูเจ้าของงาน
   doc_name text collate "C" not null default '',
-  doc_position text collate "C" not null default ''
+  doc_position text collate "C" not null default '',
+  -- จำนวนนักเรียนรายห้องของบันทึกหลังแผน (ฟังก์ชันเสริม noterooms) JSON [{"room","total","passed"}] ว่าง = กรอกยอดรวมแถวเดียว
+  student_rooms text collate "C" not null default ''
 );
 -- ฐานที่สร้างก่อนรุ่น 2 (ในเครื่อง) เติมคอลัมน์ปก · เว็บจริงรัน db/migrations/002_ปกคลังงาน.sql
 alter table submissions add column if not exists cover_ref text collate "C";
 -- ฐานที่สร้างก่อนรุ่น 5 เติมชื่อบนเอกสาร · เว็บจริงรัน db/migrations/005_โอนงาน.sql
 alter table submissions add column if not exists doc_name text collate "C" not null default '';
 alter table submissions add column if not exists doc_position text collate "C" not null default '';
+-- ฐานที่สร้างก่อนรุ่น 6 เติมนักเรียนรายห้อง · เว็บจริงรัน db/migrations/006_นักเรียนรายห้อง.sql
+alter table submissions add column if not exists student_rooms text collate "C" not null default '';
 create index if not exists idx_sub_teacher on submissions (teacher_id);
 create index if not exists idx_sub_status on submissions (status, "current_role");
 create index if not exists idx_sub_term on submissions (academic_year, semester);
@@ -274,5 +278,5 @@ create table if not exists trash_log (
 );
 create index if not exists idx_trash_at on trash_log (deleted_at);
 
-insert into schema_version (version) select 5 where not exists (select 1 from schema_version);
-update schema_version set version = 5 where version < 5;
+insert into schema_version (version) select 6 where not exists (select 1 from schema_version);
+update schema_version set version = 6 where version < 6;

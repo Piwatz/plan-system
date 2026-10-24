@@ -196,3 +196,51 @@ test('แนบไฟล์ 1 ไฟล์ แผนเดียว หลาย
   assert.doesNotMatch((await t.get(`/notes/new?plan=${planId}`)).text, /name="plan_scope"/);
   await admin.post('/admin/features/notewhole', { on: '1' });
 });
+
+test('จำนวนนักเรียนแยกรายห้อง (noterooms): แถวเดียวเป็นยอดรวม หลายห้องบวกให้ ฉบับต่อไปห้องขึ้นเอง ปิดสวิตช์ใช้ช่องเดิม', async () => {
+  const rooms = require('../src/rooms');
+  assert.deepEqual(rooms.fromForm({ room_name: '', room_total: '114', room_passed: '96' }), { rooms: '', total: 114, passed: 96 });
+  const two = rooms.fromForm({ room_name: ['ม.5/1', 'ม.5/2', ''], room_total: ['38', '๔๐', ''], room_passed: ['30', '35', ''] });
+  assert.equal(two.total, 78);
+  assert.equal(two.passed, 65);
+  assert.equal(rooms.parse(two.rooms).length, 2, 'แถวว่างตัดทิ้ง');
+  assert.equal(rooms.fromForm({ room_name: ['a', 'b'], room_total: ['10', '10'], room_passed: ['5', ''] }).passed, null, 'ห้องไหนยังไม่กรอกที่ผ่าน ยอดผ่านยังไม่นับ');
+
+  const t = await as('teacher');
+  const planId = await planOf('ว30203');
+  const newest = () => db.q.get("SELECT * FROM submissions WHERE parent_id = ? AND doc_type = 'note' ORDER BY id DESC LIMIT 1", planId);
+  const base = { plan_id: String(planId), note_mode: 'type', plan_no: '30', result_k: 'x', action: 'draft' };
+  const f = new URLSearchParams(base);
+  for (const [r, a, p] of [['ม.5/1', '38', '30'], ['ม.5/2', '40', '45']]) {
+    f.append('room_name', r);
+    f.append('room_total', a);
+    f.append('room_passed', p);
+  }
+  await t.req('POST', '/notes', f);
+  let n = await newest();
+  assert.equal(n.students_total, 78);
+  assert.equal(n.students_passed, 75);
+  assert.equal(rooms.parse(n.student_rooms)[1].room, 'ม.5/2');
+  const page = (await t.get(`/s/${n.id}`)).text;
+  assert.match(page, /รายห้อง \(ผ่าน\/ทั้งหมด\) ม.5\/1 30\/38  ม.5\/2 45\/40/);
+
+  // ฉบับต่อไป ห้องและจำนวนนักเรียนขึ้นเอง ช่องผ่านว่าง
+  const form = (await t.get(`/notes/new?plan=${planId}`)).text;
+  assert.match(form, /name="room_name" value="ม.5\/1"/);
+  assert.match(form, /name="room_name" value="ม.5\/2"[\s\S]*?name="room_total" value="40"[\s\S]*?name="room_passed" value=""/);
+
+  // แถวเดียวไม่ใส่ห้อง = ยอดรวม ไม่เก็บรายห้อง
+  await t.post('/notes', { ...base, plan_no: '31', room_name: '', room_total: '114', room_passed: '96' });
+  n = await newest();
+  assert.equal(n.students_total, 114);
+  assert.equal(n.student_rooms, '');
+
+  const admin = await as('admin');
+  await admin.post('/admin/features/noterooms', { on: '0' });
+  const off = (await t.get(`/notes/new?plan=${planId}`)).text;
+  assert.doesNotMatch(off, /name="room_name"/);
+  assert.match(off, /name="students_total"/);
+  await t.post('/notes', { ...base, plan_no: '32', students_total: '30', students_passed: '20' });
+  assert.equal((await newest()).students_total, 30);
+  await admin.post('/admin/features/noterooms', { on: '1' });
+});

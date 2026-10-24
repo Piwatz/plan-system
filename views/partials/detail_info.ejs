@@ -9,7 +9,7 @@
       <div><dt>จำนวนชั่วโมง</dt><dd><%= sub.hours || '-' %></dd></div>
       <div><dt>ชั้น หรือห้องที่สอน</dt><dd><%= sub.class_room || '-' %></dd></div>
       <div><dt>วันที่สอน</dt><dd><%= util.thaiDate(sub.teach_date) || '-' %></dd></div>
-      <% if (sub.students_total != null) { %><div><dt>นักเรียนผ่านเกณฑ์</dt><dd><%= sub.students_passed ?? '-' %> จาก <%= sub.students_total %> คน<%= sub.students_total ? ' (ร้อยละ ' + Math.round((sub.students_passed || 0) / sub.students_total * 100) + ')' : '' %></dd></div><% } %>
+      <% if (sub.students_total != null) { %><div><dt>นักเรียนผ่านเกณฑ์</dt><dd><%= sub.students_passed ?? '-' %> จาก <%= sub.students_total %> คน<%= sub.students_total ? ' (ร้อยละ ' + Math.round((sub.students_passed || 0) / sub.students_total * 100) + ')' : '' %><% if (sub.student_rooms) { %><br><small class="muted">รายห้อง (ผ่าน/ทั้งหมด) <%= rooms.parse(sub.student_rooms).map((r) => (r.room || 'ห้องไม่ระบุ') + ' ' + (r.passed ?? '-') + '/' + (r.total ?? '-')).join('  ') %></small><% } %></dd></div><% } %>
     <% } else { %>
       <div><dt>เลขที่บันทึกข้อความ</dt><dd><%= sub.doc_no || '-' %></dd></div>
       <div><dt>วันที่ส่ง</dt><dd><%= util.thaiDateTime(sub.submitted_at) || '-' %></dd></div>

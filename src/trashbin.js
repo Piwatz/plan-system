@@ -11,7 +11,7 @@ const KEEP_DAYS = 30;
 const DAY = 24 * 60 * 60 * 1000;
 
 // ช่องของงานที่จดไว้ใช้กู้กลับเป็นฉบับร่าง (สถานะ คะแนน ลายเซ็น ไม่จด ต้องตรวจใหม่)
-const SNAP = ['doc_type', 'parent_id', 'teacher_id', 'department_id', 'academic_year', 'semester', 'subject_code', 'subject_name', 'grade_level', 'teaching_methods', 'link_url', 'doc_no', 'plan_no', 'topic', 'unit_no', 'unit_name', 'hours', 'class_room', 'teach_date', 'result_k', 'result_p', 'result_a', 'problems', 'suggestions', 'students_total', 'students_passed', 'note_mode'];
+const SNAP = ['doc_type', 'parent_id', 'teacher_id', 'department_id', 'academic_year', 'semester', 'subject_code', 'subject_name', 'grade_level', 'teaching_methods', 'link_url', 'doc_no', 'plan_no', 'topic', 'unit_no', 'unit_name', 'hours', 'class_room', 'teach_date', 'result_k', 'result_p', 'result_a', 'problems', 'suggestions', 'students_total', 'students_passed', 'note_mode', 'student_rooms'];
 const TYPE_LABEL = { plan: 'แผน', manual: 'คู่มือ', note: 'บันทึกหลังแผน' };
 
 function labelOf(s) {
