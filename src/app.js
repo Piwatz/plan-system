@@ -10,6 +10,7 @@ const auth = require('./auth');
 const wf = require('./workflow');
 const util = require('./util');
 const docno = require('./docno');
+const planrange = require('./planrange');
 const features = require('./features');
 const themes = require('./themes');
 const icons = require('./icons');
@@ -132,6 +133,7 @@ function createApp(options = {}) {
       settings: pubSettings,
       util,
       docno,
+      planrange,
       wf,
       ff,
       icon: icons.icon,

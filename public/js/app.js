@@ -2419,10 +2419,25 @@
     function apply() {
       const mode = document.querySelector('input[name=note_mode]:checked');
       document.querySelectorAll('[data-mode]').forEach((el) => (el.hidden = !mode || el.dataset.mode !== mode.value));
+      applyScope();
     }
     r.addEventListener('change', apply);
     apply();
   });
+  // ไฟล์นี้มีบันทึก แผนเดียว หลายแผน ทั้งเล่ม (ฟังก์ชันเสริม notewhole) พิมพ์ในระบบเป็นแผนเดียวเสมอ
+  // ช่องของแบบที่ไม่ได้เลือกปิดไว้ (disabled) ไม่ส่งไปกับฟอร์ม เช่น ช่องเรื่องมี 2 ช่อง
+  function applyScope() {
+    if (!document.querySelector('[data-scope]')) return;
+    const mode = document.querySelector('input[name=note_mode]:checked');
+    const pick = document.querySelector('input[name=plan_scope]:checked');
+    const scope = mode && mode.value === 'file' && pick ? pick.value : 'one';
+    document.querySelectorAll('[data-scope]').forEach((el) => {
+      el.hidden = el.dataset.scope !== scope;
+      el.querySelectorAll('input, select, textarea').forEach((i) => (i.disabled = el.hidden));
+    });
+  }
+  document.querySelectorAll('input[name=plan_scope]').forEach((r) => r.addEventListener('change', applyScope));
+  applyScope();
 
   // ---------- เปิดไฟล์ในกรอบดูไฟล์ ----------
   // ปุ่มเลือกไฟล์ และปุ่ม "เปิดดู" ในรายการไฟล์ เปิดไฟล์ในกรอบแสดงไฟล์ของหน้านี้ (ไม่ดาวน์โหลด)

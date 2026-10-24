@@ -1302,6 +1302,11 @@ a.lib-cv:hover .lib-cover { box-shadow: 0 0 0 3px var(--primary); }
 .docno-in { display: flex; align-items: stretch; border: 1px solid var(--line); border-radius: var(--rs); overflow: hidden; background: var(--input-bg); }
 .docno-in span { display: flex; align-items: center; padding: 0 12px; background: var(--soft); color: var(--primary); font-weight: 700; }
 .docno-in input { flex: 1; min-width: 0; border: 0; border-radius: 0; font-size: 1.1rem; }
+/* บันทึกข้อความส่งบันทึกหลังสอน ในการ์ดบันทึกหลังแผน (ฟังก์ชันเสริม notememo) */
+.memo-box { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin: 0 0 14px; padding: 12px 14px; border: 1px solid var(--line); border-radius: var(--rs); background: var(--soft); }
+.memo-box .mb-t { flex-basis: 100%; display: flex; align-items: center; gap: 6px; }
+.memo-box .mb-no { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin: 0; }
+.memo-box .mb-no .docno-in { width: 210px; }
 .docno-in:focus-within { outline: 2px solid var(--primary); outline-offset: 1px; }
 /* ปุ่มพิมพ์ในรายการงาน (printrow) */
 .my-print { display: flex; flex-wrap: wrap; gap: 6px; justify-content: flex-end; margin-top: 6px; white-space: normal; }

@@ -1,0 +1,32 @@
+<%
+  // บันทึกข้อความส่งบันทึกหลังสอน 1 ฉบับต่อเล่ม (ฟังก์ชันเสริม notememo) จัดหน้าตามแบบฟอร์มของโรงเรียน เหมือนบันทึกข้อความขออนุญาตใช้
+  // ช่องความเห็นตามระดับที่ลงนามบันทึกหลังแผนในระบบ ระดับกลางเรียงซ้ายขวา ระดับสุดท้ายอยู่กลางแถวล่าง
+  const last = steps[steps.length - 1];
+  const middle = steps.slice(0, -1);
+  const term = `ภาคเรียนที่ ${sub.semester} ปีการศึกษา ${sub.academic_year}`;
+  const who = sub.doc_name || sub.teacher_name;
+  const pos = (sub.doc_name ? sub.doc_position : sub.teacher_position) || 'ครู';
+%>
+<div class="paper memo nmemo">
+  <%- include('qr_corner') %>
+  <div class="memo-title"><% if (settings.memo_logo) { %><img class="garuda" src="<%= settings.memo_logo %>" alt=""><% } %><h1 class="doc">บันทึกข้อความ</h1></div>
+  <div class="mrow"><b>ส่วนราชการ</b> <%= settings.school_name %>  <%= String(settings.school_location || '').trim().split(' ').filter(Boolean).join('  ') %></div>
+  <div class="mrow no"><b class="mk">ที่</b><span class="mv1"><%= sub.doc_no %></span><b>วันที่</b>  <%= util.thaiDate(submitDate).replace(' ', '  ') %></div>
+  <div class="mrow subject"><b class="mk">เรื่อง</b><span>ขอส่งบันทึกหลังสอน  <%= term %></span></div>
+  <div class="mrow to"><b class="mk">เรียน</b><span>ผู้อำนวยการ<%= settings.school_name %></span></div>
+
+  <p class="indent">ตามที่ข้าพเจ้า <%= who %> ตำแหน่ง <%= pos %>  <%= deptFull %> ได้รับมอบหมายให้ปฏิบัติการสอนชั้น<%= gradeFull %> รหัสวิชา <%= sub.subject_code %> รายวิชา <%= sub.subject_name %> ใน<%= term %> นั้น</p>
+  <p class="indent">บัดนี้ข้าพเจ้าได้จัดการเรียนการสอนเป็นไปด้วยความเรียบร้อยแล้ว จึงขอส่งบันทึกหลังสอนในรายวิชาที่ได้รับมอบหมายดังกล่าว</p>
+  <p class="indent nm-close">จึงเรียนมาเพื่อโปรดทราบและพิจารณา</p>
+
+  <div class="tsign">
+    <div class="tsig"><% if (sub.teacher_signature) { %><img src="<%= sub.teacher_signature %>" alt="ลายเซ็นผู้สอน"><% } else { %><span class="tsig-dots">ลงชื่อ ..................................................</span><% } %></div>
+    <div>(<%= who %>)</div>
+    <div>ตำแหน่ง <%= pos %></div>
+  </div>
+
+  <div class="boxes">
+    <% middle.forEach((st, i) => { %><%- include('sign_box', { st, side: i % 2 ? 'r' : 'l' }) %><% }) %>
+    <% if (last) { %><%- include('sign_box', { st: last, side: middle.length % 2 ? 'r' : 'full' }) %><% } %>
+  </div>
+</div>

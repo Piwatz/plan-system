@@ -274,6 +274,26 @@
         <% if (ff.notebook && bookWaiting) { %>
           <div class="alert alert-info"><%- icon('books') %><span>เล่มนี้มี <b><%= bookWaiting %> แผ่น</b> รอคุณลงนาม <a class="btn btn-sm btn-primary" href="/s/<%= sub.id %>/book">เปิดลงนามทั้งเล่ม</a></span></div>
         <% } %>
+        <% if (memoBox) { %>
+          <%# บันทึกข้อความส่งบันทึกหลังสอน 1 ฉบับต่อเล่ม (ฟังก์ชันเสริม notememo) เลขกรอกครั้งเดียว ทุกแผ่นในเล่มใช้เลขนี้ (notedocno) %>
+          <div class="memo-box">
+            <b class="mb-t"><%- icon('file', 18) %> บันทึกข้อความส่งบันทึกหลังสอน <span class="muted">(1 ฉบับต่อเล่ม)</span></b>
+            <% if (memoBox.edit) { %>
+              <form method="post" action="/s/<%= sub.id %>/notememo-no" class="mb-no" data-confirm="บันทึกเลขที่บันทึกข้อความของเล่มนี้ ทุกแผ่นในเล่มใช้เลขนี้" data-ok-label="บันทึกเลข">
+                <label for="memo_no" class="mb-l">ที่</label>
+                <div class="docno-in"><span><%= memoBox.pre %></span><input type="text" id="memo_no" name="doc_no_num" inputmode="numeric" maxlength="6" value="<%= docno.numOf(memoBox.no) %>" placeholder="เลขที่ขอ" autocomplete="off"><span>/<%= memoBox.year %></span></div>
+                <button class="btn btn-sm btn-ghost" type="submit">บันทึกเลข</button>
+              </form>
+            <% } else if (memoBox.no) { %>
+              <span>ที่ <%= memoBox.no %></span>
+            <% } %>
+            <% if (memoBox.sent) { %>
+              <a class="btn btn-sm btn-primary" href="/s/<%= sub.id %>/print-notememo" target="_blank" rel="noopener"><%- icon('print', 16) %> พิมพ์บันทึกข้อความ</a>
+            <% } else { %>
+              <span class="hint">พิมพ์ได้เมื่อส่งทั้งเล่มแล้ว</span>
+            <% } %>
+          </div>
+        <% } %>
         <% if (!notes.length) { %>
           <div class="empty"><%= sub.status === 'draft' ? 'ส่งแผนเล่มนี้ก่อน แล้วจึงเขียนบันทึกหลังแผนได้' : 'ยังไม่มีบันทึกหลังแผน' %></div>
         <% } else { %>

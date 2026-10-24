@@ -18,6 +18,8 @@ const { qrSvg } = require('./verify');
 const library = require('../library');
 const precheck = require('../precheck');
 const docno = require('../docno');
+const notememo = require('../notememo');
+const planrange = require('../planrange');
 const trashbin = require('../trashbin');
 const transfer = require('../transfer');
 
@@ -224,6 +226,17 @@ const NOTE_COLS = [
 ];
 
 function noteFields(b, ff) {
+  const f = noteFieldsRaw(b, ff);
+  // แนบไฟล์ 1 ไฟล์มีหลายแผนหรือทั้งเล่ม (ฟังก์ชันเสริม notewhole) ไม่มีหน่วย ชั่วโมง วันที่สอนของแผนเดียว
+  const scope = ff.notewhole && f.note_mode === 'file' ? b.plan_scope : 'one';
+  if (scope === 'range' || scope === 'book') {
+    f.plan_no = scope === 'book' ? planrange.BOOK : planrange.fromForm(b.plan_from, b.plan_to);
+    Object.assign(f, { unit_no: '', unit_name: '', hours: '', teach_date: '' });
+  } else if (planrange.scopeOf(f.plan_no) !== 'one') f.plan_no = '';
+  return f;
+}
+
+function noteFieldsRaw(b, ff) {
   return {
     note_mode: ff.notefile && b.note_mode === 'file' ? 'file' : 'type',
     plan_no: str(b.plan_no, 20),
@@ -534,8 +547,10 @@ router.get('/notes/new', async (req, res) => {
   const plan = await parentPlanFor(req, req.query.plan);
   // ใช้หน่วยและห้องเดียวกับบันทึกฉบับล่าสุด ครูไม่ต้องพิมพ์ซ้ำ
   const last = await q.get(`SELECT ${wf.subCols()} FROM submissions WHERE parent_id = ? AND doc_type = 'note' ORDER BY id DESC LIMIT 1`, plan.id);
-  const maxNo = (await q.get("SELECT MAX(to_int_lenient(plan_no)) AS n FROM submissions WHERE parent_id = ? AND doc_type = 'note'", plan.id)).n;
-  const sub = { plan_no: String((maxNo || 0) + 1), note_mode: last && req.ff.notefile ? last.note_mode : 'type' };
+  // เลขแผนถัดไป นับรวมช่วงแผนที่แนบเป็นไฟล์เดียว (เช่น 1-9 ถัดไปเป็น 10)
+  const nos = (await q.all("SELECT plan_no FROM submissions WHERE parent_id = ? AND doc_type = 'note'", plan.id)).flatMap((r) => planrange.numbers(r.plan_no));
+  const maxNo = nos.length ? Math.max(...nos) : 0;
+  const sub = { plan_no: String(maxNo + 1), note_mode: last && req.ff.notefile ? last.note_mode : 'type' };
   if (last) Object.assign(sub, { unit_no: last.unit_no, unit_name: last.unit_name, class_room: last.class_room, hours: last.hours, students_total: last.students_total });
   res.render('note_form', { title: 'เขียนบันทึกหลังแผน', plan, sub, files: [], isNew: true, ...(await noteHelpers(req, plan.id, 0)) });
 });
@@ -665,9 +680,21 @@ router.get('/s/:id', async (req, res) => {
   const pendingMine = req.ff.notebook && wf.isOwner(req.me, sub) ? notes.filter((n) => n.status === 'pending').map((n) => n.id) : [];
   const bookPull = (await wf.canWithdrawMany(pendingMine)) ? pendingMine.length : 0;
   const tf = req.ff.transfer && req.me.is_admin && !wf.isOwner(req.me, sub) && WORK_TYPES.includes(sub.doc_type) ? await transfer.choices() : null;
+  // บันทึกข้อความส่งบันทึกหลังสอนของเล่ม (ฟังก์ชันเสริม notememo · เลข notedocno) กล่องในการ์ดบันทึกหลังแผน
+  const memoBox =
+    req.ff.notebook && req.ff.notememo && sub.doc_type === 'plan' && notes.length
+      ? {
+          no: req.ff.notedocno ? notememo.bookNo(notes) : '',
+          pre: docno.prefix(req.settings),
+          year: docno.yearOf(req.settings, { academic_year: sub.academic_year, submitted_at: notememo.bookDate(notes) || null }),
+          edit: req.ff.notedocno && (wf.isOwner(req.me, sub) || (req.me.is_admin && sub.teacher_id !== req.me.id)),
+          sent: notes.some((n) => n.status !== 'draft'),
+        }
+      : null;
   res.render('detail', {
     title: `${wf.DOC_TYPES[sub.doc_type].label} ${sub.subject_code}`,
     bookPull,
+    memoBox,
     planGaps: planGaps(notes),
     sub,
     files,
@@ -1213,6 +1240,56 @@ router.get('/s/:id/print-notes', async (req, res) => {
   res.render('print_notes', { title: 'พิมพ์บันทึกหลังแผนทั้งเล่ม', items });
 });
 
+// ---------- บันทึกข้อความส่งบันทึกหลังสอน (ฟังก์ชันเสริม notememo · เลข notedocno) 1 ฉบับต่อเล่ม ----------
+
+function needNoteMemo(req) {
+  if (!req.ff.notebook || !req.ff.notememo) throw new UserError('ผู้ดูแลระบบปิดบันทึกข้อความส่งบันทึกหลังสอนไว้');
+}
+
+router.get('/s/:id/print-notememo', async (req, res) => {
+  needNoteMemo(req);
+  const plan = await readable(req, req.params.id, { book: true });
+  if (!plan || plan.doc_type !== 'plan') return res.status(404).render('error', { title: 'ไม่พบงานนี้', message: 'ไม่พบแผนนี้' });
+  const notes = await q.all(
+    `${subSelect(true)} WHERE s.parent_id = ? AND s.doc_type = 'note' AND s.status != 'draft' ORDER BY to_int_lenient(s.plan_no), s.id`,
+    plan.id
+  );
+  if (!notes.length) throw new UserError('ยังไม่มีบันทึกหลังแผนที่ส่งแล้วในเล่มนี้ ส่งทั้งเล่มก่อนแล้วจึงพิมพ์บันทึกข้อความได้');
+  const reviews = await wf.reviewsMany(notes.map((n) => n.id), { signatures: 'approve' });
+  const steps = notememo.combineSteps(await wf.progressMany(notes, { reviews }));
+  const info = (await q.get(`${subSelect(true)} WHERE s.id = ?`, plan.id)) || plan;
+  // ลายเซ็นครูจากแผ่นที่ส่งล่าสุด (ส่งทั้งเล่มเก็บลายเซ็นไว้ทุกแผ่น)
+  const signed = [...notes].reverse().find((n) => n.teacher_signature);
+  const sub = { ...info, doc_type: 'note', status: 'pending', teacher_signature: signed ? signed.teacher_signature : null, doc_no: req.ff.notedocno ? notememo.bookNo(notes) : '' };
+  const done = notes.every((n) => n.status === 'approved');
+  res.render('print_notememo', {
+    title: 'พิมพ์บันทึกข้อความส่งบันทึกหลังสอน',
+    sub,
+    steps,
+    sheets: notes.length,
+    submitDate: notememo.bookDate(notes) || todayStr(),
+    gradeFull: gradeFull(info.grade_level),
+    deptFull: deptFull(info.dept_name),
+    qr: done ? await qrSvg(req, plan) : '',
+  });
+});
+
+// เลขที่บันทึกข้อความของเล่ม: ครูเจ้าของเล่มกรอกครั้งเดียว เก็บที่ทุกแผ่นของเล่ม (แผ่นที่เขียนทีหลังได้เลขตอนส่งทั้งเล่ม)
+router.post('/s/:id/notememo-no', async (req, res) => {
+  needNoteMemo(req);
+  if (!req.ff.notedocno) throw new UserError('ผู้ดูแลระบบปิดการกรอกเลขที่บันทึกข้อความของบันทึกหลังแผนไว้');
+  const plan = await bookPlan(req, req.params.id);
+  const proxy = req.me.is_admin && plan.teacher_id !== req.me.id;
+  if (!wf.isOwner(req.me, plan) && !proxy) throw new UserError('กรอกเลขได้เฉพาะเล่มของตนเอง');
+  const notes = await bookNotes(plan.id, ['draft', 'pending', 'returned', 'approved']);
+  if (!notes.length) throw new UserError('ยังไม่มีบันทึกหลังแผนในเล่มนี้');
+  const year = docno.yearOf(req.settings, { academic_year: plan.academic_year, submitted_at: notememo.bookDate(notes) || null });
+  const no = docno.format(req.settings, docno.cleanNum((req.body || {}).doc_no_num), year);
+  await q.run("UPDATE submissions SET doc_no = ? WHERE parent_id = ? AND doc_type = 'note'", no, plan.id);
+  if (proxy) await features.audit(req.me, 'แก้เลขบันทึกข้อความส่งบันทึกหลังสอนแทนครู', `แผน ${plan.id} ${plan.subject_code} เป็น ${no || '(ว่าง)'}`);
+  respond(req, res, `/s/${plan.id}#notes`, 'success', no ? `บันทึกเลขที่ ${no} แล้ว` : 'ลบเลขที่บันทึกข้อความแล้ว');
+});
+
 // ---------- บันทึกหลังแผนทั้งเล่ม (ฟังก์ชันเสริม notebook) ----------
 // 1 เล่ม = บันทึกทุกฉบับของแผน 1 วิชา ครูกดส่งทั้งเล่มครั้งเดียว ผู้ตรวจอ่านไล่ทีละแผ่นแล้วลงนามครั้งเดียว
 
@@ -1241,7 +1318,7 @@ async function bookWaiting(req, planId) {
 
 // เลขแผนที่ข้ามในเล่ม เช่น มีแผนที่ 3 และ 5 แต่ไม่มี 4 (นับเฉพาะเลขล้วน ระหว่างเลขน้อยสุดกับมากสุด) ใช้เตือนก่อนส่งทั้งเล่ม
 function planGaps(notes) {
-  const nums = new Set(notes.map((n) => String(n.plan_no || '').trim()).filter((x) => /^\d{1,3}$/.test(x)).map(Number));
+  const nums = new Set(notes.flatMap((n) => planrange.numbers(n.plan_no)));
   if (nums.size < 2) return [];
   const out = [];
   for (let k = Math.min(...nums) + 1; k < Math.max(...nums); k++) if (!nums.has(k)) out.push(k);
@@ -1270,6 +1347,17 @@ router.post('/s/:id/submit-book', async (req, res) => {
   }
   if (miss.length) throw new UserError(`ยังส่งทั้งเล่มไม่ได้ ${miss.join(' · ')} กดแก้ไขแผ่นนั้นให้ครบก่อน`);
   if (wf.isOwner(req.me, plan)) await needOwnSignature(req, 'ยังส่งทั้งเล่มไม่ได้ ');
+  // แผ่นที่เขียนหลังกรอกเลขที่บันทึกข้อความของเล่ม ได้เลขเดียวกัน (ฟังก์ชันเสริม notedocno)
+  // (คำสั่งเดียว เลขของเล่ม = เลขจากแผ่นที่แก้ล่าสุดที่มีเลข เหมือน notememo.bookNo)
+  if (req.ff.notememo && req.ff.notedocno) {
+    await q.run(
+      `UPDATE submissions s SET doc_no = b.doc_no
+         FROM (SELECT doc_no FROM submissions WHERE parent_id = ? AND doc_type = 'note' AND COALESCE(doc_no, '') <> '' ORDER BY updated_at DESC, id DESC LIMIT 1) b
+       WHERE s.parent_id = ? AND s.doc_type = 'note' AND COALESCE(s.doc_no, '') = ''`,
+      plan.id,
+      plan.id
+    );
+  }
   const after = await wf.submitMany(
     notes.map((n) => n.id),
     req.me

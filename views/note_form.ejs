@@ -40,11 +40,44 @@
       </div>
     <% } %>
 
+    <% if (ff.notefile && ff.notewhole) { const scope = fileMode ? planrange.scopeOf(sub.plan_no) : 'one'; const rg = planrange.rangeOf(sub.plan_no) || ['', '']; %>
+      <%# แนบไฟล์ 1 ไฟล์มีหลายแผนหรือทั้งเล่ม (ฟังก์ชันเสริม notewhole) ช่องของแบบที่ไม่ได้เลือก app.js ปิดไว้ ไม่ส่งไปกับฟอร์ม %>
+      <div class="field" data-mode="file" <%= fileMode ? '' : 'hidden' %>>
+        <span class="label">ไฟล์นี้มีบันทึก</span>
+        <div class="seg">
+          <label><input type="radio" name="plan_scope" value="one" <%= scope === 'one' ? 'checked' : '' %>><span>แผนเดียว</span></label>
+          <label><input type="radio" name="plan_scope" value="range" <%= scope === 'range' ? 'checked' : '' %>><span>หลายแผน</span></label>
+          <label><input type="radio" name="plan_scope" value="book" <%= scope === 'book' ? 'checked' : '' %>><span>ทั้งเล่ม</span></label>
+        </div>
+      </div>
+      <div data-scope="range" <%= scope === 'range' ? '' : 'hidden' %>>
+        <h2>แผนที่อยู่ในไฟล์นี้</h2>
+        <div class="form-grid">
+          <div class="field">
+            <label for="plan_from">ตั้งแต่แผนที่ <span class="req">*</span></label>
+            <input type="number" min="1" max="999" id="plan_from" name="plan_from" value="<%= rg[0] %>" inputmode="numeric">
+          </div>
+          <div class="field">
+            <label for="plan_to">ถึงแผนที่ <span class="req">*</span></label>
+            <input type="number" min="1" max="999" id="plan_to" name="plan_to" value="<%= rg[1] %>" inputmode="numeric">
+          </div>
+          <div class="field">
+            <label for="topic_r">เรื่อง (ถ้ามี)</label>
+            <input type="text" id="topic_r" name="topic" value="<%= sub.topic || '' %>" placeholder="เช่น ครึ่งภาคแรก">
+          </div>
+        </div>
+      </div>
+      <div data-scope="book" <%= scope === 'book' ? '' : 'hidden' %>>
+        <h2>แผนที่สอน</h2>
+        <div class="alert alert-info"><%- icon('books') %><span>ไม่ต้องกรอกแผนที่ หน่วย ชั่วโมง วันที่สอน ระบบแสดงเป็น <b>ทั้งเล่ม</b> ในรายการบันทึก</span></div>
+      </div>
+    <% } %>
+    <div data-scope="one" <%= ff.notefile && ff.notewhole && fileMode && planrange.scopeOf(sub.plan_no) !== 'one' ? 'hidden' : '' %>>
     <h2>แผนที่สอน</h2>
     <div class="form-grid">
       <div class="field">
         <label for="plan_no">แผนการจัดการเรียนรู้ที่ <span class="req">*</span></label>
-        <input type="number" min="1" id="plan_no" name="plan_no" value="<%= sub.plan_no || '' %>" inputmode="numeric">
+        <input type="number" min="1" id="plan_no" name="plan_no" value="<%= planrange.scopeOf(sub.plan_no) === 'one' ? sub.plan_no || '' : '' %>" inputmode="numeric">
       </div>
       <div class="field" style="grid-column:span 2">
         <label for="topic">เรื่อง</label>
@@ -70,6 +103,7 @@
         <label for="teach_date">วันที่สอน</label>
         <input type="date" id="teach_date" name="teach_date" value="<%= sub.teach_date || '' %>">
       </div>
+    </div>
     </div>
 
     <% if (ff.notefile) { %>

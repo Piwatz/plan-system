@@ -123,6 +123,25 @@
   .box.full .t { text-align: center; white-space: nowrap; margin: 0 -20mm; }
   .box.l .t, .box.r .t { white-space: nowrap; }
 
+  /* บันทึกข้อความส่งบันทึกหลังสอน (ฟังก์ชันเสริม notememo) วัดจาก PDF แบบฟอร์มของโรงเรียน ครุฑสูง 2.86 ซม. เส้นใต้เรื่องหนา 0.5 มม.
+     ช่องความเห็นห่างกว่าบันทึกข้อความขออนุญาตใช้ เว้นที่เซ็นมากขึ้น */
+  .paper.nmemo { line-height: 1.135; }
+  .paper.nmemo .memo-title { height: 29.9mm; margin-bottom: 1.1mm; }
+  .paper.nmemo .memo-title .garuda { top: 1.4mm; left: -2mm; height: 28.6mm; }
+  .paper.nmemo .memo-title h1.doc { top: 0; }
+  .paper.nmemo .mrow.no { margin-top: 0.9mm; }
+  .paper.nmemo .mrow.subject { border-bottom: 0.5mm solid #000; margin-top: 3.5mm; padding-bottom: 2.5mm; }
+  .paper.nmemo .mrow.to { margin: 3.4mm 0 5.3mm; }
+  .paper.nmemo .indent { margin-top: 0; }
+  .paper.nmemo .indent.nm-close { margin-top: 4.3mm; }
+  .paper.nmemo .tsign { width: 80mm; margin: 0 0 0 61mm; }
+  .paper.nmemo .tsig { height: 12.4mm; }
+  .paper.nmemo .boxes { row-gap: 17.9mm; margin-top: 10mm; }
+  .paper.nmemo .box .t { font-weight: 400; text-align: center; }
+  .paper.nmemo .box .t + .cl { margin-top: 2.3mm; }
+  .paper.nmemo .box .cl + .cl { margin-top: 0.9mm; }
+  .paper.nmemo .box .sl { margin-top: 2mm; }
+
   /* แบบประเมิน: หัวเรื่อง 16 หัวตาราง 14 เนื้อหา 12 พอยต์ ตามแบบฟอร์มของโรงเรียน */
   .paper.eval { page: evalform; padding: 15mm 10mm 10mm 15mm; font-size: calc(12pt * var(--fit, 1)); }
   .paper.eval h2.doc { font-size: calc(16pt * var(--fit, 1)); }

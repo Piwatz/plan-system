@@ -10,6 +10,11 @@
     else pc.push({ off: 1, t: 'แบบประเมิน 20 ข้อ', s: 'พิมพ์ได้เมื่อผู้ตรวจให้คะแนนแล้ว' });
     const sent = notes.filter((n) => n.status !== 'draft').length;
     if (sub.doc_type === 'plan' && sent) pc.push({ href: '/s/' + sub.id + '/print-notes', t: 'บันทึกหลังแผนทั้งเล่ม', s: sent + ' แผ่นที่ส่งแล้ว', short: 'ทั้งเล่ม' });
+    // บันทึกข้อความส่งบันทึกหลังสอน 1 ฉบับต่อเล่ม (ฟังก์ชันเสริม notememo)
+    if (sub.doc_type === 'plan' && sent && ff.notebook && ff.notememo) {
+      const no = ff.notedocno ? (notes.find((n) => n.doc_no) || {}).doc_no : '';
+      pc.push({ href: '/s/' + sub.id + '/print-notememo', t: 'บันทึกข้อความส่งบันทึกหลังสอน', s: '1 ฉบับต่อเล่ม' + (no ? ' ที่ ' + no : ''), short: 'ส่งบันทึก', mini: 'ส่งบันทึก' });
+    }
   }
 %>
 <% if (ff.printcard && !locals.hideBar) { %>
