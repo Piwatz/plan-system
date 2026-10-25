@@ -5,8 +5,10 @@
 <% if (ff.sigclean) { %>
   <div class="sig-note" data-clean-note hidden><span data-clean-text>ปรับรูปให้แล้ว ตัดขอบว่าง ลบพื้นกระดาษ</span> <button type="button" class="linkish" data-clean-toggle>ใช้รูปเดิมแทน</button></div>
 <% } %>
-<% if (ff.sigadjust) { %>
+<% if (ff.sigadjust || ff.sigrotate) { %>
   <div class="sig-adjust" data-adjust hidden>
+<% } %>
+<% if (ff.sigadjust) { %>
     <div class="sig-adj-row"><span class="t">ขนาด</span>
       <button type="button" class="btn btn-ghost sig-step" data-size="-1" aria-label="เล็กลง">−</button>
       <input type="range" min="40" max="100" step="5" value="100" data-size-range aria-label="ขนาดลายเซ็น">
@@ -14,6 +16,19 @@
     <div class="sig-adj-row"><span class="t">สีเส้น</span>
       <button type="button" class="btn btn-ghost btn-sm" data-color="#1b2f9e"><span class="ink-dot ink-blue"></span> น้ำเงิน</button>
       <button type="button" class="btn btn-ghost btn-sm" data-color="#111111"><span class="ink-dot ink-black"></span> ดำ</button></div>
+<% } %>
+<% if (ff.sigrotate) { %>
+    <div class="sig-adj-row"><span class="t">หมุน</span>
+      <button type="button" class="btn btn-ghost btn-sm" data-rot="-90"><%- icon('rotl', 18) %> หมุนซ้าย</button>
+      <button type="button" class="btn btn-ghost btn-sm" data-rot="90"><%- icon('rotr', 18) %> หมุนขวา</button>
+      <button type="button" class="btn btn-ghost btn-sm" data-rot="180"><%- icon('flip', 18) %> กลับหัว</button></div>
+    <div class="sig-adj-row"><span class="t">เอียง</span>
+      <button type="button" class="btn btn-ghost sig-step" data-tilt="-2" aria-label="เอียงซ้าย">−</button>
+      <input type="range" min="-30" max="30" step="1" value="0" data-tilt-range aria-label="เอียงลายเซ็น">
+      <button type="button" class="btn btn-ghost sig-step" data-tilt="2" aria-label="เอียงขวา">+</button>
+      <span class="sig-deg muted small" data-tilt-text>0 องศา</span></div>
+<% } %>
+<% if (ff.sigadjust || ff.sigrotate) { %>
   </div>
 <% } %>
 <% if (ff.sigadjust && locals.preview) { %>
@@ -25,7 +40,7 @@
 <% if (ff.sigclean && locals.preview) { %>
     <button type="button" class="btn btn-ghost btn-sm" data-sig-preview>ดูตัวอย่างบนเอกสาร</button>
 <% } %>
-<% if (ff.sigadjust && savedSig) { %>
+<% if ((ff.sigadjust || ff.sigrotate) && savedSig) { %>
     <button type="button" class="btn btn-ghost btn-sm" data-edit-saved>แก้ลายเซ็นที่บันทึกไว้</button>
 <% } %>
     <small class="muted">เซ็นด้วยนิ้วหรือเมาส์ในกรอบ</small>

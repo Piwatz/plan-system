@@ -1970,26 +1970,40 @@
     // ---------- ปรับขนาดและสีเอง (ฟังก์ชันเสริม sigadjust) ----------
     // ฐาน = ลายเซ็นในกรอบที่ตัดขอบว่างแล้ว (จับไว้ตอนเริ่มปรับ) ขนาด 100 = เต็มกรอบ ลดได้ถึง 40
     // สีเปลี่ยนได้เฉพาะลายเซ็นที่พื้นใส (เซ็นในกรอบ รูปที่ปรับแล้ว ลายเซ็นที่บันทึกไว้) รูปถ่ายเดิมที่มีพื้นเปลี่ยนสีไม่ได้
+    // หมุน (ฟังก์ชันเสริม sigrotate): ปุ่มหมุนครั้งละ 90 องศา กลับหัว และแถบเอียง -30 ถึง 30 องศา หมุนจากฐานเดิมทุกครั้ง ภาพไม่เบลอสะสม
     const range = pad.querySelector('[data-size-range]');
+    const tiltRange = pad.querySelector('[data-tilt-range]');
+    const tiltText = pad.querySelector('[data-tilt-text]');
     let base = null;
     let tint = null;
+    let rot = 0;
+    function showTilt() {
+      if (!tiltText) return;
+      const t = Number(tiltRange.value);
+      tiltText.textContent = t ? (t < 0 ? 'ซ้าย ' : 'ขวา ') + Math.abs(t) + ' องศา' : '0 องศา';
+    }
     function resetAdjust() {
       base = null;
       tint = null;
+      rot = 0;
       if (range) range.value = '100';
+      if (tiltRange) tiltRange.value = '0';
+      showTilt();
       pad.querySelectorAll('[data-color]').forEach((b) => b.classList.remove('on'));
     }
     function applyAdjust() {
       if (!dirty) return;
       if (!base) base = trimInk(canvas);
       if (!base) return;
+      const deg = rot + (tiltRange ? Number(tiltRange.value) : 0);
+      const src = deg % 360 ? turnInk(base, deg) : base;
       const zoom = (range ? Number(range.value) : 100) / 100;
       const m = 0.04;
-      const k = Math.min((canvas.width * (1 - 2 * m)) / base.width, (canvas.height * (1 - 2 * m)) / base.height) * zoom;
-      const w = base.width * k;
-      const h = base.height * k;
+      const k = Math.min((canvas.width * (1 - 2 * m)) / src.width, (canvas.height * (1 - 2 * m)) / src.height) * zoom;
+      const w = src.width * k;
+      const h = src.height * k;
       ctx.clearRect(0, 0, canvas.width, canvas.height);
-      ctx.drawImage(base, (canvas.width - w) / 2, (canvas.height - h) / 2, w, h);
+      ctx.drawImage(src, (canvas.width - w) / 2, (canvas.height - h) / 2, w, h);
       if (tint && base.clear) {
         ctx.globalCompositeOperation = 'source-in';
         ctx.fillStyle = tint;
@@ -2017,6 +2031,25 @@
         })
       );
     }
+    if (tiltRange) {
+      tiltRange.addEventListener('input', () => {
+        showTilt();
+        applyAdjust();
+      });
+      pad.querySelectorAll('[data-tilt]').forEach((b) =>
+        b.addEventListener('click', () => {
+          tiltRange.value = String(Math.max(-30, Math.min(30, Number(tiltRange.value) + Number(b.dataset.tilt))));
+          showTilt();
+          applyAdjust();
+        })
+      );
+    }
+    pad.querySelectorAll('[data-rot]').forEach((b) =>
+      b.addEventListener('click', () => {
+        rot = (rot + Number(b.dataset.rot) + 360) % 360;
+        applyAdjust();
+      })
+    );
     // แก้ลายเซ็นที่บันทึกไว้: ดึงลายเซ็นเดิมเข้ากรอบ ตัดขอบว่างให้เต็มกรอบ แล้วปรับต่อได้
     const editSaved = pad.querySelector('[data-edit-saved]');
     if (editSaved) {
@@ -2115,6 +2148,26 @@
     }
     save();
   });
+
+  // หมุนผืนผ้าใบตามองศา (ตามเข็มนาฬิกา) ขยายผืนให้พอดีมุม ลายเซ็นพื้นใสตัดขอบว่างอีกครั้ง
+  function turnInk(src, deg) {
+    const a = (deg * Math.PI) / 180;
+    const c = Math.abs(Math.cos(a));
+    const n = Math.abs(Math.sin(a));
+    const out = document.createElement('canvas');
+    out.width = Math.max(1, Math.ceil(src.width * c + src.height * n));
+    out.height = Math.max(1, Math.ceil(src.width * n + src.height * c));
+    const g = out.getContext('2d');
+    g.translate(out.width / 2, out.height / 2);
+    g.rotate(a);
+    g.drawImage(src, -src.width / 2, -src.height / 2);
+    out.clear = src.clear;
+    if (!src.clear) return out;
+    const t = trimInk(out);
+    if (!t) return out;
+    t.clear = true;
+    return t;
+  }
 
   // ตัดขอบว่างของผืนผ้าใบ (ส่วนที่ใส) คืนผืนผ้าใบใหม่ที่มีแต่ลายเซ็น · clear = พื้นใสเป็นส่วนใหญ่ (เปลี่ยนสีเส้นได้)
   function trimInk(src) {

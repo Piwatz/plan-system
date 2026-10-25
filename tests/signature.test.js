@@ -160,7 +160,31 @@ test('หน้าข้อมูลส่วนตัวมีปุ่มป�
   assert.match(page, /data-edit-saved>แก้ลายเซ็นที่บันทึกไว้/);
   assert.match(page, /data-current="\/media\/signature\?v=/);
   await db.setSetting('ff_sigadjust', '0');
+  await db.setSetting('ff_sigrotate', '0');
   page = (await c.get('/profile')).text;
   assert.doesNotMatch(page, /data-size-range|data-edit-saved/);
+  await db.setSetting('ff_sigadjust', '1');
+  await db.setSetting('ff_sigrotate', '1');
+});
+
+test('หน้าข้อมูลส่วนตัวมีปุ่มหมุน กลับหัว และแถบเอียง ปิดสวิตช์แล้วหายไป', async () => {
+  const c = await as('sci2');
+  let page = (await c.get('/profile')).text;
+  assert.match(page, /data-rot="-90"[^>]*>[\s\S]*?หมุนซ้าย/);
+  assert.match(page, /data-rot="90"/);
+  assert.match(page, /data-rot="180"[^>]*>[\s\S]*?กลับหัว/);
+  assert.match(page, /data-tilt-range/);
+  await db.setSetting('ff_sigrotate', '0');
+  page = (await c.get('/profile')).text;
+  assert.doesNotMatch(page, /data-rot=|data-tilt-range/);
+  assert.match(page, /data-size-range/, 'ปุ่มปรับขนาดยังอยู่');
+  await db.setSetting('ff_sigadjust', '0');
+  page = (await c.get('/profile')).text;
+  assert.doesNotMatch(page, /data-adjust|data-edit-saved/);
+  await db.setSetting('ff_sigrotate', '1');
+  page = (await c.get('/profile')).text;
+  assert.match(page, /data-adjust/);
+  assert.match(page, /data-edit-saved>แก้ลายเซ็นที่บันทึกไว้/, 'หมุนลายเซ็นที่บันทึกไว้ได้แม้ปิดปรับขนาด');
+  assert.doesNotMatch(page, /data-size-range/);
   await db.setSetting('ff_sigadjust', '1');
 });

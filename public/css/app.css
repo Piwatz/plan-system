@@ -529,6 +529,8 @@ input:focus, select:focus, textarea:focus { outline: 3px solid color-mix(in srgb
 .sig-adj-row .t { font-weight: 600; min-width: 56px; }
 .sig-adj-row input[type=range] { flex: 1; min-width: 120px; accent-color: var(--primary); }
 .sig-step { min-width: 44px; font-size: 1.3rem; padding: 2px 12px; }
+.sig-deg { min-width: 4.5em; text-align: right; }
+.sig-adj-row .btn .ic { vertical-align: -3px; }
 .sig-adj-row .btn.on { background: var(--soft); border-color: var(--primary); color: var(--link); }
 /* สีหมึกจริงของลายเซ็น ไม่ใช่สีธีม */
 .ink-dot { width: 14px; height: 14px; border-radius: 50%; display: inline-block; vertical-align: -2px; box-shadow: 0 0 0 1.5px var(--muted); }

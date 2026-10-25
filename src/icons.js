@@ -48,6 +48,9 @@ const PATHS = {
   lock: 'M6 11h12v10H6zM8.5 11V7.5a3.5 3.5 0 0 1 7 0V11',
   grid: 'M4 4h6v7H4zM14 4h6v7h-6zM4 15h16M4 20h16',
   list: 'M4 5h4v4H4zM4 15h4v4H4zM11 7h9M11 17h9',
+  rotl: 'M3 4v6h6M3.5 10A9 9 0 1 1 6 18',
+  rotr: 'M21 4v6h-6M20.5 10A9 9 0 1 0 18 18',
+  flip: 'M7 3v18M4 6l3-3 3 3M17 21V3M14 18l3 3 3-3',
   rows: 'M3 4h18M3 7h4v4H3zM10 7h4v4h-4zM17 7h4v4h-4zM3 14h18M3 17h4v4H3zM10 17h4v4h-4zM17 17h4v4h-4z',
 };
 
