@@ -33,6 +33,11 @@ function cleanNum(v) {
     .replace(/^0+(?=\d)/, '')
     .slice(0, 6);
 }
+// แยกเลขเป็นตัวเลขกับปี เช่น วก.214/2569 ได้ { num: 214, year: 2569 } · ไม่ตรงรูปแบบได้ null
+function parse(docNo) {
+  const m = NO_RE.exec(String(docNo || ''));
+  return m ? { num: Number(m[2]), year: Number(m[3]) } : null;
+}
 function format(settings, num, year) {
   return num ? `${prefix(settings)}${num}/${year}` : '';
 }
@@ -51,4 +56,4 @@ function reformat(settings, rows) {
   return out;
 }
 
-module.exports = { DEFAULT_PREFIX, PREFIX_RE, prefix, yearMode, yearOf, numOf, cleanNum, format, reformat };
+module.exports = { DEFAULT_PREFIX, PREFIX_RE, prefix, yearMode, yearOf, numOf, parse, cleanNum, format, reformat };

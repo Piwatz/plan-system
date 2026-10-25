@@ -127,6 +127,7 @@
       <div class="field"><label for="docno_year">ปีหลังทับ</label><select id="docno_year" name="docno_year"><option value="academic"<%= dmode === 'academic' ? ' selected' : '' %>>ปีการศึกษาของงาน</option><option value="calendar"<%= dmode === 'calendar' ? ' selected' : '' %>>ปี พ.ศ. ตามวันที่ส่ง</option></select><div class="hint">ภาคเรียนที่ 2 ส่งช่วง ม.ค. ถึง มี.ค. ปีการศึกษากับปี พ.ศ. ต่างกัน 1 ปี</div></div>
     </div>
     <p class="muted small">ตัวอย่าง <%= docno.format(settings, '214', docno.yearOf(settings, { academic_year: settings.academic_year })) %> · เปลี่ยนแล้วมีผลกับงานที่ครูบันทึกหลังจากนี้ งานเดิมกดปุ่มปรับเลขย้อนหลังด้านล่าง</p>
+    <% if (ff.docnoreg) { %><p><a class="btn btn-sm btn-ghost" href="/admin/docnoreg"><%- icon('list', 16) %> เปิดทะเบียนเลขที่บันทึกข้อความ</a></p><% } %>
     <% } %>
 
     <h3 style="margin-top:18px">ตัวเลือกในแบบฟอร์ม</h3>

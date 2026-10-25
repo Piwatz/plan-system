@@ -825,6 +825,123 @@ router.get('/settings', async (req, res) => {
   res.render('admin/settings', { title: 'ตั้งค่าโรงเรียน', themeList: themes.list(), fxLevels: themes.FX_LEVELS, fxDefault: themes.FX_DEFAULT, themeOf: (k) => themes.resolve(k), siteFields: site.FIELDS, siteIcons: site.ICONS, docnoFix });
 });
 
+// ---------- ทะเบียนเลขที่บันทึกข้อความ (ฟังก์ชันเสริม docnoreg) ----------
+// เลขซ้ำคิดจากทั้งปีการศึกษา แล้วจึงกรองตามภาคเรียน ประเภท กลุ่มสาระ คำค้น
+
+function docnoRegOn(req, res) {
+  if (req.ff.docnoreg) return true;
+  fail(req, res, '/admin', 'ฟังก์ชันทะเบียนเลขที่บันทึกข้อความปิดอยู่');
+  return false;
+}
+
+async function docnoRegister(req) {
+  const docnoreg = require('../docnoreg');
+  const qy = req.query || {};
+  const years = (await q.all('SELECT DISTINCT academic_year AS y FROM submissions ORDER BY academic_year DESC')).map((r) => Number(r.y));
+  const cur = Number(req.settings.academic_year);
+  if (cur && !years.includes(cur)) years.unshift(cur);
+  const year = years.includes(Number(qy.year)) ? Number(qy.year) : cur || years[0];
+  const rows = await q.all(
+    `SELECT s.id, s.doc_type, s.parent_id, s.teacher_id, s.academic_year, s.semester, s.subject_code, s.subject_name, s.doc_no,
+            s.status, s.current_role, s.submitted_at, s.updated_at, u.full_name AS teacher_name, d.id AS dept_id, d.name AS dept_name, d.sort AS dept_sort
+     FROM submissions s JOIN users u ON u.id = s.teacher_id LEFT JOIN departments d ON d.id = s.department_id
+     WHERE s.academic_year = ? AND s.status != 'draft'`,
+    year
+  );
+  const reg = docnoreg.build(rows, { notes: req.ff.notedocno });
+  const f = {
+    view: qy.view === 'teacher' ? 'teacher' : 'num',
+    year,
+    semester: ['1', '2'].includes(String(qy.semester)) ? Number(qy.semester) : 0,
+    type: docnoreg.SUBJECT[qy.type] ? qy.type : '',
+    department: util.idOrNull(qy.department) || 0,
+    q: String(qy.q || '').trim().slice(0, 60),
+  };
+  const kw = f.q.toLowerCase();
+  const keep = (e) =>
+    (!f.semester || Number(e.semester) === f.semester) &&
+    (!f.type || e.type === f.type) &&
+    (!f.department || e.dept_id === f.department) &&
+    (!kw || [e.doc_no, e.teacher_name, ...e.subjects.flatMap((s) => [s.code, s.name])].some((v) => String(v || '').toLowerCase().includes(kw)));
+  const numbered = reg.numbered.filter(keep);
+  const missing = reg.missing.filter(keep);
+  return { f, years, numbered, missing, depts: f.view === 'teacher' ? docnoreg.byDept([...numbered, ...missing]) : [], docnoreg };
+}
+
+router.get('/docnoreg', async (req, res) => {
+  if (!docnoRegOn(req, res)) return;
+  const r = await docnoRegister(req);
+  res.render('admin/docnoreg', {
+    title: 'ทะเบียนเลขที่บันทึกข้อความ',
+    ...r,
+    departments: await q.all('SELECT id, name FROM departments ORDER BY sort, name'),
+  });
+});
+
+// ส่งออก: .xlsx (หัวตารางตัวหนา คอลัมน์พอดี) หรือ .csv · เรียงตามมุมมองที่เปิดอยู่ งานที่ไม่มีเลขต่อท้าย
+router.get(/^\/docnoreg\.(xlsx|csv)$/, async (req, res) => {
+  if (!docnoRegOn(req, res)) return;
+  const ext = req.params[0];
+  const { f, numbered, missing, depts, docnoreg } = await docnoRegister(req);
+  const list = f.view === 'teacher' ? depts.flatMap((d) => d.teachers.flatMap((t) => [...t.manual, ...t.plan, ...t.note])) : [...numbered, ...missing];
+  const head = ['ลำดับ', 'เลขที่', 'ลงวันที่', 'จาก', 'กลุ่มสาระ', 'เรื่อง', 'รายวิชา', 'ภาคเรียน', 'สถานะ', 'หมายเหตุ'];
+  const rows = list.map((e, i) => [
+    i + 1,
+    e.doc_no,
+    util.thaiDate(e.submitted_at),
+    e.teacher_name,
+    e.dept_name,
+    e.title,
+    docnoreg.subjectText(e) + (e.type === 'note' ? ` (${e.sheets} แผ่น)` : ''),
+    `${e.semester}/${e.academic_year}`,
+    wf.statusText(e.status),
+    !e.doc_no ? 'ยังไม่มีเลข' : e.dup ? 'เลขซ้ำ' : '',
+  ]);
+  const term = f.semester ? `ภาค${f.semester}-${f.year}` : String(f.year);
+  res.set('Content-Disposition', util.contentDisposition(`ทะเบียนเลขที่บันทึกข้อความ_${term}.${ext}`));
+  if (ext === 'csv') {
+    res.set('Content-Type', 'text/csv; charset=utf-8');
+    return res.send(util.toCsv([head, ...rows]));
+  }
+  const xlsx = require('../xlsx');
+  const title = `ทะเบียนเลขที่บันทึกข้อความ ${f.semester ? `ภาคเรียนที่ ${f.semester}/${f.year}` : `ปีการศึกษา ${f.year}`} (ส่งออกเมื่อ ${util.thaiDate(nowStr())})`;
+  const bytes = xlsx.build({ sheet: 'ทะเบียนเลข', title, head, rows, widths: [7, 16, 16, 24, 24, 30, 40, 10, 22, 14], marked: (r) => r[9] !== '' });
+  res.set('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+  res.send(Buffer.from(bytes));
+});
+
+// เติมเลขให้งานที่ส่งแล้วแต่ไม่มีเลข จากหน้าทะเบียน: งาน (แผน คู่มือ) หรือบันทึกหลังแผนทั้งเล่ม
+// ผู้ดูแลระบบเติมแทนครู ไม่เปลี่ยนสถานะงาน บันทึกในประวัติของงานและประวัติการใช้งาน · งานของตัวเองกรอกในหน้างาน
+router.post('/docnoreg/no', async (req, res) => {
+  if (!docnoRegOn(req, res)) return;
+  const b = req.body || {};
+  const back = /^\/admin\/docnoreg(\?\S*)?$/.test(String(b.back || '')) ? String(b.back) : '/admin/docnoreg';
+  const num = docno.cleanNum(b.doc_no_num);
+  if (!num) return fail(req, res, back, 'กรุณาพิมพ์เลขที่บันทึกข้อความเป็นตัวเลข');
+  const id = util.idOrNull(b.id);
+  if (!id) return fail(req, res, back, 'ไม่พบงานนี้');
+  if (b.kind === 'book') {
+    const notes = await q.all("SELECT id, doc_no, submitted_at, updated_at, academic_year, subject_code, teacher_id FROM submissions WHERE parent_id = ? AND doc_type = 'note'", id);
+    if (!notes.length) return fail(req, res, back, 'ไม่พบบันทึกหลังแผนของเล่มนี้');
+    if (notes[0].teacher_id === req.me.id) return fail(req, res, back, 'งานของตัวเองให้กรอกเลขในหน้างาน');
+    const no = docno.format(req.settings, num, docno.yearOf(req.settings, { academic_year: notes[0].academic_year, submitted_at: require('../notememo').bookDate(notes) || null }));
+    await q.run("UPDATE submissions SET doc_no = ? WHERE parent_id = ? AND doc_type = 'note'", no, id);
+    await features.audit(req.me, 'เติมเลขบันทึกข้อความส่งบันทึกหลังสอนแทนครู จากหน้าทะเบียนเลข', `แผน ${id} ${notes[0].subject_code} เป็น ${no}`);
+    return done(req, res, back, `บันทึกเลขที่ ${no} ให้บันทึกหลังแผนทั้งเล่มแล้ว`);
+  }
+  const sub = await q.get(
+    "SELECT s.id, s.doc_type, s.doc_no, s.academic_year, s.submitted_at, s.subject_code, s.teacher_id, s.status, u.full_name AS teacher_name FROM submissions s JOIN users u ON u.id = s.teacher_id WHERE s.id = ? AND s.doc_type IN ('plan', 'manual')",
+    id
+  );
+  if (!sub || sub.status === 'draft') return fail(req, res, back, 'ไม่พบงานนี้');
+  if (sub.teacher_id === req.me.id) return fail(req, res, back, 'งานของตัวเองให้กรอกเลขในหน้างาน');
+  const no = docno.format(req.settings, num, docno.yearOf(req.settings, sub));
+  await q.run('UPDATE submissions SET doc_no = ? WHERE id = ?', no, sub.id);
+  await wf.log(sub.id, req.me, { step_label: 'ผู้ดูแลระบบ', action: 'docno', comment: `${sub.doc_no ? sub.doc_no + ' เป็น ' : ''}${no}` });
+  await features.audit(req.me, `เติมเลขที่บันทึกข้อความใน${wf.DOC_TYPES[sub.doc_type].label} ${sub.subject_code} ของ ${sub.teacher_name} จากหน้าทะเบียนเลข`, `submission ${sub.id} เป็น ${no}`);
+  done(req, res, back, `บันทึกเลขที่ ${no} แล้ว`);
+});
+
 // ปรับเลขที่บันทึกข้อความทุกงานให้เป็นรูปแบบปัจจุบัน (คำนำหน้าและปีที่ตั้งไว้) เฉพาะเลขรูปแบบ คำนำหน้า+ตัวเลข/ปี 4 หลัก คำสั่งเดียว
 router.post('/docno/reformat', async (req, res) => {
   if (!req.ff.docnoreq) return fail(req, res, '/admin/settings', 'ฟังก์ชันบังคับกรอกเลขที่บันทึกข้อความปิดอยู่');

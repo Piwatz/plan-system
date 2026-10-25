@@ -1,0 +1,159 @@
+<%- include('../partials/top') %>
+<%# ทะเบียนเลขที่บันทึกข้อความ (ฟังก์ชันเสริม docnoreg) รายการจาก src/docnoreg.js · ตัวอย่างที่ครูเต้ยเลือก design-mockup/docnoreg-mockup.png (แบบ ก และ ข สลับมุมมองได้) %>
+<%
+  const link = (o) => '/admin/docnoreg?' + new URLSearchParams(Object.entries({ view: f.view, year: f.year, semester: f.semester || '', type: f.type, department: f.department || '', q: f.q, ...o }).filter(([, v]) => v !== '' && v !== 0)).toString();
+  const back = link({});
+  const dl = (ext) => link({}).replace('/admin/docnoreg?', `/admin/docnoreg.${ext}?`);
+  const TONE = { approved: 'tone-ok', pending: 'tone-wait', returned: 'tone-back' };
+  const subj = (e) => e.subjects.map((s) => s.code + ' ' + s.name).join(' · ');
+  const extra = (e) => e.type === 'note' ? ' · ทั้งเล่ม ' + e.sheets + ' แผ่น' : e.subjects.length > 1 ? ' (เลขเดียวกัน ' + e.subjects.length + ' วิชา)' : '';
+  const status = (e) => `<span class="badge st ${util.STATUS_CLASS[e.status.status]}">${wf.statusText(e.status)}</span>`;
+  const dupTag = '<span class="badge badge-red">ซ้ำ</span>';
+  const noteOn = ff.notedocno || numbered.some((e) => e.type === 'note');
+  const TYPES = [['', 'ทุกประเภท'], ['manual', 'คู่มือรายวิชา'], ['plan', 'แผนการจัดการเรียนรู้']].concat(noteOn ? [['note', 'บันทึกหลังแผน']] : []);
+  const dupN = numbered.filter((e) => e.dup).length;
+%>
+<div class="page-head">
+  <div>
+    <div class="eyebrow">ผู้ดูแลระบบ</div>
+    <h1>ทะเบียนเลขที่บันทึกข้อความ</h1>
+    <div class="sub">เลขที่ครูกรอกในงานที่ส่งแล้ว ปีการศึกษา <%= f.year %><%= f.semester ? ' ภาคเรียนที่ ' + f.semester : '' %> ไม่รวมฉบับร่าง</div>
+  </div>
+  <div class="actions">
+    <a class="btn btn-primary" href="<%= dl('xlsx') %>"><%- icon('download', 18) %> ดาวน์โหลด Excel (.xlsx)</a>
+    <a class="btn btn-ghost" href="<%= dl('csv') %>"><%- icon('download', 18) %> CSV</a>
+  </div>
+</div>
+
+<div class="tabs-inner dr-views" style="padding:0;margin-bottom:12px;background:var(--surface);border-radius:12px;box-shadow:var(--shadow)">
+  <a class="tab<%= f.view === 'num' ? ' active' : '' %>" href="<%= link({ view: 'num' }) %>"><%- icon('list', 18) %> เรียงตามเลข</a>
+  <a class="tab<%= f.view === 'teacher' ? ' active' : '' %>" href="<%= link({ view: 'teacher' }) %>"><%- icon('users', 18) %> แยกตามกลุ่มสาระและครู</a>
+</div>
+
+<form method="get" class="card filters" data-autosubmit>
+  <input type="hidden" name="view" value="<%= f.view %>">
+  <div class="field">
+    <label for="dr-year">ปีการศึกษา</label>
+    <select id="dr-year" name="year"><% for (const y of years) { %><option value="<%= y %>" <%= y === f.year ? 'selected' : '' %>><%= y %></option><% } %></select>
+  </div>
+  <div class="field">
+    <label for="dr-sem">ภาคเรียน</label>
+    <select id="dr-sem" name="semester"><option value="">ทั้งปี</option><option value="1" <%= f.semester === 1 ? 'selected' : '' %>>ภาคเรียนที่ 1</option><option value="2" <%= f.semester === 2 ? 'selected' : '' %>>ภาคเรียนที่ 2</option></select>
+  </div>
+  <div class="field">
+    <label for="dr-type">ประเภท</label>
+    <select id="dr-type" name="type"><% for (const [k, label] of TYPES) { %><option value="<%= k %>" <%= f.type === k ? 'selected' : '' %>><%= label %></option><% } %></select>
+  </div>
+  <div class="field">
+    <label for="dr-dept">กลุ่มสาระ</label>
+    <select id="dr-dept" name="department"><option value="">ทุกกลุ่มสาระ</option><% for (const d of departments) { %><option value="<%= d.id %>" <%= f.department === d.id ? 'selected' : '' %>><%= d.name %></option><% } %></select>
+  </div>
+  <div class="field grow">
+    <label for="dr-q">ค้นหา</label>
+    <input type="search" id="dr-q" name="q" value="<%= f.q %>" placeholder="เลข ชื่อครู รหัสวิชา">
+  </div>
+  <button class="btn btn-primary" type="submit"><%- icon('search', 18) %> ค้นหา</button>
+</form>
+
+<div class="dr-chips">
+  <div class="dr-chip"><b><%= numbered.length %></b>ฉบับที่มีเลข</div>
+  <% if (numbered.length) { %><div class="dr-chip"><b><%= numbered[numbered.length - 1].doc_no %></b>เลขท้ายสุด</div><% } %>
+  <% if (dupN) { %><div class="dr-chip bad"><b><%= dupN %></b>ฉบับที่เลขซ้ำกัน</div><% } %>
+  <% if (missing.length) { %><a class="dr-chip bad" href="#missing"><b><%= missing.length %></b>ส่งแล้วแต่ไม่มีเลข</a><% } %>
+</div>
+
+<% if (f.view === 'num') { %>
+<div class="card has-boxes">
+  <div class="card-head"><h3>เรียงตามเลข <%= numbered.length %> ฉบับ</h3></div>
+  <% if (!numbered.length) { %>
+    <div class="empty"><span class="big"></span>ยังไม่มีงานที่กรอกเลขที่บันทึกข้อความตามเงื่อนไขนี้</div>
+  <% } else { %>
+    <div class="table-wrap"><table class="table">
+      <thead><tr><th>เลขที่</th><th class="hide-sm">ลงวันที่</th><th>จาก</th><th>เรื่อง</th><th>สถานะ</th><th></th></tr></thead>
+      <tbody>
+      <% for (const e of numbered) { %>
+        <tr class="<%= e.dup ? 'dr-dup' : '' %>">
+          <td class="nowrap"><b><%= e.doc_no %></b> <%- e.dup ? dupTag : '' %></td>
+          <td class="hide-sm nowrap"><%= util.thaiDate(e.submitted_at, true) %><div class="muted small">ภาคเรียนที่ <%= e.semester %></div></td>
+          <td><%= e.teacher_name %><div class="muted small"><%= e.dept_name %></div></td>
+          <td><%= e.title %><div class="muted small"><%= subj(e) %><%= extra(e) %></div></td>
+          <td><%- status(e) %></td>
+          <td class="right"><a class="btn btn-sm btn-ghost" href="<%= e.href %>">เปิด</a></td>
+        </tr>
+      <% } %>
+      </tbody>
+    </table></div>
+    <div class="my-boxes">
+      <% for (const e of numbered) { %>
+        <a class="my-box <%= TONE[e.status.status] || '' %><%= e.dup ? ' dr-dup' : '' %>" href="<%= e.href %>" style="color:inherit;text-decoration:none">
+          <div class="mb-head"><b><%= e.doc_no %></b><%- e.dup ? dupTag : '' %><%- status(e) %></div>
+          <div><%= e.title %><div class="muted small"><%= subj(e) %><%= extra(e) %></div></div>
+          <div class="muted small"><%= e.teacher_name %> · <%= util.thaiDate(e.submitted_at, true) %></div>
+        </a>
+      <% } %>
+    </div>
+  <% } %>
+</div>
+<% } else { %>
+<div class="card">
+  <div class="card-head"><h3>แยกตามกลุ่มสาระและครู</h3></div>
+  <% if (!depts.length) { %>
+    <div class="empty"><span class="big"></span>ไม่พบงานตามเงื่อนไขนี้</div>
+  <% } else { %>
+    <% const COLS = [['manual', 'คู่มือ'], ['plan', 'แผน']].concat(noteOn ? [['note', 'บันทึกหลังแผน']] : []); %>
+    <div class="table-wrap dr-teacher"><table class="table">
+      <thead><tr><th>ครู</th><% for (const [, label] of COLS) { %><th><%= label %></th><% } %></tr></thead>
+      <tbody>
+      <% for (const d of depts) { %>
+        <tr class="dr-grp"><td colspan="<%= COLS.length + 1 %>"><%= d.dept || 'ไม่ระบุกลุ่มสาระ' %> <span class="muted small"><%= d.total %> คน · มีเลขครบ <%= d.complete %> คน</span></td></tr>
+        <% for (const t of d.teachers) { %>
+          <tr>
+            <td data-label="ครู"><b><%= t.name %></b></td>
+            <% for (const [k, label] of COLS) { const list = t[k]; %>
+              <td data-label="<%= label %>">
+                <% if (!list.length) { %><span class="muted small">ยังไม่ส่ง</span><% } %>
+                <% for (const e of list) { %>
+                  <a class="dr-no<%= e.doc_no ? '' : ' none' %>" href="<%= e.href %>"><%= e.doc_no || 'ไม่มีเลข' %><%- e.dup ? ' ' + dupTag : '' %><% if (e.subjects.length > 1) { %> <small><%= e.subjects.length %> วิชา</small><% } else if (list.length > 1) { %> <small><%= e.subjects[0].code %></small><% } %></a>
+                <% } %>
+              </td>
+            <% } %>
+          </tr>
+        <% } %>
+      <% } %>
+      </tbody>
+    </table></div>
+  <% } %>
+</div>
+<% } %>
+
+<% if (missing.length) { %>
+<div class="card" id="missing">
+  <div class="card-head"><h3>งานที่ส่งแล้วแต่ไม่มีเลข <%= missing.length %> ฉบับ</h3></div>
+  <p class="muted small" style="margin-top:0">งานที่ส่งก่อนบังคับกรอกเลข หรือผู้ดูแลระบบส่งแทน พิมพ์เฉพาะตัวเลขแล้วกด บันทึกเลข ระบบเติมคำนำหน้าและปีให้ สถานะงานไม่เปลี่ยน บันทึกไว้ในประวัติของงาน</p>
+  <div class="dr-miss">
+    <% for (const e of missing) { const yr = docno.yearOf(settings, { academic_year: e.academic_year, submitted_at: e.submitted_at || null }); const own = e.teacher_id === me.id; %>
+      <div class="dr-mrow">
+        <div class="dr-mwho">
+          <b><%= e.teacher_name %></b> <span class="muted small"><%= e.dept_name %></span>
+          <div><%= e.title %> <span class="muted small"><%= subj(e) %><%= extra(e) %></span></div>
+          <div class="small"><%- status(e) %> <span class="muted">ภาคเรียนที่ <%= e.semester %>/<%= e.academic_year %><%= e.submitted_at ? ' ส่ง ' + util.thaiDate(e.submitted_at, true) : '' %></span> <a href="<%= e.href %>">เปิดงาน</a></div>
+        </div>
+        <% if (own) { %>
+          <div class="muted small">งานของตัวเอง กรอกเลขในหน้างาน</div>
+        <% } else { %>
+          <form class="dr-mform" method="post" action="/admin/docnoreg/no" data-confirm="เติมเลขที่บันทึกข้อความให้<%= e.title %> <%= subj(e) %> ของ <%= e.teacher_name %> ใช่ไหม บันทึกไว้ในประวัติของงาน สถานะงานไม่เปลี่ยน" data-ok-label="บันทึกเลข">
+            <input type="hidden" name="kind" value="<%= e.type === 'note' ? 'book' : 'work' %>">
+            <input type="hidden" name="id" value="<%= e.type === 'note' ? e.planId : e.ids[0] %>">
+            <input type="hidden" name="back" value="<%= back %>">
+            <span class="dr-pre"><%= docno.prefix(settings) %></span>
+            <input type="text" name="doc_no_num" inputmode="numeric" pattern="[0-9๐-๙]*" maxlength="6" required aria-label="เลขที่บันทึกข้อความของ <%= e.teacher_name %>" placeholder="เลข">
+            <span class="dr-pre">/<%= yr %></span>
+            <button class="btn btn-sm btn-primary" type="submit">บันทึกเลข</button>
+          </form>
+        <% } %>
+      </div>
+    <% } %>
+  </div>
+</div>
+<% } %>
+<%- include('../partials/bottom') %>
