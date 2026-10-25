@@ -1,6 +1,7 @@
 <%- include('../partials/top') %>
 <div class="page-head"><div><h1>ผู้ดูแลระบบ</h1><div class="sub">ตั้งค่าระบบให้ตรงกับโรงเรียน ทำตามลำดับ 1 ถึง 5 ครั้งแรกที่ติดตั้ง</div></div></div>
 
+<% if (find) { %><%- include('../partials/adminfind') %><% } %>
 <% if (warnings.length) { %>
   <div class="alert alert-warn"><b>สิ่งที่ยังต้องตั้งค่า</b><ul><% for (const w of warnings) { %><li><%= w %></li><% } %></ul></div>
 <% } else { %>
@@ -21,7 +22,7 @@
 </div>
 
 <div class="grid-2" style="margin-top:18px">
-  <div class="card">
+  <div class="card" id="address">
     <h3>ที่อยู่สำหรับให้ครูเข้าใช้</h3>
 <% if (cloud) { %>
     <p class="muted small">ครูเปิดเบราว์เซอร์จากที่ไหนก็ได้ที่มีอินเทอร์เน็ต แล้วพิมพ์ที่อยู่ด้านล่าง</p>

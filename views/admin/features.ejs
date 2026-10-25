@@ -12,7 +12,7 @@
 <div class="grid-3">
   <div style="display:flex;flex-direction:column;gap:12px">
     <% for (const f of list) { const blocked = f.needs && !ready[f.needs] && !f.on; %>
-      <form class="feature<%= f.on ? ' on' : '' %>" method="post" action="/admin/features/<%= f.key %>"
+      <form class="feature<%= f.on ? ' on' : '' %>" id="f-<%= f.key %>" method="post" action="/admin/features/<%= f.key %>"
         data-confirm="<%= f.on ? 'ปิด' : 'เปิด' %> <%= f.title %>
 มีผลกับผู้ใช้ทุกคนทันที" data-ok-label="<%= f.on ? 'ปิด' : 'เปิด' %>" <%- f.on ? 'data-danger="1"' : '' %>>
         <input type="hidden" name="on" value="<%= f.on ? '0' : '1' %>">
@@ -179,7 +179,7 @@
       </form>
     </section>
 
-    <section class="card">
+    <section class="card" id="history">
       <h2>ประวัติการเปิดปิด</h2>
       <% if (!log.length) { %><p class="muted">ยังไม่มีการเปลี่ยนแปลง</p><% } %>
       <ul class="feed">

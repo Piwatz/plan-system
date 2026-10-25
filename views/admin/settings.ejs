@@ -5,7 +5,7 @@
     <div class="actions"><a class="btn btn-ghost" href="/admin">กลับ</a></div>
   </div>
   <form class="card" method="post" action="/admin/settings" enctype="multipart/form-data">
-    <h3>ข้อมูลโรงเรียน</h3>
+    <h3 id="school">ข้อมูลโรงเรียน</h3>
     <div class="form-grid">
       <div class="field">
         <label for="school_name">ชื่อโรงเรียน</label>
@@ -42,7 +42,7 @@
     </div>
 
     <%# ชื่อระบบ ข้อมูลท้ายเว็บ และไอคอนแอป (src/site.js) %>
-    <h3 style="margin-top:18px">ชื่อและข้อมูลท้ายเว็บ</h3>
+    <h3 style="margin-top:18px" id="site">ชื่อและข้อมูลท้ายเว็บ</h3>
     <p class="muted small">ใช้บนแถบเมนู ชื่อแท็บ ใต้ไอคอนแอป ท้ายเว็บ และหน้าเกี่ยวกับ <%= site.app_name %> ช่องที่เว้นว่างจะไม่แสดง</p>
     <div class="form-grid">
       <% for (const f of siteFields) { %>
@@ -60,14 +60,14 @@
     </div>
     <div class="hint">เครื่องที่เพิ่มไปยังหน้าจอโฮมไว้แล้ว ต้องลบไอคอนเดิมแล้วเพิ่มใหม่ ไอคอนใหม่จึงจะขึ้น</div>
 
-    <h3 style="margin-top:18px">การจัดวางบนมือถือและไอแพดแนวตั้ง</h3>
+    <h3 style="margin-top:18px" id="layout">การจัดวางบนมือถือและไอแพดแนวตั้ง</h3>
     <div class="seg" style="margin-bottom:6px">
       <label><input type="radio" name="mobile_layout" value="simple" <%= settings.mobile_layout !== 'classic' ? 'checked' : '' %>><span>แบบเรียบง่าย (แนะนำ)</span></label>
       <label><input type="radio" name="mobile_layout" value="classic" <%= settings.mobile_layout === 'classic' ? 'checked' : '' %>><span>แบบเต็มเหมือนบนคอม</span></label>
     </div>
     <p class="muted small">แบบเรียบง่าย: หน้าแรกบอกสิ่งที่ต้องทำต่อ รายวิชาเป็นช่องสีกดง่าย ปุ่มส่งงานใหญ่ตรงกลางแถบล่าง งานรอตรวจเป็นการ์ด</p>
 
-    <h3 style="margin-top:18px">ธีมสีของระบบ</h3>
+    <h3 style="margin-top:18px" id="theme">ธีมสีของระบบ</h3>
     <p class="muted small">มีผลกับทุกคนทันทีหลังบันทึก ผู้ใช้แต่ละคนยังเลือกโหมดกลางคืนและตัวอักษรใหญ่ของตัวเองได้ที่เมนูด้านซ้าย</p>
     <div class="theme-grid" style="margin-bottom:8px">
       <% for (const t of themeList) { const v = themeOf(t.key); %>
@@ -97,7 +97,7 @@
     </div>
     <% } %>
 
-    <h3 style="margin-top:18px">ภาคเรียนปัจจุบัน</h3>
+    <h3 style="margin-top:18px" id="term">ภาคเรียนปัจจุบัน</h3>
     <div class="form-grid">
       <div class="field">
         <label for="academic_year">ปีการศึกษา (พ.ศ.)</label>
@@ -110,7 +110,7 @@
     </div>
     <p class="muted small">งานใหม่ที่ครูส่งจะอยู่ในภาคเรียนนี้ งานภาคเรียนก่อนยังเปิดดูได้ตามเดิม</p>
 
-    <h3 style="margin-top:18px">การรับส่งแผนและคู่มือ</h3>
+    <h3 style="margin-top:18px" id="window">การรับส่งแผนและคู่มือ</h3>
     <label class="check" style="margin-bottom:10px"><input type="checkbox" name="submit_open" value="1" <%= settings.submit_open === '1' ? 'checked' : '' %>> เปิดรับส่งแผนและคู่มือรายวิชา</label>
     <div class="form-grid">
       <div class="field"><label for="submit_start">เริ่มรับวันที่ (ไม่บังคับ)</label><input type="date" id="submit_start" name="submit_start" value="<%= settings.submit_start %>"></div>
@@ -130,7 +130,7 @@
     <% if (ff.docnoreg) { %><p><a class="btn btn-sm btn-ghost" href="/admin/docnoreg"><%- icon('list', 16) %> เปิดทะเบียนเลขที่บันทึกข้อความ</a></p><% } %>
     <% } %>
 
-    <h3 style="margin-top:18px">ตัวเลือกในแบบฟอร์ม</h3>
+    <h3 style="margin-top:18px" id="formopts">ตัวเลือกในแบบฟอร์ม</h3>
     <div class="form-grid">
       <div class="field"><label for="grade_levels">ระดับชั้น หนึ่งบรรทัดต่อหนึ่งชั้น</label><textarea id="grade_levels" name="grade_levels" style="min-height:150px"><%= settings.grade_levels %></textarea></div>
       <div class="field"><label for="teaching_methods">รูปแบบการจัดการเรียนรู้ หนึ่งบรรทัดต่อหนึ่งรูปแบบ</label><textarea id="teaching_methods" name="teaching_methods" style="min-height:150px"><%= settings.teaching_methods %></textarea></div>

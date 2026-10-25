@@ -64,7 +64,16 @@ router.get('/', async (req, res) => {
     accounts: req.ff.unlock ? await accountInfo() : null,
     sigMissing: req.ff.siglist ? await require('../sigfill').missingList() : null,
     front: req.ff.frontcheck ? await frontInfo() : null,
+    // ช่องค้นหาฟังก์ชัน (ฟังก์ชันเสริม adminfind) รายการค้นหาโหลดแยกจาก /admin/find.json
+    find: req.ff.adminfind ? { popular: require('../adminfind').POPULAR } : null,
   });
+});
+
+// รายการที่ค้นได้ของช่องค้นหาฟังก์ชัน (ฟังก์ชันเสริม adminfind) แยกจากหน้าเพื่อให้หน้าผู้ดูแลเบา
+router.get('/find.json', (req, res) => {
+  if (!req.ff.adminfind) return res.status(404).json({});
+  res.set('Cache-Control', 'no-store');
+  res.json(require('../adminfind').items(req.settings, req.ff));
 });
 
 // ---------- รายชื่องานที่หน้าแรกน่าจะไม่ใช่ปก (ฟังก์ชันเสริม frontcheck) ----------
@@ -1075,7 +1084,9 @@ router.post('/features/:key', async (req, res) => {
   const need = f.needs && NEEDS[f.needs];
   if (on && need && !need[0](req.settings)) return fail(req, res, '/admin/features', need[1]);
   await features.setFlag(f.key, on, req.me);
-  done(req, res, '/admin/features', `${on ? 'เปิด' : 'ปิด'} ${f.title} เรียบร้อย`);
+  // เปิดปิดจากผลค้นหาในหน้าผู้ดูแลระบบ (ฟังก์ชันเสริม adminfind) กลับไปที่ผลค้นหาเดิม
+  const back = /^\/admin\?find=[^#\s]*$/.test(String((req.body || {}).back || '')) ? req.body.back : '/admin/features';
+  done(req, res, back, `${on ? 'เปิด' : 'ปิด'} ${f.title} เรียบร้อย`);
 });
 
 // เลือกการจัดหน้าลงนามบันทึกหลังแผน (ฟังก์ชันเสริม notesign) มีผลตอนพิมพ์ทุกครั้ง งานเดิมไม่ต้องลงนามใหม่

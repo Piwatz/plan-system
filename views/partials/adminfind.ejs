@@ -1,0 +1,20 @@
+<%# ช่องค้นหาฟังก์ชันของผู้ดูแลระบบ (ฟังก์ชันเสริม adminfind) รายการจาก src/adminfind.js (/admin/find.json) ค้นในเบราว์เซอร์ (public/js/app.js) · ตัวอย่างที่ครูเต้ยเลือก design-mockup/adminfind-mockup.png แบบ ก %>
+<section class="card af" data-adminfind>
+  <label class="af-box" for="af-q">
+    <%- icon('search', 22) %>
+    <input type="text" id="af-q" data-af-q autocomplete="off" enterkeyhint="search" placeholder="ค้นหาฟังก์ชัน เช่น ลายเซ็น รหัสผ่าน ปก" aria-label="ค้นหาฟังก์ชันและหน้าของผู้ดูแลระบบ">
+    <button type="button" class="btn btn-sm btn-ghost" data-af-clear hidden>ล้าง</button>
+  </label>
+  <div class="af-tools">
+    <div class="af-filter" role="group" aria-label="กรองฟังก์ชันเสริม">
+      <button type="button" class="chip on" data-af-state="">ทั้งหมด</button>
+      <button type="button" class="chip" data-af-state="on">เปิดอยู่</button>
+      <button type="button" class="chip" data-af-state="off">ปิดอยู่</button>
+    </div>
+    <div class="af-popular" data-af-popular>
+      <span class="muted small">ค้นบ่อย</span>
+      <% for (const w of find.popular) { %><button type="button" class="chip" data-af-word="<%= w %>"><%= w %></button><% } %>
+    </div>
+  </div>
+  <div class="af-res" data-af-res aria-live="polite"></div>
+</section>

@@ -2687,4 +2687,173 @@
       f.submit();
     })
   );
+
+  // ---------- ช่องค้นหาฟังก์ชันของผู้ดูแลระบบ (ฟังก์ชันเสริม adminfind) ----------
+  // รายการทั้งหมดโหลดครั้งเดียวจาก /admin/find.json (src/adminfind.js) ค้นในเครื่อง ทุกคำที่พิมพ์ (คั่นด้วยช่องว่าง) ต้องเจอ คำพ้องนับว่าเจอด้วย
+  const afBox = document.querySelector('[data-adminfind]');
+  if (afBox) {
+    let data = { items: [], synonyms: {} };
+    let hay = [];
+    const input = afBox.querySelector('[data-af-q]');
+    const res = afBox.querySelector('[data-af-res]');
+    const clear = afBox.querySelector('[data-af-clear]');
+    const popular = afBox.querySelector('[data-af-popular]');
+    const stateBtns = afBox.querySelectorAll('[data-af-state]');
+    const low = (s) => String(s || '').toLowerCase();
+    const escRe = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    let fstate = '';
+    let loaded = false;
+    let loadFail = false;
+    // คำที่พิมพ์ 1 คำ ได้คำที่ค้นจริงหลายคำ: ตัวเอง + คำพ้องของคำนั้น (หรือคำพ้องที่อยู่ในคำนั้น เช่น เซ็นชื่อ มี เซ็น)
+    function alts(term) {
+      const out = new Set([term]);
+      for (const [k, list] of Object.entries(data.synonyms)) if (term === low(k) || (k.length > 1 && term.includes(low(k)))) list.forEach((w) => out.add(low(w)));
+      return [...out];
+    }
+    function el(tag, cls, text) {
+      const e = document.createElement(tag);
+      if (cls) e.className = cls;
+      if (text != null) e.textContent = text;
+      return e;
+    }
+    // ใส่ข้อความพร้อมระบายสีคำที่ค้นเจอ
+    function marked(parent, text, re) {
+      if (!re) return parent.append(text || '');
+      let last = 0;
+      String(text || '').replace(re, (m, _g, i) => {
+        parent.append(text.slice(last, i), el('mark', '', m));
+        last = i + m.length;
+        return m;
+      });
+      parent.append(String(text || '').slice(last));
+    }
+    function backUrl(q) {
+      return '/admin?find=' + encodeURIComponent(q) + (fstate ? '&fs=' + fstate : '');
+    }
+    function item(it, re, q) {
+      const row = el('div', 'af-it');
+      const a = el('a', 'af-link');
+      a.href = it.href;
+      const ic = el('span', 'af-ic', it.kind === 'feature' ? 'ส' : 'ห');
+      const body = el('span', 'af-body');
+      const b = el('b');
+      marked(b, it.title, re);
+      const d = el('span', 'af-desc');
+      if (it.kind === 'place') d.append(it.where + ' · ');
+      marked(d, it.desc, re);
+      body.append(b, d);
+      a.append(ic, body);
+      row.append(a);
+      if (it.kind === 'feature') {
+        const f = el('form', 'af-sw');
+        f.method = 'post';
+        f.action = '/admin/features/' + it.key;
+        f.dataset.confirm = (it.on ? 'ปิด ' : 'เปิด ') + it.title + '\nมีผลกับผู้ใช้ทุกคนทันที';
+        f.dataset.okLabel = it.on ? 'ปิด' : 'เปิด';
+        if (it.on) f.dataset.danger = '1';
+        for (const [n, v] of [['on', it.on ? '0' : '1'], ['back', backUrl(q)]]) {
+          const h = el('input');
+          h.type = 'hidden';
+          h.name = n;
+          h.value = v;
+          f.append(h);
+        }
+        const btn = el('button', 'switch');
+        btn.type = 'submit';
+        btn.setAttribute('role', 'switch');
+        btn.setAttribute('aria-checked', String(it.on));
+        btn.setAttribute('aria-label', (it.on ? 'ปิด ' : 'เปิด ') + it.title);
+        btn.append(el('span', 'track'), el('span', '', it.on ? 'เปิด' : 'ปิด'));
+        f.append(btn);
+        row.append(f);
+      } else {
+        row.append(el('span', 'af-go', 'ไปที่นี่'));
+      }
+      return row;
+    }
+    function render() {
+      const q = input.value.trim();
+      clear.hidden = !q;
+      popular.hidden = Boolean(q);
+      stateBtns.forEach((b) => b.classList.toggle('on', b.dataset.afState === fstate));
+      const url = q || fstate ? backUrl(q) : '/admin';
+      if (location.pathname + location.search !== url) history.replaceState(null, '', url + location.hash);
+      res.textContent = '';
+      if (!q && !fstate) return;
+      if (!loaded) {
+        res.append(el('div', 'af-none', loadFail ? 'โหลดรายการค้นหาไม่สำเร็จ กดรีเฟรชหน้านี้อีกครั้ง' : 'กำลังโหลดรายการ'));
+        return;
+      }
+      const terms = low(q).split(/\s+/).filter(Boolean).map(alts);
+      const words = terms.flat().filter(Boolean).sort((x, y) => y.length - x.length);
+      const re = words.length ? new RegExp('(' + words.map(escRe).join('|') + ')', 'gi') : null;
+      const hits = [];
+      data.items.forEach((it, i) => {
+        if (fstate && (it.kind !== 'feature' || it.on !== (fstate === 'on'))) return;
+        if (!terms.every((list) => list.some((w) => hay[i].includes(w)))) return;
+        const t = low(it.title);
+        hits.push({ it, score: terms.filter((list) => list.some((w) => t.includes(w))).length });
+      });
+      hits.sort((x, y) => y.score - x.score);
+      const groups = [
+        ['หน้าและหัวข้อของผู้ดูแล', hits.filter((h) => h.it.kind === 'place')],
+        ['ฟังก์ชันเสริม', hits.filter((h) => h.it.kind === 'feature')],
+      ];
+      if (!hits.length) {
+        res.append(el('div', 'af-none', 'ไม่พบ ' + q + ' ลองคำอื่น หรือคำที่สั้นลง'));
+        return;
+      }
+      for (const [label, list] of groups) {
+        if (!list.length) continue;
+        res.append(el('div', 'af-gh', label + ' ' + list.length));
+        list.forEach((h) => res.append(item(h.it, re, q)));
+      }
+    }
+    input.addEventListener('input', render);
+    clear.addEventListener('click', () => {
+      input.value = '';
+      render();
+      input.focus();
+    });
+    afBox.querySelectorAll('[data-af-word]').forEach((b) =>
+      b.addEventListener('click', () => {
+        input.value = b.dataset.afWord;
+        render();
+        input.focus();
+      })
+    );
+    stateBtns.forEach((b) =>
+      b.addEventListener('click', () => {
+        fstate = b.dataset.afState;
+        render();
+      })
+    );
+    // กลับมาจากการเปิดปิดสวิตช์หรือกดย้อนกลับ: ค้นคำเดิมต่อ
+    const p = new URLSearchParams(location.search);
+    input.value = p.get('find') || '';
+    fstate = ['on', 'off'].includes(p.get('fs')) ? p.get('fs') : '';
+    render();
+    if (input.value || fstate) afBox.scrollIntoView({ block: 'start' });
+    fetch('/admin/find.json', { credentials: 'same-origin' })
+      .then((r) => (r.ok ? r.json() : Promise.reject(r)))
+      .then((d) => {
+        data = d;
+        hay = data.items.map((it) => low([it.title, it.desc, it.where, it.words, it.who, it.key].join(' ')));
+        loaded = true;
+        render();
+      })
+      .catch(() => {
+        loadFail = true;
+        render();
+      });
+  }
+
+  // ปลายทางของผลค้นหา (?found=1#หัวข้อ): เลื่อนไปหัวข้อนั้นและกระพริบสีเหลือง
+  if (new URLSearchParams(location.search).get('found') === '1' && location.hash.length > 1) {
+    const hit = document.getElementById(decodeURIComponent(location.hash.slice(1)));
+    if (hit) {
+      hit.classList.add('find-hit');
+      setTimeout(() => hit.scrollIntoView({ block: 'center' }), 60);
+    }
+  }
 })();
