@@ -1,0 +1,116 @@
+<!doctype html><meta charset="utf-8"><style>
+body{margin:0;background:#EEF2F7;font-family:'Leelawadee UI',Tahoma,sans-serif;color:#0F1E33;width:1500px;padding:24px;box-sizing:border-box}
+h1{font-size:30px;margin:0 0 6px}h2{font-size:24px;margin:26px 0 10px;color:#1D3A66}.cap{color:#4E5F78;font-size:14.5px;margin:8px 0 0;line-height:1.55}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+.box{background:#fff;border:1px solid #D6DEE9;border-radius:14px;padding:16px}
+.box h3{margin:0 0 12px;font-size:19px}.tag{display:inline-block;background:#1D3A66;color:#fff;border-radius:8px;padding:1px 10px;font-size:14px;margin-right:6px}
+.rec{background:#E3A21A;color:#1b1300}
+.page{background:#F6F8FB;border:1px solid #D6DEE9;border-radius:10px;padding:12px}
+.ph{font-size:13px;color:#4E5F78}.pt{font-size:20px;font-weight:700;margin:2px 0 2px}
+.bp{background:#1D3A66;color:#fff;border-radius:9px;padding:6px 12px;font-size:13.5px;font-weight:700;display:inline-block}.bg{border:1px solid #1D3A66;color:#1D3A66;border-radius:9px;padding:5px 12px;font-size:13.5px;background:#fff;display:inline-block}
+.head{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;margin-bottom:10px}
+.filters{display:flex;gap:8px;background:#fff;border:1px solid #D6DEE9;border-radius:10px;padding:8px;margin-bottom:10px;font-size:13px;flex-wrap:wrap}
+.sel{border:1px solid #C9D3E0;border-radius:7px;padding:4px 8px;background:#fff}
+.chips{display:flex;gap:8px;margin-bottom:10px;flex-wrap:wrap}.chip{background:#fff;border:1px solid #D6DEE9;border-radius:10px;padding:6px 10px;font-size:13px}.chip b{font-size:18px;display:block}
+.chip.warn{border-color:#E3A21A;background:#FFF7E3}.chip.bad{border-color:#C0392B;background:#FDECEA}
+table{width:100%;border-collapse:collapse;background:#fff;font-size:13px;border-radius:10px;overflow:hidden}
+th{background:#E4ECF7;text-align:left;padding:6px 7px;font-weight:700;white-space:nowrap}td{padding:6px 7px;border-top:1px solid #E6EBF2;vertical-align:top}
+.no{font-weight:700;white-space:nowrap;color:#1D3A66}.mut{color:#6A7890}
+.st{border-radius:20px;padding:1px 8px;font-size:12px;white-space:nowrap}.ok{background:#E4F4EA;color:#1B7343}.wait{background:#FFF3D6;color:#8A5A00}.back{background:#FDECEA;color:#A93226}
+.gap td{background:#FFF7E3;color:#8A5A00;font-style:italic}.dup td{background:#FDECEA}
+.grp{background:#F1F4F9;font-weight:700;color:#1D3A66}
+.phone{width:330px;border:8px solid #1b2433;border-radius:30px;padding:12px;background:#F6F8FB;margin:0 auto}
+.mc{background:#fff;border:1px solid #D6DEE9;border-radius:12px;padding:10px;margin-bottom:8px;font-size:13px}
+.mc .n{font-size:17px;font-weight:700;color:#1D3A66;display:flex;justify-content:space-between}
+.xl{border:1px solid #9BB0A0;font-family:Calibri,'Leelawadee UI',sans-serif;font-size:12.5px;background:#fff}
+.xl .bar{background:#1E6E43;color:#fff;padding:4px 8px;font-size:12px}
+.xl table{border-radius:0}.xl th,.xl td{border:1px solid #D4D4D4;padding:3px 6px}.xl th{background:#F2F2F2;font-weight:400;color:#555;text-align:center}
+.xl .h td{font-weight:700;background:#DDEBF7}
+.note{font-size:13.5px;line-height:1.6;color:#33445c;margin:8px 0 0}
+.idea{border:2px dashed #1D3A66;border-radius:12px;padding:10px 14px;background:#fff;font-size:14px;line-height:1.7}
+.menu{font-size:13px;background:#1D3A66;color:#cfe;border-radius:10px;padding:10px;width:200px}.menu div{padding:5px 8px;border-radius:7px}.menu .on{background:#ffffff26;color:#fff;font-weight:700}
+</style>
+
+<h1>ตอน 3 ทะเบียนเลขที่บันทึกข้อความ (สำหรับผู้ดูแลระบบ)</h1>
+<div class="cap">ดึงเลขที่ครูกรอกไว้ในงาน (แผน คู่มือ บันทึกหลังแผนทั้งเล่ม) มาเรียงเป็นสมุดทะเบียน เปิดดูได้ทันที กดปุ่มเดียวได้ไฟล์ Excel ไปเก็บหรือพิมพ์ · ชื่อในภาพเป็นชื่อสมมติ</div>
+
+<h2>เรื่อง 1 หน้าตาหน้าทะเบียน เลือก 1 แบบ</h2>
+<div class="grid">
+  <div class="box">
+    <h3><span class="tag rec">แนะนำ</span>แบบ ก เรียงตามเลข เหมือนสมุดทะเบียนหนังสือ</h3>
+    <div class="page">
+      <div class="head"><div><div class="ph">ผู้ดูแลระบบ</div><div class="pt">ทะเบียนเลขที่บันทึกข้อความ</div><div class="ph">เลขที่ครูกรอกในงาน ปีการศึกษา 2569</div></div><span class="bp">ส่งออกเป็นไฟล์ Excel</span></div>
+      <div class="filters"><span class="sel">ปี 2569 ▾</span><span class="sel">ทุกประเภท ▾</span><span class="sel">ทุกกลุ่มสาระ ▾</span><span class="sel" style="flex:1">ค้นหา เลข ชื่อครู รหัสวิชา</span></div>
+      <div class="chips"><div class="chip"><b>124</b>เลขที่ใช้แล้ว</div><div class="chip"><b>วก.262</b>เลขล่าสุด</div><div class="chip warn"><b>7</b>เลขที่ข้ามไป</div><div class="chip bad"><b>9</b>งานที่ส่งแล้วแต่ไม่มีเลข</div></div>
+      <table>
+        <tr><th>เลขที่</th><th>ลงวันที่</th><th>จาก</th><th>เรื่อง</th><th>สถานะ</th><th></th></tr>
+        <tr><td class="no">วก.214/2569</td><td>3 ต.ค. 69</td><td>ครูสมใจ ใจดี<div class="mut">วิทยาศาสตร์</div></td><td>ขออนุญาตใช้คู่มือรายวิชา<div class="mut">ว31101 ฟิสิกส์ 1 · ว31221 ฟิสิกส์เพิ่มเติม (เลขเดียวกัน 2 วิชา)</div></td><td><span class="st ok">ผ่านครบ</span></td><td><span class="bg">เปิด</span></td></tr>
+        <tr><td class="no">วก.215/2569</td><td>3 ต.ค. 69</td><td>ครูสมใจ ใจดี<div class="mut">วิทยาศาสตร์</div></td><td>ขออนุญาตใช้แผนการจัดการเรียนรู้<div class="mut">ว31101 ฟิสิกส์ 1</div></td><td><span class="st wait">รอรองฯ</span></td><td><span class="bg">เปิด</span></td></tr>
+        <tr class="gap"><td colspan="6">เลข วก.216 ถึง 218 ยังไม่มีงานใดใช้ (อาจขอเลขไปแล้วแต่ยังไม่ส่ง หรือใช้กับเรื่องอื่น)</td></tr>
+        <tr><td class="no">วก.219/2569</td><td>4 ต.ค. 69</td><td>ครูมานะ ขยันยิ่ง<div class="mut">ภาษาไทย</div></td><td>ขอส่งบันทึกหลังสอน<div class="mut">ท21101 ภาษาไทย 1 · ทั้งเล่ม 18 แผ่น</div></td><td><span class="st back">ส่งกลับแก้</span></td><td><span class="bg">เปิด</span></td></tr>
+        <tr class="dup"><td class="no">วก.220/2569 <span class="st back">ซ้ำ</span></td><td>5 ต.ค. 69</td><td>ครูปิติ รักเรียน<div class="mut">คณิตศาสตร์</div></td><td>ขออนุญาตใช้แผนการจัดการเรียนรู้<div class="mut">ค21101 คณิตศาสตร์ 1</div></td><td><span class="st ok">ผ่านครบ</span></td><td><span class="bg">เปิด</span></td></tr>
+        <tr class="dup"><td class="no">วก.220/2569 <span class="st back">ซ้ำ</span></td><td>6 ต.ค. 69</td><td>ครูชูใจ ใฝ่รู้<div class="mut">สังคมศึกษา</div></td><td>ขออนุญาตใช้คู่มือรายวิชา<div class="mut">ส21101 สังคมศึกษา 1</div></td><td><span class="st wait">รอหัวหน้า</span></td><td><span class="bg">เปิด</span></td></tr>
+      </table>
+      <div class="note">ท้ายตารางมีหัวข้อ <b>งานที่ส่งแล้วแต่ไม่มีเลข</b> (งานเก่าก่อนบังคับกรอก หรือผู้ดูแลส่งแทน) กดเปิดไปเติมได้</div>
+    </div>
+    <div class="note">เหมาะกับห้องวิชาการที่ออกเลขเรียงกัน เห็นทันทีว่าเลขไหนข้าม เลขไหนซ้ำ (แจ้งให้เห็นเฉย ๆ ไม่ห้ามครูกรอก ตามที่ตัดเรื่องกันเลขซ้ำออกแล้ว)</div>
+  </div>
+
+  <div class="box">
+    <h3>แบบ ข แยกตามกลุ่มสาระและครู</h3>
+    <div class="page">
+      <div class="head"><div><div class="ph">ผู้ดูแลระบบ</div><div class="pt">ทะเบียนเลขที่บันทึกข้อความ</div><div class="ph">เลขที่ครูกรอกในงาน ปีการศึกษา 2569</div></div><span class="bp">ส่งออกเป็นไฟล์ Excel</span></div>
+      <div class="filters"><span class="sel">ปี 2569 ▾</span><span class="sel">ทุกประเภท ▾</span><span class="sel" style="flex:1">ค้นหา เลข ชื่อครู รหัสวิชา</span></div>
+      <table>
+        <tr><th>ครู</th><th>คู่มือ</th><th>แผน</th><th>บันทึกหลังแผน</th></tr>
+        <tr class="grp"><td colspan="4">วิทยาศาสตร์ (12 คน · มีเลขครบ 10 คน)</td></tr>
+        <tr><td>ครูสมใจ ใจดี</td><td class="no">วก.214/2569<div class="mut">2 วิชา</div></td><td class="no">วก.215/2569</td><td class="mut">ยังไม่ส่ง</td></tr>
+        <tr><td>ครูวีระ กล้าหาญ</td><td class="no">วก.230/2569</td><td><span class="st back">ไม่มีเลข</span></td><td class="mut">ยังไม่ส่ง</td></tr>
+        <tr class="grp"><td colspan="4">ภาษาไทย (8 คน · มีเลขครบ 8 คน)</td></tr>
+        <tr><td>ครูมานะ ขยันยิ่ง</td><td class="no">วก.201/2569</td><td class="no">วก.202/2569</td><td class="no">วก.219/2569</td></tr>
+        <tr><td>ครูดารา สดใส</td><td class="no">วก.240/2569</td><td class="no">วก.241/2569</td><td class="mut">ยังไม่ส่ง</td></tr>
+        <tr class="grp"><td colspan="4">คณิตศาสตร์ (9 คน · มีเลขครบ 7 คน)</td></tr>
+        <tr><td>ครูปิติ รักเรียน</td><td class="no">วก.198/2569</td><td class="no">วก.220/2569</td><td class="mut">ยังไม่ส่ง</td></tr>
+      </table>
+    </div>
+    <div class="note">เหมาะกับการไล่ตามว่าครูคนไหนยังไม่มีเลข แต่หาเลขเรียงต่อกันยากกว่า ไม่เห็นเลขข้าม</div>
+  </div>
+</div>
+
+<h2>เรื่อง 2 บนมือถือ และไฟล์ Excel ที่ได้</h2>
+<div class="grid" style="grid-template-columns:380px 1fr">
+  <div class="box">
+    <h3>บนมือถือ (แบบ ก) เป็นกล่องเรียงตามเลข</h3>
+    <div class="phone">
+      <div class="pt" style="font-size:17px">ทะเบียนเลขที่บันทึกข้อความ</div>
+      <div style="margin:6px 0 8px"><span class="bp">ส่งออกเป็นไฟล์ Excel</span></div>
+      <div class="mc"><div class="n">วก.214/2569 <span class="st ok">ผ่านครบ</span></div>ขออนุญาตใช้คู่มือรายวิชา 2 วิชา<div class="mut">ครูสมใจ ใจดี · 3 ต.ค. 69</div></div>
+      <div class="mc"><div class="n">วก.215/2569 <span class="st wait">รอรองฯ</span></div>ขออนุญาตใช้แผนการจัดการเรียนรู้<div class="mut">ครูสมใจ ใจดี · 3 ต.ค. 69</div></div>
+      <div class="mc" style="background:#FFF7E3;border-color:#E3A21A;color:#8A5A00">เลข วก.216 ถึง 218 ยังไม่มีงานใดใช้</div>
+      <div class="mc"><div class="n">วก.219/2569 <span class="st back">ส่งกลับแก้</span></div>ขอส่งบันทึกหลังสอน ทั้งเล่ม<div class="mut">ครูมานะ ขยันยิ่ง · 4 ต.ค. 69</div></div>
+    </div>
+  </div>
+  <div class="box">
+    <h3>ไฟล์ Excel ที่ได้ (ไฟล์ .xlsx จริง หัวตารางเป็นตัวหนา ความกว้างคอลัมน์พอดี พิมพ์ได้เลย)</h3>
+    <div class="xl"><div class="bar">ทะเบียนเลขที่บันทึกข้อความ_2569.xlsx</div>
+      <table>
+        <tr><th></th><th>A</th><th>B</th><th>C</th><th>D</th><th>E</th><th>F</th><th>G</th><th>H</th></tr>
+        <tr><th>1</th><td colspan="8"><b>ทะเบียนเลขที่บันทึกข้อความ ปีการศึกษา 2569</b> (ส่งออกเมื่อ 25 ต.ค. 2569)</td></tr>
+        <tr class="h"><th>2</th><td>ลำดับ</td><td>เลขที่</td><td>ลงวันที่</td><td>จาก</td><td>กลุ่มสาระ</td><td>เรื่อง</td><td>รายวิชา</td><td>สถานะ</td></tr>
+        <tr><th>3</th><td>1</td><td>วก.214/2569</td><td>3 ต.ค. 2569</td><td>ครูสมใจ ใจดี</td><td>วิทยาศาสตร์</td><td>ขออนุญาตใช้คู่มือรายวิชา</td><td>ว31101 ฟิสิกส์ 1, ว31221 ฟิสิกส์เพิ่มเติม</td><td>ผ่านครบแล้ว</td></tr>
+        <tr><th>4</th><td>2</td><td>วก.215/2569</td><td>3 ต.ค. 2569</td><td>ครูสมใจ ใจดี</td><td>วิทยาศาสตร์</td><td>ขออนุญาตใช้แผนการจัดการเรียนรู้</td><td>ว31101 ฟิสิกส์ 1</td><td>รอรองผู้อำนวยการ</td></tr>
+        <tr><th>5</th><td>3</td><td>วก.219/2569</td><td>4 ต.ค. 2569</td><td>ครูมานะ ขยันยิ่ง</td><td>ภาษาไทย</td><td>ขอส่งบันทึกหลังสอน</td><td>ท21101 ภาษาไทย 1</td><td>ส่งกลับแก้ไข</td></tr>
+      </table>
+    </div>
+    <div class="note"><b>ทางเลือกไฟล์:</b> <b>.xlsx จริง</b> (แนะนำ เปิดแล้วสวย หัวหนา คอลัมน์พอดี เปิดได้ทั้ง Excel Numbers บน Mac และ Google ชีต) หรือ <b>.csv</b> แบบที่ปุ่มทะเบียนงานเดิมใช้ (ง่ายกว่า แต่เปิดแล้วคอลัมน์แคบ ต้องขยายเอง)</div>
+    <div class="note"><b>ทางเข้าหน้า:</b> เมนูผู้ดูแลระบบ เพิ่มปุ่ม ทะเบียนเลขบันทึกข้อความ · ในหน้าตั้งค่าโรงเรียน หัวข้อเลขที่บันทึกข้อความ มีลิงก์ไปด้วย · มีสวิตช์ในหน้าฟังก์ชันเสริม (เปิดเป็นค่าเริ่มต้น เพราะดูได้เฉพาะผู้ดูแล ไม่กระทบครู)</div>
+  </div>
+</div>
+
+<h2>ไอเดียเสริม (เลือกได้ ไม่เลือกก็ได้)</h2>
+<div class="idea">
+1 <b>แถบเลขที่ข้ามไป</b> (สีส้มในแบบ ก) ช่วยห้องวิชาการตามว่าเลขที่ออกไปแล้วยังไม่มีงานส่งมา<br>
+2 <b>ป้ายเลขซ้ำ</b> (สีแดง) แจ้งให้เห็นอย่างเดียว ไม่ห้ามครูกรอก · คู่มือของครูคนเดียวกันที่ใช้เลขเดียวกันตามกติกาเดิม ไม่นับว่าซ้ำ<br>
+3 <b>หัวข้องานที่ส่งแล้วแต่ไม่มีเลข</b> ท้ายตาราง กดเปิดงานไปเติมได้<br>
+4 <b>ให้ผู้ตรวจระดับโรงเรียน (รองฯ ผอ. หัวหน้าวิชาการ) ดูได้ด้วย</b> นอกจากผู้ดูแลระบบ
+</div>
