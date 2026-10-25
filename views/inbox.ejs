@@ -4,7 +4,7 @@
   const bulkable = rows.filter((s) => !s.needsScore).length;
   // แถวเล่มบันทึกหลังแผน (ส่งทั้งเล่ม) เปิดหน้าลงนามทั้งเล่ม
   const hrefOf = (s) => (s.book ? '/s/' + s.book.planId + '/book' : '/s/' + s.id);
-  const noteText = (s) => (s.book ? ' แผนที่ ' + s.book.planNos.join(' ') + ' (' + s.book.count + ' แผ่น)' : ' แผนที่ ' + s.plan_no);
+  const noteText = (s) => (s.book ? ' แผนที่ ' + s.book.planNos.map(planrange.short).join(' ') + ' (' + s.book.count + ' แผ่น)' : ' ' + planrange.label(s.plan_no));
 %>
 <div class="page-head">
   <div>
@@ -55,7 +55,7 @@
           <td><% if (!s.needsScore) { %><input type="checkbox" name="ids" value="<%= s.book ? s.book.ids.join(',') : s.id %>" aria-label="เลือก"><% } else { %><span title="ต้องให้คะแนน"></span><% } %></td>
           <td class="nowrap"><%= T[s.doc_type].label %></td>
           <td><%= s.teacher_name %></td>
-          <td><b><%= s.subject_code %></b> <%= s.subject_name %><%= s.doc_type === 'note' ? (s.book ? noteText(s) : ' แผนที่ ' + s.plan_no + (s.topic ? ' ' + s.topic : '')) : '' %>
+          <td><b><%= s.subject_code %></b> <%= s.subject_name %><%= s.doc_type === 'note' ? (s.book ? noteText(s) : ' ' + planrange.label(s.plan_no) + (s.topic ? ' ' + s.topic : '')) : '' %>
             <% if (s.needsScore) { %><br><span class="badge badge-amber">ต้องให้คะแนน</span><% } %></td>
           <td class="hide-sm"><%= s.dept_name %></td>
           <td class="hide-sm nowrap"><%= util.thaiDate(s.updated_at, true) %></td>

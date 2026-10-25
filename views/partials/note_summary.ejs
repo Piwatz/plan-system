@@ -33,7 +33,7 @@
     <thead><tr><th style="width:14mm">แผนที่</th><th>เรื่อง</th><th style="width:30mm">วันที่สอน</th><th style="width:48mm">ความเห็น</th></tr></thead>
     <tbody>
       <% for (const it of items) { %>
-        <tr><td class="c"><%= it.sub.plan_no %></td><td><%= it.sub.topic %></td><td class="c"><%= util.thaiDate(it.sub.teach_date, true) %></td><td><%= comments(it) %></td></tr>
+        <tr><td class="c"><%= planrange.short(it.sub.plan_no) %></td><td><%= it.sub.topic %></td><td class="c"><%= util.thaiDate(it.sub.teach_date, true) %></td><td><%= comments(it) %></td></tr>
       <% } %>
     </tbody>
   </table>

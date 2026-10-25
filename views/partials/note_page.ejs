@@ -10,9 +10,9 @@
 <% if (pdfSheet) { %>
   <%# แผ่นของครูที่แนบเป็น PDF หรือรูป: สคริปต์ pdfprint.js วาดทุกหน้าเป็นภาพในเครื่องที่เปิด หน้าสุดท้ายอยู่ในแผ่นนี้ หน้าก่อนหน้าแทรกเป็นแผ่นเต็ม
      แบบ bar ย่อหน้าสุดท้ายแล้วเติมแถบลงนาม · แบบ summary พิมพ์แผ่นของครูเต็มขนาด ลงนามในหน้ารวม %>
-  <div class="paper note-pdf <%= layout %>" data-pdf-sheet data-files="<%= JSON.stringify(it.files.filter((f) => /^(application\/pdf|image\/)/.test(f.mime)).map((f) => ({ url: '/f/' + f.id, type: f.mime === 'application/pdf' ? 'pdf' : 'image' }))) %>" data-name="แผนที่ <%= sub.plan_no %>">
+  <div class="paper note-pdf <%= layout %>" data-pdf-sheet data-files="<%= JSON.stringify(it.files.filter((f) => /^(application\/pdf|image\/)/.test(f.mime)).map((f) => ({ url: '/f/' + f.id, type: f.mime === 'application/pdf' ? 'pdf' : 'image' }))) %>" data-name="<%= planrange.label(sub.plan_no) %>">
     <% if (layout === 'bar') { %><%- include('qr_corner', { qr: it.qr }) %><% } %>
-    <div class="pdf-slot"><span class="pdf-wait">กำลังเตรียมแผ่นของครู แผนที่ <%= sub.plan_no %><%= sub.topic ? ' เรื่อง ' + sub.topic : '' %></span></div>
+    <div class="pdf-slot"><span class="pdf-wait">กำลังเตรียมแผ่นของครู <%= planrange.label(sub.plan_no) %><%= sub.topic ? ' เรื่อง ' + sub.topic : '' %></span></div>
     <% if (layout === 'bar') { %>
       <div class="strip" style="--n:<%= it.steps.length || 1 %>"><% for (const st of it.steps) { %><%- include('sign_box', { st, sub, submitDate: it.submitDate, side: 'bar' }) %><% } %></div>
     <% } %>
@@ -21,7 +21,7 @@
 <div class="paper note-sheet"<%- ff.sigprint && !sub.teacher_signature && sub.status !== 'draft' ? ' data-nosig' : '' %>>
   <%- include('qr_corner', { qr: it.qr }) %>
   <h2 class="doc">บันทึกหลังแผนการจัดการเรียนรู้</h2>
-  <div class="row"><span class="k">แผนการจัดการเรียนรู้ที่</span><span class="line" style="max-width:14%"><%= sub.plan_no %></span><span class="k">เรื่อง</span><span class="line"><%= sub.topic %></span></div>
+  <div class="row"><span class="k">แผนการจัดการเรียนรู้ที่</span><span class="line" style="max-width:<%= planrange.scopeOf(sub.plan_no) === 'one' ? 14 : 22 %>%"><%= planrange.short(sub.plan_no) %></span><span class="k">เรื่อง</span><span class="line"><%= sub.topic %></span></div>
   <div class="row"><span class="k">กลุ่มสาระการเรียนรู้</span><span class="line"><%= sub.dept_name %></span><span class="k">ชั้น</span><span class="line" style="max-width:30%"><%= it.gradeFull %><%= sub.class_room ? ' (' + sub.class_room + ')' : '' %></span></div>
   <div class="row"><span class="k">รายวิชา</span><span class="line"><%= sub.subject_name %></span><span class="k">รหัสวิชา</span><span class="line" style="max-width:25%"><%= sub.subject_code %></span></div>
   <div class="row"><span class="k">หน่วยการเรียนรู้ที่</span><span class="line" style="max-width:12%"><%= sub.unit_no %></span><span class="k">เรื่อง</span><span class="line"><%= sub.unit_name %></span><span class="k">จำนวน</span><span class="line" style="max-width:10%"><%= sub.hours %></span><span>ชั่วโมง</span></div>

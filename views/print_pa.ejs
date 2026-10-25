@@ -49,7 +49,7 @@
       <thead><tr><th>รหัสวิชา</th><th>แผนที่</th><th>เรื่อง</th><th>นักเรียน</th><th>ผ่าน</th><th>ร้อยละ</th></tr></thead>
       <tbody>
         <% for (const r of resultRows) { %>
-          <tr><td><%= r.subject_code %></td><td class="c"><%= r.plan_no %></td><td><%= r.topic %></td><td class="c"><%= r.students_total %></td><td class="c"><%= r.students_passed %></td>
+          <tr><td><%= r.subject_code %></td><td class="c"><%= planrange.short(r.plan_no) %></td><td><%= r.topic %></td><td class="c"><%= r.students_total %></td><td class="c"><%= r.students_passed %></td>
             <td class="c" style="<%= r.pct < 70 ? 'font-weight:700' : '' %>"><%= r.pct %><%= r.pct < 70 ? ' *' : '' %></td></tr>
         <% } %>
       </tbody>

@@ -12,7 +12,7 @@
         <span><%= sub.status === 'approved' ? 'เป็นเอกสารจริง ลงนามครบทุกระดับแล้ว' : 'เป็นเอกสารจริงในระบบ ' + wf.statusText(sub) %></span></div>
       <% if (steps.some((st) => st.review && st.review.action === 'override')) { %><p class="muted small" style="margin:8px 0 0">มีบางระดับที่ผู้ดูแลระบบดำเนินการแทนในระบบ ลายเซ็นของระดับนั้นอยู่บนเอกสารกระดาษ</p><% } %>
       <dl class="info" style="margin-top:16px">
-        <div><dt>ชนิดเอกสาร</dt><dd><%= T.label %><%= sub.doc_type === 'note' ? ' แผนที่ ' + sub.plan_no : '' %></dd></div>
+        <div><dt>ชนิดเอกสาร</dt><dd><%= T.label %><%= sub.doc_type === 'note' ? ' ' + planrange.label(sub.plan_no) : '' %></dd></div>
         <div><dt>รายวิชา</dt><dd><%= sub.subject_code %> <%= sub.subject_name %></dd></div>
         <div><dt>ครูผู้สอน</dt><dd><%= sub.teacher_name %></dd></div>
         <div><dt>ภาคเรียน</dt><dd><%= sub.semester %>/<%= sub.academic_year %></dd></div>

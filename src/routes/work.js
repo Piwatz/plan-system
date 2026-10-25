@@ -617,10 +617,10 @@ router.post('/notes', async (req, res) => {
     throw e;
   }
   if (b.action === 'new') {
-    req.flash('success', `บันทึกร่างแผนที่ ${f.plan_no || ''} แล้ว เขียนฉบับต่อไปได้เลย`);
+    req.flash('success', `บันทึกร่าง${planrange.label(f.plan_no)} แล้ว เขียนฉบับต่อไปได้เลย`);
     return respond(req, res, `/notes/new?plan=${plan.id}`, null, null);
   }
-  if (req.ff.notebook) return respond(req, res, `/s/${plan.id}#notes`, 'success', `บันทึกร่างแผนที่ ${f.plan_no || ''} แล้ว เขียนครบแล้วกด ส่งทั้งเล่ม`);
+  if (req.ff.notebook) return respond(req, res, `/s/${plan.id}#notes`, 'success', `บันทึกร่าง${planrange.label(f.plan_no)} แล้ว เขียนครบแล้วกด ส่งทั้งเล่ม`);
   await finishSave(req, res, id, b.action === 'submit', 'บันทึกร่างเรียบร้อย ยังไม่ได้ส่งให้ผู้ตรวจ');
 });
 
@@ -640,7 +640,7 @@ router.post('/notes/submit-many', async (req, res) => {
       ok += 1;
     } catch (e) {
       if (!(e instanceof UserError || e instanceof wf.WorkflowError)) throw e;
-      problems.push(`แผนที่ ${sub.plan_no || sub.topic}`);
+      problems.push(planrange.label(sub.plan_no) || sub.topic);
     }
   }
   const extra = problems.length ? ` ยังส่งไม่ได้ ${problems.length} ฉบับ เพราะกรอกไม่ครบ (${problems.join(' ')})` : '';
@@ -1357,7 +1357,7 @@ router.post('/s/:id/submit-book', async (req, res) => {
   const miss = [];
   for (const n of notes) {
     const m = await missingForSubmit(n, req.ff);
-    if (m.length) miss.push(`แผนที่ ${n.plan_no || n.topic} ขาด ${m.join(' และ ')}`);
+    if (m.length) miss.push(`${planrange.label(n.plan_no) || n.topic} ขาด ${m.join(' และ ')}`);
   }
   if (miss.length) throw new UserError(`ยังส่งทั้งเล่มไม่ได้ ${miss.join(' · ')} กดแก้ไขแผ่นนั้นให้ครบก่อน`);
   if (wf.isOwner(req.me, plan)) await needOwnSignature(req, 'ยังส่งทั้งเล่มไม่ได้ ');
@@ -1445,9 +1445,9 @@ router.post('/s/:id/book/return', async (req, res) => {
   if (!fixed.length) throw new UserError('ติ๊กเลือกแผ่นที่ต้องแก้อย่างน้อย 1 แผ่น แล้วเขียนสิ่งที่ต้องแก้ในช่องความเห็นของแผ่นนั้น');
   for (const n of fixed) {
     const c = sheetComment(b, n.id);
-    if (!c || c === 'รับทราบ') throw new UserError(`เขียนสิ่งที่ครูต้องแก้ในช่องความเห็นของแผนที่ ${n.plan_no || n.topic} ก่อนส่งกลับ`);
+    if (!c || c === 'รับทราบ') throw new UserError(`เขียนสิ่งที่ครูต้องแก้ในช่องความเห็นของ${planrange.label(n.plan_no) || n.topic} ก่อนส่งกลับ`);
   }
-  const which = `แผ่นที่ต้องแก้ แผนที่ ${fixed.map((n) => n.plan_no || n.topic).join(' ')}`;
+  const which = `แผ่นที่ต้องแก้ แผนที่ ${fixed.map((n) => planrange.short(n.plan_no) || n.topic).join(' ')}`;
   const comments = Object.fromEntries(sheets.map((n) => [n.id, fix.has(n.id) ? sheetComment(b, n.id) : `${wf.BOOK_KEEP} (${which})`]));
   const n = await wf.sendBackMany(
     sheets.map((x) => x.id),

@@ -183,6 +183,11 @@ test('แนบไฟล์ 1 ไฟล์ แผนเดียว หลาย
   await t.post('/notes', { ...base, plan_scope: 'book' });
   n = await newest();
   assert.equal(n.plan_no, 'ทั้งเล่ม');
+  const list = (await t.get(`/s/${planId}`)).text;
+  assert.match(list, /<b>13 ถึง 20<\/b>/, 'รายการบันทึกแสดง 13 ถึง 20');
+  assert.match(list, /<b>ทั้งเล่ม<\/b>/);
+  assert.match((await t.get(`/s/${n.id}`)).text, /บันทึกหลังแผน[\s\S]*?ทั้งเล่ม/);
+  assert.doesNotMatch(list, /แผนที่ ทั้งเล่ม/);
   assert.match((await t.get(`/s/${n.id}/edit`)).text, /name="plan_scope" value="book" checked/);
 
   // พิมพ์ในระบบเป็นแผนเดียวเสมอ

@@ -22,7 +22,7 @@
       <span class="badge">ภาคเรียนที่ <%= sub.semester %>/<%= sub.academic_year %></span>
     </div>
     <h1 style="margin-top:8px">
-      <%= isNote ? 'แผนการจัดการเรียนรู้ที่ ' + (sub.plan_no || '') + (sub.topic ? ' เรื่อง ' + sub.topic : '') : sub.subject_code + ' ' + sub.subject_name %>
+      <%= isNote ? (planrange.scopeOf(sub.plan_no) === 'one' ? 'แผนการจัดการเรียนรู้ที่ ' + (sub.plan_no || '') : planrange.label(sub.plan_no)) + (sub.topic ? ' เรื่อง ' + sub.topic : '') : sub.subject_code + ' ' + sub.subject_name %>
     </h1>
     <div class="sub">
       <%= sub.teacher_name %> กลุ่มสาระ<%= sub.dept_name %>
@@ -308,8 +308,8 @@
               <tbody>
               <% for (const n of notes) { const can = isOwner && (n.status === 'draft' || n.status === 'returned'); %>
                 <tr>
-                  <% if (!ff.notebook && isOwner && todo.length) { %><td><% if (can) { %><input type="checkbox" name="ids" value="<%= n.id %>" aria-label="เลือกแผนที่ <%= n.plan_no %>"><% } %></td><% } %>
-                  <td class="nowrap"><b><%= n.plan_no %></b></td>
+                  <% if (!ff.notebook && isOwner && todo.length) { %><td><% if (can) { %><input type="checkbox" name="ids" value="<%= n.id %>" aria-label="เลือก<%= planrange.label(n.plan_no) %>"><% } %></td><% } %>
+                  <td class="nowrap"><b><%= planrange.short(n.plan_no) %></b></td>
                   <td><%= n.topic || (n.note_mode === 'file' ? 'แนบไฟล์' : '-') %>
                     <% const back = noteReturns.get(n.id); if (back != null) { const keep = back.startsWith(bookKeep); %>
                       <div class="small" style="margin-top:4px"><span class="badge <%= keep ? 'badge-gray' : 'badge-red' %>"><%= keep ? 'ไม่ต้องแก้' : 'ต้องแก้' %></span> <% if (!keep) { %><span class="muted"><%= back %></span><% } %></div>

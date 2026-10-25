@@ -2,6 +2,7 @@
 // เติมได้เฉพาะลายเซ็นของเจ้าของงานเอง จากข้อมูลส่วนตัวของผู้ใช้คนนั้น ผู้ดูแลระบบใส่ลายเซ็นแทนครูไม่ได้ (เอกสารราชการ)
 // งานที่โอนมาแบบคงชื่อครูคนเดิม (doc_name) เอกสารเป็นชื่อคนอื่น ไม่เติมลายเซ็นของเจ้าของงานคนใหม่
 const { q } = require('./db');
+const planrange = require('./planrange');
 
 // งานที่ผู้ดูแลระบบส่งแทนครู: การส่งครั้งล่าสุดไม่ใช่เจ้าของงาน (ฟังก์ชันเสริม sigconfirm ครูต้องเปิดหน้างานแล้วกดยืนยันเอง)
 const PROXY = `COALESCE((SELECT r.user_id FROM reviews r WHERE r.submission_id = s.id AND r.action IN ('submit', 'resubmit') ORDER BY r.id DESC LIMIT 1), s.teacher_id) <> s.teacher_id`;
@@ -54,7 +55,7 @@ async function missingList() {
 // ชื่องานสั้น ๆ ใช้ในรายการ
 function workLabel(w) {
   const kind = { manual: 'คู่มือรายวิชา', plan: 'แผนการจัดการเรียนรู้', note: 'บันทึกหลังแผน' }[w.doc_type] || 'งาน';
-  const extra = w.doc_type === 'note' && w.plan_no ? ` แผนที่ ${w.plan_no}` : '';
+  const extra = w.doc_type === 'note' && w.plan_no ? ` ${planrange.label(w.plan_no)}` : '';
   return `${kind} ${w.subject_code} ${w.subject_name}${extra}`.trim();
 }
 

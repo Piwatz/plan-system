@@ -31,7 +31,7 @@
         <tbody>
           <% for (const n of r.notes.slice(0, 8)) { %>
             <tr>
-              <td><b><%= n.plan_no %></b></td>
+              <td><b><%= planrange.short(n.plan_no) %></b></td>
               <td><%= n.topic || (n.note_mode === 'file' ? 'แนบไฟล์' : '') %></td>
               <td class="hide-sm nowrap"><%= util.thaiDate(n.teach_date, true) %></td>
               <td class="hide-sm nowrap"><%= n.students_total ? Math.round((n.students_passed || 0) / n.students_total * 100) + '%' : '' %></td>

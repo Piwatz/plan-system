@@ -31,7 +31,7 @@
           <span class="muted small"><%= signed + back + 1 %>/<%= total %></span>
         </div>
         <div>
-          <b style="font-size:1.15rem">แผนที่ <%= c.plan_no %> <%= c.topic %></b><br>
+          <b style="font-size:1.15rem"><%= planrange.label(c.plan_no) %> <%= c.topic %></b><br>
           <span class="muted small"><%= [c.class_room, util.thaiDate(c.teach_date, true), c.hours ? c.hours + ' ชั่วโมง' : ''].filter(Boolean).join('  ') %></span>
         </div>
         <% if (c.note_mode === 'file') { %>

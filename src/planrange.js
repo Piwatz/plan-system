@@ -43,4 +43,11 @@ function label(planNo) {
   return p ? `แผนที่ ${p}` : '';
 }
 
-module.exports = { BOOK, scopeOf, rangeOf, fromForm, numbers, label };
+// ในช่องตารางที่หัวคอลัมน์เป็น แผนที่ อยู่แล้ว เช่น 3 · 1 ถึง 9 · ทั้งเล่ม
+function short(planNo) {
+  const p = String(planNo || '').trim();
+  const r = rangeOf(p);
+  return r ? `${r[0]} ถึง ${r[1]}` : p;
+}
+
+module.exports = { BOOK, scopeOf, rangeOf, fromForm, numbers, label, short };

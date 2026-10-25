@@ -6,6 +6,7 @@ const { q, nowStr } = require('./db');
 const storage = require('./storage');
 const time = require('./time');
 const features = require('./features');
+const planrange = require('./planrange');
 
 const KEEP_DAYS = 30;
 const DAY = 24 * 60 * 60 * 1000;
@@ -15,7 +16,7 @@ const SNAP = ['doc_type', 'parent_id', 'teacher_id', 'department_id', 'academic_
 const TYPE_LABEL = { plan: 'แผน', manual: 'คู่มือ', note: 'บันทึกหลังแผน' };
 
 function labelOf(s) {
-  return [TYPE_LABEL[s.doc_type] || s.doc_type, s.subject_code, s.subject_name, s.doc_type === 'note' && s.plan_no ? 'แผนที่ ' + s.plan_no : ''].filter(Boolean).join(' ');
+  return [TYPE_LABEL[s.doc_type] || s.doc_type, s.subject_code, s.subject_name, s.doc_type === 'note' && s.plan_no ? planrange.label(s.plan_no) : ''].filter(Boolean).join(' ');
 }
 
 // ลบงาน (และบันทึกหลังแผนที่อยู่ใต้งาน) แล้วย้ายไฟล์ไปถังขยะ · เปิด trashbin จดไฟล์ไว้ใน transaction เดียวกับการลบ

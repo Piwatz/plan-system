@@ -136,7 +136,7 @@
     <div class="mini-list">
       <% for (const s of inboxPreview) { %>
         <a class="mini-row" href="<%= s.book ? '/s/' + s.book.planId + '/book' : '/s/' + s.id %>">
-          <span class="mr-main"><span class="badge badge-blue"><%= T[s.doc_type].label %></span><b><%= s.subject_code %> <%= s.subject_name %><%= s.doc_type === 'note' ? (s.book ? ' แผนที่ ' + s.book.planNos.join(' ') + ' (' + s.book.count + ' แผ่น)' : ' แผนที่ ' + s.plan_no) : '' %></b><span><%= s.teacher_name %></span></span>
+          <span class="mr-main"><span class="badge badge-blue"><%= T[s.doc_type].label %></span><b><%= s.subject_code %> <%= s.subject_name %><%= s.doc_type === 'note' ? (s.book ? ' แผนที่ ' + s.book.planNos.map(planrange.short).join(' ') + ' (' + s.book.count + ' แผ่น)' : ' ' + planrange.label(s.plan_no)) : '' %></b><span><%= s.teacher_name %></span></span>
           <span class="btn btn-sm btn-primary">ตรวจ</span>
         </a>
       <% } %>
@@ -206,7 +206,7 @@
               <span class="fdot <%= a.action %>"></span>
               <span class="fbody">
                 <% const book = a.planNos.length > 1; %>
-                <a href="<%= book ? '/s/' + a.parent_id + '#notes' : '/s/' + a.submission_id %>"><b><%= T[a.doc_type].label %> <%= a.subject_code %><%= a.doc_type === 'note' ? (book ? ' ทั้งเล่ม ' + a.planNos.length + ' แผ่น' : ' แผนที่ ' + a.plan_no) : '' %> <%= a.action === 'return' ? 'ถูกส่งกลับ' : 'ผ่าน ' + (util.SHORT_ROLE[a.role] || a.step_label) %></b></a>
+                <a href="<%= book ? '/s/' + a.parent_id + '#notes' : '/s/' + a.submission_id %>"><b><%= T[a.doc_type].label %> <%= a.subject_code %><%= a.doc_type === 'note' ? (book ? ' ทั้งเล่ม ' + a.planNos.length + ' แผ่น' : ' ' + planrange.label(a.plan_no)) : '' %> <%= a.action === 'return' ? 'ถูกส่งกลับ' : 'ผ่าน ' + (util.SHORT_ROLE[a.role] || a.step_label) %></b></a>
                 <span><%= a.user_name %> <%= a.score_max ? ' ได้ ' + a.score_total + ' คะแนน ระดับ' + wf.scoreLevel(a.score_total / a.score_max * 100) : '' %> <%= util.ago(a.created_at) %></span>
               </span>
             </li>

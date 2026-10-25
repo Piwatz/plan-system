@@ -68,7 +68,7 @@
           <td class="hide-sm"><%= s.dept_name %></td>
           <td><b><%= s.subject_code %></b> <%= s.subject_name %></td>
           <% if (type === 'note') { %>
-            <td><%= s.plan_no %><%= s.topic ? ' ' + s.topic : '' %></td>
+            <td><%= planrange.short(s.plan_no) %><%= s.topic ? ' ' + s.topic : '' %></td>
             <td class="hide-sm nowrap"><%= util.thaiDate(s.teach_date, true) %></td>
           <% } else { %>
             <td class="hide-sm"><%= s.grade_level %></td>

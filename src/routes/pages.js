@@ -7,6 +7,7 @@ const util = require('../util');
 const teaching = require('../teaching');
 const { submitWindow } = require('./work');
 const library = require('../library');
+const planrange = require('../planrange');
 
 const router = express.Router();
 router.use(auth.requireLogin);
@@ -284,7 +285,7 @@ router.get('/', async (req, res) => {
   }
   // ส่งกลับทั้งเล่ม: แผ่นที่ผู้ตรวจบอกว่าไม่ต้องแก้ ไม่ต้องขึ้นเป็นงานค้าง (ครูกดส่งทั้งเล่มอีกครั้งในหน้ารายวิชา)
   for (const n of noteTodo.filter((x) => x.status === 'returned' && !lastReturn(x.id).startsWith(wf.BOOK_KEEP))) {
-    nextUp.push({ title: `บันทึกหลังแผน ${n.subject_code} แผนที่ ${n.plan_no} ถูกส่งกลับ`, sub: lastReturn(n.id).slice(0, 90), href: `/s/${n.id}/edit`, tone: 'back' });
+    nextUp.push({ title: `บันทึกหลังแผน ${n.subject_code} ${planrange.label(n.plan_no)} ถูกส่งกลับ`, sub: lastReturn(n.id).slice(0, 90), href: `/s/${n.id}/edit`, tone: 'back' });
   }
   if (req.ff.notebook) {
     for (const planId of new Set(noteTodo.filter((x) => x.status === 'returned').map((x) => x.parent_id))) {
@@ -296,7 +297,7 @@ router.get('/', async (req, res) => {
   if (drafts.length) {
     nextUp.push({
       title: `บันทึกหลังแผน ${drafts.length} ฉบับยังไม่ได้ส่ง`,
-      sub: `วิชา ${[...new Set(drafts.map((d) => d.subject_code))].join(' ')} แผนที่ ${drafts.map((d) => d.plan_no).join(' ')} กดเพื่อส่งพร้อมกัน`,
+      sub: `วิชา ${[...new Set(drafts.map((d) => d.subject_code))].join(' ')} แผนที่ ${drafts.map((d) => planrange.short(d.plan_no)).join(' ')} กดเพื่อส่งพร้อมกัน`,
       href: `/s/${drafts[0].parent_id}#notes`,
       tone: 'wait',
     });

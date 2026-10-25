@@ -30,7 +30,7 @@
   <% if (isOwner) { %><p class="hint">งานของคุณเอง ระบบเปิดให้ลงนามในฐานะ<%= step ? step.label : '' %>ได้</p><% } %>
 
   <nav class="chips" aria-label="ไปที่แผ่น" style="margin-bottom:14px">
-    <% sheets.forEach((n, i) => { %><a class="chip" href="#sheet-<%= n.id %>">แผ่น <%= i + 1 %> แผนที่ <%= n.plan_no %></a><% }) %>
+    <% sheets.forEach((n, i) => { %><a class="chip" href="#sheet-<%= n.id %>">แผ่น <%= i + 1 %> <%= planrange.label(n.plan_no) %></a><% }) %>
   </nav>
 
   <form method="post" action="/s/<%= plan.id %>/book/approve" id="book-form" data-busy="กำลังลงนาม">
@@ -38,7 +38,7 @@
       <input type="hidden" name="ids" value="<%= n.id %>">
       <article class="card" id="sheet-<%= n.id %>">
         <div class="card-head">
-          <h2>แผ่น <%= i + 1 %>/<%= sheets.length %> แผนที่ <%= n.plan_no %><%= n.topic ? ' เรื่อง ' + n.topic : '' %></h2>
+          <h2>แผ่น <%= i + 1 %>/<%= sheets.length %> <%= planrange.label(n.plan_no) %><%= n.topic ? ' เรื่อง ' + n.topic : '' %></h2>
           <div class="actions"><a class="btn btn-sm btn-ghost" href="/s/<%= n.id %>" target="_blank" rel="noopener"><%- icon('eye', 16) %> เปิดฉบับเต็ม</a></div>
         </div>
         <div class="muted small"><%= [n.unit_no || n.unit_name ? 'หน่วยที่ ' + [n.unit_no, n.unit_name].filter(Boolean).join(' ') : '', n.class_room, util.thaiDate(n.teach_date, true), n.hours ? n.hours + ' ชั่วโมง' : '', pct != null ? 'ผ่านเกณฑ์ ' + n.students_passed + ' จาก ' + n.students_total + ' คน (' + pct + '%)' : ''].filter(Boolean).join('  ') %></div>
