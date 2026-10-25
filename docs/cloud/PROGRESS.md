@@ -927,6 +927,6 @@
   - ลองจริงใน plan-demo 3 ห้อง ขึ้น รวม 3 ห้อง นักเรียน 114 คน ผ่าน 96 คน (84%) บันทึกร่างแล้วหน้างานแสดงรายห้อง จอ 375 px ไม่ล้น ภาพ `design-mockup/noterooms-result.jpg` `noterooms-result-mobile.jpg`
   - ยังไม่ทำ: สถิติรายห้อง (ไอเดียต่อไป ห้องไหนผ่านน้อย)
 - npm test ผ่าน 182 ข้อ (tests/notememo.test.js 5 ข้อ · files.test.js รุ่นโครงตารางเป็น 6)
-- ขึ้นเว็บ: รัน 006 ใน Supabase แล้ว deploy (cloud-setup.js) · ยังไม่ได้ลอง Safari ไอแพด/Mac และพิมพ์กระดาษจริง
+- **ขึ้นเว็บจริงแล้ว 25 ต.ค. 2569 (notememo notedocno notewhole noterooms):** migration 006 รันบน Supabase โดย Claude ด้วย apply_migration ตามที่ครูเต้ยสั่ง (ก่อน: รุ่น 5 งาน 76 · หลัง: รุ่น 6 มี student_rooms งาน 76 ครบ) แล้ว deploy Version 680f65e2 (cloud-setup.js) · `wrangler deployments list` ตรงรุ่น · /login 200 · /s/1/print-notememo และ /notes/new ไม่เข้าระบบ 302 ไป /login · app.js บนเว็บมี applyScope data-rooms · app.css มี memo-box room-row · หน้า /v/<รหัส> ของงานจริง 200 · สวิตช์เปิดตามค่าเริ่มต้น (notedocno ปิด) · push GitHub แล้ว · ยังไม่ได้เปิดหน้าที่ต้องเข้าระบบบนเว็บจริง ยังไม่ได้ลอง Safari ไอแพด/Mac และพิมพ์กระดาษจริง
 - ไอเดียที่ยังไม่เลือก: สถิติรายห้อง · แสดง แผนที่ 1 ถึง 9 / ทั้งเล่ม แทน แผนที่ 1-9 (planrange.label)
 - เริ่มแชทใหม่: "ทำตอนต่อไป ตามจุดพักท้าย docs/cloud/PROGRESS.md"
