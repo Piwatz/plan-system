@@ -149,8 +149,22 @@
     });
   }
 
-  // วาดหน้าแรกของ PDF ลงผืนผ้าใบ · width = ความกว้างเป็นพิกเซลบนจอ · คืน { canvas, pages } หรือ null ถ้าถูกยกเลิก
-  async function renderFirstPage(data, width, dpr, alive) {
+  // เปิด PDF ทีละไฟล์ (เข้าคิว) ไฟล์ใหญ่หลายชุดพร้อมกันทำให้ Safari และ iPad หน่วยความจำไม่พอ
+  // งานใดค้างเกิน 15 วินาที (เช่น แท็บอยู่เบื้องหลัง เบราว์เซอร์หยุดวาดภาพ) คิวไปต่อ ไม่ให้งานถัดไปรอตลอด
+  let pdfQueue = Promise.resolve();
+  function pdfTurn(fn) {
+    const run = pdfQueue.then(fn, fn);
+    const late = pdfQueue.then(() => new Promise((r) => setTimeout(r, 15000)));
+    pdfQueue = Promise.race([run.catch(() => {}), late]);
+    return run;
+  }
+
+  // วาดหน้าแรกของ PDF ลงผืนผ้าใบ · width = ความกว้างเป็นพิกเซลบนจอ · data เป็น File ได้ · คืน { canvas, pages } หรือ null ถ้าถูกยกเลิก
+  function renderFirstPage(data, width, dpr, alive) {
+    return pdfTurn(() => (alive && !alive() ? null : drawFirstPage(data, width, dpr, alive)));
+  }
+  async function drawFirstPage(data, width, dpr, alive) {
+    if (data instanceof Blob) data = new Uint8Array(await data.arrayBuffer());
     const task = openPdf(await pdfjsLib(), data);
     try {
       const doc = await task.promise;
@@ -1414,6 +1428,8 @@
       const r = new FileReader();
       r.onload = () => {
         const bytes = new Uint8Array(r.result);
+        // ทั้งไฟล์ใช้ตัวถอดของเบราว์เซอร์ (เร็วและไม่กินหน่วยความจำเท่าต่อทีละตัว) ใช้นับหน้าที่ดูเฉพาะตัวอังกฤษ
+        if (!n) return resolve(new TextDecoder('latin1').decode(bytes));
         let s = '';
         for (let i = 0; i < bytes.length; i++) s += String.fromCharCode(bytes[i]);
         resolve(s);
@@ -1478,7 +1494,7 @@
         return;
       }
       try {
-        const r = await renderFirstPage(oldUrl || new Uint8Array(await file.arrayBuffer()), 200, window.devicePixelRatio || 1, () => token === coverToken);
+        const r = await renderFirstPage(oldUrl || file, 200, window.devicePixelRatio || 1, () => token === coverToken);
         if (!r || token !== coverToken) return;
         const box = cover.querySelector('[data-cover-img]');
         box.innerHTML = '';
@@ -1610,25 +1626,47 @@
     for (let i = 0; i < d.length; i += 4) if (d[i] + d[i + 1] + d[i + 2] < 600) dark++;
     return dark / (d.length / 4);
   }
-  // เปิด PDF ครั้งเดียว: จำนวนหน้า ตัวหนังสือ n หน้าแรก ความเข้มหน้าแรก · เปิดไม่ได้คืน { error: locked | broken }
+  // เปิด PDF ครั้งเดียว: จำนวนหน้า ตัวหนังสือ n หน้าแรก ความเข้มหน้าแรก
+  // เปิดไม่ได้คืน { error: locked | broken | unknown } · unknown = เครื่องนี้ตรวจไม่สำเร็จ (หน่วยความจำไม่พอ โหลด pdf.js ไม่ขึ้น) ไม่ได้แปลว่าไฟล์เสีย
+  // src เป็น File ได้ (อ่านเนื้อไฟล์ตอนถึงคิว ไม่ถือไว้ก่อน)
   async function inspectPdf(src, textPages, wantInk) {
-    let task;
-    try {
-      task = openPdf(await pdfjsLib(), src);
-      const doc = await task.promise;
-      const out = { pages: doc.numPages, text: [], ink: null };
-      for (let p = 1; p <= Math.min(doc.numPages, textPages); p++) {
-        const tc = await (await doc.getPage(p)).getTextContent();
-        out.text.push(tc.items.map((x) => x.str || '').join(' '));
+    return pdfTurn(async () => {
+      let task;
+      try {
+        const data = src instanceof Blob ? new Uint8Array(await src.arrayBuffer()) : src;
+        task = openPdf(await pdfjsLib(), data);
+        const doc = await task.promise;
+        // เปิดได้และรู้จำนวนหน้าแล้ว ถือว่าไฟล์เปิดได้ หน้าที่อ่านตัวหนังสือไม่ได้ข้ามไป
+        const out = { pages: doc.numPages, text: [], ink: null };
+        for (let p = 1; p <= Math.min(doc.numPages, textPages); p++) {
+          try {
+            const tc = await (await doc.getPage(p)).getTextContent();
+            out.text.push(tc.items.map((x) => x.str || '').join(' '));
+          } catch (e) {
+            console.warn('inspectPdf text page', p, e);
+            out.text.push('');
+          }
+        }
+        // วาดไม่เสร็จใน 8 วินาที (เครื่องช้าหรือฟอนต์โหลดไม่ขึ้น) ข้ามการวัดความเข้ม ไม่ให้รายการตรวจค้าง
+        if (wantInk) out.ink = await Promise.race([doc.getPage(1).then(inkOf), new Promise((r) => setTimeout(() => r(null), 8000))]).catch(() => null);
+        return out;
+      } catch (e) {
+        console.warn('inspectPdf failed', e);
+        const name = e && e.name;
+        if (name === 'PasswordException') return { error: 'locked' };
+        if (name === 'InvalidPDFException' || name === 'FormatError') return { error: 'broken' };
+        return { error: 'unknown' };
+      } finally {
+        if (task) task.destroy().catch(() => {});
       }
-      // วาดไม่เสร็จใน 8 วินาที (เครื่องช้าหรือฟอนต์โหลดไม่ขึ้น) ข้ามการวัดความเข้ม ไม่ให้รายการตรวจค้าง
-      if (wantInk) out.ink = await Promise.race([inkOf(await doc.getPage(1)), new Promise((r) => setTimeout(() => r(null), 8000))]).catch(() => null);
-      return out;
-    } catch (e) {
-      return { error: e && e.name === 'PasswordException' ? 'locked' : 'broken' };
-    } finally {
-      if (task) task.destroy().catch(() => {});
-    }
+    });
+  }
+  // ตรวจไม่สำเร็จแบบไม่รู้สาเหตุ รอสักครู่แล้วลองอีกครั้ง (ส่วนใหญ่ผ่านเมื่อไม่มีงานอื่นแย่งหน่วยความจำ)
+  async function inspectPdfRetry(src, textPages, wantInk) {
+    const r = await inspectPdf(src, textPages, wantInk);
+    if (r.error !== 'unknown') return r;
+    await new Promise((res) => setTimeout(res, 1500));
+    return inspectPdf(src, textPages, wantInk);
   }
   // ผลตรวจหน้าแรก (ฟังก์ชันเสริม frontcheck) เก็บคู่กับไฟล์ ให้ผู้ดูแลเห็นรายชื่องานที่หน้าแรกน่าจะไม่ใช่ปก
   // blank = หน้าแรกเกือบว่าง · nocode = หน้าแรกมีตัวหนังสือแต่ไม่มีรหัสวิชา (ไฟล์สแกนไม่มีตัวหนังสือ ไม่นับข้อนี้) · ok · ว่าง = วัดไม่ได้
@@ -1794,6 +1832,14 @@
 
     // ผลการเปิดไฟล์ (ใช้ทั้งไฟล์ที่เพิ่งเลือกและไฟล์เดิม)
     async function showInspect(token, r, isNew) {
+      if (r.error === 'unknown') {
+        // เครื่องนี้ตรวจไม่สำเร็จ ไม่ใช่ไฟล์เสีย ให้ครูดูภาพหน้าปกเองแล้วติ๊ก ไม่ล็อกปุ่มส่ง
+        set('open', 'look', 'เครื่องนี้ตรวจไฟล์ ' + r.name + ' ไม่สำเร็จ ไม่ได้แปลว่าไฟล์เสีย ถ้าภาพหน้าปกด้านบนขึ้นปกติ ส่งได้');
+        for (const k of ['blank', 'code', 'pages']) show(k, false);
+        if (warn) warn.hidden = true;
+        text = null;
+        return;
+      }
       if (r.error) {
         set('open', 'bad', 'ไฟล์ ' + r.name + (r.error === 'locked' ? ' ติดรหัสผ่าน ผู้ตรวจเปิดไม่ได้ ให้บันทึกเป็น PDF ใหม่แบบไม่ใส่รหัสผ่าน' : ' เปิดไม่ได้ ไฟล์อาจเสีย ให้บันทึกเป็น PDF ใหม่แล้วแนบอีกครั้ง'));
         for (const k of ['blank', 'code', 'pages']) show(k, false);
@@ -1846,7 +1892,7 @@
 
     async function onFiles(files) {
       const token = ++run;
-      for (const k of ['cover', 'blank', 'code', 'fname', 'pages']) untick(k);
+      for (const k of ['cover', 'open', 'blank', 'code', 'fname', 'pages']) untick(k);
       text = null;
       front = null;
       putFront();
@@ -1872,7 +1918,7 @@
       set('open', 'wait', 'กำลังตรวจ');
       const all = { pages: 0, text: [], ink: null };
       for (let i = 0; i < pdfs.length; i++) {
-        const r = await inspectPdf(new Uint8Array(await pdfs[i].arrayBuffer()), 3 - all.text.length, i === 0 && (blankOn || Boolean(frontIn)));
+        const r = await inspectPdfRetry(pdfs[i], 3 - all.text.length, i === 0 && (blankOn || Boolean(frontIn)));
         if (token !== run) return;
         if (r.error) return showInspect(token, { error: r.error, name: pdfs[i].name }, true);
         all.pages += r.pages;
@@ -1886,7 +1932,7 @@
       set('pdf', 'ok', item('pdf').querySelector('[data-ck-sub]').dataset.old || item('pdf').querySelector('[data-ck-sub]').textContent);
       show('open', true);
       set('open', 'wait', 'กำลังตรวจไฟล์เดิม');
-      const r = await inspectPdf('/f/' + oldFile + '/raw', 3, blankOn);
+      const r = await inspectPdfRetry('/f/' + oldFile + '/raw', 3, blankOn);
       if (token !== run) return;
       showInspect(token, { ...r, name: 'เดิม' }, false);
     }

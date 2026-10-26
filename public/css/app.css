@@ -1235,6 +1235,7 @@ a.lib-cv:hover .lib-cover { box-shadow: 0 0 0 3px var(--primary); }
 .ck .tick { display: inline-flex; align-items: center; gap: 6px; padding: 5px 12px; border: 2px solid var(--wait); border-radius: 999px; font-weight: 700; color: var(--wait); cursor: pointer; background: var(--surface); white-space: nowrap; }
 .ck .tick input { width: 20px; height: 20px; accent-color: var(--ok); margin: 0; }
 .ck.ticked .tick { border-color: var(--ok); color: var(--ok); }
+.ck:not(.look) .tick { display: none; }
 .ck-foot { padding: 8px 14px; border-top: 1px solid var(--line); }
 .btn.is-blocked { opacity: 0.55; filter: grayscale(0.4); }
 .ck-btn-note { margin-top: 8px; color: var(--back); font-weight: 600; }

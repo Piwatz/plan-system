@@ -11,7 +11,7 @@
     { k: 'fields', st: filled ? 'ok' : 'bad', block: 1, t: 'กรอกรหัสวิชา ชื่อวิชา และระดับชั้นครบ', s: filled ? [sub.subject_code, sub.subject_name, sub.grade_level].join(' ') : 'ยังกรอกไม่ครบ' },
     { k: 'docno', st: sub.doc_no ? 'ok' : 'bad', block: 1, hide: !ff.docnoreq || sub.submitted_at || !pc.owner, t: 'กรอกเลขที่บันทึกข้อความ', s: sub.doc_no ? 'ที่ ' + sub.doc_no : 'ขอเลขที่ห้องวิชาการ แล้วกรอกเฉพาะตัวเลข' },
     { k: 'pdf', st: oldPdf ? 'ok' : 'bad', block: ff.pdfonly ? 1 : 0, t: ff.pdfonly ? 'ไฟล์เป็น PDF ไฟล์เดียว' : 'มีไฟล์งาน', s: oldPdf ? 'ใช้ไฟล์เดิม ' + oldPdf.original_name : 'ยังไม่ได้เลือกไฟล์' },
-    { k: 'open', st: 'wait', block: 1, hide: !oldPdf, t: 'เปิดไฟล์ได้ ไม่เสีย ไม่ติดรหัสผ่าน', s: 'กำลังตรวจ' },
+    { k: 'open', st: 'wait', block: 1, tick: 'ck_open', hide: !oldPdf, t: 'เปิดไฟล์ได้ ไม่เสีย ไม่ติดรหัสผ่าน', s: 'กำลังตรวจ' },
     { k: 'dup', st: pc.dupNow ? 'bad' : 'ok', block: 1, hide: !ff.dupfile || (!oldPdf && !pc.dupNow), t: 'ไม่ซ้ำกับไฟล์ในงานอื่นของคุณ', s: pc.dupNow ? 'เป็นไฟล์เดียวกับ' + pc.dupNow + ' ที่แนบไว้แล้ว แนบไฟล์ของวิชานี้แทน' : 'ไม่ซ้ำ' },
     { k: 'sig', st: pc.hasSig ? 'ok' : 'bad', hide: !pc.owner, t: 'ลายเซ็นของคุณ', s: sigText, sign: !pc.hasSig },
     { k: 'window', st: w.open ? 'ok' : 'bad', block: 1, hide: !pc.needWindow, t: 'อยู่ในกำหนดส่ง', s: dueText },
