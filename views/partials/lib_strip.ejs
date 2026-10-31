@@ -1,5 +1,5 @@
-<%# แถบเล่มใหม่ในคลังงาน (ฟังก์ชันเสริม library) · fill = เรียงเต็มแถวพอดีความกว้างจอ (ฟังก์ชันเสริม homelayout) %>
-<section class="card lib-strip<%= fill ? ' lib-fill' : '' %>">
+<%# แถบเล่มใหม่ในคลังงาน (ฟังก์ชันเสริม library) · fill = เรียงเต็มแถวพอดีความกว้างจอ (ฟังก์ชันเสริม homelayout) · compact = ปกแถวเล็กปัดดูได้บนมือถือ (ฟังก์ชันเสริม mobileorder) %>
+<section class="card lib-strip<%= fill ? ' lib-fill' : '' %><%= typeof compact !== 'undefined' && compact ? ' lib-compact' : '' %>">
   <div class="card-head"><h2>เล่มใหม่ในคลัง</h2><div class="actions"><a class="btn btn-sm btn-ghost" href="/library"><%- icon('books', 16) %> ไปที่คลัง</a></div></div>
   <div class="lib-strip-row">
     <% for (const b of books) { %>

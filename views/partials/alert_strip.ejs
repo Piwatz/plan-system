@@ -1,0 +1,1 @@
+<a class="alert alert-warn alert-strip" href="/alerts"><%- icon('bell') %><div><b>มีแจ้งเตือนใหม่ <%= (locals.badges && badges.alerts) || alerts.length %> เรื่อง</b><span class="as-last">ล่าสุด <%= alerts[0].from_name || 'ระบบ' %> <%= alerts[0].text %></span></div><span class="btn btn-sm btn-ghost">เปิดอ่าน</span></a>

@@ -2,12 +2,12 @@
 <div class="page-head">
   <div>
     <div class="eyebrow">ภาคเรียนที่ <%= term.semester %>/<%= term.year %></div>
-    <h1>สถานะกลุ่มสาระ<%= dept.name %></h1>
+    <h1><%= groups ? 'สถานะทุกกลุ่มสาระ' : 'สถานะกลุ่มสาระ' + dept.name %></h1>
   </div>
   <div class="actions">
     <% if (departments.length > 1) { %>
       <form method="get" data-autosubmit class="inline-form">
-        <select name="dept" aria-label="เลือกกลุ่มสาระ" style="width:auto"><% for (const d of departments) { %><option value="<%= d.id %>" <%= d.id === dept.id ? 'selected' : '' %>><%= d.name %></option><% } %></select>
+        <select name="dept" aria-label="เลือกกลุ่มสาระ" style="width:auto"><% if (canAll) { %><option value="all" <%= groups ? 'selected' : '' %>>ทุกกลุ่มสาระ</option><% } %><% for (const d of departments) { %><option value="<%= d.id %>" <%= d.id === dept.id ? 'selected' : '' %>><%= d.name %></option><% } %></select>
       </form>
     <% } %>
     <% if (settings.submit_end && daysLeft != null) { %><span class="pill-note<%= daysLeft < 0 ? ' back' : '' %>">กำหนดส่ง <%= util.thaiDate(settings.submit_end, true) %><%= daysLeft >= 0 ? ' เหลือ ' + daysLeft + ' วัน' : ' เลยกำหนดแล้ว' %></span><% } %>
@@ -15,7 +15,7 @@
 </div>
 
 <div class="grid-4" style="margin-bottom:18px">
-  <div class="stat"><span class="label">ครูในกลุ่มสาระ</span><b class="num"><%= allCount %> คน</b></div>
+  <div class="stat"><span class="label"><%= groups ? 'ครูทั้งหมด' : 'ครูในกลุ่มสาระ' %></span><b class="num"><%= allCount %> คน</b></div>
   <div class="stat green"><span class="label">ส่งแผนและคู่มือครบ</span><b class="num"><%= doneCount %> คน</b></div>
   <div class="stat <%= allCount - doneCount ? 'orange' : '' %>"><span class="label">ยังส่งไม่ครบ</span><b class="num"><%= allCount - doneCount %> คน</b></div>
   <a class="stat amber row" href="/inbox"><span style="flex:1"><span class="label">รอคุณลงนาม</span><br><b class="num"><%= inboxCount %></b></span><span class="btn btn-primary">ไปลงนาม</span></a>
@@ -24,7 +24,7 @@
 <form class="card flush" method="post" action="/dept/remind" data-confirm="ส่งข้อความเตือนในระบบถึงครูที่เลือก ครูจะเห็นที่หน้าหลักเมื่อเข้าระบบ" data-ok-label="ส่งเตือนเลย" data-busy="กำลังส่งเตือน">
   <input type="hidden" name="dept" value="<%= dept.id %>">
   <div class="card-head">
-    <h2>ครูในกลุ่มสาระ</h2>
+    <h2><%= groups ? 'ครูทุกกลุ่มสาระ' : 'ครูในกลุ่มสาระ' %></h2>
     <div class="actions">
       <% for (const [k, label] of [['all', 'ทั้งหมด'], ['todo', 'ยังไม่ครบ'], ['done', 'ครบแล้ว']]) { %>
         <a class="btn btn-sm <%= filter === k ? 'btn-primary' : 'btn-ghost' %>" href="/dept?dept=<%= dept.id %>&show=<%= k %>"><%= label %></a>
@@ -38,7 +38,7 @@
     </tr></thead>
     <tbody>
       <% if (!rows.length) { %><tr><td colspan="6" class="center muted">ไม่มีรายชื่อในกลุ่มนี้</td></tr><% } %>
-      <% for (const r of rows) { %>
+      <% const teacherRow = (r) => { %>
         <tr>
           <td><% if (!r.done) { %><input type="checkbox" name="ids" value="<%= r.id %>" data-todo aria-label="เลือก <%= r.full_name %>"><% } %></td>
           <td><b><%= r.full_name %></b><br><small class="muted"><%= r.subjects || 'ยังไม่มีรายวิชาในระบบ' %></small></td>
@@ -47,7 +47,11 @@
           <td class="hide-sm"><b><%= r.notes %></b> ฉบับ<%= r.notesTodo ? ' ร่าง ' + r.notesTodo : '' %></td>
           <td class="hide-sm muted small"><%= r.reminded || 'ยังไม่เคยเตือน' %></td>
         </tr>
-      <% } %>
+      <% }; %>
+      <% if (groups) { for (const g of groups) { %>
+        <tr class="dept-group"><td colspan="6"><%= g.name %><small>ส่งครบ <%= g.done %> จาก <%= g.total %> คน</small></td></tr>
+        <% g.rows.forEach(teacherRow); %>
+      <% } } else { rows.forEach(teacherRow); } %>
     </tbody>
   </table></div>
   <div style="padding:16px 20px;border-top:1px solid var(--line)">

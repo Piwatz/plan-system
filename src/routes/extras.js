@@ -194,17 +194,19 @@ function boardScope(me) {
 // จำนวนที่ต้องส่ง: คู่มือทุกวิชาที่สอน แผนเฉพาะวิชาหลัก (ถ้าเปิดฟังก์ชัน) ไม่มีรายวิชาเลยนับว่าต้องส่งอย่างละ 1
 // ครูทั้งกลุ่มสาระใช้ 3 คำสั่งเสมอ: ครูพร้อมจำนวนบันทึกและวันที่ส่งเตือนล่าสุด · งานของทุกคน · รายวิชาที่สอนของทุกคน
 async function boardRows(deptId, t, ff = {}) {
+  // deptId เป็นรหัสกลุ่มเดียว หรืออาร์เรย์สำหรับหน้าทุกกลุ่มสาระ (deptall) จำนวนคำสั่งเท่าเดิมไม่ว่ากี่กลุ่ม
+  const deptIds = Array.isArray(deptId) ? deptId : [deptId];
   const teachers = await q.all(
-    `SELECT u.id, u.full_name, u.position,
+    `SELECT u.id, u.full_name, u.position, u.department_id,
        (SELECT COUNT(*) FROM submissions n WHERE n.teacher_id = u.id AND n.doc_type = 'note' AND n.academic_year = ? AND n.semester = ?) AS notes_n,
        (SELECT COUNT(*) FROM submissions n WHERE n.teacher_id = u.id AND n.doc_type = 'note' AND n.academic_year = ? AND n.semester = ? AND n.status IN ('draft', 'returned')) AS notes_todo,
        (SELECT x.created_at FROM notifications x WHERE x.user_id = u.id AND x.link = '/my' ORDER BY x.id DESC LIMIT 1) AS reminded_at
-     FROM users u WHERE u.department_id = ? AND u.is_active = 1 AND u.is_teacher = 1 ORDER BY u.full_name`,
+     FROM users u WHERE u.department_id = ANY(?) AND u.is_active = 1 AND u.is_teacher = 1 ORDER BY u.full_name`,
     t.year,
     t.semester,
     t.year,
     t.semester,
-    deptId
+    deptIds
   );
   const ids = teachers.map((u) => u.id);
   const subsOf = new Map(ids.map((id) => [id, []]));
@@ -261,17 +263,31 @@ router.get('/dept', needFeature('board'), async (req, res) => {
   const scope = boardScope(req.me);
   if (!scope) return res.status(403).render('error', { title: 'ไม่มีสิทธิ์', message: 'หน้านี้สำหรับหัวหน้ากลุ่มสาระและผู้ตรวจ' });
   const departments = scope.all ? await q.all('SELECT * FROM departments ORDER BY sort, name') : await q.all('SELECT * FROM departments WHERE id = ?', scope.department_id);
-  const want = util.idParam(req.query.dept, { optional: true }) || req.me.department_id;
-  const dept = departments.find((d) => d.id === want) || departments[0];
+  // ทุกกลุ่มสาระ (ฟังก์ชันเสริม deptall) เฉพาะคนที่ดูได้ทุกกลุ่มอยู่แล้ว คนอื่นส่งค่านี้มาจะเห็นกลุ่มของตัวเองตามเดิม
+  const canAll = req.ff.deptall && scope.all && departments.length > 1;
+  const wantAll = req.query.dept === 'all';
+  const want = wantAll ? null : util.idParam(req.query.dept, { optional: true }) || req.me.department_id;
+  const dept = wantAll && canAll ? { id: 'all', name: '' } : departments.find((d) => d.id === want) || departments[0];
   if (!dept) return res.render('error', { title: 'สถานะกลุ่มสาระ', message: 'ยังไม่มีกลุ่มสาระในระบบ' });
   const t = currentTerm(req.settings);
-  const rows = await boardRows(dept.id, t, req.ff);
+  const rows = await boardRows(dept.id === 'all' ? departments.map((d) => d.id) : dept.id, t, req.ff);
   const filter = ['todo', 'done'].includes(req.query.show) ? req.query.show : 'all';
+  const shown = (r) => filter === 'all' || (filter === 'done' ? r.done : !r.done);
+  const groups = dept.id === 'all'
+    ? departments
+        .map((d) => {
+          const inDept = rows.filter((r) => r.department_id === d.id);
+          return { name: d.name, total: inDept.length, done: inDept.filter((r) => r.done).length, rows: inDept.filter(shown) };
+        })
+        .filter((g) => g.rows.length)
+    : null;
   res.render('dept', {
     title: 'สถานะกลุ่มสาระ',
     dept,
     departments,
-    rows: rows.filter((r) => filter === 'all' || (filter === 'done' ? r.done : !r.done)),
+    canAll,
+    groups,
+    rows: rows.filter(shown),
     allCount: rows.length,
     doneCount: rows.filter((r) => r.done).length,
     filter,
@@ -286,11 +302,14 @@ router.post('/dept/remind', needFeature('board'), async (req, res) => {
   const scope = boardScope(req.me);
   if (!scope) return res.status(403).render('error', { title: 'ไม่มีสิทธิ์', message: 'หน้านี้สำหรับหัวหน้ากลุ่มสาระและผู้ตรวจ' });
   const b = req.body || {};
-  const deptId = util.idParam(b.dept);
-  if (!scope.all && deptId !== scope.department_id) return respond(req, res, '/dept', 'error', 'ส่งเตือนได้เฉพาะครูในกลุ่มสาระของคุณ');
+  // ส่งเตือนจากหน้าทุกกลุ่มสาระ (ฟังก์ชันเสริม deptall)
+  const allDepts = b.dept === 'all' && req.ff.deptall && scope.all;
+  const deptId = allDepts ? 'all' : util.idParam(b.dept);
+  if (!allDepts && !scope.all && deptId !== scope.department_id) return respond(req, res, '/dept', 'error', 'ส่งเตือนได้เฉพาะครูในกลุ่มสาระของคุณ');
   const t = currentTerm(req.settings);
   const ids = new Set(asArray(b.ids).map(Number));
-  const targets = (await boardRows(deptId, t, req.ff)).filter((r) => ids.has(r.id) && !r.done);
+  const boardIds = allDepts ? (await q.all('SELECT id FROM departments')).map((d) => d.id) : deptId;
+  const targets = (await boardRows(boardIds, t, req.ff)).filter((r) => ids.has(r.id) && !r.done);
   if (!targets.length) return respond(req, res, `/dept?dept=${deptId}`, 'error', 'ยังไม่ได้เลือกครูที่ยังส่งไม่ครบ');
   const steps = req.me.roles.map((r) => wf.stepOf(r)).filter(Boolean);
   const fromLabel = steps.length ? steps[0].label + (steps[0].scope === 'department' && req.me.dept_name ? req.me.dept_name : '') : 'ผู้ดูแลระบบ';

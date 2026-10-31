@@ -1,42 +1,38 @@
 <%- include('../partials/top') %>
-<%# จัดลำดับกล่องบนหน้าแรก (ฟังก์ชันเสริม homeorder) ลากหรือกดลูกศรแล้วภาพย่อขยับตาม ยังไม่มีผลกับครูจนกว่าจะบันทึก · ทำงานใน app.js ส่วน data-home-order %>
+<%# จัดลำดับกล่องบนหน้าแรก แยกคอมกับมือถือได้ (ฟังก์ชันเสริม homeorder mobileorder) ลากหรือกดลูกศรแล้วภาพย่อขยับตาม ยังไม่มีผลกับครูจนกว่าจะบันทึก %>
 <div class="page-head">
   <div>
     <h1>ลำดับหน้าแรก</h1>
-    <div class="sub">ลากจุดหกจุด หรือกดลูกศร ใช้กับหน้าจอคอมของทุกคน ภาพย่อด้านขวาขยับตามทันที ครูยังไม่เห็นจนกว่าจะกดบันทึก</div>
+    <div class="sub">ลากจุดหกจุด หรือกดลูกศร ภาพย่อขยับตามทันที ครูยังไม่เห็นจนกว่าจะกดบันทึก</div>
   </div>
   <div class="actions"><a class="btn btn-ghost" href="/admin">กลับหน้าผู้ดูแลระบบ</a></div>
 </div>
-<form method="post" action="/admin/homeorder" class="ho-grid" data-home-order>
-  <input type="hidden" name="home_order" value="" data-ho-value>
-  <section class="card">
-    <div class="ho-row ho-fix"><span class="ho-grip"></span><div class="ho-t"><b>แถบต้อนรับและคำเตือนสำคัญ</b><small>อยู่บนสุดเสมอ เช่น ใกล้กำหนดส่ง ลายเซ็น แจ้งเตือน</small></div><span class="ho-lock">ย้ายไม่ได้</span></div>
-    <ol class="ho-list" data-ho-list>
-      <% boxes.forEach((b, i) => { %>
-        <li class="ho-row<%= b.on ? '' : ' ho-off' %>" data-ho-row data-k="<%= b.k %>">
-          <span class="ho-grip" data-ho-grip title="ลากเพื่อย้าย"><%- icon('grip', 22) %></span>
-          <span class="ho-no" data-ho-no><%= i + 1 %></span>
-          <div class="ho-t"><b><%= b.label %></b><small data-ho-note data-note="<%= b.note || '' %>"><%= b.on ? (b.note || '') : 'ซ่อนอยู่' %></small></div>
-          <button type="button" class="ho-ar" data-ho-up aria-label="ย้าย<%= b.label %>ขึ้น"><%- icon('up', 18) %></button>
-          <button type="button" class="ho-ar" data-ho-down aria-label="ย้าย<%= b.label %>ลง"><%- icon('down', 18) %></button>
-          <% if (b.keep) { %><span class="ho-lock">แสดงเสมอ</span>
-          <% } else { %><label class="ho-sw" title="แสดงหรือซ่อน"><input type="checkbox" data-ho-on aria-label="แสดง<%= b.label %>" <%= b.on ? 'checked' : '' %>><span></span></label><% } %>
-        </li>
-      <% }) %>
-    </ol>
-    <div class="btn-row" style="margin-top:12px">
-      <button class="btn btn-primary" type="submit" name="action" value="save" data-confirm="บันทึกลำดับหน้าแรกนี้ ครูทุกคนจะเห็นทันที" data-ok-label="บันทึก">บันทึกลำดับ</button>
-      <button class="btn btn-ghost" type="submit" name="action" value="reset" data-confirm="กลับเป็นลำดับเริ่มต้น และแสดงทุกกล่อง ครูทุกคนจะเห็นทันที" data-ok-label="กลับเป็นค่าเริ่มต้น">กลับเป็นค่าเริ่มต้น</button>
+<form method="post" action="/admin/homeorder" data-home-order>
+  <% if (ff.mobileorder) { %>
+    <div class="ho-tabs" role="tablist">
+      <button type="button" class="ho-tab on" role="tab" aria-selected="true" data-ho-tab="pc"><%- icon('grid', 18) %> หน้าจอคอม</button>
+      <button type="button" class="ho-tab" role="tab" aria-selected="false" data-ho-tab="m"><%- icon('rows', 18) %> มือถือ</button>
     </div>
-  </section>
-  <aside class="ho-preview" aria-label="ภาพย่อหน้าแรก">
-    <div class="ho-pv-head">ภาพย่อหน้าแรก</div>
-    <div class="ho-pv ho-pv-hello">สวัสดี คุณครู</div>
-    <div data-ho-pv-list>
-      <% for (const b of boxes) { %>
-        <div class="ho-pv ho-pv-<%= b.k %>" data-ho-pv="<%= b.k %>"<%= b.on ? '' : ' hidden' %>><%= b.label %><% if (b.k === 'lib') { %><span class="ho-cvs"><i></i><i></i><i></i><i></i><i></i><i></i></span><% } else if (b.k === 'stats') { %><span class="ho-sts"><i></i><i></i><i></i><i></i></span><% } else if (b.k !== 'bar' && b.k !== 'activity') { %><span class="ho-lns"><i></i><% if (b.k === 'subjects') { %><i></i><i></i><% } %></span><% } %></div>
-      <% } %>
+  <% } %>
+  <div data-ho-panel="pc">
+    <%- include('../partials/ho_set', { boxes, name: 'home_order', fixNote: 'อยู่บนสุดเสมอ เช่น ใกล้กำหนดส่ง ลายเซ็น', phone: false, alertName: 'home_alerts_pc', alertOn: alertsPc }) %>
+  </div>
+  <% if (ff.mobileorder) { %>
+    <div data-ho-panel="m" hidden>
+      <div class="card ho-mode">
+        <label class="check"><input type="radio" name="home_order_m_mode" value="own" data-ho-mode <%= mMode !== 'same' ? 'checked' : '' %>> <span><b>จัดแยกจากหน้าจอคอม</b></span></label>
+        <label class="check"><input type="radio" name="home_order_m_mode" value="same" data-ho-mode <%= mMode === 'same' ? 'checked' : '' %>> <span><b>ใช้ลำดับเดียวกับหน้าจอคอม</b></span></label>
+        <p class="muted small" style="margin:6px 0 0">มือถือมีเฉพาะกล่องในรายการนี้ กล่องอื่นมีเฉพาะบนคอม งานรอลงนามบนมือถืออยู่ในกล่องสิ่งที่ต้องทำต่อ ถ้าซ่อนกล่องนี้ ผู้ตรวจยังเปิดงานได้จากเมนู</p>
+      </div>
+      <div data-ho-own<%= mMode === 'same' ? ' hidden' : '' %>>
+        <%- include('../partials/ho_set', { boxes: mobileBoxes, name: 'home_order_m', fixNote: 'อยู่บนสุดเสมอ เช่น ใกล้กำหนดส่ง ลายเซ็น', phone: true, alertName: 'home_alerts_m', alertOn: alertsM }) %>
+      </div>
+      <div class="alert alert-info" data-ho-samenote<%= mMode === 'same' ? '' : ' hidden' %>><%- icon('check') %><span>มือถือจะเรียงตามลำดับในแท็บหน้าจอคอม กล่องที่มีเฉพาะบนคอมไม่แสดงบนมือถือ</span></div>
     </div>
-  </aside>
+  <% } %>
+  <div class="btn-row" style="margin-top:12px">
+    <button class="btn btn-primary" type="submit" name="action" value="save" data-confirm="บันทึกลำดับหน้าแรกนี้ ครูทุกคนจะเห็นทันที" data-ok-label="บันทึก">บันทึกลำดับ</button>
+    <button class="btn btn-ghost" type="submit" name="action" value="reset" data-confirm="กลับเป็นลำดับเริ่มต้นทั้งคอมและมือถือ และแสดงทุกกล่อง ครูทุกคนจะเห็นทันที" data-ok-label="กลับเป็นค่าเริ่มต้น">กลับเป็นค่าเริ่มต้น</button>
+  </div>
 </form>
 <%- include('../partials/bottom') %>

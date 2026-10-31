@@ -5,13 +5,13 @@
   // ร้อยละที่ส่งแล้ว ใช้กับแถบความคืบหน้าและวงแหวน (สีสัน 4 ระดับ colorful)
   const sentPct = me.is_teacher && stats.target ? Math.min(100, Math.round((stats.sent / stats.target) * 100)) : 0;
 %>
-<div class="hello<%= locals.fxLevel >= 3 ? ' fx-hello' : '' %>">
+<div class="hello<%= locals.fxLevel >= 3 ? ' fx-hello' : '' %><%= ff.helloslim ? ' hello-slim' : '' %>">
   <div>
     <div class="muted">ภาคเรียนที่ <%= term.semester %>/<%= term.year %></div>
     <h1>สวัสดี <%= me.is_teacher ? 'ครู' : 'คุณ' %><%= first %></h1>
   </div>
   <% if (window.open && settings.submit_end && daysLeft != null && daysLeft >= 0) { %>
-    <span class="pill-note<%= daysLeft > 14 ? ' ok' : '' %>"><%= daysLeft === 0 ? 'วันนี้วันสุดท้าย' : 'เหลืออีก ' + daysLeft + ' วัน' %> ถึงกำหนดส่งแผนและคู่มือ (<%= util.thaiDate(settings.submit_end, true) %>)</span>
+    <span class="pill-note<%= daysLeft > 14 ? ' ok' : '' %>"><span class="pill-long"><%= daysLeft === 0 ? 'วันนี้วันสุดท้าย' : 'เหลืออีก ' + daysLeft + ' วัน' %> ถึงกำหนดส่งแผนและคู่มือ (<%= util.thaiDate(settings.submit_end, true) %>)</span><% if (ff.helloslim) { %><span class="pill-short"><%= daysLeft === 0 ? 'วันนี้วันสุดท้าย' : 'เหลือ ' + daysLeft + ' วัน' %> ส่งภายใน <%= util.thaiDate(settings.submit_end, true) %></span><% } %></span>
   <% } else if (window.open) { %>
     <span class="pill-note ok">เปิดรับส่งแผนและคู่มือ</span>
   <% } else { %>
@@ -74,7 +74,7 @@
 <% } %>
 
 <% if (ff.alertstrip && alerts.length) { %><%# แถบเดียวแทนกล่องแจ้งเตือนหลายกล่อง (ฟังก์ชันเสริม alertstrip) %>
-  <a class="alert alert-warn alert-strip" href="/alerts"><%- icon('bell') %><div><b>มีแจ้งเตือนใหม่ <%= (locals.badges && badges.alerts) || alerts.length %> เรื่อง</b><span class="as-last">ล่าสุด <%= alerts[0].from_name || 'ระบบ' %> <%= alerts[0].text %></span></div><span class="btn btn-sm btn-ghost">เปิดอ่าน</span></a>
+  <% if (homeAlerts.pc && homeAlerts.m) { %><%- include('partials/alert_strip') %><% } else if (homeAlerts.pc) { %><div class="d-only"><%- include('partials/alert_strip') %></div><% } else if (homeAlerts.m) { %><div class="m-only"><%- include('partials/alert_strip') %></div><% } %>
 <% } else { %>
 <% for (const a of alerts) { %>
   <div class="alert alert-warn"><%- icon('bell') %>
@@ -88,15 +88,21 @@
   <div class="alert alert-info"><%- icon('edit') %><span>คุณยังไม่ได้บันทึกลายเซ็น ลายเซ็นจะปรากฏในบันทึกข้อความและเอกสารที่พิมพ์ <a href="/profile"><b>เซ็นชื่อเลย</b></a></span></div>
 <% } %>
 
-<div class="m-only">
-  <section class="card m-next">
+<%# จัดลำดับบนมือถือ (ฟังก์ชันเสริม mobileorder) ต้องเปิด homelayout ด้วย ลำดับมาจาก homeMobileCss %>
+<% const mobileOrder = ff.homelayout && ff.mobileorder; %>
+<% if (mobileOrder) { %><style><%- homeMobileCss %></style><% } %>
+<div class="m-only<%= mobileOrder ? ' hm-layout' : '' %>">
+  <% if (mobileOrder && ff.statslim && me.is_teacher) { %><%- include('partials/home_stats', { sentPct, slim: true }) %><% } %>
+  <section class="card m-next<%= ff.todoshort ? ' todo-short' : '' %>">
     <h2>สิ่งที่ต้องทำต่อ</h2>
     <% if (!nextUp.length) { %><p class="muted" style="margin:0">ไม่มีงานค้าง เรียบร้อยดีแล้ว</p><% } %>
-    <% for (const n of nextUp.slice(0, 6)) { %>
-      <a class="m-next-row" href="<%= n.href %>"><span class="m-dot <%= n.tone %>"></span><span class="m-next-text"><b><%= n.title %></b><% if (n.sub) { %><span><%= n.sub %></span><% } %></span><%- icon('next', 20) %></a>
-    <% } %>
+    <%# แสดงน้อยลง (ฟังก์ชันเสริม todoshort) 3 งานแรกเรียงจากเรื่องด่วน ที่เหลือกดเปิดดู %>
+    <% const mRow = (n) => { %><a class="m-next-row" href="<%= n.href %>"><span class="m-dot <%= n.tone %>"></span><span class="m-next-text"><b><%= n.title %></b><% if (n.sub) { %><span><%= n.sub %></span><% } %></span><%- icon('next', 20) %></a><% }; const mShown = ff.todoshort ? 3 : 6; %>
+    <% nextUp.slice(0, mShown).forEach(mRow); %>
+    <% if (ff.todoshort && nextUp.length > mShown) { %><details class="ht-rest"><summary>ดูอีก <%= Math.min(nextUp.length, 6) - mShown %> งาน</summary><% nextUp.slice(mShown, 6).forEach(mRow); %></details><% } %>
   </section>
   <% if (me.is_admin) { %>
+    <div class="hm-admin">
     <div class="m-head"><h2>ผู้ดูแลระบบ</h2><span class="muted small">เฉพาะผู้ดูแลระบบเห็นส่วนนี้</span></div>
     <section class="card m-subj">
       <div class="m-tiles m-tiles-2">
@@ -105,7 +111,9 @@
         <% } %>
       </div>
     </section>
+    </div>
   <% } %>
+  <div class="hm-subjects">
   <% if (me.is_teacher && ff.teachlist) { %>
     <div class="m-head"><h2>รายวิชาของฉัน</h2><a class="small" href="/teaching"><%= subjects.length ? 'แก้รายวิชาที่สอน' : 'เลือกรายวิชาที่สอน' %></a></div>
   <% } else if (me.is_teacher && subjects.length) { %>
@@ -127,6 +135,8 @@
       </section>
     <% } %>
   <% } %>
+  </div>
+  <% if (mobileOrder && locals.libRecent && libRecent.length) { %><%- include('partials/lib_strip', { books: libRecent.slice(0, 6), fill: false, compact: true }) %><% } %>
 </div>
 <div class="d-only<%= ff.homelayout ? ' home-layout' : '' %>">
 <% if (locals.homeOrderCss) { %><style><%- homeOrderCss %></style><% } %>
@@ -156,12 +166,7 @@
 <% } %>
 
 <% if (me.is_teacher) { %>
-  <div class="grid-4" style="margin-bottom:18px">
-    <a class="stat green st-sent" href="/my"><span class="label"><span class="fx-ic"><%- icon('send', 16) %></span>ส่งแล้ว</span><b class="num"><%= stats.sent %> / <%= stats.target || 0 %></b><span class="fx-bar" aria-hidden="true"><i style="width:<%= sentPct %>%"></i></span><span class="sub">ผ่านครบทุกระดับ <%= stats.approved %> ชิ้น</span></a>
-    <a class="stat blue st-wait" href="/my"><span class="label"><span class="fx-ic"><%- icon('clock', 16) %></span>รอผู้ตรวจ</span><b class="num"><%= stats.pending %></b><span class="sub"><%= stats.pending ? 'อยู่ที่ ' + stats.pendingAt : 'ไม่มีงานค้างที่ผู้ตรวจ' %></span></a>
-    <a class="stat st-back <%= stats.returned ? 'orange' : '' %>" href="/my"><span class="label"><span class="fx-ic"><%- icon('undo', 16) %></span>ต้องแก้ไข</span><b class="num"><%= stats.returned %></b><span class="sub"><%= stats.returned ? stats.returnedName : 'ไม่มีงานที่ต้องแก้' %></span></a>
-    <a class="stat st-note" href="/notes"><span class="label"><span class="fx-ic"><%- icon('edit', 16) %></span>บันทึกหลังแผน</span><b class="num"><%= stats.notes %></b><span class="sub"><%= stats.notesTodo ? 'ยังไม่ส่ง ' + stats.notesTodo + ' ฉบับ' : 'ส่งครบทุกฉบับ' %></span></a>
-  </div>
+  <%- include('partials/home_stats', { sentPct, slim: false }) %>
 
   <div class="grid-3">
     <section class="card flush">
@@ -252,7 +257,7 @@
 <% } %>
 </div>
 <% if (locals.libRecent && libRecent.length) { %>
-  <% if (ff.homelayout) { %><div class="m-only"><%- include('partials/lib_strip', { books: libRecent.slice(0, 6), fill: false }) %></div>
+  <% if (ff.homelayout) { %><% if (!mobileOrder) { %><div class="m-only"><%- include('partials/lib_strip', { books: libRecent.slice(0, 6), fill: false }) %></div><% } %>
   <% } else { %><%- include('partials/lib_strip', { books: libRecent, fill: false }) %><% } %>
 <% } %>
 <%- include('partials/bottom') %>

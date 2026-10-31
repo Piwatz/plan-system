@@ -1,0 +1,31 @@
+<%# ชุดจัดลำดับ 1 ชุด (คอมหรือมือถือ) รายการอยู่ซ้าย ภาพย่ออยู่ขวา ทำงานใน app.js ส่วน data-ho-set · locals: boxes name fixNote phone alertName alertOn %>
+<div class="ho-grid" data-ho-set>
+  <input type="hidden" name="<%= name %>" value="" data-ho-value>
+  <section class="card">
+    <div class="ho-row ho-fix"><span class="ho-grip"></span><div class="ho-t"><b>แถบต้อนรับและคำเตือนสำคัญ</b><small><%= fixNote %></small></div><span class="ho-lock">ย้ายไม่ได้</span></div>
+    <% if (ff.alertstrip) { %><div class="ho-row ho-fix<%= alertOn ? '' : ' ho-off' %>" data-ho-alertrow><span class="ho-grip"></span><div class="ho-t"><b>แถบแจ้งเตือน</b><small>อยู่บนสุดเสมอ ถ้าปิด ครูยังเห็นจำนวนที่กระดิ่งและเมนู</small></div><label class="ho-sw" title="แสดงหรือซ่อน"><input type="checkbox" name="<%= alertName %>" value="1" data-ho-alert aria-label="แสดงแถบแจ้งเตือน" <%= alertOn ? 'checked' : '' %>><span></span></label></div><% } %>
+    <ol class="ho-list" data-ho-list>
+      <% boxes.forEach((b, i) => { %>
+        <li class="ho-row<%= b.on ? '' : ' ho-off' %>" data-ho-row data-k="<%= b.k %>">
+          <span class="ho-grip" data-ho-grip title="ลากเพื่อย้าย"><%- icon('grip', 22) %></span>
+          <span class="ho-no" data-ho-no><%= i + 1 %></span>
+          <div class="ho-t"><b><%= b.label %></b><small data-ho-note data-note="<%= b.note || '' %>"><%= b.on ? (b.note || '') : 'ซ่อนอยู่' %></small></div>
+          <button type="button" class="ho-ar" data-ho-up aria-label="ย้าย<%= b.label %>ขึ้น"><%- icon('up', 18) %></button>
+          <button type="button" class="ho-ar" data-ho-down aria-label="ย้าย<%= b.label %>ลง"><%- icon('down', 18) %></button>
+          <% if (b.keep) { %><span class="ho-lock">แสดงเสมอ</span>
+          <% } else { %><label class="ho-sw" title="แสดงหรือซ่อน"><input type="checkbox" data-ho-on aria-label="แสดง<%= b.label %>" <%= b.on ? 'checked' : '' %>><span></span></label><% } %>
+        </li>
+      <% }) %>
+    </ol>
+  </section>
+  <aside class="ho-preview<%= phone ? ' ho-phone' : '' %>" aria-label="ภาพย่อหน้าแรก">
+    <div class="ho-pv-head">ภาพย่อหน้าแรก</div>
+    <div class="ho-pv ho-pv-hello">สวัสดี คุณครู</div>
+    <% if (ff.alertstrip) { %><div class="ho-pv ho-pv-alert" data-ho-pv-alert<%= alertOn ? '' : ' hidden' %>>แถบแจ้งเตือน</div><% } %>
+    <div data-ho-pv-list>
+      <% for (const b of boxes) { %>
+        <div class="ho-pv ho-pv-<%= b.k %>" data-ho-pv="<%= b.k %>"<%= b.on ? '' : ' hidden' %>><%= b.label %><% if (b.k === 'lib') { %><span class="ho-cvs"><i></i><i></i><i></i><i></i><i></i><i></i></span><% } else if (b.k === 'stats') { %><span class="ho-sts"><i></i><i></i><i></i><i></i></span><% } else if (b.k !== 'bar' && b.k !== 'activity') { %><span class="ho-lns"><i></i><% if (b.k === 'subjects') { %><i></i><i></i><% } %></span><% } %></div>
+      <% } %>
+    </div>
+  </aside>
+</div>

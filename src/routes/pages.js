@@ -359,6 +359,8 @@ router.get('/', async (req, res) => {
     warnings,
     // ลำดับกล่องที่ผู้ดูแลระบบจัดไว้ (ฟังก์ชันเสริม homeorder)
     homeOrderCss: req.ff.homelayout && req.ff.homeorder ? homeorder.css(homeorder.parse(req.settings.home_order)) : '',
+    homeAlerts: homeorder.alertsShown(req.settings, req.ff),
+    homeMobileCss: req.ff.homelayout && req.ff.mobileorder ? homeorder.cssMobile(homeorder.mobileList(req.settings)) : '',
     // แถบเล่มใหม่ในคลังงาน (ฟังก์ชันเสริม library)
     libRecent: req.ff.library ? library.decorate(await library.recent(req.ff.homelayout ? 14 : 6, library.showRule(req.settings)), me, req.ff) : [],
   });

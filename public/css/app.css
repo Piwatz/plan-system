@@ -1707,6 +1707,54 @@ tr.dr-dup td { background: var(--back-bg); }
 .ho-cvs i:nth-child(2n) { background: var(--cv-manual); }
 .ho-sts i { flex: 1; height: 18px; border-radius: 3px; background: var(--soft); }
 .ho-lns i { display: block; height: 8px; margin-top: 5px; border-radius: 3px; background: var(--soft); }
+/* แท็บคอมกับมือถือ และลำดับบนมือถือ (ฟังก์ชันเสริม mobileorder) */
+.ho-tabs { display: flex; gap: 8px; margin-bottom: 14px; }
+.ho-tab { display: inline-flex; align-items: center; gap: 7px; padding: 9px 18px; border: 1.5px solid var(--line); border-radius: var(--rs); background: var(--surface); color: var(--ink); font: 600 1rem/1.3 var(--font); cursor: pointer; }
+.ho-tab.on { background: var(--primary); border-color: var(--primary); color: var(--surface); }
+.ho-mode { margin-bottom: 14px; display: flex; flex-direction: column; gap: 6px; }
+[data-ho-panel][hidden], [data-ho-own][hidden] { display: none; }
+.ho-phone { max-width: 260px; }
+.lib-compact { margin: 0 0 14px; padding: 10px 12px; }
+.lib-compact .card-head { margin-bottom: 6px; }
+.lib-compact h2 { font-size: 1rem; margin: 0; }
+.lib-compact .lib-strip-row { gap: 9px; padding: 0 0 4px; -webkit-overflow-scrolling: touch; }
+.lib-compact .lib-mini { flex: 0 0 66px; width: 66px; }
+.lib-compact .lib-mini-t { display: none; }
+.pill-short { display: none; }
+@media (max-width: 900px) {
+  body.ml-simple .m-only.hm-layout { display: flex; flex-direction: column; }
+  /* แถบต้อนรับเล็กลง (ฟังก์ชันเสริม helloslim) */
+  body.ml-simple .hello-slim h1 { font-size: 1.25rem; }
+  body.ml-simple .hello-slim .muted { font-size: 0.82rem; }
+  body.ml-simple .hello-slim .pill-note { padding: 3px 10px; border-radius: 9px; font-size: 0.82rem; line-height: 1.35; }
+  body.ml-simple .hello-slim .pill-long { display: none; }
+  body.ml-simple .hello-slim .pill-short { display: inline; }
+  body.ml-simple.fx3 .hello-slim.fx-hello { gap: 6px 10px; padding: 10px 14px; }
+  body.ml-simple.fx3 .hello-slim .fx-ring { width: 54px; height: 54px; }
+  body.ml-simple.fx3 .hello-slim .fx-ring b { font-size: 0.86rem; }
+  body.ml-simple.fx3 .hello-slim .fx-ring small { font-size: 0.56rem; }
+  /* สิ่งที่ต้องทำต่อแบบย่อบนมือถือ (ฟังก์ชันเสริม todoshort) */
+  .todo-short.m-next h2 { font-size: 1.02rem; }
+  .todo-short .m-next-row { padding: 7px 0; gap: 9px; }
+  .todo-short .m-next-text b { font-size: 0.9rem; }
+  .todo-short .m-next-text span { font-size: 0.78rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+}
+/* แถบตัวเลขสรุปบนมือถือ (ฟังก์ชันเสริม statslim) */
+.grid-4.stats-slim { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; margin-bottom: 14px; }
+.stats-slim .stat { flex-direction: column; justify-content: center; align-items: center; gap: 2px; padding: 6px 3px; min-height: 0; text-align: center; }
+.stats-slim .stat .label { font-size: 0.74rem; white-space: nowrap; min-width: 0; justify-content: center; }
+.stats-slim .stat .num { font-size: 1.08rem; line-height: 1.1; white-space: nowrap; }
+.stats-slim .sub, .fx2 .stats-slim .fx-bar, .fx1 .stats-slim .fx-ic, .stats-slim .lab-more { display: none; }
+/* หัวกลุ่มในหน้าทุกกลุ่มสาระ (ฟังก์ชันเสริม deptall) */
+.dept-group td { background: var(--soft); font-weight: 700; }
+.dept-group small { font-weight: 400; color: var(--muted); margin-left: 8px; }
+/* สิ่งที่ต้องทำต่อแบบย่อ (ฟังก์ชันเสริม todoshort) */
+.todo-short { padding-top: 11px; padding-bottom: 8px; }
+.todo-short.home-todo h2 { font-size: 1.05rem; margin-bottom: 3px; }
+.todo-short .ht-row { padding: 6px 0; font-size: 0.92rem; }
+.todo-short .ht-text > span { font-size: 0.8rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: block; }
+.ht-rest > summary { cursor: pointer; padding: 7px 0 3px; color: var(--primary); font-weight: 600; font-size: 0.88rem; border-top: 1px solid var(--line); }
+.ho-pv-alert { background: var(--wait-bg); color: var(--wait); }
 /* ฟอนต์หน้าเว็บ (ฟังก์ชันเสริม fontpick) TH Sarabun ตัวเล็กกว่าฟอนต์อื่น จึงขยายให้ขนาดเท่ากัน */
 @font-face { font-family: 'Web TH'; font-weight: 400; size-adjust: 130%; src: local('TH SarabunPSK'), local('THSarabunPSK'), local('TH Sarabun New'), local('THSarabunNew'); }
 @font-face { font-family: 'Web TH'; font-weight: 700; size-adjust: 130%; src: local('TH SarabunPSK Bold'), local('THSarabunPSK-Bold'), local('TH Sarabun New Bold'), local('THSarabunNew-Bold'); }

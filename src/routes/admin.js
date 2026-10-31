@@ -838,18 +838,35 @@ router.get('/settings', async (req, res) => {
 // ---------- ลำดับหน้าแรก (ฟังก์ชันเสริม homeorder) ----------
 router.get('/homeorder', (req, res) => {
   if (!req.ff.homelayout || !req.ff.homeorder) return fail(req, res, '/admin', 'ปิดฟังก์ชันจัดลำดับหน้าแรกอยู่');
-  res.render('admin/homeorder', { title: 'ลำดับหน้าแรก', boxes: homeorder.parse(req.settings.home_order) });
+  res.render('admin/homeorder', {
+    title: 'ลำดับหน้าแรก',
+    boxes: homeorder.parse(req.settings.home_order),
+    mobileBoxes: homeorder.parseMobile(req.settings.home_order_m).filter((b) => b.k !== 'stats' || req.ff.statslim),
+    mMode: req.settings.home_order_m_mode === 'same' ? 'same' : 'own',
+    alertsPc: req.settings.home_alerts_pc !== '0',
+    alertsM: req.settings.home_alerts_m !== '0',
+  });
 });
 
 router.post('/homeorder', async (req, res) => {
   if (!req.ff.homelayout || !req.ff.homeorder) return fail(req, res, '/admin', 'ปิดฟังก์ชันจัดลำดับหน้าแรกอยู่');
   if (req.body.action === 'reset') {
     await setSetting('home_order', '');
+    await setSetting('home_order_m', '');
+    await setSetting('home_order_m_mode', 'own');
+    await setSetting('home_alerts_pc', '1');
+    await setSetting('home_alerts_m', '1');
     await features.audit(req.me, 'กลับลำดับหน้าแรกเป็นค่าเริ่มต้น', 'home_order');
     return done(req, res, '/admin/homeorder', 'กลับเป็นลำดับเริ่มต้นแล้ว');
   }
   const list = homeorder.parse(req.body.home_order);
   await setSetting('home_order', homeorder.serialize(list));
+  await setSetting('home_alerts_pc', req.body.home_alerts_pc ? '1' : '0');
+  if (req.ff.mobileorder) {
+    await setSetting('home_order_m', homeorder.serialize(homeorder.parseMobile(req.body.home_order_m)));
+    await setSetting('home_order_m_mode', req.body.home_order_m_mode === 'same' ? 'same' : 'own');
+    await setSetting('home_alerts_m', req.body.home_alerts_m ? '1' : '0');
+  }
   await features.audit(req.me, `จัดลำดับหน้าแรกเป็น ${list.filter((b) => b.on).map((b) => b.label).join(' ')}`, 'home_order');
   done(req, res, '/admin/homeorder', 'บันทึกลำดับหน้าแรกแล้ว ครูทุกคนเห็นทันที');
 });

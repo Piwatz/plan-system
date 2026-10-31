@@ -2703,6 +2703,27 @@
   // ---------- จัดลำดับหน้าแรก ลากหรือกดลูกศร ภาพย่อขยับตาม (ฟังก์ชันเสริม homeorder) ----------
   // ใช้ pointer events จึงลากได้ทั้งเมาส์และนิ้ว ส่วนลูกศรเป็นทางสำรองที่กดได้แน่นอนทุกเครื่อง
   document.querySelectorAll('[data-home-order]').forEach((form) => {
+    // แท็บคอมกับมือถือ และสวิตช์ให้มือถือใช้ลำดับเดียวกับคอม
+    form.querySelectorAll('[data-ho-tab]').forEach((tab) => {
+      tab.addEventListener('click', () => {
+        form.querySelectorAll('[data-ho-tab]').forEach((x) => {
+          x.classList.toggle('on', x === tab);
+          x.setAttribute('aria-selected', String(x === tab));
+        });
+        form.querySelectorAll('[data-ho-panel]').forEach((x) => {
+          x.hidden = x.dataset.hoPanel !== tab.dataset.hoTab;
+        });
+      });
+    });
+    form.querySelectorAll('[data-ho-mode]').forEach((radio) => {
+      radio.addEventListener('change', () => {
+        const same = radio.value === 'same' && radio.checked;
+        form.querySelector('[data-ho-own]').hidden = same;
+        form.querySelector('[data-ho-samenote]').hidden = !same;
+      });
+    });
+  });
+  document.querySelectorAll('[data-ho-set]').forEach((form) => {
     const list = form.querySelector('[data-ho-list]');
     const pv = form.querySelector('[data-ho-pv-list]');
     const value = form.querySelector('[data-ho-value]');
@@ -2740,6 +2761,13 @@
       (btn.disabled ? row.querySelector(up ? '[data-ho-down]' : '[data-ho-up]') : btn).focus();
     });
     list.addEventListener('change', sync);
+    const alertOn = form.querySelector('[data-ho-alert]');
+    if (alertOn) {
+      alertOn.addEventListener('change', () => {
+        form.querySelector('[data-ho-alertrow]').classList.toggle('ho-off', !alertOn.checked);
+        form.querySelector('[data-ho-pv-alert]').hidden = !alertOn.checked;
+      });
+    }
     list.addEventListener('pointerdown', (e) => {
       const grip = e.target.closest('[data-ho-grip]');
       if (!grip) return;
