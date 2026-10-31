@@ -85,7 +85,11 @@ test('หัวหน้าคลังงานแบบกะทัดรั�
   assert.match(on, /lib-s-short">บันทึกหลังแผน</);
   assert.match(on, /data-short="\d\/\d{4}"/);
   const teacher = (await db.q.get('SELECT username FROM users WHERE is_admin = 0 AND is_teacher = 1 AND is_active = 1 ORDER BY id LIMIT 1')).username;
-  assert.ok(!(await (await as(teacher)).get('/library?shelf=plan')).text.includes('data-lib-tools aria-expanded'));
+  assert.match(on, /href="\/admin\/readperm"/, 'ผู้ดูแลไปหน้าสิทธิ์อ่านงานจากคลังงานได้');
+  assert.match((await admin.get('/admin/features')).text, /href="\/admin\/readperm"/);
+  const tp = (await (await as(teacher)).get('/library?shelf=plan')).text;
+  assert.ok(!tp.includes('data-lib-tools aria-expanded'));
+  assert.ok(!tp.includes('/admin/readperm'), 'ครูไม่เห็นลิงก์สิทธิ์อ่านงาน');
   await setFlag(admin, 'libslim', false);
   try {
     const off = (await admin.get('/library?shelf=plan')).text;

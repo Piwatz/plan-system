@@ -47,6 +47,7 @@
   <%# ผู้ดูแลระบบ (libshow) เปิดดูเล่มที่ซ่อนอยู่ (จาง ๆ) แล้วกดแสดงหรือซ่อนทีละเล่ม · ค่าหลักและรายครูตั้งในหน้าฟังก์ชันเสริม %>
   <div class="lib-showbar">
     <a class="btn btn-sm btn-ghost" href="/admin/features#libshow"><%- icon('toggle', 16) %> ตั้งค่างานที่แสดง</a>
+    <% if (ff.readperm) { %><a class="btn btn-sm btn-ghost" href="/admin/readperm"><%- icon('lock', 16) %> สิทธิ์อ่านงาน</a><% } %>
     <a class="btn btn-sm <%= hidden ? 'btn-primary' : 'btn-ghost' %>" href="/library?<%= new URLSearchParams(Object.fromEntries(Object.entries({ ...query, hidden: hidden ? '' : '1' }).filter(([, v]) => v !== ''))) %>" aria-pressed="<%= hidden %>"><%- icon('eye', 16) %> เห็นเล่มที่ซ่อนอยู่</a>
   </div>
   <form id="lib-show-show" method="post" action="/library/show"><input type="hidden" name="want" value="show"><input type="hidden" name="back" value="<%= back %>"></form>

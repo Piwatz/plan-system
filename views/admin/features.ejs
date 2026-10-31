@@ -72,6 +72,7 @@
       <section class="card" id="libshow">
         <h2>งานที่แสดงในคลังงาน</h2>
         <p class="muted small">ตั้งได้ 3 ชั้น ชั้นที่ละเอียดกว่าชนะ งานร่างไม่แสดงเสมอ การเปิดอ่านไฟล์ใช้สิทธิ์เดิม · ชั้นที่ 3 ซ่อนหรือแสดงทีละเล่ม ทำในหน้าคลังงาน เปิดปุ่ม เห็นเล่มที่ซ่อนอยู่</p>
+        <% if (ff.readperm) { %><p style="margin:0 0 12px"><a class="btn btn-sm btn-ghost" href="/admin/readperm"><%- icon('lock', 16) %> ตั้งว่าใครเปิดอ่านเล่มของคนอื่นได้</a></p><% } %>
         <form method="post" action="/admin/libshow" data-confirm="บันทึกงานที่แสดงในคลังงาน มีผลกับทุกคนทันที" data-ok-label="บันทึก">
           <fieldset class="field" style="border:0;padding:0;margin:0 0 12px">
             <legend class="label" style="font-weight:700">1 ค่าหลักของทั้งโรงเรียน</legend>
