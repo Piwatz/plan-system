@@ -8,4 +8,4 @@
 2. เพิ่มไฟล์ในโฟลเดอร์นี้ชื่อ `NNN_ชื่อสั้น.sql` เช่น `002_เพิ่มคอลัมน์หมายเหตุ.sql` เลขเรียงต่อกัน เนื้อหาแก้จากรูปเดิมเป็นรูปใหม่ รันซ้ำได้ไม่พัง (`if not exists`) และท้ายไฟล์ `update schema_version set version = NNN;`
 3. รันไฟล์นั้นใน SQL Editor ของ Supabase แล้วรัน `db/supabase-lockdown.sql` ซ้ำถ้ามีตารางใหม่
 
-รุ่นปัจจุบันของโครงตาราง: 8 (008_คำของฉัน.sql เพิ่มตาราง user_phrases · 007_สรุปการส่งงาน.sql เพิ่มตาราง report_rounds report_adjusts · 002_ปกคลังงาน.sql เพิ่ม submissions.cover_ref · 003_ตรวจหน้าแรก.sql เพิ่ม files.front_check · 004_ถังขยะ.sql เพิ่มตาราง trash_log · 005_โอนงาน.sql เพิ่ม submissions.doc_name doc_position · 006_นักเรียนรายห้อง.sql เพิ่ม submissions.student_rooms)
+รุ่นปัจจุบันของโครงตาราง: 9 (009_ข้ามงาน.sql เพิ่มตาราง review_skips · 008_คำของฉัน.sql เพิ่มตาราง user_phrases · 007_สรุปการส่งงาน.sql เพิ่มตาราง report_rounds report_adjusts · 002_ปกคลังงาน.sql เพิ่ม submissions.cover_ref · 003_ตรวจหน้าแรก.sql เพิ่ม files.front_check · 004_ถังขยะ.sql เพิ่มตาราง trash_log · 005_โอนงาน.sql เพิ่ม submissions.doc_name doc_position · 006_นักเรียนรายห้อง.sql เพิ่ม submissions.student_rooms)

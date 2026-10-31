@@ -30,6 +30,7 @@
     </div>
   </div>
   <div class="actions">
+    <% if (canSkip) { %><%- include('partials/skipbtn', { path: '/s/' + sub.id, skipped }) %><% } %>
     <% if (isNote) { %>
       <a class="btn btn-ghost" href="/s/<%= sub.id %>/print" target="_blank" rel="noopener"><%- icon('print', 18) %> พิมพ์บันทึก</a>
     <% } else { %>

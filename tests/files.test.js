@@ -301,7 +301,7 @@ test('บันทึกหลังแผนแนบไฟล์ประก�
   await admin.post('/admin/features/notepdf', { on: '1' });
 });
 
-test('สำรองข้อมูล: ได้ JSON ครบ 16 ตาราง parse ได้ ชื่อไฟล์ภาษาไทย เฉพาะผู้ดูแลระบบ', async () => {
+test('สำรองข้อมูล: ได้ JSON ครบ 17 ตาราง parse ได้ ชื่อไฟล์ภาษาไทย เฉพาะผู้ดูแลระบบ', async () => {
   const t = await as('teacher');
   assert.equal((await t.raw('GET', '/admin/backup')).status, 403);
   const admin = await as('admin');
@@ -311,9 +311,9 @@ test('สำรองข้อมูล: ได้ JSON ครบ 16 ตาร�
   assert.match(decodeURIComponent(r.headers.get('content-disposition')), /สำรองข้อมูลระบบส่งแผน_\d{4}-\d{2}-\d{2}\.json$/);
   const j = JSON.parse(await r.text());
   assert.equal(j.format, 'plan-system-backup');
-  assert.equal(j.schema_version, 8);
+  assert.equal(j.schema_version, 9);
   assert.deepEqual(Object.keys(j.tables), require('../src/backup').TABLES);
-  assert.equal(Object.keys(j.tables).length, 16);
+  assert.equal(Object.keys(j.tables).length, 17);
   assert.equal(j.tables.users.length, (await db.q.get('SELECT COUNT(*) AS n FROM users')).n);
   assert.equal(j.tables.submissions.length, (await db.q.get('SELECT COUNT(*) AS n FROM submissions')).n);
   assert.equal(j.tables.audit_log.length, (await db.q.get('SELECT COUNT(*) AS n FROM audit_log')).n);
@@ -358,7 +358,7 @@ test('งานตามเวลา: ทิ้งไฟล์ที่ส่ง
   assert.equal(left.length, 30);
   assert.ok(left.includes(name), 'ฉบับคืนนี้อยู่');
   assert.ok(!left.includes('สำรองข้อมูลระบบส่งแผน_2569-01-01.json') && !left.includes('สำรองข้อมูลระบบส่งแผน_2569-01-02.json'), 'ฉบับเก่าสุด 2 ฉบับย้ายไปถังขยะ');
-  assert.equal(Object.keys(JSON.parse(fs.readFileSync(path.join(dir, name), 'utf8')).tables).length, 16);
+  assert.equal(Object.keys(JSON.parse(fs.readFileSync(path.join(dir, name), 'utf8')).tables).length, 17);
 });
 
 test('สำรองเก็บถาวร: ฉบับรายเดือน ปุ่มเก็บฉบับปิดภาค และแจ้งผู้ดูแลเมื่อสำรองไม่สำเร็จ', async () => {
@@ -400,7 +400,7 @@ test('สำรองเก็บถาวร: ฉบับรายเดือ
   const term = fs.readdirSync(path.join(FILES, 'สำรองปิดภาคเรียน'));
   assert.equal(term.length, 1);
   assert.match(term[0], /^สำรองปิดภาค_2-2569_\d{4}-\d{2}-\d{2}_\d{4}\.json$/);
-  assert.equal(Object.keys(JSON.parse(fs.readFileSync(path.join(FILES, 'สำรองปิดภาคเรียน', term[0]), 'utf8')).tables).length, 16);
+  assert.equal(Object.keys(JSON.parse(fs.readFileSync(path.join(FILES, 'สำรองปิดภาคเรียน', term[0]), 'utf8')).tables).length, 17);
   const log = await db.q.get('SELECT * FROM audit_log ORDER BY id DESC LIMIT 1');
   assert.equal(log.action, 'เก็บสำรองข้อมูลฉบับปิดภาค 2/2569');
   assert.match((await admin.get('/admin')).text, /ล่าสุดภาค 2\/2569/);
@@ -620,7 +620,7 @@ test('ตัวต่อ Google Drive (Drive จำลอง): สร้าง�
     const backup = [...fake.files.values()].find((x) => x.name === name);
     assert.ok(backup);
     assert.equal(fake.files.get(backup.parents[0]).name, 'สำรองข้อมูล');
-    assert.equal(Object.keys(JSON.parse(backup.data.toString('utf8')).tables).length, 16);
+    assert.equal(Object.keys(JSON.parse(backup.data.toString('utf8')).tables).length, 17);
   } finally {
     storage._set('local', null);
     storage._set('gdrive', null);

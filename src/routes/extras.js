@@ -10,6 +10,7 @@ const { qrSvg } = require('./verify');
 const teaching = require('../teaching');
 const report = require('../reportsum');
 const myphrases = require('../myphrases');
+const skipwork = require('../skipwork');
 
 const router = express.Router();
 router.use(auth.requireLogin);
@@ -340,12 +341,14 @@ router.post('/dept/remind', needFeature('board'), async (req, res) => {
 
 // ---------- ลงนามบันทึกหลังแผนแบบไล่การ์ด ----------
 
-async function noteQueue(me) {
-  return (await wf.inbox(me)).filter((s) => s.doc_type === 'note');
+// ไม่นับงานที่ข้ามไว้ (skipwork) ลงนามทั้งหมดที่เหลือจึงไม่โดนงานที่ข้าม
+async function noteQueue(req) {
+  const { active } = await skipwork.split(req, await wf.inbox(req.me));
+  return active.filter((s) => s.doc_type === 'note');
 }
 
 router.get('/quicksign', needFeature('quicksign'), async (req, res) => {
-  const list = await noteQueue(req.me);
+  const list = await noteQueue(req);
   // ส่งทั้งเล่ม: ไล่ลงนามทีละเล่ม เปิดหน้าลงนามทั้งเล่มของเล่มที่รอนานที่สุด (ลงนามแล้วไปเล่มถัดไปเอง)
   if (req.ff.notebook && list.length) return res.redirect(`/s/${list[0].parent_id}/book`);
   const signed = Math.max(0, Number(req.query.signed) || 0);
@@ -393,7 +396,7 @@ router.post('/quicksign/approve-rest', needFeature('quicksign'), noSingle, async
   const b = req.body || {};
   if (!req.me.signature) throw new wf.WorkflowError('กรุณาบันทึกลายเซ็นในหน้าข้อมูลส่วนตัวก่อน');
   // ลงนามทุกฉบับที่เหลือใน transaction เดียว
-  const ids = (await noteQueue(req.me)).map((s) => s.id);
+  const ids = (await noteQueue(req)).map((s) => s.id);
   const { done: n } = await wf.approveMany(ids, req.me, { comment: str(b.comment) || 'รับทราบ' });
   res.redirect(qsNext(req, (Number(b.signed) || 0) + n, Number(b.back) || 0));
 });

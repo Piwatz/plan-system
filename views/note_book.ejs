@@ -14,7 +14,7 @@
     <div class="sub"><%= plan.teacher_name %> กลุ่มสาระ<%= plan.dept_name %> <a href="/s/<%= plan.id %>#notes">ดูทั้งเล่ม</a></div>
   </div>
   <% if (sheets.length) { %>
-    <div class="actions"><button type="button" class="btn btn-primary" data-goto="book-sign"><%- icon('ok', 18) %> ไปลงนามท้ายเล่ม</button></div>
+    <div class="actions"><% if (canSkip) { %><%- include('partials/skipbtn', { path: '/s/' + plan.id + '/book', skipped }) %><% } %><button type="button" class="btn btn-primary" data-goto="book-sign"><%- icon('ok', 18) %> ไปลงนามท้ายเล่ม</button></div>
   <% } %>
 </div>
 

@@ -342,6 +342,7 @@ async function submit(subId, actor) {
     const now = nowStr();
     const first = sub.status === 'draft' && !(await q.get("SELECT 1 AS x FROM reviews WHERE submission_id = ? AND action IN ('submit','resubmit') LIMIT 1", sub.id));
     const sig = await signatureOf(actor);
+    await clearSkips([sub.id]);
     await q.run(
       // งานที่โอนมาแบบคงชื่อครูคนเดิม (doc_name) เอกสารยังเป็นชื่อครูคนเดิม จึงคงลายเซ็นเดิม ไม่ใส่ลายเซ็นของผู้ส่ง
       "UPDATE submissions SET teacher_signature = CASE WHEN doc_name <> '' THEN teacher_signature ELSE ?::text END, submitted_at = COALESCE(submitted_at, ?), updated_at = ? WHERE id = ?",
@@ -529,6 +530,7 @@ async function submitMany(ids, actor) {
       s.current_role = next.role;
     }
     await logMany(logs, sig, now);
+    await clearSkips(rows.map((s) => s.id));
     const out = await q.all(
       `UPDATE submissions s SET status = v.status, current_role = v.cur, updated_at = ?, submitted_at = COALESCE(s.submitted_at, ?),
          teacher_signature = CASE WHEN ? = 1 OR s.doc_name <> '' THEN s.teacher_signature ELSE ?::text END,
@@ -587,6 +589,16 @@ async function sendBackMany(ids, actor, { comments = {} } = {}) {
 
 // รวมบันทึกหลังแผนในรายการงานรอตรวจเป็นเล่ม (แผนเดียวกันและรอระดับเดียวกัน) แถวแรกของเล่มเป็นตัวแทน ลำดับตามฉบับที่รอนานที่สุด
 // แถวเล่มมี book = { planId, ids, count, planNos }
+// ส่งฉบับใหม่แล้ว งานที่ผู้ดูแลข้ามไว้ (skipwork) กลับเข้าคิวตามปกติ ทั้งงานเดี่ยวและเล่มของบันทึกนั้น
+async function clearSkips(ids) {
+  await q.run(
+    `DELETE FROM review_skips WHERE (kind = 'work' AND submission_id = ANY(?::int[]))
+       OR (kind = 'book' AND submission_id IN (SELECT parent_id FROM submissions WHERE id = ANY(?::int[]) AND parent_id IS NOT NULL))`,
+    ids,
+    ids
+  );
+}
+
 function groupBooks(rows) {
   const out = [];
   const books = new Map();
@@ -735,6 +747,7 @@ async function submitAs(subId, actor) {
     if (sub.status !== 'draft' && sub.status !== 'returned') throw new WorkflowError('งานนี้ส่งไปแล้ว');
     const now = nowStr();
     const first = !(await q.get("SELECT 1 AS x FROM reviews WHERE submission_id = ? AND action IN ('submit','resubmit') LIMIT 1", sub.id));
+    await clearSkips([sub.id]);
     await q.run('UPDATE submissions SET submitted_at = COALESCE(submitted_at, ?), updated_at = ? WHERE id = ?', now, now, sub.id);
     await log(sub.id, actor, { action: first ? 'submit' : 'resubmit', step_label: 'ผู้ดูแลระบบส่งแทนครู' });
     let startSeq = 0;

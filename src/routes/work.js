@@ -24,6 +24,7 @@ const rooms = require('../rooms');
 const trashbin = require('../trashbin');
 const transfer = require('../transfer');
 const myphrases = require('../myphrases');
+const skipwork = require('../skipwork');
 
 const router = express.Router();
 router.use(auth.requireLogin);
@@ -760,6 +761,8 @@ router.get('/s/:id', async (req, res) => {
     bookMode: book,
     canDelete: (wf.isOwner(req.me, sub) && sub.status === 'draft' && !sub.submitted_at) || req.me.is_admin,
     isOwner: wf.isOwner(req.me, sub),
+    canSkip: canSign && !book && skipwork.allowed(req),
+    skipped: canSign && !book ? await skipwork.isSkipped(req, 'work', sub.id) : false,
     canPlan: !req.ff.onemain || !(await teaching.planBlocked(req.me, Number(req.settings.academic_year), Number(req.settings.semester))),
     approveLabel: approveLabel(sub),
     canAddCover: canAddCover(req, sub),
@@ -1520,7 +1523,7 @@ router.get('/s/:id/book', async (req, res) => {
   }
   const total = (await q.get("SELECT COUNT(*) AS n FROM submissions WHERE parent_id = ? AND doc_type = 'note' AND status != 'draft'", plan.id)).n;
   const step = sheets.length ? wf.stepOf(sheets[0].current_role) : null;
-  res.render('note_book', { title: `ลงนามบันทึกหลังแผน ${plan.subject_code}`, plan, sheets, files, total: Number(total), step, isOwner: wf.isOwner(req.me, plan), saved: await myphrases.load(req), sayList: myphrases.NOTE_SAYS });
+  res.render('note_book', { title: `ลงนามบันทึกหลังแผน ${plan.subject_code}`, plan, sheets, files, total: Number(total), step, isOwner: wf.isOwner(req.me, plan), canSkip: sheets.length > 0 && skipwork.allowed(req), skipped: await skipwork.isSkipped(req, 'book', plan.id), saved: await myphrases.load(req), sayList: myphrases.NOTE_SAYS });
 });
 
 // ความเห็นรายแผ่น ช่อง comment_<รหัสแผ่น> ค่าเริ่มต้น รับทราบ
@@ -1536,13 +1539,64 @@ async function pickedSheets(req, planId) {
   return list;
 }
 
-// งานถัดไปที่รอผู้ใช้คนนี้ (ส่งทั้งเล่ม: เล่มถัดไปเปิดหน้าลงนามทั้งเล่ม)
+// งานถัดไปที่รอผู้ใช้คนนี้ (ส่งทั้งเล่ม: เล่มถัดไปเปิดหน้าลงนามทั้งเล่ม) ไม่นับงานที่ข้ามไว้ (skipwork)
 async function nextInboxUrl(req) {
-  const list = await wf.inbox(req.me);
+  const { active: list } = await skipwork.split(req, await wf.inbox(req.me));
   const next = (req.ff.notebook ? wf.groupBooks(list) : list)[0];
   if (!next) return null;
   return next.book ? `/s/${next.book.planId}/book` : `/s/${next.id}`;
 }
+
+// ---------- ข้ามงานนี้ไปก่อน (ฟังก์ชันเสริม skipwork) ----------
+
+function needSkip(req) {
+  if (!skipwork.allowed(req)) throw new UserError('ข้ามงานได้เฉพาะผู้ดูแลระบบ');
+}
+
+async function afterSkip(req, res, label) {
+  // ข้ามจากหน้าไล่การ์ด กลับไปการ์ดใบถัดไป
+  if (req.query.to === 'quicksign') {
+    const b = req.body || {};
+    return respond(req, res, `/quicksign?signed=${Number(b.signed) || 0}&back=${Number(b.back) || 0}`, 'success', `ข้าม${label} ไว้แล้ว`);
+  }
+  const next = await nextInboxUrl(req);
+  respond(req, res, next || '/inbox', 'success', `ข้าม${label} ไว้แล้ว ${next ? 'ต่อไปเป็นงานถัดไปที่รอคุณ' : 'ไม่มีงานอื่นรอคุณ เอากลับมาตรวจได้จากกลุ่มงานที่ข้ามไว้'}`);
+}
+
+router.post('/s/:id/skip', async (req, res) => {
+  needSkip(req);
+  const sub = await viewable(req, req.params.id);
+  if (!sub) throw new UserError('ไม่พบงานนี้');
+  noBookSingle(req, sub);
+  if (!wf.canReview(req.me, sub)) throw new UserError('งานนี้ไม่ได้รอคุณตรวจแล้ว');
+  await skipwork.skip(req, 'work', sub.id);
+  await afterSkip(req, res, `งาน ${sub.subject_code}`);
+});
+
+router.post('/s/:id/unskip', async (req, res) => {
+  needSkip(req);
+  const sub = await viewable(req, req.params.id);
+  if (!sub) throw new UserError('ไม่พบงานนี้');
+  await skipwork.unskip(req, 'work', sub.id);
+  respond(req, res, '/inbox', 'success', `เอางาน ${sub.subject_code} กลับมาตรวจตามลำดับเดิมแล้ว`);
+});
+
+router.post('/s/:id/book/skip', async (req, res) => {
+  needBook(req);
+  needSkip(req);
+  const plan = await bookPlan(req, req.params.id);
+  if (!(await bookWaiting(req, plan.id)).length) throw new UserError('ไม่มีแผ่นรอคุณลงนามในเล่มนี้แล้ว');
+  await skipwork.skip(req, 'book', plan.id);
+  await afterSkip(req, res, `เล่ม ${plan.subject_code}`);
+});
+
+router.post('/s/:id/book/unskip', async (req, res) => {
+  needBook(req);
+  needSkip(req);
+  const plan = await bookPlan(req, req.params.id);
+  await skipwork.unskip(req, 'book', plan.id);
+  respond(req, res, '/inbox', 'success', `เอาเล่ม ${plan.subject_code} กลับมาตรวจตามลำดับเดิมแล้ว`);
+});
 
 router.post('/s/:id/book/approve', async (req, res) => {
   needBook(req);

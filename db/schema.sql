@@ -334,5 +334,14 @@ create table if not exists user_phrases (
   unique (user_id, kind, text)
 );
 
-insert into schema_version (version) select 8 where not exists (select 1 from schema_version);
-update schema_version set version = 8 where version < 8;
+-- ข้ามงานนี้ไปก่อน (ฟังก์ชันเสริม skipwork) kind: work งานเดี่ยว · book บันทึกหลังแผนทั้งเล่ม (submission_id เป็นแผนของเล่ม)
+create table if not exists review_skips (
+  user_id integer not null references users(id) on delete cascade,
+  kind text collate "C" not null,
+  submission_id integer not null references submissions(id) on delete cascade,
+  skipped_at text collate "C" not null default '',
+  primary key (user_id, kind, submission_id)
+);
+
+insert into schema_version (version) select 9 where not exists (select 1 from schema_version);
+update schema_version set version = 9 where version < 9;

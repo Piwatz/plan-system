@@ -10,6 +10,7 @@ const { submitWindow } = require('./work');
 const library = require('../library');
 const homeorder = require('../homeorder');
 const planrange = require('../planrange');
+const skipwork = require('../skipwork');
 
 const router = express.Router();
 router.use(auth.requireLogin);
@@ -283,7 +284,9 @@ router.get('/', async (req, res) => {
   }
   activity.splice(6);
   for (const a of activity) a.planNos.sort((x, y) => (parseInt(x, 10) || 0) - (parseInt(y, 10) || 0));
-  const inbox = req.ff.notebook ? wf.groupBooks(await wf.inbox(me)) : await wf.inbox(me);
+  // งานที่ข้ามไว้ (skipwork) อยู่ท้ายรายการ
+  const queue = await skipwork.split(req, await wf.inbox(me));
+  const inbox = req.ff.notebook ? [...wf.groupBooks(queue.active), ...wf.groupBooks(queue.skipped)] : [...queue.active, ...queue.skipped];
   const alerts = await q.all('SELECT * FROM notifications WHERE user_id = ? AND read_at IS NULL ORDER BY id DESC LIMIT 3', me.id);
   // รายการ "สิ่งที่ต้องทำต่อ" สำหรับหน้าแรกบนมือถือ เรียงจากเรื่องด่วน
   const nextUp = [];
@@ -434,13 +437,17 @@ router.get('/my', async (req, res) => {
 
 router.get('/inbox', async (req, res) => {
   const type = wf.DOC_TYPES[req.query.type] ? req.query.type : '';
-  const list = await wf.inbox(req.me);
+  const { active, skipped } = await skipwork.split(req, await wf.inbox(req.me));
   // ส่งบันทึกหลังแผนทั้งเล่ม: ผู้ตรวจเห็นเป็นงานเดียวต่อเล่ม
-  const all = (req.ff.notebook ? wf.groupBooks(list) : list).map((s) => ({ ...s, needsScore: wf.needsScore(s) }));
-  const rows = type ? all.filter((s) => s.doc_type === type) : all;
+  const shape = (list) => (req.ff.notebook ? wf.groupBooks(list) : list).map((s) => ({ ...s, needsScore: wf.needsScore(s) }));
+  const ofType = (list) => (type ? list.filter((s) => s.doc_type === type) : list);
+  const activeAll = shape(active);
+  const skippedAll = shape(skipped);
+  // ตัวเลขนับงานที่ข้ามไว้ด้วย งานยังค้างอยู่ที่ผู้ตรวจคนนี้จริง
+  const all = [...activeAll, ...skippedAll];
   const counts = { all: all.length };
   for (const k of Object.keys(wf.DOC_TYPES)) counts[k] = all.filter((s) => s.doc_type === k).length;
-  res.render('inbox', { title: 'งานรอตรวจ', rows, type, counts });
+  res.render('inbox', { title: 'งานรอตรวจ', rows: ofType(activeAll), skippedRows: ofType(skippedAll), type, counts });
 });
 
 async function registryRows(req, scope) {

@@ -20,9 +20,9 @@
   <% } %>
 </div>
 
-<% if (!rows.length) { %>
+<% if (!rows.length && !skippedRows.length) { %>
   <div class="card"><div class="empty"><span class="big"></span>ไม่มีงานค้าง ตรวจครบแล้ว</div></div>
-<% } else { %>
+<% } else if (rows.length) { %>
   <div class="m-only">
     <% if (counts.note && ff.quicksign) { %><a class="btn btn-primary btn-lg btn-block" style="margin-bottom:12px" href="/quicksign"><%- icon('cards', 20) %> <%= ff.notebook ? 'ลงนามบันทึกหลังแผนทีละเล่ม (' + counts.note + ' เล่ม)' : 'ลงนามบันทึกหลังแผนแบบไล่การ์ด (' + counts.note + ')' %></a><% } %>
     <% for (const s of rows) { %>
@@ -78,5 +78,25 @@
         data-confirm="ยืนยันลงนามเห็นชอบรายการที่เลือกทั้งหมด" data-ok-label="ลงนาม">ลงนามรายการที่เลือก (<span data-checked-count="ids">0</span>)</button>
     <% } %>
   </form>
+<% } %>
+<% if (skippedRows.length) { %>
+  <div class="card skip-list">
+    <h2>งานที่ข้ามไว้ <span class="count amber"><%= skippedRows.length %></span></h2>
+    <p class="muted small">งานเหล่านี้ยังรอคุณอยู่ แต่ไม่ถูกเรียกเป็นงานถัดไป</p>
+    <% for (const s of skippedRows) { %>
+      <div class="skip-row">
+        <span class="skip-text">
+          <b><%= s.subject_code %> <%= s.subject_name %><%= s.doc_type === 'note' ? noteText(s) : '' %></b>
+          <span class="muted small"><%= T[s.doc_type].label %>  <%= s.teacher_name %>  ข้ามไว้ <%= util.ago(s.skippedAt) %></span>
+        </span>
+        <span class="btn-row">
+          <a class="btn btn-sm btn-ghost" href="<%= hrefOf(s) %>">เปิดดู</a>
+          <form method="post" action="<%= hrefOf(s) %>/unskip" class="inline-form">
+            <button class="btn btn-sm btn-warn" type="submit" data-confirm="เอางานนี้กลับมาตรวจตามลำดับเดิม" data-ok-label="เอากลับมาตรวจ"><%- icon('undo', 16) %> เอากลับมาตรวจ</button>
+          </form>
+        </span>
+      </div>
+    <% } %>
+  </div>
 <% } %>
 <%- include('partials/bottom') %>

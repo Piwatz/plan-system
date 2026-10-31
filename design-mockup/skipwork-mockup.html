@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="th"><head><meta charset="utf-8"><title>ตัวอย่างปุ่มข้ามงาน</title>
+<link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box}
+body{margin:0;background:#0b1326;color:#e7ecf6;font:17px/1.45 Sarabun,sans-serif;padding:26px;width:1500px}
+h1{font-size:30px;margin:0 0 4px}
+.lead{color:#a9b6d0;margin:0 0 20px;font-size:18px}
+h2{font-size:22px;margin:30px 0 12px}
+.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:18px}
+.opt{background:#111c35;border:1px solid #2a3a5e;border-radius:16px;padding:16px}
+.opt h3{margin:0;font-size:21px}
+.opt .why{color:#a9b6d0;font-size:16px;margin:2px 0 12px;min-height:48px}
+.tag{display:inline-block;background:#f0c040;color:#2b2000;border-radius:999px;padding:0 10px;font-size:14px;font-weight:700;margin-left:6px}
+.panel{border:2px solid #e0ad3a;border-radius:14px;padding:14px;background:#0e1830}
+.panel b.t{font-size:18px;display:block;margin-bottom:8px}
+.box{height:52px;border:1px solid #33456c;border-radius:8px;color:#74839f;padding:8px;font-size:15px;margin-bottom:10px;background:#0b1326}
+.sig{height:50px;background:#fff;border-radius:8px;margin-bottom:10px;width:60%;color:#27408b;font:italic 26px Sarabun;padding:6px 16px}
+.row{display:flex;gap:8px}
+.btn{border-radius:10px;border:1px solid #33456c;background:#16233f;color:#e7ecf6;padding:11px 8px;text-align:center;font-weight:600;font-size:16px;flex:1;white-space:nowrap}
+.go{background:#7ed3a0;color:#08281a;border-color:#7ed3a0;flex:1.4}
+.skip{background:#1d2c50;border:2px solid #f0c040;color:#ffd968}
+.wide{display:block;margin-top:8px;width:100%}
+.top{display:flex;gap:6px;justify-content:flex-end;margin-bottom:10px}
+.top .btn{flex:none;padding:6px 10px;font-size:14px}
+.head{display:flex;justify-content:space-between;align-items:flex-start;gap:8px;margin-bottom:10px;font-size:15px;color:#a9b6d0}
+.head b{font-size:17px;color:#e7ecf6;display:block}
+.two{display:flex;gap:18px;align-items:flex-start}.two>*{flex:1 1 0;min-width:0}
+.card{background:#111c35;border:1px solid #2a3a5e;border-radius:16px;padding:16px}
+.card h3{margin:0 0 10px;font-size:20px}
+.line{display:flex;gap:10px;justify-content:space-between;align-items:center;border-top:1px solid #2a3a5e;padding:9px 0;font-size:16px}
+.line small{color:#a9b6d0;display:block;font-size:14px}
+.line .btn{flex:none;padding:6px 12px;font-size:14px}
+.sec{color:#ffd968;font-weight:700;margin:14px 0 2px}
+.popup{background:#fff;color:#1b2333;border-radius:14px;padding:18px;box-shadow:0 8px 30px #0008}
+.popup b{font-size:19px;display:block;margin-bottom:6px}
+.popup .row{margin-top:14px;justify-content:flex-end}
+.popup .btn{flex:none;padding:8px 16px;background:#eef1f6;color:#1b2333;border-color:#d5dbe6}
+.popup .ok{background:#e0ad3a;border-color:#e0ad3a;color:#2b2000}
+.flash{background:#14352a;border:1px solid #2f7d5c;color:#b5ecd0;border-radius:10px;padding:8px 12px;margin-bottom:10px;font-size:15px}
+</style></head><body>
+<h1>ปุ่มข้ามงานนี้ไปก่อน เลือกที่วางปุ่ม 1 แบบ</h1>
+<p class="lead">กดแล้วระบบเปิดงานถัดไปทันที งานที่ข้ามจะไม่วนกลับมาจนกว่าคุณจะกดเอากลับเอง ครูไม่ได้รับแจ้ง และงานยังค้างอยู่ที่ระดับของคุณตามเดิม</p>
+
+<div class="grid">
+  <div class="opt">
+    <h3>แบบ ก ปุ่มเต็มแถวใต้ปุ่มลงนาม <span class="tag">แนะนำ</span></h3>
+    <div class="why">อยู่ตรงที่ตากำลังตัดสินใจ ตัวหนังสือครบ ไม่เบียดปุ่มเดิม ใช้บนมือถือสะดวก</div>
+    <div class="panel"><b class="t">ลงความเห็นในฐานะหัวหน้างาน</b><div class="box">เช่น เห็นควรอนุญาตให้ใช้</div><div class="sig">ลายเซ็น</div>
+      <div class="row"><div class="btn">ส่งกลับแก้ไข</div><div class="btn go">ลงนามเห็นชอบ</div></div>
+      <div class="btn skip wide">ข้ามงานนี้ไปก่อน ไปงานถัดไป</div>
+    </div>
+  </div>
+  <div class="opt">
+    <h3>แบบ ข 3 ปุ่มในแถวเดียว</h3>
+    <div class="why">เห็นทุกทางเลือกพร้อมกัน แต่ปุ่มแคบลง จอเล็กต้องตัดคำ เสี่ยงกดพลาดโดนปุ่มข้าง ๆ</div>
+    <div class="panel"><b class="t">ลงความเห็นในฐานะหัวหน้างาน</b><div class="box">เช่น เห็นควรอนุญาตให้ใช้</div><div class="sig">ลายเซ็น</div>
+      <div class="row"><div class="btn">ส่งกลับ</div><div class="btn skip">ข้ามไปก่อน</div><div class="btn go">ลงนามเห็นชอบ</div></div>
+    </div>
+  </div>
+  <div class="opt">
+    <h3>แบบ ค ปุ่มบนหัวงาน</h3>
+    <div class="why">กดได้ทันทีตั้งแต่เปิดงาน ไม่ต้องเลื่อนลง แต่ไกลจากปุ่มตัดสินใจ และบนมือถืออาจมองไม่เห็น</div>
+    <div class="head"><div><b>ว21102 วิทยาศาสตร์ 2</b>ครูสมมติ ใจดี</div></div>
+    <div class="top"><div class="btn skip">ข้ามไปก่อน</div><div class="btn">บันทึกข้อความ</div><div class="btn">แบบประเมิน</div><div class="btn">ลบ</div></div>
+    <div class="panel"><b class="t">ลงความเห็นในฐานะหัวหน้างาน</b><div class="box">เช่น เห็นควรอนุญาตให้ใช้</div>
+      <div class="row"><div class="btn">ส่งกลับแก้ไข</div><div class="btn go">ลงนามเห็นชอบ</div></div>
+    </div>
+  </div>
+</div>
+
+<h2>ส่วนที่เหมือนกันทุกแบบ</h2>
+<div class="two">
+  <div class="card">
+    <h3>1. หน้างานรอตรวจ มีกลุ่มงานที่ข้ามไว้แยกต่างหาก</h3>
+    <div class="flash">ข้ามงาน ว21102 ไว้แล้ว ต่อไปเป็นงานถัดไปที่รอคุณ</div>
+    <div class="line"><span><b>ค22101 คณิตศาสตร์เพิ่มเติม</b><small>ครูสมมติ มีสุข · รอ 3 วัน</small></span><div class="btn">เปิดตรวจ</div></div>
+    <div class="line"><span><b>อ21102 ภาษาอังกฤษ 2</b><small>ครูสมมติ รักเรียน · รอ 2 วัน</small></span><div class="btn">เปิดตรวจ</div></div>
+    <div class="sec">งานที่ข้ามไว้ (1)</div>
+    <div class="line"><span><b>ว21102 วิทยาศาสตร์ 2</b><small>ครูสมมติ ใจดี · ข้ามไว้เมื่อ 2 วันก่อน</small></span><span style="display:flex;gap:6px"><div class="btn">เปิดดู</div><div class="btn skip">เอากลับมาตรวจ</div></span></div>
+  </div>
+  <div>
+    <div class="card" style="margin-bottom:18px">
+      <h3>2. ป๊อปถามยืนยันตอนกดข้าม</h3>
+      <div class="popup"><b>ข้ามงานนี้ไปก่อน</b>งานจะยังรอคุณอยู่ และไม่ส่งให้ระดับถัดไป เอากลับมาตรวจได้จากหน้างานรอตรวจ<div class="row"><div class="btn">ยกเลิก</div><div class="btn ok">ข้ามไปก่อน</div></div></div>
+    </div>
+    <div class="card">
+      <h3>3. เมื่อเปิดงานที่ข้ามไว้</h3>
+      <div class="panel"><div class="btn wide" style="margin:0">เอากลับมาตรวจตามลำดับเดิม</div></div>
+    </div>
+  </div>
+</div>
+</body></html>

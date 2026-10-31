@@ -53,6 +53,8 @@
         <div class="btn-row">
           <% for (const f of files) { %><a class="btn btn-sm btn-ghost" href="/f/<%= f.id %>/view" target="_blank" rel="noopener"><%- icon('file', 16) %> <%= f.original_name %></a><% } %>
           <a class="btn btn-sm btn-ghost" href="/s/<%= c.id %>" target="_blank" rel="noopener"><%- icon('eye', 16) %> เปิดฉบับเต็ม</a>
+          <% if (ff.skipwork && me.is_admin) { %><button class="btn btn-sm btn-warn" type="submit" formaction="/s/<%= c.id %>/skip?to=quicksign" formnovalidate data-confirm="ข้ามบันทึกฉบับนี้ไปก่อน
+บันทึกจะยังรอคุณอยู่ เอากลับมาตรวจได้จากหน้างานรอตรวจ" data-ok-label="ข้ามไปก่อน"><%- icon('next', 16) %> ข้ามไปก่อน</button><% } %>
         </div>
         <div class="field" style="margin:0">
           <label for="qs-comment">ความเห็น</label>

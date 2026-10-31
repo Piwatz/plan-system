@@ -1,0 +1,11 @@
+<%# ปุ่มข้ามงานนี้ไปก่อน (ฟังก์ชันเสริม skipwork) path = /s/<รหัส> หรือ /s/<แผน>/book %>
+<% if (skipped) { %>
+  <form method="post" action="<%= path %>/unskip" class="inline-form">
+    <button class="btn btn-ghost" type="submit" data-confirm="เอางานนี้กลับมาตรวจตามลำดับเดิม" data-ok-label="เอากลับมาตรวจ"><%- icon('undo', 18) %> เอากลับมาตรวจ</button>
+  </form>
+<% } else { %>
+  <form method="post" action="<%= path %>/skip" class="inline-form">
+    <button class="btn btn-warn" type="submit" data-confirm="ข้ามงานนี้ไปก่อน
+งานจะยังรอคุณอยู่ และไม่ส่งให้ระดับถัดไป เอากลับมาตรวจได้จากหน้างานรอตรวจ" data-ok-label="ข้ามไปก่อน"><%- icon('next', 18) %> ข้ามไปก่อน</button>
+  </form>
+<% } %>
