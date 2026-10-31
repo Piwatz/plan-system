@@ -444,6 +444,7 @@ router.get('/my', async (req, res) => {
   }
   res.render(style ? 'my_shelf' : 'my', {
     title: 'งานของฉัน',
+    myStyle: style,
     counts,
     subjects,
     term: t,

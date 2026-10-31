@@ -444,6 +444,21 @@ input:focus, select:focus, textarea:focus { outline: 3px solid color-mix(in srgb
 .step.returned .dot { background: var(--back); color: #fff; box-shadow: 0 0 0 4px color-mix(in srgb, var(--back) 25%, transparent); }
 .step.skipped .dot { background: var(--surface); border-style: dashed; box-shadow: 0 0 0 1px var(--line); }
 .step.teacher .dot { background: var(--primary); color: #fff; box-shadow: 0 0 0 1px var(--primary); }
+/* กล่องแคบ (มือถือ แผงรายละเอียด) วางแถวเดียวไม่พอ เรียงลงมาให้เห็นครบโดยไม่ต้องปัดข้าง · Safari เก่าที่ไม่รู้จัก @container ยังปัดข้างได้แบบเดิม */
+.stepper-box { container-type: inline-size; }
+@container (max-width: 770px) {
+  .stepper { flex-direction: column; overflow-x: visible; padding: 2px 0 0; }
+  .step { flex: none; min-width: 0; display: grid; grid-template-columns: 28px minmax(0, 1fr); column-gap: 10px; text-align: left; padding: 0 0 10px; }
+  .step:last-child { padding-bottom: 0; }
+  .step .dot { grid-row: 1 / span 2; width: 28px; height: 28px; margin: 0; border-width: 2px; font-size: 0.8rem; }
+  .step .dot svg { width: 14px; height: 14px; }
+  .step .meta .wait { margin-right: 5px; }
+  .step .meta { margin-top: 0; }
+  .step .meta br { display: none; }
+  .step::before { display: none; }
+  .step:not(:last-child)::after { content: ''; position: absolute; left: 12.5px; top: 28px; bottom: 0; width: 3px; background: var(--line); }
+  .step.done::after, .step.skipped::after, .step.teacher:has(+ .done, + .current, + .returned, + .skipped)::after { background: color-mix(in srgb, var(--ok) 55%, var(--line)); }
+}
 
 /* ---------- ประวัติ ---------- */
 .timeline { list-style: none; margin: 0; padding: 0 0 0 4px; }
@@ -1500,7 +1515,7 @@ dialog.front-dlg { width: min(720px, calc(100vw - 24px)); max-height: calc(100vh
 .myc-main { margin-top: auto; }
 .myc-links { display: flex; flex-wrap: wrap; gap: 3px 13px; font-size: 0.84rem; font-weight: 600; }
 .myc-links a { color: var(--link); padding: 2px 0; white-space: nowrap; text-decoration: underline; }
-.myc-bd .badge { white-space: normal; max-width: 100%; }
+.myc-bd .badge, .mys-book .badge { white-space: normal; max-width: 100%; }
 .myc-dots { display: flex; align-items: center; width: 100%; max-width: 210px; }
 .myc-dots i { flex: none; width: 13px; height: 13px; border-radius: 50%; border: 2px solid var(--line); background: var(--surface); }
 .myc-dots u { flex: 1; height: 2px; background: var(--line); }
@@ -1521,6 +1536,49 @@ dialog.front-dlg { width: min(720px, calc(100vw - 24px)); max-height: calc(100vh
   .myc-tile.is-empty { display: none; }
   .myc-hint { display: block; }
   .myc-cv, .myc-none { width: 88px; }
+}
+
+/* แบบ ข ชั้นหนังสือ: ปกใหญ่ แตะแล้วเปิดแผงรายละเอียด จอกว้างแผงข้าง มือถือแผงล่าง */
+.mys-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 14px; }
+.mys-chips button { border: 1px solid var(--line); border-radius: 999px; background: var(--surface); color: var(--muted); font: inherit; font-weight: 600; font-size: 0.88rem; padding: 5px 14px; cursor: pointer; }
+.mys-chips button.on { background: var(--primary); border-color: var(--primary); color: #fff; }
+.mys-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: 22px 18px; }
+.mys-book { display: flex; flex-direction: column; align-items: flex-start; gap: 5px; min-width: 0; }
+.mys-book[hidden] { display: none; }
+.mys-book .myc-cv { width: 100%; margin-bottom: 4px; }
+.mys-none { width: 100%; margin-bottom: 4px; color: var(--link); font-weight: 600; }
+.mys-empty { padding: 24px 0; text-align: center; }
+.mys-empty[hidden], .mys-back[hidden], .mys-panel[hidden] { display: none; }
+html.mys-lock { overflow: hidden; }
+.mys-back { position: fixed; inset: 0; z-index: 1200; background: rgba(0, 0, 0, 0.45); }
+.mys-panel { position: fixed; z-index: 1201; top: 0; right: 0; bottom: 0; width: min(430px, 100%); overflow-y: auto; overscroll-behavior: contain; background: var(--surface); border-left: 1px solid var(--line); padding: 18px; display: flex; flex-direction: column; gap: 11px; }
+.mys-close { position: absolute; top: 10px; right: 10px; width: 36px; height: 36px; display: grid; place-items: center; border: 1px solid var(--line); border-radius: 50%; background: var(--surface); color: var(--ink); cursor: pointer; }
+.mys-head { display: flex; gap: 13px; padding-right: 36px; }
+.mys-h { margin: 4px 0 0; font-size: 0.95rem; }
+.mys-panel .myc-main { margin-top: 2px; flex: none; }
+.mys-panel .myc-links { display: grid; gap: 8px; font-size: 0.92rem; }
+.mys-panel .myc-links a { display: block; text-align: center; text-decoration: none; padding: 8px 12px; border: 1px solid var(--line); border-radius: var(--rs); white-space: normal; }
+@media (max-width: 640px) {
+  .mys-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px 14px; }
+  .mys-panel { top: auto; left: 0; width: 100%; max-height: 88vh; border-left: 0; border-top: 1px solid var(--line); border-radius: 20px 20px 0 0; padding-bottom: calc(18px + env(safe-area-inset-bottom)); }
+}
+
+/* แบบ ค แถวยาว: งานละแถว เห็นเส้นทางอนุมัติเต็มโดยไม่ต้องแตะ มือถือเส้นทางเรียงลงมาตาม .stepper-box */
+.myr-list { display: grid; gap: 10px; }
+.myr { display: flex; gap: 14px; min-width: 0; border: 1px solid var(--line); border-radius: var(--rs); padding: 12px; }
+.myr.is-back { border-color: var(--back); }
+.myr .myc-cv, .myr .myc-none { width: 84px; }
+.myr-bd { display: flex; flex-direction: column; gap: 10px; flex: 1; min-width: 0; }
+.myr-top { display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; flex-wrap: wrap; }
+.myr-top > .myc-bd { flex: 1 1 200px; }
+.myr-act { display: flex; flex-direction: column; align-items: flex-end; gap: 7px; flex: 0 1 auto; }
+.myr-act .btn-block { width: auto; margin-top: 0; }
+.myr-line { margin-top: 8px; }
+@media (max-width: 640px) {
+  .myr { gap: 11px; }
+  .myr .myc-cv, .myr .myc-none { width: 68px; }
+  .myr-act { align-items: stretch; width: 100%; }
+  .myr-act .btn-block { width: 100%; }
 }
 
 /* รายวิชาที่สอนบนมือถือ (ฟังก์ชันเสริม teachcards): วิชาละกล่อง แทนแถวเดิม · HTML ชุดเดียว หน้าตา 3 แบบตาม class ของ section

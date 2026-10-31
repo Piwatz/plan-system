@@ -1,0 +1,3 @@
+<%# ปุ่มของบันทึกหลังแผนในหน้างานของฉันแบบมีปก p = แผนของวิชานั้น %>
+<a class="btn btn-block btn-warn myc-main" href="/notes/new?plan=<%= p.id %>">เขียนบันทึก</a>
+<div class="myc-links"><a href="/s/<%= p.id %>#notes">ดูทั้งหมด</a><% if (ff.printrow && p.note_total - p.note_todo > 0) { %><a href="/s/<%= p.id %>/print-notes" target="_blank" rel="noopener">พิมพ์ทั้งเล่ม</a><% } %></div>

@@ -1,5 +1,6 @@
 <%- include('partials/top') %>
-<%# งานของฉันแบบ ก ชั้นปกแยกรายวิชา (ฟังก์ชันเสริม myshelf) ปุ่มเหมือนหน้าเดิม my.ejs ทุกปุ่ม · ปิดสวิตช์หรือเลือกหน้าเดิมแล้วกลับไปใช้ my.ejs %>
+<%# งานของฉันแบบมีปก (ฟังก์ชันเสริม myshelf) ก ชั้นปกแยกรายวิชา · ข ชั้นหนังสือมีแผงรายละเอียด · ค แถวยาวเห็นเส้นทางอนุมัติ
+    ปุ่มทุกแบบมาจาก partials/my_work_btns และ my_note_btns ครบเท่าหน้าเดิม my.ejs · ปิดสวิตช์หรือเลือกหน้าเดิมแล้วกลับไปใช้ my.ejs %>
 <% const T = wf.DOC_TYPES; %>
 <div class="page-head">
   <div>
@@ -31,12 +32,60 @@
   </div>
 <% } %>
 
-<% for (const s of subjects) { const p = s.plan && s.plan.status !== 'draft' ? s.plan : null; const noPlan = !s.plan && !canPlan; %>
+<% if (myStyle === 'b' && subjects.length) { %>
+  <%- include('partials/my_books') %>
+<% } else for (const s of subjects) { const p = s.plan && s.plan.status !== 'draft' ? s.plan : null; const noPlan = !s.plan && !canPlan; %>
   <section class="card myc-subj">
     <div class="card-head">
       <h2><%= s.code %> <%= s.name %></h2>
       <% if (s.grade) { %><span class="badge badge-brand"><%= s.grade %></span><% } %>
     </div>
+    <% if (myStyle === 'c') { %>
+      <div class="myr-list">
+        <% for (const type of ['plan', 'manual']) { const w = s[type]; %>
+          <% if (w) { %>
+            <article class="myr<%= w.status === 'returned' ? ' is-back' : '' %>">
+              <a class="myc-cv" href="/s/<%= w.id %>" aria-label="ดูรายละเอียด<%= T[type].label %> <%= s.code %>"><%- include('partials/lib_cover', { b: w.book }) %></a>
+              <div class="myr-bd">
+                <div class="myr-top">
+                  <div class="myc-bd">
+                    <b class="myc-kind"><%= T[type].label %></b>
+                    <div><%- include('partials/status', { s: w }) %></div>
+                    <% if (w.score_max) { %><div class="muted small">คะแนน <%= w.score_total %>/<%= w.score_max %> <%= wf.scoreLevel(w.score_total / w.score_max * 100) %></div><% } %>
+                  </div>
+                  <div class="myr-act"><%- include('partials/my_work_btns', { w, type }) %></div>
+                </div>
+                <%- include('partials/stepper', { sub: w, steps: w.steps }) %>
+                <% if (w.return_note) { %><div class="myc-where myc-back">เหตุผลที่ส่งกลับ <%= w.return_note %></div><% } %>
+              </div>
+            </article>
+          <% } else if (isCurrent && (type !== 'plan' || canPlan)) { const other = s.manual || s.plan; %>
+            <article class="myr">
+              <span class="myc-none">ยังไม่ได้ส่ง</span>
+              <div class="myr-bd"><div class="myr-top">
+                <div class="myc-bd"><b class="myc-kind"><%= T[type].label %></b><div class="muted small">ยังไม่ได้ส่ง</div></div>
+                <div class="myr-act"><a class="btn btn-block btn-primary myc-main" href="/works/new?type=<%= type %><%= other ? '&from=' + other.id : '' %>">ส่ง<%= T[type].label %></a></div>
+              </div></div>
+            </article>
+          <% } %>
+        <% } %>
+        <% if (p) { %>
+          <article class="myr">
+            <a class="myc-cv" href="/s/<%= p.id %>#notes" aria-label="ดูบันทึกหลังแผนทั้งหมด <%= s.code %>"><%- include('partials/lib_cover', { b: p.noteBook }) %></a>
+            <div class="myr-bd"><div class="myr-top">
+              <div class="myc-bd">
+                <b class="myc-kind">บันทึกหลังแผน</b>
+                <div class="muted small"><b class="myc-ink"><%= p.note_total %> ฉบับ</b> ลงนามครบ <%= p.note_done %></div>
+                <% if (p.note_todo) { %><div><span class="badge badge-gray">ร่างหรือรอแก้ <%= p.note_todo %></span></div><% } %>
+              </div>
+              <div class="myr-act"><%- include('partials/my_note_btns', { p }) %></div>
+            </div></div>
+          </article>
+        <% } %>
+      </div>
+      <% if (!s.plan && !(isCurrent && canPlan)) { %><div class="myr-line muted small">แผนการจัดการเรียนรู้ <%= noPlan ? 'ไม่ต้องส่ง ส่งแผนเฉพาะวิชาหลัก' : 'ยังไม่ได้ส่ง' %></div><% } %>
+      <% if (!p) { %><div class="myr-line muted small">บันทึกหลังแผน เขียนได้หลังจากส่งแผนการจัดการเรียนรู้ของวิชานี้แล้ว</div><% } %>
+    <% } else { %>
     <div class="myc-shelf">
       <% for (const type of ['plan', 'manual']) { const w = s[type]; %>
         <% if (w) { %>
@@ -47,8 +96,7 @@
               <div><%- include('partials/status', { s: w }) %></div>
               <% if (w.score_max) { %><div class="muted small">คะแนน <%= w.score_total %>/<%= w.score_max %> <%= wf.scoreLevel(w.score_total / w.score_max * 100) %></div><% } %>
               <%- include('partials/my_steps', { w }) %>
-              <a class="btn btn-block myc-main <%= w.status === 'returned' ? 'btn-danger' : w.status === 'draft' ? 'btn-primary' : 'btn-ghost' %>" href="/s/<%= w.id %>"><%= w.status === 'returned' ? 'แก้ไขแล้วส่งใหม่' : w.status === 'draft' ? 'เปิดร่าง' : 'ดูรายละเอียด' %></a>
-              <% if (ff.printrow && w.status !== 'draft') { %><div class="myc-links"><a href="/s/<%= w.id %>/print" target="_blank" rel="noopener">พิมพ์บันทึกข้อความ</a><% if (w.score_max) { %><a href="/s/<%= w.id %>/print?doc=eval" target="_blank" rel="noopener">พิมพ์แบบประเมิน</a><% } %><% if (w.main_file_id) { %><a href="/f/<%= w.main_file_id %>/view" target="_blank" rel="noopener">เปิดไฟล์<%= type === 'plan' ? 'แผน' : 'คู่มือ' %></a><% } %></div><% } %>
+              <%- include('partials/my_work_btns', { w, type }) %>
             </div>
           </article>
         <% } else { const send = isCurrent && (type !== 'plan' || canPlan); const other = s.manual || s.plan; %>
@@ -69,8 +117,7 @@
             <b class="myc-kind">บันทึกหลังแผน</b>
             <div class="muted small"><b class="myc-ink"><%= p.note_total %> ฉบับ</b> ลงนามครบ <%= p.note_done %></div>
             <% if (p.note_todo) { %><div><span class="badge badge-gray">ร่างหรือรอแก้ <%= p.note_todo %></span></div><% } %>
-            <a class="btn btn-block btn-warn myc-main" href="/notes/new?plan=<%= p.id %>">เขียนบันทึก</a>
-            <div class="myc-links"><a href="/s/<%= p.id %>#notes">ดูทั้งหมด</a><% if (ff.printrow && p.note_total - p.note_todo > 0) { %><a href="/s/<%= p.id %>/print-notes" target="_blank" rel="noopener">พิมพ์ทั้งเล่ม</a><% } %></div>
+            <%- include('partials/my_note_btns', { p }) %>
           </div>
         </article>
       <% } else { %>
@@ -85,6 +132,7 @@
     </div>
     <%# มือถือซ่อนกล่องว่างที่กดอะไรไม่ได้ เหลือบรรทัดนี้แทน หน้าจึงไม่ยาวเกินจำเป็น %>
     <% if (!s.plan && !(isCurrent && canPlan)) { %><div class="myc-hint muted small">แผนการจัดการเรียนรู้ <%= noPlan ? 'ไม่ต้องส่ง ส่งแผนเฉพาะวิชาหลัก' : 'ยังไม่ได้ส่ง' %></div><% } %>
+    <% } %>
   </section>
 <% } %>
 <%- include('partials/bottom') %>

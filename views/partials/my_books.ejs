@@ -1,0 +1,86 @@
+<%# งานของฉันแบบ ข ชั้นหนังสือ แตะปกแล้วเปิดแผงรายละเอียด (จอกว้างแผงข้าง มือถือแผงล่าง) ไม่มี JavaScript ปกยังพาไปหน้ารายละเอียดของงาน %>
+<% const T = wf.DOC_TYPES; const panels = []; %>
+<div class="mys-chips" role="group" aria-label="กรองงาน">
+  <button type="button" class="on" data-my-filter="all">ทั้งหมด</button>
+  <button type="button" data-my-filter="plan">แผน</button>
+  <button type="button" data-my-filter="manual">คู่มือ</button>
+  <button type="button" data-my-filter="note">บันทึกหลังแผน</button>
+  <button type="button" data-my-filter="back">ต้องแก้ไข</button>
+</div>
+<div class="mys-grid">
+  <% for (const s of subjects) { const p = s.plan && s.plan.status !== 'draft' ? s.plan : null; %>
+    <% for (const type of ['plan', 'manual']) { const w = s[type]; %>
+      <% if (w) { panels.push({ key: 'w' + w.id, w, type, s }); %>
+        <article class="mys-book" data-kind="<%= type %>"<% if (w.status === 'returned') { %> data-back="1"<% } %>>
+          <a class="myc-cv" href="/s/<%= w.id %>" data-my-open="w<%= w.id %>" aria-label="เปิดรายละเอียด<%= T[type].label %> <%= s.code %>"><%- include('lib_cover', { b: w.book }) %></a>
+          <b class="myc-kind"><%= T[type].label %></b>
+          <span class="muted small"><%= s.code %> <%= s.name %><%= s.grade ? ' ' + s.grade : '' %></span>
+          <div><%- include('status', { s: w }) %></div>
+        </article>
+      <% } else if (isCurrent && (type !== 'plan' || canPlan)) { const other = s.manual || s.plan; %>
+        <article class="mys-book" data-kind="<%= type %>">
+          <a class="myc-none mys-none" href="/works/new?type=<%= type %><%= other ? '&from=' + other.id : '' %>">ส่ง<%= T[type].label %></a>
+          <b class="myc-kind"><%= T[type].label %></b>
+          <span class="muted small"><%= s.code %> <%= s.name %><%= s.grade ? ' ' + s.grade : '' %></span>
+        </article>
+      <% } %>
+    <% } %>
+    <% if (p) { panels.push({ key: 'n' + p.id, p, s }); %>
+      <article class="mys-book" data-kind="note">
+        <a class="myc-cv" href="/s/<%= p.id %>#notes" data-my-open="n<%= p.id %>" aria-label="เปิดรายละเอียดบันทึกหลังแผน <%= s.code %>"><%- include('lib_cover', { b: p.noteBook }) %></a>
+        <b class="myc-kind">บันทึกหลังแผน</b>
+        <span class="muted small"><%= s.code %> <%= s.name %><%= s.grade ? ' ' + s.grade : '' %></span>
+        <div><span class="badge badge-gray"><%= p.note_total %> ฉบับ ลงนามครบ <%= p.note_done %></span></div>
+      </article>
+    <% } %>
+  <% } %>
+</div>
+<div class="mys-empty muted" data-my-none hidden>ไม่มีงานในหมวดนี้</div>
+<div class="mys-back" data-my-back hidden></div>
+<% for (const x of panels) { const w = x.w; %>
+  <aside class="mys-panel" data-my-panel="<%= x.key %>" role="dialog" aria-modal="true" aria-label="รายละเอียดงาน" hidden>
+    <button type="button" class="mys-close" data-my-close aria-label="ปิด"><%- icon('close', 18) %></button>
+    <div class="mys-head">
+      <span class="myc-cv"><%- include('lib_cover', { b: w ? w.book : x.p.noteBook }) %></span>
+      <div class="myc-bd">
+        <b class="myc-kind"><%= w ? T[x.type].label : 'บันทึกหลังแผน' %></b>
+        <span class="muted small"><%= x.s.code %> <%= x.s.name %><%= x.s.grade ? ' ' + x.s.grade : '' %></span>
+        <% if (w) { %>
+          <div><%- include('status', { s: w }) %></div>
+          <% if (w.score_max) { %><div class="muted small">คะแนน <%= w.score_total %>/<%= w.score_max %> <%= wf.scoreLevel(w.score_total / w.score_max * 100) %></div><% } %>
+        <% } else { %>
+          <div class="muted small"><b class="myc-ink"><%= x.p.note_total %> ฉบับ</b> ลงนามครบ <%= x.p.note_done %></div>
+          <% if (x.p.note_todo) { %><div><span class="badge badge-gray">ร่างหรือรอแก้ <%= x.p.note_todo %></span></div><% } %>
+        <% } %>
+      </div>
+    </div>
+    <% if (w) { %>
+      <h3 class="mys-h">อนุมัติถึงใครแล้ว</h3>
+      <%- include('stepper', { sub: w, steps: w.steps }) %>
+      <% if (w.return_note) { %><div class="myc-where myc-back">เหตุผลที่ส่งกลับ <%= w.return_note %></div><% } %>
+      <%- include('my_work_btns', { w, type: x.type }) %>
+    <% } else { %>
+      <%- include('my_note_btns', { p: x.p }) %>
+    <% } %>
+  </aside>
+<% } %>
+<script>(function(){
+  var back=document.querySelector('[data-my-back]'),open=null,from=null;
+  function close(){if(!open)return;open.hidden=true;back.hidden=true;open=null;document.documentElement.classList.remove('mys-lock');if(from)from.focus()}
+  document.addEventListener('click',function(e){
+    var t=e.target.closest('[data-my-open],[data-my-close],[data-my-back],[data-my-filter]');
+    if(!t)return;
+    if(t.hasAttribute('data-my-open')){
+      var p=document.querySelector('[data-my-panel="'+t.getAttribute('data-my-open')+'"]');
+      if(!p)return;
+      e.preventDefault();close();from=t;open=p;p.hidden=false;back.hidden=false;
+      document.documentElement.classList.add('mys-lock');p.scrollTop=0;p.querySelector('[data-my-close]').focus();
+    }else if(t.hasAttribute('data-my-filter')){
+      var k=t.getAttribute('data-my-filter'),n=0;
+      document.querySelectorAll('[data-my-filter]').forEach(function(b){b.classList.toggle('on',b===t)});
+      document.querySelectorAll('.mys-book').forEach(function(b){var y=k==='all'||(k==='back'?b.hasAttribute('data-back'):b.getAttribute('data-kind')===k);b.hidden=!y;if(y)n++});
+      document.querySelector('[data-my-none]').hidden=n>0;
+    }else close();
+  });
+  document.addEventListener('keydown',function(e){if(e.key==='Escape')close()});
+})()</script>

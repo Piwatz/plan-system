@@ -137,6 +137,44 @@ test('ผู้ดูแลระบบเลือกหน้าเดิม�
   assert.match(my, /myc-shelf/);
 });
 
+test('แบบ ข และ ค ปุ่มครบเท่าหน้าเดิม แบบ ข มีแผงรายละเอียด แบบ ค เห็นเส้นทางอนุมัติในหน้า', async () => {
+  const rows = await db.q.all(`SELECT DISTINCT u.username FROM submissions s JOIN users u ON u.id = s.teacher_id WHERE s.doc_type IN ('plan', 'manual') ORDER BY u.username LIMIT 12`);
+  const a = await as('admin');
+  try {
+    for (const { username } of rows) {
+      const c = await as(username);
+      await a.post('/admin/mystyle', { my_style: 'old' });
+      const old = [...workLinks((await c.get('/my')).text)].sort();
+      for (const style of ['b', 'c']) {
+        await a.post('/admin/mystyle', { my_style: style });
+        assert.deepEqual([...workLinks((await c.get('/my')).text)].sort(), old, `ปุ่มของ ${username} แบบ ${style} ต้องเท่าหน้าเดิม`);
+      }
+    }
+    await a.post('/admin/mystyle', { my_style: 'b' });
+    const w = await db.q.get(`${OWNER} AND s.status = 'pending' ORDER BY s.id LIMIT 1`);
+    const c = await as(w.username);
+    let my = (await c.get('/my')).text;
+    assert.match(my, /class="mys-grid"/);
+    assert.ok(my.includes(`data-my-open="w${w.id}"`), 'แตะปกเปิดแผง');
+    assert.ok(my.includes(`data-my-panel="w${w.id}"`), 'มีแผงของงาน');
+    assert.ok(my.includes(`href="/s/${w.id}" data-my-open`), 'ไม่มี JavaScript ปกยังพาไปหน้างาน');
+    assert.match(my, /อนุมัติถึงใครแล้ว/);
+    await a.post('/admin/mystyle', { my_style: 'c' });
+    my = (await c.get('/my')).text;
+    assert.match(my, /class="myr-list"/);
+    assert.match(my, /class="stepper-box"/);
+    assert.doesNotMatch(my, /mys-grid/);
+  } finally {
+    await a.post('/admin/mystyle', { my_style: 'a' });
+  }
+});
+
+test('เส้นทางการตรวจในหน้างานอยู่ในกล่องที่เรียงลงมาได้เมื่อจอแคบ', async () => {
+  const w = await db.q.get(`${OWNER} AND s.status = 'pending' ORDER BY s.id LIMIT 1`);
+  const page = (await (await as(w.username)).get(`/s/${w.id}`)).text;
+  assert.match(page, /<div class="stepper-box"><div class="stepper">/);
+});
+
 test('แบบที่ไม่มีในรายการไม่ถูกบันทึก ครูทั่วไปตั้งแบบไม่ได้', async () => {
   const a = await as('admin');
   await a.post('/admin/mystyle', { my_style: 'x' });
