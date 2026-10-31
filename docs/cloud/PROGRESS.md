@@ -983,3 +983,8 @@
 - ฟอนต์: ภาพเทียบ 8 แบบ design-mockup/font-compare-1.png และ -2.png รอครูเต้ยเลือก ยังไม่ได้แก้ธีม · SF Pro ฝังในเว็บไม่ได้ตามสัญญาอนุญาตของ Apple ใช้ได้ทางเดียวคือฟอนต์ประจำเครื่อง (-apple-system) ภาพ TH Sarabun ใช้รุ่น IT๙ ในเครื่องนี้แทน PSK
 - ภาพแนว iOS เก็บไว้ที่ design-mockup/ios-* ครูเต้ยชอบแต่ยังไม่อยากเปลี่ยนทั้งระบบ
 - **ขึ้นเว็บจริงแล้ว 31 ต.ค. 2569 (hometodo alertstrip formshort):** Version 9a4af716 (Claude รัน cloud-setup.js ตามที่ครูเต้ยสั่ง) · ไม่มี migration · สวิตช์เปิดตามค่าเริ่มต้น · รอครูเต้ยลองใน Safari Mac iPad และส่งไฟล์จริงผ่านฟอร์มใหม่ · ฟอนต์ยังรอเลือก
+
+## 31 ต.ค. 2569 ช่องเลือกฟอนต์หน้าเว็บ (ยังไม่ขึ้นเว็บ ยังไม่ commit)
+- ฟังก์ชันเสริม `fontpick` (เปิด ผู้ดูแลระบบ) · หน้าตั้งค่าโรงเรียน #font เลือกได้ 9 แบบ รวมตามธีมสี · ค่าเก็บใน settings.web_font · src/themes.js WEB_FONTS withFont webFontKey webFontChoices · app.js ใช้ทั้งโหมดกลางวันและกลางคืน · TH Sarabun ใช้ของในเครื่อง ขยาย 130% (Web TH ใน app.css) ไม่มีก็ใช้ Sarabun · ฟอนต์ประจำเครื่องใช้ -apple-system ไม่ฝังไฟล์ Apple · เอกสารที่พิมพ์ไม่เปลี่ยน
+- ทดสอบ: npm test ผ่าน 193 · plan-demo Chrome: เลือก IBM Plex Sans Thai Looped กดบันทึก ผ่านป๊อปยืนยัน ฟอนต์เปลี่ยน สีเดิม ภาพ design-mockup/fontpick-result.png
+- ยังไม่ได้ลอง: Safari Mac iPad ไอโฟน โดยเฉพาะฟอนต์ประจำเครื่อง · TH SarabunPSK ไฟล์จริงในเครื่องที่ติดตั้ง · โหมดกลางคืน

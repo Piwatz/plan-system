@@ -100,3 +100,43 @@ test('formshort: ยังไม่รู้วิชาต้องเห็น
   assert.match(plan, /<summary>รูปแบบการจัดการเรียนรู้/);
   assert.match(plan, /name="teaching_methods"/);
 });
+
+test('fontpick: เลือกฟอนต์แล้วสีเดิม ค่าแปลกปลอมกลับเป็นตามธีม ปิดสวิตช์แล้วกลับเป็นฟอนต์ของธีม', async () => {
+  const res = await fetch(base + '/login', { method: 'POST', redirect: 'manual', body: new URLSearchParams({ username: 'admin', password: seed.DEMO_PASSWORD }) });
+  assert.equal(res.status, 302);
+  const adminCookie = res.headers.getSetCookie().map((c) => c.split(';')[0]).join('; ');
+  const fields = { school_name: 'โรงเรียนทดสอบ', academic_year: '2569', semester: '2', submit_open: '1', max_upload_mb: '20', grade_levels: 'ม.1', teaching_methods: 'Active Learning' };
+  const save = async (web_font) => {
+    const fd = new FormData();
+    for (const [k, v] of Object.entries({ ...fields, theme: 'i', web_font })) fd.set(k, v);
+    await fetch(base + '/admin/settings', { method: 'POST', redirect: 'manual', body: fd, headers: { cookie: adminCookie } });
+  };
+  const setting = async () => (await db.getSettings()).web_font;
+  const form = await (await fetch(base + '/admin/settings', { headers: { cookie: adminCookie } })).text();
+  assert.match(form, /id="font"/);
+  assert.match(form, /name="web_font" value="anuphan"/);
+  assert.match(form, /value="system"/);
+  await save('anuphan');
+  assert.equal(await setting(), 'anuphan');
+  let html = await page('/');
+  assert.match(html, /--font:'Anuphan'/);
+  assert.match(html, /anuphan\/400\.css/);
+  assert.match(html, /--side:#1B3762/, 'สีต้องเป็นของธีมเดิม');
+  await save('system');
+  html = await page('/');
+  assert.match(html, /--font:-apple-system/);
+  await save('thsarabun');
+  html = await page('/');
+  assert.match(html, /--font:'Web TH', 'Sarabun'/);
+  assert.match(html, /sarabun\/400\.css/);
+  await save('hack');
+  assert.equal(await setting(), '');
+  assert.match(await page('/'), /--font:'Noto Sans Thai Looped'/);
+  await save('anuphan');
+  await db.setSetting('ff_fontpick', '0');
+  html = await page('/');
+  assert.match(html, /--font:'Noto Sans Thai Looped'/);
+  assert.doesNotMatch(html, /anuphan\/400\.css/);
+  await db.setSetting('ff_fontpick', '1');
+  await db.setSetting('web_font', '');
+});

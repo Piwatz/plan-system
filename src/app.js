@@ -124,8 +124,10 @@ function createApp(options = {}) {
     const ff = features.flags(settings);
     req.ff = ff;
     // โหมดกลางคืนและตัวอักษรใหญ่ จำไว้ในเครื่องของผู้ใช้แต่ละเครื่อง (ไม่เก็บในฐานข้อมูล)
-    const theme = themes.resolve(settings.theme);
-    const night = themes.resolve(settings.theme, { dark: true });
+    // ฟอนต์หน้าเว็บเลือกแยกจากธีมสีได้ (ฟังก์ชันเสริม fontpick)
+    const webFont = ff.fontpick ? settings.web_font : '';
+    const theme = themes.withFont(themes.resolve(settings.theme), webFont);
+    const night = themes.withFont(themes.resolve(settings.theme, { dark: true }), webFont);
     // หน้าเว็บไม่ได้รับรหัสลับ LINE ได้แค่รู้ว่าตั้งไว้แล้วหรือยัง (โค้ดฝั่งเซิร์ฟเวอร์ยังอ่านจาก req.settings)
     const { line_token: lineToken, ...pubSettings } = settings;
     pubSettings.line_token_set = Boolean(lineToken);

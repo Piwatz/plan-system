@@ -831,7 +831,7 @@ router.get('/settings', async (req, res) => {
   const site = require('../site');
   // ปุ่มปรับเลขย้อนหลัง: บอกจำนวนและตัวอย่างก่อนกด
   const docnoFix = req.ff.docnoreq ? docno.reformat(req.settings, await docNoRows()) : [];
-  res.render('admin/settings', { title: 'ตั้งค่าโรงเรียน', themeList: themes.list(), fxLevels: themes.FX_LEVELS, fxDefault: themes.FX_DEFAULT, themeOf: (k) => themes.resolve(k), siteFields: site.FIELDS, siteIcons: site.ICONS, docnoFix });
+  res.render('admin/settings', { title: 'ตั้งค่าโรงเรียน', themeList: themes.list(), webFonts: themes.webFontChoices(req.settings.theme), fxLevels: themes.FX_LEVELS, fxDefault: themes.FX_DEFAULT, themeOf: (k) => themes.resolve(k), siteFields: site.FIELDS, siteIcons: site.ICONS, docnoFix });
 });
 
 // ---------- ทะเบียนเลขที่บันทึกข้อความ (ฟังก์ชันเสริม docnoreg) ----------
@@ -1009,6 +1009,13 @@ async function saveSettings(req) {
   if (fx && fx.key !== (req.settings.color_level || themes.FX_DEFAULT)) {
     await setSetting('color_level', fx.key);
     await features.audit(req.me, `เปลี่ยนสีสันของหน้าเว็บเป็น${fx.name}`, 'color_level');
+  }
+  if (req.ff.fontpick && b.web_font !== undefined) {
+    const font = themes.webFontKey(b.web_font);
+    if (font !== (req.settings.web_font || '')) {
+      await setSetting('web_font', font);
+      await features.audit(req.me, `เปลี่ยนฟอนต์หน้าเว็บเป็น ${font ? themes.WEB_FONTS.find((x) => x.key === font).name : 'ตามธีมสี'}`, 'web_font');
+    }
   }
   const theme = themes.themeKey(b.theme);
   if (theme !== req.settings.theme) {

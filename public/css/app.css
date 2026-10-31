@@ -1641,6 +1641,10 @@ tr.dr-dup td { background: var(--back-bg); }
 .af-sw .switch[aria-checked='true'] .track::after { left: 23px; }
 .af-none { padding: 14px; color: var(--muted); }
 /* ปลายทางของผลค้นหา: กระพริบสีเหลือง 3 ครั้ง แล้วคงกรอบไว้ให้เห็นว่าอันไหน */
+/* ฟอนต์หน้าเว็บ (ฟังก์ชันเสริม fontpick) TH Sarabun ตัวเล็กกว่าฟอนต์อื่น จึงขยายให้ขนาดเท่ากัน */
+@font-face { font-family: 'Web TH'; font-weight: 400; size-adjust: 130%; src: local('TH SarabunPSK'), local('THSarabunPSK'), local('TH Sarabun New'), local('THSarabunNew'); }
+@font-face { font-family: 'Web TH'; font-weight: 700; size-adjust: 130%; src: local('TH SarabunPSK Bold'), local('THSarabunPSK-Bold'), local('TH Sarabun New Bold'), local('THSarabunNew-Bold'); }
+.font-sample { display: block; padding: 12px 14px 4px; font-size: 1.25rem; line-height: 1.5; color: var(--ink); }
 /* งานที่ต้องทำบนสุดของหน้าแรก (ฟังก์ชันเสริม hometodo) */
 .home-todo { margin-bottom: 16px; }
 .home-todo h2 { margin-bottom: 6px; }

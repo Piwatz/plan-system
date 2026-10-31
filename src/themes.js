@@ -14,7 +14,24 @@ const FONTS = {
   Niramit: 'niramit',
   Pridi: 'pridi',
   Krub: 'krub',
+  Sarabun: 'sarabun',
 };
+
+const FONT_FALLBACK = "'Noto Sans Thai Looped', 'Leelawadee UI', Tahoma, sans-serif";
+
+// ฟอนต์หน้าเว็บที่ผู้ดูแลระบบเลือกแยกจากธีมสีได้ (ฟังก์ชันเสริม fontpick) เอกสารที่พิมพ์ไม่เกี่ยว ใช้ฟอนต์ของตัวเอง
+// stack = ฟอนต์ที่ไม่มีไฟล์ให้โหลดตรง ๆ: TH Sarabun ใช้ของในเครื่อง (Web TH ใน app.css) ฟอนต์ประจำเครื่องทำให้ Apple ใช้ฟอนต์ของ Apple ได้โดยไม่ต้องฝังไฟล์
+const WEB_FONTS = [
+  { key: 'noto', name: 'Noto Sans Thai Looped', desc: 'มีหัว หนาแน่นเล็กน้อย', fam: 'Noto Sans Thai Looped' },
+  { key: 'plexl', name: 'IBM Plex Sans Thai Looped', desc: 'มีหัว โปร่งและคมชัด', fam: 'IBM Plex Sans Thai Looped' },
+  { key: 'plex', name: 'IBM Plex Sans Thai', desc: 'ไม่มีหัว คมชัด ดูเป็นทางการ', fam: 'IBM Plex Sans Thai' },
+  { key: 'anuphan', name: 'Anuphan', desc: 'ไม่มีหัว สะอาด แบบแอปสมัยใหม่', fam: 'Anuphan' },
+  { key: 'sarabun', name: 'Sarabun', desc: 'แนวเอกสารราชการ ใช้ได้ทุกเครื่อง', fam: 'Sarabun' },
+  { key: 'krub', name: 'Krub', desc: 'มีหัว นุ่มนวล อ่านสบาย', fam: 'Krub' },
+  { key: 'thsarabun', name: 'TH Sarabun PSK', desc: 'ฟอนต์ราชการ เครื่องที่ไม่มีฟอนต์นี้ใช้ Sarabun แทน', fam: 'Sarabun', stack: `'Web TH', 'Sarabun', ${FONT_FALLBACK}` },
+  { key: 'system', name: 'ฟอนต์ประจำเครื่อง', desc: 'ไอแพด ไอโฟน และ Mac ใช้ฟอนต์ของ Apple เครื่องอื่นใช้ฟอนต์ของเครื่องนั้น', stack: "-apple-system, BlinkMacSystemFont, 'Leelawadee UI', 'Segoe UI', Tahoma, sans-serif" },
+];
+
 
 // สีปกที่ระบบวาดในคลังงาน แยกตามชนิดงาน (ฟังก์ชันเสริม coverstyle) ธีมใดอยากได้สีอื่นใส่ cvPlan cvManual cvNote ในธีมนั้น
 // ปกเป็นกระดาษ จึงใช้สีเดียวกันทั้งโหมดกลางวันและกลางคืน
@@ -81,7 +98,7 @@ function resolve(key, { dark = false } = {}) {
 
 // ตัวแปรสีสำหรับใส่ใน <style> ของทุกหน้า
 function cssVars(t, selector = ':root') {
-  const fam = (f) => `'${f}', 'Noto Sans Thai Looped', 'Leelawadee UI', Tahoma, sans-serif`;
+  const fam = (f) => t.fontStack || `'${f}', ${FONT_FALLBACK}`;
   const v = {
     '--bg': t.bg,
     '--surface': t.surface,
@@ -141,8 +158,26 @@ function fontFiles(t) {
   return out;
 }
 
+// รหัสฟอนต์ที่ใช้ได้ ค่าอื่นหรือค่าว่างหมายถึงตามธีม
+function webFontKey(k) {
+  return WEB_FONTS.some((f) => f.key === k) ? k : '';
+}
+
+// ธีมที่เปลี่ยนเฉพาะฟอนต์ สีเหมือนเดิม
+function withFont(t, key) {
+  const f = WEB_FONTS.find((x) => x.key === key);
+  return f ? { ...t, body: f.fam, head: f.fam, fontStack: f.stack } : t;
+}
+
+// ตัวเลือกในหน้าตั้งค่า พร้อมไฟล์และชื่อฟอนต์สำหรับตัวอย่าง แถวแรกคือตามธีม
+function webFontChoices(themeK) {
+  const t = resolve(themeK);
+  const row = (f) => ({ ...f, href: FONTS[f.fam] ? `/vendor/fonts/${FONTS[f.fam]}/400.css` : '', css: f.stack || `'${f.fam}', ${FONT_FALLBACK}` });
+  return [row({ key: '', name: 'ตามธีมสี', desc: `ตอนนี้คือ ${t.body}`, fam: t.body }), ...WEB_FONTS.map(row)];
+}
+
 function list() {
   return Object.entries(THEMES).map(([key, t]) => ({ key, letter: key.toUpperCase(), ...t }));
 }
 
-module.exports = { FX_LEVELS, FX_DEFAULT, fxLevel, fxClass, THEMES, FONTS, DEFAULT_THEME, themeKey, resolve, cssVars, fontFiles, list };
+module.exports = { FX_LEVELS, FX_DEFAULT, fxLevel, fxClass, THEMES, FONTS, DEFAULT_THEME, themeKey, resolve, cssVars, fontFiles, list, WEB_FONTS, webFontKey, withFont, webFontChoices };

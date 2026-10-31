@@ -81,6 +81,23 @@
       <% } %>
     </div>
 
+    <% if (ff.fontpick) { const curFont = settings.web_font || ''; %>
+    <h3 style="margin-top:18px" id="font">ฟอนต์หน้าเว็บ</h3>
+    <p class="muted small">เปลี่ยนเฉพาะตัวหนังสือ สีเหมือนเดิม มีผลกับทุกคนทันทีหลังบันทึก เอกสารที่พิมพ์ยังใช้ TH SarabunPSK เหมือนเดิม</p>
+    <% for (const f of webFonts) { if (f.href) { %><link rel="stylesheet" href="<%= f.href %>"><% } } %>
+    <div class="theme-grid" style="margin-bottom:8px">
+      <% for (const f of webFonts) { %>
+        <label class="theme-card">
+          <input type="radio" name="web_font" value="<%= f.key %>" <%= curFont === f.key ? 'checked' : '' %>>
+          <span class="tc">
+            <span class="font-sample" style="font-family:<%= f.css %>">ส่งคู่มือรายวิชา<br>บ ป ผ ฝ พ ฟ 123</span>
+            <span class="tc-text"><b><%= f.name %></b><small><%= f.desc %></small></span>
+          </span>
+        </label>
+      <% } %>
+    </div>
+    <% } %>
+
     <% if (ff.colorful) { const curFx = fxLevels.some((x) => x.key === settings.color_level) ? settings.color_level : fxDefault; %>
     <h3 style="margin-top:18px" id="colorful">สีสันและลูกเล่นของหน้าเว็บ</h3>
     <p class="muted small">เรียงจากน้อยไปมาก มีผลกับทุกคนทันทีหลังบันทึก ใช้ได้กับทุกธีมและโหมดกลางคืน</p>
