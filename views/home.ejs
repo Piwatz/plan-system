@@ -22,6 +22,17 @@
   <% } %>
 </div>
 
+<% if (ff.hometodo) { const homeTodo = nextUp.filter((n) => n.href !== '/inbox' && n.href !== '/admin/users'); if (homeTodo.length) { %><%# งานที่ต้องทำบนสุดของหน้าแรกบนคอม มือถือมีรายการนี้อยู่แล้วด้านล่าง (ฟังก์ชันเสริม hometodo) งานรอลงนามและคำเตือนผู้ดูแลมีกล่องของตัวเอง %>
+<div class="d-only">
+  <section class="card home-todo">
+    <h2>สิ่งที่ต้องทำต่อ</h2>
+    <% for (const n of homeTodo.slice(0, 6)) { %>
+      <a class="ht-row" href="<%= n.href %>"><span class="ht-dot <%= n.tone === 'back' ? 'back' : '' %>"></span><span class="ht-text"><b><%= n.title %></b><% if (n.deskSub || n.sub) { %><span><%= n.deskSub || n.sub %></span><% } %></span><% if (n.act) { %><span class="btn btn-sm <%= n.tone === 'back' ? 'btn-danger' : 'btn-primary' %>"><%= n.act %></span><% } else { %><%- icon('next', 20) %><% } %></a>
+    <% } %>
+    <% if (homeTodo.length > 6) { %><a class="ht-more" href="/my">ดูงานทั้งหมด อีก <%= homeTodo.length - 6 %> งาน</a><% } %>
+  </section>
+</div>
+<% } } %>
 <% if (locals.dueAlert) { %><%# ใกล้กำหนดส่งแต่ยังมีงานที่ยังไม่ส่ง (ฟังก์ชันเสริม duealert) %>
   <div class="call must due-alert"><%- icon('clock') %>
     <div><span class="call-tag">ห้ามพลาด</span><b class="call-title"><%= dueAlert.days === 0 ? 'วันนี้วันสุดท้าย' : 'เหลืออีก ' + dueAlert.days + ' วัน' %> ถึงกำหนดส่ง ยังไม่ได้ส่ง <%= dueAlert.list.length %> งาน</b>
@@ -72,11 +83,15 @@
   </div>
 <% } %>
 
+<% if (ff.alertstrip && alerts.length) { %><%# แถบเดียวแทนกล่องแจ้งเตือนหลายกล่อง (ฟังก์ชันเสริม alertstrip) %>
+  <a class="alert alert-warn alert-strip" href="/alerts"><%- icon('bell') %><div><b>มีแจ้งเตือนใหม่ <%= (locals.badges && badges.alerts) || alerts.length %> เรื่อง</b><span class="as-last">ล่าสุด <%= alerts[0].from_name || 'ระบบ' %> <%= alerts[0].text %></span></div><span class="btn btn-sm btn-ghost">เปิดอ่าน</span></a>
+<% } else { %>
 <% for (const a of alerts) { %>
   <div class="alert alert-warn"><%- icon('bell') %>
     <div><b><%= a.from_name || 'ระบบ' %></b> <span class="muted small"><%= util.ago(a.created_at) %></span><div class="pre"><%= a.text %></div></div>
     <a class="btn btn-sm btn-ghost" href="/alerts">ดูทั้งหมด</a>
   </div>
+<% } %>
 <% } %>
 
 <% if (!me.signature && !sigNag) { %><%# แถบเตือนแบบเดิม ใช้เมื่อปิดฟังก์ชันเสริม signag %>

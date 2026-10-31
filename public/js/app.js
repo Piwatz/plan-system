@@ -1741,6 +1741,9 @@
         if (it.classList.contains('look') && !ticked) look.push(title);
       }
       if (count) count.textContent = done + '/' + shown.length;
+      // ฟอร์มแบบสั้น (ฟังก์ชันเสริม formshort) หัวข้อบอกจำนวนข้อที่เหลือ
+      const left = box.querySelector('[data-ck-left]');
+      if (left) left.textContent = done === shown.length ? 'ตรวจครบแล้ว พร้อมส่ง' : 'ก่อนส่ง เหลืออีก ' + (shown.length - done) + ' ข้อ';
       box.classList.toggle('all-ok', done === shown.length);
       let msg = '';
       if (bad.length) msg = 'ยังส่งไม่ได้ ต้องแก้ข้อสีแดงก่อน\n' + bad.join('\n') + '\nกดบันทึกร่างไว้ก่อนได้';
@@ -2696,6 +2699,19 @@
       if (boxes[0]) boxes[0].dispatchEvent(new Event('change', { bubbles: true }));
     })
   );
+
+  // ---------- ฟอร์มแบบสั้น กดเปลี่ยนวิชาแล้วเปิดช่องเดิม (ฟังก์ชันเสริม formshort) ----------
+  document.querySelectorAll('[data-fs-change]').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      const form = btn.closest('form');
+      form.querySelectorAll('[data-fs-subj]').forEach((x) => {
+        x.hidden = false;
+      });
+      form.querySelector('.fs-one').classList.remove('fs-one');
+      form.querySelector('[data-fs-summary]').hidden = true;
+      form.elements.subject_code.focus();
+    });
+  });
 
   // ---------- เติมชื่อวิชาจากรหัส ----------
   const code = document.querySelector('[data-subject-code]');

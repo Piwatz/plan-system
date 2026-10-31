@@ -1,5 +1,7 @@
 <%- include('partials/top') %>
-<% const T = wf.DOC_TYPES[sub.doc_type]; const methods = util.parseJson(sub.teaching_methods, []); %>
+<% const T = wf.DOC_TYPES[sub.doc_type]; const methods = util.parseJson(sub.teaching_methods, []);
+   // ฟอร์มแบบสั้น (ฟังก์ชันเสริม formshort) วิชาที่ระบบเติมครบแล้วเหลือบรรทัดเดียว กดเปลี่ยนวิชาเพื่อเปิดช่องเดิม
+   const fsSubj = ff.formshort && sub.subject_code && sub.subject_name && sub.grade_level; %>
 <div class="narrow" style="max-width:860px">
   <div class="page-head">
     <div>
@@ -27,19 +29,22 @@
     <input type="hidden" name="doc_type" value="<%= sub.doc_type %>">
     <% if (locals.proxy) { %><input type="hidden" name="for_teacher" value="<%= proxy.id %>"><% } %>
     <h2>ข้อมูลรายวิชา</h2>
-    <div class="form-grid">
-      <div class="field">
+    <% if (fsSubj) { %>
+      <div class="fs-subj" data-fs-summary><div><b><%= sub.subject_code %> <%= sub.subject_name %></b> <span class="muted"><%= sub.grade_level %></span></div><button type="button" class="sb-link" data-fs-change>เปลี่ยนวิชา</button></div>
+    <% } %>
+    <div class="form-grid<%= fsSubj ? ' fs-one' : '' %>">
+      <div class="field" data-fs-subj<%= fsSubj ? ' hidden' : '' %>>
         <label for="subject_code">รหัสวิชา <span class="req">*</span></label>
         <input type="text" id="subject_code" name="subject_code" value="<%= sub.subject_code || '' %>" list="subject-list" placeholder="เช่น ว30203" data-subject-code autocomplete="off">
         <datalist id="subject-list">
           <% for (const x of subjects) { %><option value="<%= x.code %>" data-name="<%= x.name %>" data-grade="<%= x.grade %>"><%= x.name %></option><% } %>
         </datalist>
       </div>
-      <div class="field" style="grid-column:span 2">
+      <div class="field" style="grid-column:span 2" data-fs-subj<%= fsSubj ? ' hidden' : '' %>>
         <label for="subject_name">ชื่อวิชา <span class="req">*</span></label>
         <input type="text" id="subject_name" name="subject_name" value="<%= sub.subject_name || '' %>" placeholder="เช่น ฟิสิกส์เพิ่มเติม 3">
       </div>
-      <div class="field">
+      <div class="field" data-fs-subj<%= fsSubj ? ' hidden' : '' %>>
         <label for="grade_level">ระดับชั้น <span class="req">*</span></label>
         <select id="grade_level" name="grade_level">
           <option value="">เลือกระดับชั้น</option>
@@ -51,7 +56,7 @@
         <label for="doc_no_num">เลขที่บันทึกข้อความ<% if (need) { %> <span class="req">*</span><% } %></label>
         <div class="docno-in"><span><%= docnoPre %></span><input type="text" id="doc_no_num" name="doc_no_num" inputmode="numeric" maxlength="6" value="<%= num %>" placeholder="เลขที่ขอ" autocomplete="off" data-docno><span>/<%= docnoYear %></span></div>
         <% if (shared && num) { %><div class="hint docno-shared"><%- icon('check', 14) %> ใช้เลขเดียวกับคู่มือ <%= shared.code %> ระบบเติมให้แล้ว ไม่ต้องขอเลขใหม่ (แก้ได้ถ้าห้องวิชาการให้เลขอื่น)</div><% } else { %>
-        <div class="hint">ขอเลขที่ห้องวิชาการก่อน แล้วพิมพ์เฉพาะตัวเลข ระบบเติม <%= docnoPre %> และ /<%= docnoYear %> ให้<% if (sub.doc_no && !num) { %> (เลขเดิม <%= sub.doc_no %> พิมพ์ใหม่เฉพาะตัวเลข)<% } %></div><% } %>
+        <div class="hint"><%= ff.formshort ? 'ขอเลขที่ห้องวิชาการ แล้วพิมพ์เฉพาะตัวเลข' : 'ขอเลขที่ห้องวิชาการก่อน แล้วพิมพ์เฉพาะตัวเลข ระบบเติม ' + docnoPre + ' และ /' + docnoYear + ' ให้' %><% if (sub.doc_no && !num) { %> (เลขเดิม <%= sub.doc_no %> พิมพ์ใหม่เฉพาะตัวเลข)<% } %></div><% } %>
       </div>
       <% } else { %>
       <div class="field">
@@ -63,6 +68,7 @@
     </div>
 
     <% if (sub.doc_type === 'plan') { %>
+      <% if (ff.formshort) { %><details class="howto fs-more"<%= methods.length ? ' open' : '' %>><summary>รูปแบบการจัดการเรียนรู้ที่ใช้ในแผน เลือกถ้ามี</summary><% } %>
       <div class="field">
         <span class="label">รูปแบบหรือแนวทางการจัดการเรียนรู้ที่ใช้ในแผน</span>
         <div class="checks">
@@ -78,12 +84,13 @@
         <div class="hint">ถ้ามีหลายรูปแบบ คั่นด้วยเครื่องหมายจุลภาค</div>
       </div>
       <% } %>
+      <% if (ff.formshort) { %></details><% } %>
     <% } %>
 
     <h2 style="margin-top:18px">ไฟล์<%= T.label %></h2>
     <% if (ff.pdfonly) { const oldOk = files.length === 1 && files[0].mime === 'application/pdf'; %>
       <%# หมายเหตุเหนือช่องเลือกไฟล์: ต้องมีปกและเนื้อหา หน้าแรกจะเป็นปกในคลังงาน (ฟังก์ชันเสริม library) %>
-      <div class="<%= ff.callout ? 'call check' : 'alert alert-info' %> lib-filenote"><%- icon('file') %><span><% if (ff.callout) { %><span class="call-tag">ควรตรวจ</span><% } %>ไฟล์ต้องมี<b>หน้าปกและเนื้อหา</b> <%= ff.pdfmerge ? 'รวมเป็น PDF ไฟล์เดียวมาเอง หรือเลือกหลายไฟล์ เช่น ปกกับเนื้อหา แล้วเรียงด้วยปุ่มขึ้นลง เว็บจะรวมให้ก็ได้' : 'รวมเป็น PDF ไฟล์เดียวก่อนแนบ' %><% if (ff.library) { %> <b>หน้าแรกจะเป็นปกในคลังงาน</b><% } %></span></div>
+      <div class="<%= ff.callout ? 'call check' : 'alert alert-info' %> lib-filenote"><%- icon('file') %><span><% if (ff.formshort) { %>ไฟล์ต้องมี<b>หน้าปกและเนื้อหา</b><%= ff.pdfmerge ? ' เลือกหลายไฟล์ได้ ระบบรวมให้' : ' รวมเป็น PDF ไฟล์เดียวก่อนแนบ' %><% if (ff.library) { %> <b>หน้าแรกจะเป็นปกในคลังงาน</b><% } %><% } else { %><% if (ff.callout) { %><span class="call-tag">ควรตรวจ</span><% } %>ไฟล์ต้องมี<b>หน้าปกและเนื้อหา</b> <%= ff.pdfmerge ? 'รวมเป็น PDF ไฟล์เดียวมาเอง หรือเลือกหลายไฟล์ เช่น ปกกับเนื้อหา แล้วเรียงด้วยปุ่มขึ้นลง เว็บจะรวมให้ก็ได้' : 'รวมเป็น PDF ไฟล์เดียวก่อนแนบ' %><% if (ff.library) { %> <b>หน้าแรกจะเป็นปกในคลังงาน</b><% } %><% } %></span></div>
       <% if (files.length) { %>
         <ul class="file-list" style="margin-bottom:10px">
           <% for (const f of files) { %>
@@ -140,15 +147,19 @@
       </label>
       <ul class="dz-list" data-dz-list></ul>
     <% } %>
-    <% if (ff.filecheck) { %><p class="hint"><%- icon('check', 16) %> ระบบตรวจไฟล์ให้ทันทีที่เลือก ชนิดไฟล์ ขนาด ไฟล์เปิดได้ และจำนวนหน้า PDF</p><% } %>
+    <% if (ff.filecheck && !ff.formshort) { %><p class="hint"><%- icon('check', 16) %> ระบบตรวจไฟล์ให้ทันทีที่เลือก ชนิดไฟล์ ขนาด ไฟล์เปิดได้ และจำนวนหน้า PDF</p><% } %>
 
+    <%# ลิงก์พับไว้เฉพาะตอนส่ง PDF อย่างเดียว ถ้าปิด pdfonly ลิงก์ใช้แทนไฟล์ได้จึงต้องเห็นเสมอ %>
+    <% const fsLink = ff.formshort && ff.pdfonly; %>
+    <% if (fsLink) { %><details class="howto fs-more"<%= sub.link_url ? ' open' : '' %>><summary>เพิ่มลิงก์ เช่น Google Drive ถ้ามี</summary><% } %>
     <div class="field" style="margin-top:14px">
       <label for="link_url">ลิงก์เพิ่มเติม</label>
       <input type="url" id="link_url" name="link_url" value="<%= sub.link_url || '' %>" placeholder="เช่น ลิงก์ Google Drive หรือ Canva ถ้ามี">
       <div class="hint"><%= ff.pdfonly ? 'ไม่บังคับ ใส่ได้ถ้ามีสื่อหรือไฟล์ประกอบเพิ่มเติม' : 'ต้องมีไฟล์หรือลิงก์อย่างน้อย 1 อย่างจึงจะส่งได้' %></div>
     </div>
+    <% if (fsLink) { %></details><% } else { %>
 
-    <hr>
+    <hr><% } %>
 <% if (locals.pc) { %>
     <% if (ff.coverconfirm) { %><input type="hidden" name="cover_check" value="1"><% } %>
     <%- include('partials/precheck', { pc, sub, files, mode: 'form' }) %>

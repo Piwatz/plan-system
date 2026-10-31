@@ -1,0 +1,193 @@
+<!doctype html><html lang="th"><meta charset="utf-8"><title>ตัวอย่างหน้าตาแบบง่าย</title><style>
+@font-face{font-family:NSL;font-weight:400;src:url(../node_modules/@fontsource/noto-sans-thai-looped/files/noto-sans-thai-looped-thai-400-normal.woff2)}
+@font-face{font-family:NSL;font-weight:700;src:url(../node_modules/@fontsource/noto-sans-thai-looped/files/noto-sans-thai-looped-thai-700-normal.woff2)}
+:root{--bg:#EEF2F7;--sur:#fff;--ink:#0F1E33;--mut:#4E5F78;--line:#D6DEE9;--pri:#1D3A66;--soft:#E4ECF7;--acc:#E3A21A;--ok:#1B7343;--okb:#E4F4EA;--wait:#875700;--waitb:#FFF2DA;--back:#B0341F;--backb:#FDEAE4}
+*{box-sizing:border-box}html,body{margin:0;padding:0}
+body{width:1200px;background:#fff;font-family:NSL,'Leelawadee UI',Tahoma,sans-serif;color:var(--ink)}
+.sheet{width:1200px;height:1000px;overflow:hidden;padding:26px 30px;background:#F7F4EC;border-bottom:1px solid #ccc;position:relative}
+.sheet>h1{font-size:28px;margin:0 0 4px;line-height:1.3}.sheet>.lead{font-size:17px;color:#4b4b44;margin:0 0 16px;line-height:1.5}
+.tag{display:inline-block;background:var(--pri);color:#fff;border-radius:8px;padding:0 12px;font-size:21px;margin-right:8px}.rec{background:var(--acc);color:#241800}
+.two{display:grid;grid-template-columns:620px 1fr;gap:26px}
+/* หน้าจอจำลอง */
+.scr{background:var(--bg);border:1px solid #bfc8d4;border-radius:14px;overflow:hidden;box-shadow:0 6px 20px #0f1e3322}
+.bar{display:flex;align-items:center;gap:10px;background:var(--pri);color:#fff;padding:9px 16px;font-size:17px;font-weight:700}
+.bar img{width:30px;height:30px}.bar .r{margin-left:auto;display:flex;gap:8px;align-items:center;font-weight:400;font-size:16px}
+.chipw{background:#ffffff22;border-radius:9px;padding:3px 11px;display:flex;align-items:center;gap:5px}.dot{background:#FF8A73;color:#2b0b05;border-radius:10px;font-size:13px;font-weight:700;padding:0 7px}
+.in{padding:18px}.hi{font-size:26px;font-weight:700;margin:0;line-height:1.3}.sub{font-size:16px;color:var(--mut);margin:2px 0 14px}
+.card{background:var(--sur);border:1px solid var(--line);border-radius:14px}
+.btn{display:inline-flex;align-items:center;justify-content:center;background:var(--pri);color:#fff;font-weight:700;border-radius:11px;padding:9px 18px;font-size:18px;white-space:nowrap}
+.btn.red{background:var(--back)}.btn.big{width:100%;padding:15px;font-size:23px;border-radius:13px}.btn.gh{background:#fff;color:var(--pri);border:1.5px solid var(--pri)}
+.btn.off{background:#AEB9C8}
+.row{display:flex;align-items:center;gap:12px;padding:13px 14px;border-top:1px solid var(--line)}.row:first-child{border-top:0}
+.row .t{flex:1;min-width:0}.row b{font-size:19px;display:block;line-height:1.35}.row span.s{font-size:15.5px;color:var(--mut);display:block;line-height:1.4}
+.back{color:var(--back)!important}
+.gh2{font-size:17px;font-weight:700;color:var(--mut);margin:15px 2px 6px}
+.pill{font-size:15px;font-weight:700;border-radius:20px;padding:2px 11px;white-space:nowrap}.pw{background:var(--waitb);color:var(--wait)}.po{background:var(--okb);color:var(--ok)}.pb{background:var(--backb);color:var(--back)}.pn{background:#E8ECF1;color:#5d6b80}
+.m{display:inline-block;width:12px;height:12px;border-radius:50%;flex:none}.m.r{background:var(--back)}.m.n{background:var(--pri)}.m.w{background:var(--acc)}.m.g{background:var(--ok)}
+.hero{padding:20px;border:2px solid var(--back);background:#fff;border-radius:16px}
+.hero .k{font-size:16px;color:var(--back);font-weight:700}.hero .h{font-size:27px;font-weight:700;line-height:1.3;margin:2px 0 3px}.hero .w{background:var(--backb);border-radius:10px;padding:10px 13px;font-size:17px;line-height:1.5;margin:10px 0 14px}
+.subj{padding:12px 14px;margin-bottom:10px}.subj .h{font-size:19px;font-weight:700;line-height:1.3}.subj .h small{font-weight:400;color:var(--mut);font-size:15.5px}
+.steps{display:grid;grid-template-columns:1fr 1fr 1fr;gap:7px;margin-top:9px}.st{border-radius:10px;padding:7px 5px;text-align:center;font-size:14.5px;line-height:1.35;min-height:62px;background:#F0F3F7;color:#68778c}
+.st b{display:block;font-size:16px}.st.a{background:var(--pri);color:#fff}.st.r{background:var(--back);color:#fff}.st.w{background:var(--waitb);color:var(--wait)}.st.o{background:var(--okb);color:var(--ok)}
+/* แผงคำอธิบาย */
+.nt h2{font-size:24px;margin:2px 0 12px;line-height:1.35}.nt h3{font-size:18px;margin:15px 0 4px;color:var(--pri)}.nt p,.nt li{font-size:17px;line-height:1.55;margin:0}.nt ul{margin:0;padding-left:22px}
+.cnt{background:#fff;border:1px solid #ddd5c2;border-radius:12px;padding:10px 14px;font-size:17px;line-height:1.55;margin-top:14px}
+/* ปัจจุบัน */
+.now{display:grid;grid-template-columns:1fr 1fr;gap:20px}.now figure{margin:0}.now img{width:100%;height:690px;object-fit:cover;object-position:top;border:1px solid #bbb;border-radius:10px}.now figcaption{font-size:20px;font-weight:700;margin-bottom:6px}
+.pts{display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-top:10px;font-size:16.5px;line-height:1.5}
+/* ฟอร์ม */
+.field{margin-bottom:14px}.lab{font-size:18px;font-weight:700;margin-bottom:5px;display:flex;gap:8px;align-items:center}.num{background:var(--pri);color:#fff;border-radius:50%;width:27px;height:27px;display:inline-flex;align-items:center;justify-content:center;font-size:16px;flex:none}
+.inp{display:flex;align-items:center;border:1.5px solid #a9b6c7;border-radius:10px;background:#fff;font-size:19px;overflow:hidden}.inp span{background:var(--soft);padding:10px 12px}.inp i{flex:1;font-style:normal;color:#8896a8;padding:10px 12px}
+.drop{border:2px dashed var(--pri);border-radius:13px;background:#F6F9FD;text-align:center;padding:26px 12px;font-size:19px;font-weight:700;color:var(--pri)}.drop small{display:block;font-weight:400;font-size:15px;color:var(--mut);margin-top:3px}
+.fileok{display:flex;gap:10px;align-items:center;background:var(--okb);border-radius:10px;padding:10px 13px;font-size:16.5px;color:var(--ok);font-weight:700}
+.subjbar{display:flex;align-items:center;gap:10px;background:var(--soft);border-radius:11px;padding:10px 14px;margin-bottom:15px}.subjbar b{font-size:19px;display:block}.subjbar span{font-size:15px;color:var(--mut)}.subjbar a{margin-left:auto;font-size:15px;color:var(--pri);text-decoration:underline}
+.pop{background:#fff;border-radius:16px;padding:18px;box-shadow:0 14px 38px #0f1e3355;text-align:center}.pop .q{font-size:23px;font-weight:700;line-height:1.35}
+.cover{width:170px;height:228px;margin:12px auto;background:#fff;border:1px solid #9aa7b8;box-shadow:0 3px 10px #0002;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:7px;font-size:13px;color:#333;padding:10px;text-align:center}.cover img{width:54px}
+.dimw{background:#32405a;border-radius:14px;padding:22px}
+.g3{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}.prog{display:flex;gap:6px;margin-bottom:12px}.prog i{flex:1;height:8px;background:#CFD8E4;border-radius:4px}.prog i.on{background:var(--pri)}
+.q2{font-size:23px;font-weight:700;line-height:1.35;margin:0 0 12px}.stepk{font-size:15.5px;color:var(--mut);margin-bottom:2px}
+.mini .in{padding:15px;min-height:475px;display:flex;flex-direction:column}.mini .sp{flex:1}.mini .bar{font-size:15px;padding:8px 12px}
+</style>
+
+<!-- แผ่น 0 ตอนนี้ -->
+<section class="sheet">
+  <h1>แผ่น 1 หน้าจอตอนนี้ เอาไว้เทียบ</h1>
+  <div class="now">
+    <figure><figcaption>หน้าแรก</figcaption><img src="simpleui-now-home.jpg"></figure>
+    <figure><figcaption>หน้าส่งงาน</figcaption><img src="simpleui-now-form.jpg"></figure>
+  </div>
+  <div class="pts">
+    <div>ปุ่มที่ต้องกดจริงอยู่ล่างกล่องแจ้งเตือน 3 กล่องและกล่องตัวเลข 4 กล่อง ครูต้องไล่อ่านก่อนจึงจะเจอ เมนูด้านข้างมี 10 รายการ</div>
+    <div>รหัส ชื่อ และชั้นเรียน ระบบเติมให้แล้ว แต่ยังแสดงเป็นช่องให้อ่าน หน้าสูงราว 2 จอ ปุ่มส่งอยู่ล่างสุด ตัวหนังสือในฟอร์มราว 1,200 ตัวอักษร</div>
+  </div>
+</section>
+
+<!-- แผ่น 1 หน้าแรก A -->
+<section class="sheet">
+  <h1><span class="tag">แบบ A</span>หน้าแรก บอกงานถัดไปงานเดียว</h1>
+  <p class="lead">เปิดมาเจองานเดียวกับปุ่มใหญ่ปุ่มเดียว เสร็จแล้วงานถัดไปจะขึ้นมาแทน</p>
+  <div class="two">
+    <div class="scr">
+      <div class="bar"><img src="../public/img/school-logo-sm.png">CW-Learn<div class="r"><span class="chipw">แจ้งเตือน <span class="dot">7</span></span><span class="chipw">เมนู</span></div></div>
+      <div class="in">
+        <p class="hi">สวัสดี ครูสมชาย</p><p class="sub">เหลืออีก 60 วัน ถึงกำหนดส่ง</p>
+        <div class="hero">
+          <div class="k">งานถัดไปของคุณ</div>
+          <div class="h">แก้คู่มือรายวิชา ว30207</div>
+          <div style="font-size:16.5px;color:var(--mut)">ฟิสิกส์ 1 ม.4 ถูกส่งกลับให้แก้</div>
+          <div class="w"><b>ผู้ตรวจบอกว่า</b> ตารางน้ำหนักคะแนนรวมไม่ครบ 100 ตรวจหน้า 12</div>
+          <div class="btn big red">กดแก้ไขงานนี้</div>
+        </div>
+        <div class="gh2">ต่อจากนี้อีก 2 งาน</div>
+        <div class="card">
+          <div class="row"><span class="m n"></span><div class="t"><b>ส่งคู่มือ ว31101</b></div></div>
+          <div class="row"><span class="m n"></span><div class="t"><b>ส่งบันทึกหลังแผน ว30203</b></div></div>
+        </div>
+        <div style="text-align:center;margin-top:14px;font-size:17px;color:var(--pri);text-decoration:underline">ดูงานทั้งหมด</div>
+      </div>
+    </div>
+    <div class="nt">
+      <h2>เปรียบเหมือนคนบอกว่า ตอนนี้ทำอันนี้ก่อนนะ</h2>
+      <h3>ข้อดี</h3><ul><li>ไม่ต้องคิด ไม่ต้องอ่าน กดตามได้เลย</li><li>เหมาะกับครูที่ไม่อยากอ่านมากที่สุด</li></ul>
+      <h3>ข้อเสีย</h3><ul><li>ถ้าอยากทำงานอื่นก่อน ต้องกดเพิ่มอีกครั้ง</li><li>มองไม่เห็นภาพรวมทุกวิชาในหน้าเดียว</li></ul>
+      <div class="cnt"><b>กว่าจะเริ่มงานแรก</b> กด 1 ครั้ง<br><b>กว่าจะเริ่มงานอื่น</b> กด 1 หรือ 2 ครั้ง</div>
+    </div>
+  </div>
+</section>
+
+<!-- แผ่น 2 หน้าแรก B -->
+<section class="sheet">
+  <h1><span class="tag rec">แนะนำ แบบ B</span>หน้าแรก รายการงานที่ต้องทำ</h1>
+  <p class="lead">เหมือนกระดาษโน้ตรายการงาน ทุกงานมีปุ่มของตัวเอง งานเร่งด่วนอยู่บนสุด</p>
+  <div class="two">
+    <div class="scr">
+      <div class="bar"><img src="../public/img/school-logo-sm.png">CW-Learn<div class="r"><span class="chipw">แจ้งเตือน <span class="dot">7</span></span><span class="chipw">เมนู</span></div></div>
+      <div class="in">
+        <p class="hi">สวัสดี ครูสมชาย</p><p class="sub">วันนี้มีงาน 3 อย่าง เหลืออีก 60 วัน ถึงกำหนดส่ง</p>
+        <div class="card">
+          <div class="row"><span class="m r"></span><div class="t"><b class="back">แก้คู่มือ ว30207</b><span class="s">ตารางน้ำหนักคะแนนรวมไม่ครบ 100 ตรวจหน้า 12</span></div><span class="btn red">แก้ไข</span></div>
+          <div class="row"><span class="m n"></span><div class="t"><b>ส่งคู่มือ ว31101</b><span class="s">วิทยาศาสตร์กายภาพ ม.4</span></div><span class="btn">ส่ง</span></div>
+          <div class="row"><span class="m n"></span><div class="t"><b>ส่งบันทึกหลังแผน ว30203</b><span class="s">ฟิสิกส์เพิ่มเติม 3 ม.5 ทั้งเล่ม</span></div><span class="btn">ส่ง</span></div>
+        </div>
+        <div class="gh2">รอผู้ตรวจ ไม่ต้องทำอะไร</div>
+        <div class="card"><div class="row"><span class="m w"></span><div class="t"><b style="font-weight:400">แผน ว30203</b></div><span class="pill pw">อยู่ที่ รอง ผอ.</span></div></div>
+        <div class="gh2">เสร็จแล้ว</div>
+        <div class="card"><div class="row"><span class="m g"></span><div class="t"><b style="font-weight:400">คู่มือ ว30203</b></div><span class="pill po">ผ่าน 95 คะแนน</span></div></div>
+      </div>
+    </div>
+    <div class="nt">
+      <h2>เปรียบเหมือนโน้ตแปะหน้าตู้เย็น เห็นครบและกดได้ทันที</h2>
+      <h3>ข้อดี</h3><ul><li>งานทุกอย่างกดครั้งเดียวก็เริ่มได้</li><li>รู้ทันทีว่าเหลือกี่งาน และงานไหนรอคนอื่นอยู่</li><li>ใช้หน้าตาเดียวกันทั้งคอมและมือถือ</li><li>ต่อยอดจากรายการ สิ่งที่ต้องทำต่อ ที่มือถือมีอยู่แล้ว</li></ul>
+      <h3>ข้อเสีย</h3><ul><li>ถ้าครูสอนหลายวิชา รายการจะยาวขึ้น แต่จะหดลงเมื่อทำเสร็จ</li></ul>
+      <div class="cnt"><b>กว่าจะเริ่มงานใดก็ได้</b> กด 1 ครั้ง ไม่ต้องเลื่อนหา<br><b>ที่หายไปจากหน้าแรก</b> กล่องตัวเลข ความเคลื่อนไหว เล่มใหม่ในคลัง ย้ายไปอยู่ในเมนู</div>
+    </div>
+  </div>
+</section>
+
+<!-- แผ่น 3 หน้าแรก C -->
+<section class="sheet">
+  <h1><span class="tag">แบบ C</span>หน้าแรก แยกเป็นกล่องรายวิชา</h1>
+  <p class="lead">หนึ่งวิชาหนึ่งกล่อง มีช่องแผน คู่มือ บันทึก สีบอกสถานะ ช่องเข้มคือต้องกด</p>
+  <div class="two">
+    <div class="scr">
+      <div class="bar"><img src="../public/img/school-logo-sm.png">CW-Learn<div class="r"><span class="chipw">แจ้งเตือน <span class="dot">7</span></span><span class="chipw">เมนู</span></div></div>
+      <div class="in">
+        <p class="hi">สวัสดี ครูสมชาย</p><p class="sub">วันนี้มีงาน 3 อย่าง เหลืออีก 60 วัน ถึงกำหนดส่ง</p>
+        <div class="card subj"><div class="h">ว30207 ฟิสิกส์ 1 <small>ม.4</small></div>
+          <div class="steps"><div class="st"><b>แผน</b>ไม่ต้องส่ง</div><div class="st r"><b>คู่มือ</b>กดแก้ไข</div><div class="st"><b>บันทึก</b>ไม่ต้องเขียน</div></div></div>
+        <div class="card subj"><div class="h">ว31101 วิทยาศาสตร์กายภาพ <small>ม.4</small></div>
+          <div class="steps"><div class="st"><b>แผน</b>ไม่ต้องส่ง</div><div class="st a"><b>คู่มือ</b>กดส่ง</div><div class="st"><b>บันทึก</b>ไม่ต้องเขียน</div></div></div>
+        <div class="card subj"><div class="h">ว30203 ฟิสิกส์เพิ่มเติม 3 <small>ม.5 วิชาหลัก</small></div>
+          <div class="steps"><div class="st w"><b>แผน</b>รอ รอง ผอ.</div><div class="st o"><b>คู่มือ</b>ผ่าน 95</div><div class="st a"><b>บันทึก</b>กดส่งทั้งเล่ม</div></div></div>
+      </div>
+    </div>
+    <div class="nt">
+      <h2>เปรียบเหมือนสมุดพกรายวิชา ดูทีละวิชาว่าถึงไหนแล้ว</h2>
+      <h3>ข้อดี</h3><ul><li>ตรงกับที่ครูคิด คือคิดเป็นรายวิชา</li><li>เห็นครบทั้งแผน คู่มือ บันทึก ของแต่ละวิชา</li><li>ใกล้กับหน้าเดิมที่สุด ครูปรับตัวง่าย</li></ul>
+      <h3>ข้อเสีย</h3><ul><li>มีช่อง ไม่ต้องส่ง ปนอยู่ ต้องมองหาช่องเข้มเอง</li><li>ครูที่สอนหลายวิชาต้องเลื่อนลงยาว</li></ul>
+      <div class="cnt"><b>กว่าจะเริ่มงาน</b> กด 1 ครั้ง แต่ต้องมองหาช่องที่ต้องกด</div>
+    </div>
+  </div>
+</section>
+
+<!-- แผ่น 4 ฟอร์ม ก -->
+<section class="sheet">
+  <h1><span class="tag rec">แนะนำ แบบ ก</span>หน้าส่งงาน หน้าเดียวจบ</h1>
+  <p class="lead">เหลือ 2 อย่างที่ครูต้องทำ เรื่องที่ตรวจได้เอง ระบบตรวจเงียบ ๆ และเตือนเฉพาะตอนมีปัญหา</p>
+  <div class="two" style="grid-template-columns:590px 1fr">
+    <div class="scr">
+      <div class="bar"><img src="../public/img/school-logo-sm.png">CW-Learn<div class="r"><span class="chipw">กลับหน้าแรก</span></div></div>
+      <div class="in">
+        <p class="hi" style="margin-bottom:12px">ส่งคู่มือรายวิชา</p>
+        <div class="subjbar"><div><b>ว31101 วิทยาศาสตร์กายภาพ</b><span>ม.4 ระบบเติมให้แล้ว</span></div><a>เปลี่ยน</a></div>
+        <div class="field"><div class="lab"><span class="num">1</span>เลขที่บันทึกข้อความ</div><div class="inp"><span>วก.</span><i>พิมพ์ตัวเลข</i><span>/2569</span></div></div>
+        <div class="field"><div class="lab"><span class="num">2</span>ไฟล์ PDF มีปกและเนื้อหา</div><div class="drop">กดเพื่อเลือกไฟล์<small>หรือลากไฟล์มาวาง เลือกหลายไฟล์ได้ ระบบรวมให้</small></div></div>
+        <div style="font-size:15.5px;color:var(--pri);text-decoration:underline;margin:-4px 0 14px">มีแต่ไฟล์ Word กดดูวิธี</div>
+        <div class="btn big">ส่งงาน</div>
+        <div style="text-align:center;margin-top:11px;font-size:16px;color:var(--mut);text-decoration:underline">บันทึกไว้ก่อน ยังไม่ส่ง</div>
+      </div>
+    </div>
+    <div>
+      <div class="dimw"><div class="pop"><div class="q">หน้านี้คือปกใช่ไหม</div><div class="cover"><img src="../public/img/school-logo-sm.png"><b>คู่มือรายวิชา</b>ว31101 วิทยาศาสตร์กายภาพ<br>ครูสมชาย ใจดี</div><div style="font-size:16.5px;color:var(--mut);margin-bottom:12px">ใช่แล้วงานจะส่งถึงผู้ตรวจทันที</div><div style="display:flex;gap:10px"><span class="btn gh" style="flex:1">ยังก่อน</span><span class="btn" style="flex:1">ใช่ ส่งเลย</span></div></div></div>
+      <div class="nt" style="margin-top:12px"><p><b>ป๊อปอัปนี้ขึ้นหลังกดส่งงาน</b> รวมการยืนยันกับการดูปกไว้ในจังหวะเดียว</p>
+      <div class="cnt"><b>ตอนนี้</b> 6 จังหวะ กดงาน พิมพ์เลข เลือกไฟล์ ติ๊กดูแล้ว เลื่อนลงกดส่ง ยืนยัน<br><b>แบบนี้</b> 5 จังหวะ ไม่ต้องเลื่อน ตัวหนังสือเหลือราว 1 ใน 6</div></div>
+    </div>
+  </div>
+</section>
+
+<!-- แผ่น 5 ฟอร์ม ข -->
+<section class="sheet">
+  <h1><span class="tag">แบบ ข</span>หน้าส่งงาน ถามทีละข้อ</h1>
+  <p class="lead">หนึ่งจอหนึ่งคำถาม เหมือนตู้กดเงินเอทีเอ็ม ทำตามไปทีละขั้นจนจบ</p>
+  <div class="g3 mini">
+    <div class="scr"><div class="bar">ส่งคู่มือ ว31101</div><div class="in"><div class="prog"><i class="on"></i><i></i><i></i></div><div class="stepk">ขั้นที่ 1 จาก 3</div><p class="q2">เลขที่บันทึกข้อความ คือเลขอะไร</p><div class="inp"><span>วก.</span><i>พิมพ์ตัวเลข</i><span>/2569</span></div><div style="font-size:15.5px;color:var(--mut);margin-top:8px">ขอเลขได้ที่ห้องวิชาการ</div><div class="sp"></div><div class="btn big">ถัดไป</div></div></div>
+    <div class="scr"><div class="bar">ส่งคู่มือ ว31101</div><div class="in"><div class="prog"><i class="on"></i><i class="on"></i><i></i></div><div class="stepk">ขั้นที่ 2 จาก 3</div><p class="q2">เลือกไฟล์ PDF ที่มีปกและเนื้อหา</p><div class="drop" style="padding:44px 10px">กดเพื่อเลือกไฟล์<small>เลือกหลายไฟล์ได้ ระบบรวมให้</small></div><div style="font-size:15.5px;color:var(--pri);text-decoration:underline;margin-top:9px">มีแต่ไฟล์ Word กดดูวิธี</div><div class="sp"></div><div style="font-size:15.5px;color:var(--mut);text-align:center">เลือกไฟล์แล้วไปขั้นถัดไปเอง</div></div></div>
+    <div class="scr"><div class="bar">ส่งคู่มือ ว31101</div><div class="in"><div class="prog"><i class="on"></i><i class="on"></i><i class="on"></i></div><div class="stepk">ขั้นที่ 3 จาก 3</div><p class="q2">หน้านี้คือปกใช่ไหม</p><div class="cover" style="margin:0 auto;height:200px;width:150px"><img src="../public/img/school-logo-sm.png"><b>คู่มือรายวิชา</b>ว31101<br>ครูสมชาย ใจดี</div><div class="sp"></div><div class="btn big">ใช่ ส่งเลย</div><div style="text-align:center;margin-top:9px;font-size:16px;color:var(--pri);text-decoration:underline">ไม่ใช่ เลือกไฟล์ใหม่</div></div></div>
+  </div>
+  <div class="nt two" style="grid-template-columns:1fr 1fr;margin-top:16px">
+    <div><h3 style="margin-top:0">ข้อดี</h3><ul><li>ไม่มีทางหลง จออื่นไม่รบกวนสายตา</li><li>เหมาะกับครูที่กลัวกดผิด และใช้บนมือถือ</li></ul></div>
+    <div><h3 style="margin-top:0">ข้อเสีย</h3><ul><li>ต้องเปลี่ยนจอหลายครั้ง คนคล่องจะรู้สึกช้า</li><li>แก้งานที่ส่งกลับ ต้องไล่ผ่านหลายจอ</li></ul></div>
+  </div>
+  <div class="cnt"><b>นับจังหวะ</b> 5 จังหวะ เท่าแบบ ก คือ กดงาน พิมพ์เลข กดถัดไป เลือกไฟล์ กดส่ง</div>
+</section>
+</html>

@@ -1,0 +1,204 @@
+<!doctype html><html lang="th"><meta charset="utf-8"><title>ตัวอย่างหน้าตาแนว iOS</title><style>
+@font-face{font-family:AP;font-weight:400;src:url(../node_modules/@fontsource/anuphan/files/anuphan-thai-400-normal.woff2);unicode-range:U+0E00-0E7F}
+@font-face{font-family:AP;font-weight:500;src:url(../node_modules/@fontsource/anuphan/files/anuphan-thai-500-normal.woff2);unicode-range:U+0E00-0E7F}
+@font-face{font-family:AP;font-weight:600;src:url(../node_modules/@fontsource/anuphan/files/anuphan-thai-600-normal.woff2);unicode-range:U+0E00-0E7F}
+@font-face{font-family:AP;font-weight:700;src:url(../node_modules/@fontsource/anuphan/files/anuphan-thai-700-normal.woff2);unicode-range:U+0E00-0E7F}
+@font-face{font-family:AP;font-weight:400;src:url(../node_modules/@fontsource/anuphan/files/anuphan-latin-400-normal.woff2);unicode-range:U+0000-00FF}
+@font-face{font-family:AP;font-weight:600;src:url(../node_modules/@fontsource/anuphan/files/anuphan-latin-600-normal.woff2);unicode-range:U+0000-00FF}
+@font-face{font-family:AP;font-weight:700;src:url(../node_modules/@fontsource/anuphan/files/anuphan-latin-700-normal.woff2);unicode-range:U+0000-00FF}
+:root{--bg:#F2F2F7;--card:#fff;--ink:#000;--sec:#6C6C70;--ter:#AEAEB2;--sep:#E5E5EA;--blue:#007AFF;--red:#FF3B30;--org:#FF9500;--grn:#34C759;--ind:#5856D6;--teal:#30B0C7;--pink:#FF2D55}
+*{box-sizing:border-box}html,body{margin:0}
+body{width:1200px;background:#fff;font-family:AP,-apple-system,'Leelawadee UI',sans-serif;color:var(--ink);-webkit-font-smoothing:antialiased}
+.sheet{width:1200px;height:1000px;overflow:hidden;padding:26px 34px;background:#E9E9EE;position:relative;border-bottom:1px solid #bbb}
+.ttl{font-size:28px;font-weight:700;margin:0 0 3px}.lead{font-size:17.5px;color:#48484A;margin:0 0 16px}
+.tag{display:inline-block;background:#1C1C1E;color:#fff;border-radius:9px;padding:0 12px;font-size:20px;margin-right:8px;font-weight:600}.tag.rec{background:var(--blue)}
+.lay{display:grid;grid-template-columns:400px 1fr;gap:44px;align-items:start}.nt h2{font-size:25px;font-weight:700;line-height:1.35;margin:6px 0 14px}.nt h3{font-size:18px;font-weight:700;margin:18px 0 5px}.nt ul{margin:0;padding-left:22px}.nt li{font-size:18px;line-height:1.55}
+.cnt{background:#fff;border-radius:14px;padding:13px 17px;font-size:17.5px;line-height:1.55;margin-top:18px}
+/* เครื่องจำลอง */
+.ph{width:390px;height:826px;background:var(--bg);border-radius:46px;overflow:hidden;position:relative;box-shadow:0 0 0 9px #1C1C1E,0 20px 44px #0004}
+.sc{padding:26px 16px 0}
+.lt{font-size:34px;font-weight:700;line-height:1.25;margin:0}.lts{font-size:15.5px;color:var(--sec);margin:0 0 14px}
+.tp{display:flex;justify-content:space-between;align-items:center}.av{width:38px;height:38px;border-radius:50%;background:linear-gradient(145deg,#8E8E93,#636366);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:600;font-size:17px}
+.gh{font-size:20px;font-weight:700;margin:18px 2px 7px}.ghs{display:flex;justify-content:space-between;align-items:baseline}.ghs a{font-size:15.5px;color:var(--blue);font-weight:400}
+.grp{background:var(--card);border-radius:14px;overflow:hidden}
+.r{display:flex;align-items:center;gap:12px;padding:10px 14px;position:relative;min-height:58px}.r+.r:before{content:"";position:absolute;left:58px;right:0;top:0;height:.75px;background:#D1D1D6}
+.r .t{flex:1;min-width:0}.r b{display:block;font-size:17px;font-weight:600;line-height:1.3}.r span.s{display:block;font-size:14px;color:var(--sec);line-height:1.35}
+.ic{width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;color:#fff;flex:none}.ic svg{width:18px;height:18px}.ic.sq{border-radius:8px}
+.chev{width:9px;height:15px;color:#C4C4C7;flex:none}.val{font-size:15px;color:var(--sec);white-space:nowrap}
+.bg-r{background:var(--red)}.bg-b{background:var(--blue)}.bg-o{background:var(--org)}.bg-g{background:var(--grn)}.bg-i{background:var(--ind)}.bg-t{background:var(--teal)}.bg-gy{background:#8E8E93}.bg-p{background:var(--pink)}
+.tab{position:absolute;left:0;right:0;bottom:0;height:80px;background:#F9F9F9F0;border-top:.75px solid #C6C6C8;display:grid;grid-template-columns:repeat(4,1fr);padding-top:7px}
+.tab div{text-align:center;font-size:11.5px;color:#8E8E93;line-height:1.3;position:relative}.tab svg{display:block;width:26px;height:26px;margin:0 auto 1px}.tab .on{color:var(--blue)}.bdg{position:absolute;top:-3px;left:53%;background:var(--red);color:#fff;font-size:11.5px;font-weight:600;border-radius:9px;padding:0 5.5px;line-height:17px}
+/* แบบ 1 วงแหวน */
+.ringc{background:#fff;border-radius:18px;padding:15px 16px;display:flex;gap:16px;align-items:center}.ring{width:86px;height:86px;flex:none;position:relative}.ring b{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:21px;font-weight:700}
+.ringc .h{font-size:20px;font-weight:700;line-height:1.3}.ringc .d{font-size:15px;color:var(--sec);line-height:1.4}.ringc .o{color:var(--org);font-weight:600}
+/* แบบ 2 ช่อง */
+.search{background:#E3E3E8;border-radius:11px;height:38px;display:flex;align-items:center;gap:7px;padding:0 10px;color:#8E8E93;font-size:16.5px;margin-bottom:13px}.search svg{width:16px;height:16px}
+.tiles{display:grid;grid-template-columns:1fr 1fr;gap:10px}.tl{background:#fff;border-radius:14px;padding:10px 13px 11px;height:90px;position:relative}.tl .n{position:absolute;right:13px;top:6px;font-size:32px;font-weight:700}.tl .l{position:absolute;left:13px;bottom:9px;font-size:16px;color:var(--sec);font-weight:600}
+.tl .ic{width:34px;height:34px}
+/* แบบ 3 การ์ดใหญ่ */
+.big{border-radius:20px;color:#fff;padding:15px 17px;margin-bottom:11px;position:relative;box-shadow:0 7px 18px #0002}.big .k{font-size:14px;font-weight:600;opacity:.88}.big .h{font-size:25px;font-weight:700;line-height:1.28;margin-top:1px}.big .d{font-size:15px;opacity:.92;line-height:1.35;margin-top:2px;padding-right:4px}.pillb{display:inline-block;background:#fff;border-radius:20px;padding:4px 21px;font-size:16.5px;font-weight:700;margin-top:10px}
+.g1{background:linear-gradient(135deg,#FF5E3A,#FF2D55)}.g2{background:linear-gradient(135deg,#1AD6FD,#1D62F0)}.g3{background:linear-gradient(135deg,#C86DD7,#5856D6)}
+/* คอม */
+.mac{width:1132px;height:700px;background:var(--bg);border-radius:14px;overflow:hidden;display:grid;grid-template-columns:250px 1fr;box-shadow:0 14px 40px #0004}
+.side{background:#E6E6EB;padding:18px 12px;border-right:.75px solid #CFCFD4}.side .br{display:flex;gap:9px;align-items:center;font-weight:700;font-size:17px;padding:0 6px 14px}.side img{width:30px}.si{display:flex;gap:10px;align-items:center;padding:8px 10px;border-radius:10px;font-size:16.5px;margin-bottom:1px}.si svg{width:21px;height:21px;color:var(--blue)}.si.on{background:var(--blue);color:#fff}.si.on svg{color:#fff}.si .num{margin-left:auto;font-size:14.5px;color:var(--sec)}.si.on .num{color:#fff}.slab{font-size:13px;font-weight:600;color:var(--sec);padding:13px 10px 4px}
+.mn{padding:26px 34px;display:grid;grid-template-columns:1fr 315px;gap:24px;align-content:start}.mn .lt{grid-column:1/3;margin-bottom:-12px}
+/* ปรับแต่ง และส่งงาน */
+.nav{display:flex;justify-content:space-between;align-items:center;font-size:17px;padding:20px 16px 8px;color:var(--blue)}.nav b{color:#000;font-weight:600}
+.lab{font-size:13.5px;color:var(--sec);margin:17px 16px 5px}.sw{width:49px;height:30px;border-radius:15px;background:var(--grn);position:relative;flex:none}.sw:after{content:"";position:absolute;width:26px;height:26px;border-radius:50%;background:#fff;top:2px;right:2px;box-shadow:0 2px 4px #0003}.sw.off{background:#E9E9EA}.sw.off:after{right:auto;left:2px}
+.dim{position:absolute;inset:0;background:#00000052}.shtp{position:absolute;left:0;right:0;bottom:0;top:74px;background:var(--bg);border-radius:14px 14px 0 0}
+.bigbtn{background:var(--blue);color:#fff;font-size:18px;font-weight:600;text-align:center;padding:14px;border-radius:14px}.inl{font-size:17px;color:#C7C7CC;flex:1}.mini{margin:0 16px}
+.two{display:grid;grid-template-columns:400px 400px 1fr;gap:34px;align-items:start}
+</style>
+<svg width="0" height="0" style="position:absolute"><defs>
+<symbol id="pen" viewBox="0 0 24 24"><path fill="currentColor" d="M3 17.3V21h3.7L18 9.7 14.3 6 3 17.3zM20.7 7a1 1 0 000-1.4l-2.3-2.3a1 1 0 00-1.4 0l-1.8 1.8 3.7 3.7L20.7 7z"/></symbol>
+<symbol id="up" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" d="M12 19V6M6 11.5L12 5.5l6 6"/></symbol>
+<symbol id="clk" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9.2" fill="none" stroke="currentColor" stroke-width="2.3"/><path fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" d="M12 7v5.3l3.3 2"/></symbol>
+<symbol id="chk" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" d="M5 12.8l4.6 4.6L19 7.5"/></symbol>
+<symbol id="bell" viewBox="0 0 24 24"><path fill="currentColor" d="M12 2.5a6.5 6.5 0 00-6.5 6.5v4.3L3.7 16.6c-.3.6.1 1.4.9 1.4h14.8c.8 0 1.2-.8.9-1.4l-1.8-3.3V9A6.5 6.5 0 0012 2.5zM9.5 19.5a2.6 2.6 0 005 0h-5z"/></symbol>
+<symbol id="home" viewBox="0 0 24 24"><path fill="currentColor" d="M12 3L2.8 11.2c-.4.4-.1 1 .4 1H5V20a1 1 0 001 1h4v-6h4v6h4a1 1 0 001-1v-7.8h1.8c.5 0 .8-.6.4-1L12 3z"/></symbol>
+<symbol id="list" viewBox="0 0 24 24"><g fill="currentColor"><circle cx="5" cy="6" r="2"/><circle cx="5" cy="12" r="2"/><circle cx="5" cy="18" r="2"/><rect x="9.5" y="5" width="12" height="2" rx="1"/><rect x="9.5" y="11" width="12" height="2" rx="1"/><rect x="9.5" y="17" width="12" height="2" rx="1"/></g></symbol>
+<symbol id="book" viewBox="0 0 24 24"><path fill="currentColor" d="M5 3h3.4v18H5a1 1 0 01-1-1V4a1 1 0 011-1zm5 0h3.4v18H10V3zm5.6.3l3.2-.7a1 1 0 011.2.8l3 16.3a1 1 0 01-.8 1.2l-3 .6a1 1 0 01-1.2-.8l-3.2-16.3a1 1 0 01.8-1.1z" transform="scale(.93)"/></symbol>
+<symbol id="more" viewBox="0 0 24 24"><g fill="currentColor"><circle cx="5" cy="12" r="2.4"/><circle cx="12" cy="12" r="2.4"/><circle cx="19" cy="12" r="2.4"/></g></symbol>
+<symbol id="note" viewBox="0 0 24 24"><path fill="currentColor" d="M6 2.5h8.5L20 8v12.5a1 1 0 01-1 1H6a1 1 0 01-1-1v-17a1 1 0 011-1zm8 1.8V8.5h4.2L14 4.3z"/></symbol>
+<symbol id="sr" viewBox="0 0 24 24"><circle cx="10.5" cy="10.5" r="7" fill="none" stroke="currentColor" stroke-width="2.6"/><path stroke="currentColor" stroke-width="2.8" stroke-linecap="round" d="M16 16l5 5"/></symbol>
+<symbol id="ch" viewBox="0 0 9 15"><path fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" d="M1.5 1.5l6 6-6 6"/></symbol>
+<symbol id="chart" viewBox="0 0 24 24"><g fill="currentColor"><rect x="3.5" y="12" width="4.4" height="9" rx="1"/><rect x="9.8" y="7" width="4.4" height="14" rx="1"/><rect x="16.1" y="3" width="4.4" height="18" rx="1"/></g></symbol>
+<symbol id="folder" viewBox="0 0 24 24"><path fill="currentColor" d="M3 6a2 2 0 012-2h4.6l2 2.4H19a2 2 0 012 2V18a2 2 0 01-2 2H5a2 2 0 01-2-2V6z"/></symbol>
+</defs></svg>
+
+<!-- แบบ 1 -->
+<section class="sheet">
+  <p class="ttl"><span class="tag rec">แนะนำ แบบ 1</span>สรุปวันนี้</p><p class="lead">แรงบันดาลใจจากแอปสุขภาพและฟิตเนสของ Apple เห็นวงแหวนความคืบหน้า แล้วกดงานได้เลย</p>
+  <div class="lay"><div class="ph"><div class="sc">
+    <div class="tp"><div><p class="lt">วันนี้</p></div><div class="av">ส</div></div><p class="lts">สวัสดี ครูสมชาย</p>
+    <div class="ringc"><div class="ring"><svg viewBox="0 0 86 86" width="86" height="86"><circle cx="43" cy="43" r="36" fill="none" stroke="#34C75933" stroke-width="12"/><circle cx="43" cy="43" r="36" fill="none" stroke="#34C759" stroke-width="12" stroke-linecap="round" stroke-dasharray="170 226" transform="rotate(-90 43 43)"/></svg><b>3/4</b></div><div><div class="h">ส่งแล้ว 3 จาก 4 งาน</div><div class="d">เหลืออีก <span class="o">60 วัน</span> ถึงกำหนดส่ง<br>30 ธ.ค. 2569</div></div></div>
+    <div class="gh">ต้องทำ 3 งาน</div>
+    <div class="grp">
+      <div class="r"><span class="ic bg-r"><svg><use href="#pen"/></svg></span><div class="t"><b>แก้คู่มือ ว30207</b><span class="s">คะแนนรวมไม่ครบ 100 ดูหน้า 12</span></div><svg class="chev"><use href="#ch"/></svg></div>
+      <div class="r"><span class="ic bg-b"><svg><use href="#up"/></svg></span><div class="t"><b>ส่งคู่มือ ว31101</b><span class="s">วิทยาศาสตร์กายภาพ ม.4</span></div><svg class="chev"><use href="#ch"/></svg></div>
+      <div class="r"><span class="ic bg-i"><svg><use href="#note"/></svg></span><div class="t"><b>ส่งบันทึกหลังแผน ว30203</b><span class="s">ฟิสิกส์เพิ่มเติม 3 ทั้งเล่ม</span></div><svg class="chev"><use href="#ch"/></svg></div>
+    </div>
+    <div class="gh">รอผู้ตรวจ</div>
+    <div class="grp"><div class="r"><span class="ic bg-o"><svg><use href="#clk"/></svg></span><div class="t"><b style="font-weight:500">แผน ว30203</b></div><span class="val">อยู่ที่ รอง ผอ.</span></div></div>
+    </div>
+    <div class="tab"><div class="on"><svg><use href="#home"/></svg>วันนี้</div><div><svg><use href="#list"/></svg>งานของฉัน</div><div><svg><use href="#book"/></svg>คลังงาน</div><div><span class="bdg">7</span><svg><use href="#more"/></svg>เพิ่มเติม</div></div>
+  </div>
+  <div class="nt"><h2>เปิดมาแล้วรู้ทันทีว่า ไปถึงไหนแล้ว และเหลืออะไร</h2>
+    <h3>เด่นตรงไหน</h3><ul><li>วงแหวนทำให้อยากส่งให้ครบ เหมือนปิดวงแหวนใน Apple Watch</li><li>แตะทั้งแถวได้เลย ไม่ต้องเล็งปุ่มเล็ก</li><li>งานเสร็จแล้วแถวหายไป หน้าจอจึงโล่งขึ้นเรื่อย ๆ</li></ul>
+    <h3>ข้อด้อย</h3><ul><li>ถ้าครูมีงานค้างหลายวิชา ต้องเลื่อนลงบ้าง</li></ul>
+    <div class="cnt"><b>เริ่มงานใดก็ได้</b> กด 1 ครั้ง<br><b>ของเดิมอยู่ไหน</b> ทุกหน้าอยู่ในแถบล่าง 4 ปุ่ม ไม่มีอะไรหายไป</div></div></div>
+</section>
+
+<!-- แบบ 2 -->
+<section class="sheet">
+  <p class="ttl"><span class="tag">แบบ 2</span>ช่องสรุปสี่ช่อง</p><p class="lead">แรงบันดาลใจจากแอปเตือนความจำ (Reminders) ช่องสีบอกจำนวน กดเข้าไปดูทีละกลุ่ม</p>
+  <div class="lay"><div class="ph"><div class="sc">
+    <div class="tp"><p class="lt">งานของฉัน</p><div class="av">ส</div></div>
+    <div class="search" style="margin-top:10px"><svg><use href="#sr"/></svg>ค้นหางานหรือรายวิชา</div>
+    <div class="tiles">
+      <div class="tl"><span class="ic bg-r"><svg><use href="#pen"/></svg></span><span class="n">3</span><span class="l">ต้องทำ</span></div>
+      <div class="tl"><span class="ic bg-o"><svg><use href="#clk"/></svg></span><span class="n">1</span><span class="l">รอผู้ตรวจ</span></div>
+      <div class="tl"><span class="ic bg-g"><svg><use href="#chk"/></svg></span><span class="n">3</span><span class="l">ส่งแล้ว</span></div>
+      <div class="tl"><span class="ic bg-b"><svg><use href="#bell"/></svg></span><span class="n">7</span><span class="l">แจ้งเตือน</span></div>
+    </div>
+    <div class="gh">รายวิชาของฉัน</div>
+    <div class="grp">
+      <div class="r"><span class="ic bg-b"><svg><use href="#book"/></svg></span><div class="t"><b>ว30203 ฟิสิกส์เพิ่มเติม 3</b><span class="s">ม.5 วิชาหลัก</span></div><span class="val">1</span><svg class="chev"><use href="#ch"/></svg></div>
+      <div class="r"><span class="ic bg-t"><svg><use href="#book"/></svg></span><div class="t"><b>ว30207 ฟิสิกส์ 1</b><span class="s">ม.4</span></div><span class="val">1</span><svg class="chev"><use href="#ch"/></svg></div>
+      <div class="r"><span class="ic bg-i"><svg><use href="#book"/></svg></span><div class="t"><b>ว31101 วิทยาศาสตร์กายภาพ</b><span class="s">ม.4</span></div><span class="val">1</span><svg class="chev"><use href="#ch"/></svg></div>
+    </div>
+    </div>
+    <div class="tab"><div class="on"><svg><use href="#home"/></svg>หน้าแรก</div><div><svg><use href="#book"/></svg>คลังงาน</div><div><svg><use href="#chart"/></svg>ผลการสอน</div><div><svg><use href="#more"/></svg>เพิ่มเติม</div></div>
+  </div>
+  <div class="nt"><h2>เห็นภาพรวมเป็นตัวเลขในแวบเดียว สะอาดตาที่สุด</h2>
+    <h3>เด่นตรงไหน</h3><ul><li>ตัวหนังสือน้อยที่สุดใน 3 แบบ</li><li>เป็นระเบียบ มองจากไกลก็รู้ว่ามีงานกี่อย่าง</li><li>มีช่องค้นหา เหมาะกับครูที่มีงานหลายวิชา</li></ul>
+    <h3>ข้อด้อย</h3><ul><li>ต้องกดเพิ่ม 1 ครั้งก่อนเจองาน</li><li>ไม่บอกตรง ๆ ว่างานถัดไปคืออะไร ครูที่ไม่อ่านอาจไม่รู้จะเริ่มตรงไหน</li></ul>
+    <div class="cnt"><b>เริ่มงาน</b> กด 2 ครั้ง กดช่องต้องทำ แล้วกดงาน</div></div></div>
+</section>
+
+<!-- แบบ 3 -->
+<section class="sheet">
+  <p class="ttl"><span class="tag">แบบ 3</span>การ์ดสีสด</p><p class="lead">แรงบันดาลใจจากแอป Wallet และหน้าวันนี้ของ App Store งานแต่ละชิ้นเป็นการ์ดใหญ่ สีสวย</p>
+  <div class="lay"><div class="ph"><div class="sc">
+    <div class="tp"><p class="lt">สวัสดี ครูสมชาย</p></div><p class="lts">มี 3 งาน เหลืออีก 60 วัน ถึงกำหนดส่ง</p>
+    <div class="big g1"><div class="k">ถูกส่งกลับ ต้องแก้</div><div class="h">คู่มือ ว30207</div><div class="d">คะแนนรวมไม่ครบ 100 ดูหน้า 12</div><span class="pillb" style="color:#FF2D55">แก้ไข</span></div>
+    <div class="big g2"><div class="k">ยังไม่ได้ส่ง</div><div class="h">คู่มือ ว31101</div><div class="d">วิทยาศาสตร์กายภาพ ม.4</div><span class="pillb" style="color:#1D62F0">ส่งงาน</span></div>
+    <div class="big g3"><div class="k">ส่งได้แล้ว</div><div class="h">บันทึกหลังแผน ว30203</div><div class="d">ฟิสิกส์เพิ่มเติม 3 ทั้งเล่ม</div><span class="pillb" style="color:#5856D6">ส่งทั้งเล่ม</span></div>
+    </div>
+    <div class="tab"><div class="on"><svg><use href="#home"/></svg>วันนี้</div><div><svg><use href="#list"/></svg>งานของฉัน</div><div><svg><use href="#book"/></svg>คลังงาน</div><div><span class="bdg">7</span><svg><use href="#more"/></svg>เพิ่มเติม</div></div>
+  </div>
+  <div class="nt"><h2>สวยสะดุดตาที่สุด ดูมีชีวิตชีวา เหมือนแอปยุคใหม่</h2>
+    <h3>เด่นตรงไหน</h3><ul><li>ไม่เหมือนแบบฟอร์มเลย น่าใช้ที่สุด</li><li>ปุ่มชัด ไม่มีทางมองไม่เห็น</li><li>สีบอกชนิดงาน ครูจำได้เร็ว</li></ul>
+    <h3>ข้อด้อย</h3><ul><li>การ์ดใหญ่ เห็นได้จอละราว 3 งาน</li><li>สีเยอะ ผู้ใหญ่บางท่านอาจรู้สึกไม่เป็นทางการ</li><li>ในหน้าจอคอมต้องจัดเป็นตารางการ์ด ดูต่างจากมือถือ</li></ul>
+    <div class="cnt"><b>เริ่มงาน</b> กด 1 ครั้ง</div></div></div>
+</section>
+
+<!-- คอม -->
+<section class="sheet">
+  <p class="ttl">บนหน้าจอคอม แบบ 1 จะหน้าตาแบบนี้</p><p class="lead">แถบล่างของมือถือกลายเป็นแถบข้าง เหมือนแอปบน iPad และ Mac ไม่ได้เสียที่ไปกับสีเข้มเหมือนตอนนี้</p>
+  <div class="mac">
+    <div class="side">
+      <div class="br"><img src="../public/img/school-logo-sm.png">CW-Learn</div>
+      <div class="si on"><svg><use href="#home"/></svg>วันนี้</div>
+      <div class="si"><svg><use href="#list"/></svg>งานของฉัน<span class="num">5</span></div>
+      <div class="si"><svg><use href="#note"/></svg>บันทึกหลังแผน<span class="num">3</span></div>
+      <div class="si"><svg><use href="#book"/></svg>คลังงาน</div>
+      <div class="si"><svg><use href="#bell"/></svg>แจ้งเตือน<span class="num">7</span></div>
+      <div class="slab">เพิ่มเติม</div>
+      <div class="si"><svg><use href="#chart"/></svg>ผลการสอนของฉัน</div>
+      <div class="si"><svg><use href="#folder"/></svg>แฟ้มผลงาน PA</div>
+      <div class="si"><svg><use href="#more"/></svg>ตั้งค่าและอื่น ๆ</div>
+    </div>
+    <div class="mn">
+      <p class="lt">วันนี้</p>
+      <div><div class="gh" style="margin-top:0">ต้องทำ 3 งาน</div>
+        <div class="grp">
+          <div class="r"><span class="ic bg-r"><svg><use href="#pen"/></svg></span><div class="t"><b>แก้คู่มือ ว30207</b><span class="s">ฟิสิกส์ 1 ม.4 คะแนนรวมไม่ครบ 100 ดูหน้า 12</span></div><svg class="chev"><use href="#ch"/></svg></div>
+          <div class="r"><span class="ic bg-b"><svg><use href="#up"/></svg></span><div class="t"><b>ส่งคู่มือ ว31101</b><span class="s">วิทยาศาสตร์กายภาพ ม.4</span></div><svg class="chev"><use href="#ch"/></svg></div>
+          <div class="r"><span class="ic bg-i"><svg><use href="#note"/></svg></span><div class="t"><b>ส่งบันทึกหลังแผน ว30203</b><span class="s">ฟิสิกส์เพิ่มเติม 3 ม.5 ทั้งเล่ม</span></div><svg class="chev"><use href="#ch"/></svg></div>
+        </div>
+        <div class="gh">รอผู้ตรวจ</div>
+        <div class="grp"><div class="r"><span class="ic bg-o"><svg><use href="#clk"/></svg></span><div class="t"><b style="font-weight:500">แผน ว30203</b></div><span class="val">อยู่ที่ รอง ผอ.</span></div></div>
+        <div class="gh">เสร็จแล้ว</div>
+        <div class="grp"><div class="r"><span class="ic bg-g"><svg><use href="#chk"/></svg></span><div class="t"><b style="font-weight:500">คู่มือ ว30203</b></div><span class="val">ผ่าน 95 คะแนน</span></div></div>
+      </div>
+      <div><div class="ringc" style="flex-direction:column;text-align:center;padding:22px 16px"><div class="ring" style="width:130px;height:130px"><svg viewBox="0 0 86 86" width="130" height="130"><circle cx="43" cy="43" r="36" fill="none" stroke="#34C75933" stroke-width="12"/><circle cx="43" cy="43" r="36" fill="none" stroke="#34C759" stroke-width="12" stroke-linecap="round" stroke-dasharray="170 226" transform="rotate(-90 43 43)"/></svg><b style="font-size:30px">3/4</b></div><div class="h">ส่งแล้ว 3 จาก 4 งาน</div><div class="d">เหลืออีก <span class="o">60 วัน</span> ถึงกำหนดส่ง<br>30 ธ.ค. 2569</div></div></div>
+    </div>
+  </div>
+</section>
+
+<!-- ปรับได้ และส่งงาน -->
+<section class="sheet">
+  <p class="ttl">ส่วนที่ปรับได้ และการส่งงานในแนวเดียวกัน</p><p class="lead">หน้าแรกเน้นของสำคัญ ส่วนของอื่นครูเปิดเองได้ เหมือนหน้าการตั้งค่าของ iPhone</p>
+  <div class="two">
+    <div class="ph"><div class="nav"><span>เพิ่มเติม</span><b>ปรับหน้าตา</b><span style="width:60px"></span></div>
+      <div class="lab">แสดงบนหน้าแรก</div>
+      <div class="grp mini">
+        <div class="r"><div class="t"><b style="font-weight:400">วงแหวนความคืบหน้า</b></div><span class="sw"></span></div>
+        <div class="r"><div class="t"><b style="font-weight:400">งานที่รอผู้ตรวจ</b></div><span class="sw"></span></div>
+        <div class="r"><div class="t"><b style="font-weight:400">งานที่เสร็จแล้ว</b></div><span class="sw off"></span></div>
+        <div class="r"><div class="t"><b style="font-weight:400">เล่มใหม่ในคลังงาน</b></div><span class="sw off"></span></div>
+      </div>
+      <div class="lab">การแสดงผล</div>
+      <div class="grp mini">
+        <div class="r"><div class="t"><b style="font-weight:400">ตัวหนังสือใหญ่</b></div><span class="sw off"></span></div>
+        <div class="r"><div class="t"><b style="font-weight:400">โหมดกลางคืน</b></div><span class="sw off"></span></div>
+      </div>
+      <div class="lab">หน้าตาของระบบ</div>
+      <div class="grp mini"><div class="r"><div class="t"><b style="font-weight:400;color:var(--blue)">กลับไปใช้หน้าตาเดิม</b></div></div></div>
+      <div class="lab" style="margin-top:7px">ข้อมูลไม่เปลี่ยน สลับกลับมาได้ทุกเมื่อ</div>
+    </div>
+    <div class="ph"><div class="sc" style="opacity:.5"><p class="lt">วันนี้</p></div><div class="dim"></div>
+      <div class="shtp"><div class="nav"><span>ยกเลิก</span><b>ส่งคู่มือ ว31101</b><span style="width:48px"></span></div>
+        <div class="lab">วิทยาศาสตร์กายภาพ ม.4</div>
+        <div class="grp mini"><div class="r"><div class="t" style="flex:none;width:92px"><b style="font-weight:400">เลขที่บันทึก</b></div><span class="inl">วก. พิมพ์ตัวเลข /2569</span></div></div>
+        <div class="lab">ไฟล์ PDF มีปกและเนื้อหา</div>
+        <div class="grp mini"><div class="r"><span class="ic sq bg-b"><svg><use href="#note"/></svg></span><div class="t"><b style="font-weight:400;color:var(--blue)">เลือกไฟล์</b></div><svg class="chev"><use href="#ch"/></svg></div></div>
+        <div class="mini" style="margin-top:22px"><div class="bigbtn">ส่งงาน</div></div>
+        <div style="text-align:center;color:var(--blue);font-size:16.5px;margin-top:13px">บันทึกไว้ก่อน</div>
+      </div>
+    </div>
+    <div class="nt"><h2>ใช้งานง่าย แต่ไม่ได้ตัดอะไรทิ้ง</h2><ul><li>ปรับได้รายคน ใครอยากเห็นน้อยก็ปิด</li><li>มีปุ่มกลับไปหน้าตาเดิม</li><li>ส่งงานเป็นแผ่นเลื่อนขึ้นมาจากล่าง อยู่ในหน้าเดิม ไม่ต้องเปลี่ยนหน้า</li></ul></div>
+  </div>
+</section>
+</html>

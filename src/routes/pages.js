@@ -281,16 +281,16 @@ router.get('/', async (req, res) => {
   for (const w of warnings.slice(0, 3)) nextUp.push({ title: w, sub: 'แตะเพื่อตั้งค่าผู้ตรวจในรายชื่อผู้ใช้', href: '/admin/users', tone: 'wait' });
   if (inbox.length) nextUp.push({ title: `มีงานรอคุณลงนาม ${inbox.length} รายการ`, sub: 'แตะเพื่อเปิดงานรอตรวจ', href: '/inbox', tone: 'primary' });
   for (const s of returnedWorks) {
-    nextUp.push({ title: `${s.doc_type === 'manual' ? 'คู่มือ' : 'แผน'} ${s.subject_code} ถูกส่งกลับให้แก้ไข`, sub: lastReturn(s.id).slice(0, 90), href: `/s/${s.id}`, tone: 'back' });
+    nextUp.push({ title: `${s.doc_type === 'manual' ? 'คู่มือ' : 'แผน'} ${s.subject_code} ถูกส่งกลับให้แก้ไข`, sub: lastReturn(s.id).slice(0, 90), href: `/s/${s.id}`, tone: 'back', act: 'กดแก้ไข' });
   }
   // ส่งกลับทั้งเล่ม: แผ่นที่ผู้ตรวจบอกว่าไม่ต้องแก้ ไม่ต้องขึ้นเป็นงานค้าง (ครูกดส่งทั้งเล่มอีกครั้งในหน้ารายวิชา)
   for (const n of noteTodo.filter((x) => x.status === 'returned' && !lastReturn(x.id).startsWith(wf.BOOK_KEEP))) {
-    nextUp.push({ title: `บันทึกหลังแผน ${n.subject_code} ${planrange.label(n.plan_no)} ถูกส่งกลับ`, sub: lastReturn(n.id).slice(0, 90), href: `/s/${n.id}/edit`, tone: 'back' });
+    nextUp.push({ title: `บันทึกหลังแผน ${n.subject_code} ${planrange.label(n.plan_no)} ถูกส่งกลับ`, sub: lastReturn(n.id).slice(0, 90), href: `/s/${n.id}/edit`, tone: 'back', act: 'กดแก้ไข' });
   }
   if (req.ff.notebook) {
     for (const planId of new Set(noteTodo.filter((x) => x.status === 'returned').map((x) => x.parent_id))) {
       const n = noteTodo.find((x) => x.parent_id === planId);
-      nextUp.push({ title: `บันทึกหลังแผน ${n.subject_code} รอส่งทั้งเล่มอีกครั้ง`, sub: 'แก้แผ่นที่ต้องแก้แล้ว กดส่งทั้งเล่มในหน้ารายวิชา', href: `/s/${planId}#notes`, tone: 'back' });
+      nextUp.push({ title: `บันทึกหลังแผน ${n.subject_code} รอส่งทั้งเล่มอีกครั้ง`, sub: 'แก้แผ่นที่ต้องแก้แล้ว กดส่งทั้งเล่มในหน้ารายวิชา', href: `/s/${planId}#notes`, tone: 'back', act: 'กดส่งทั้งเล่ม' });
     }
   }
   const drafts = noteTodo.filter((x) => x.status === 'draft');
@@ -300,15 +300,16 @@ router.get('/', async (req, res) => {
       sub: `วิชา ${[...new Set(drafts.map((d) => d.subject_code))].join(' ')} แผนที่ ${drafts.map((d) => planrange.short(d.plan_no)).join(' ')} กดเพื่อส่งพร้อมกัน`,
       href: `/s/${drafts[0].parent_id}#notes`,
       tone: 'wait',
+      act: req.ff.notebook ? 'กดส่งทั้งเล่ม' : 'กดส่ง',
     });
   }
-  if (mainMissing) nextUp.push({ title: 'ยังไม่ได้เลือกวิชาหลักสำหรับส่งแผน', sub: 'แตะเพื่อเลือกวิชาหลัก แล้วส่งแผนการจัดการเรียนรู้', href: mainHref, tone: 'wait' });
+  if (mainMissing) nextUp.push({ title: 'ยังไม่ได้เลือกวิชาหลักสำหรับส่งแผน', sub: 'แตะเพื่อเลือกวิชาหลัก แล้วส่งแผนการจัดการเรียนรู้', href: mainHref, tone: 'wait', act: 'เลือกวิชาหลัก' });
   for (const r of subjects) {
     for (const type of r.needPlan ? ['plan', 'manual'] : ['manual']) {
       const s = r[type];
       const name = `${type === 'manual' ? 'คู่มือรายวิชา' : 'แผนการจัดการเรียนรู้'} ${r.code}`;
-      if (!s) nextUp.push({ title: `ยังไม่ได้ส่ง${name}`, sub: 'แตะเพื่อส่งเลย', href: newHref(type, r), tone: 'wait' });
-      else if (s.status === 'draft') nextUp.push({ title: `${name} ยังเป็นฉบับร่าง`, sub: 'แตะเพื่อตรวจแล้วกดส่ง', href: `/s/${s.id}`, tone: 'wait' });
+      if (!s) nextUp.push({ title: `ยังไม่ได้ส่ง${name}`, sub: 'แตะเพื่อส่งเลย', href: newHref(type, r), tone: 'wait', act: type === 'manual' ? 'กดส่งคู่มือ' : 'กดส่งแผน', deskSub: `${r.name} ${r.grade}` });
+      else if (s.status === 'draft') nextUp.push({ title: `${name} ยังเป็นฉบับร่าง`, sub: 'แตะเพื่อตรวจแล้วกดส่ง', href: `/s/${s.id}`, tone: 'wait', act: 'กดตรวจและส่ง', deskSub: `${r.name} ${r.grade}` });
     }
   }
   // ลายเซ็นครู (ฟังก์ชันเสริม sigfillauto signag): มีลายเซ็นแล้วเติมงานที่ยังว่างก่อน แล้วนับงานที่ยังไม่มีลายเซ็น

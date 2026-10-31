@@ -30,8 +30,8 @@
   const shown = items.filter((x) => !x.hide);
   const done = shown.filter((x) => x.st === 'ok').length;
 %>
-<div class="cklist<%= done === shown.length ? ' all-ok' : '' %>" data-precheck data-mode="<%= mode %>"<% if (form) { %> data-dup="<%= JSON.stringify(pc.dup) %>" data-min-pages="<%= pc.minPages %>"<%- oldPdf && oldPdf.mime === 'application/pdf' ? ' data-old-file="' + Number(oldPdf.id) + '"' : '' %><%- ff.blankcover ? ' data-blank' : '' %><%- ff.pdfonly ? ' data-pdfonly' : '' %><%- ff.precheckforce ? ' data-force' : '' %><% } %>>
-  <div class="ck-h"><%- icon('shield', 20) %><span>ก่อนส่ง ตรวจให้ครบ</span><span class="ckn" data-ck-count><%= done %>/<%= shown.length %></span></div>
+<div class="cklist<%= done === shown.length ? ' all-ok' : '' %><%= form && ff.formshort ? ' ck-short' : '' %>" data-precheck data-mode="<%= mode %>"<% if (form) { %> data-dup="<%= JSON.stringify(pc.dup) %>" data-min-pages="<%= pc.minPages %>"<%- oldPdf && oldPdf.mime === 'application/pdf' ? ' data-old-file="' + Number(oldPdf.id) + '"' : '' %><%- ff.blankcover ? ' data-blank' : '' %><%- ff.pdfonly ? ' data-pdfonly' : '' %><%- ff.precheckforce ? ' data-force' : '' %><% } %>>
+  <div class="ck-h"><%- icon('shield', 20) %><% if (form && ff.formshort) { %><span data-ck-left><%= done === shown.length ? 'ตรวจครบแล้ว พร้อมส่ง' : 'ก่อนส่ง เหลืออีก ' + (shown.length - done) + ' ข้อ' %></span><% } else { %><span>ก่อนส่ง ตรวจให้ครบ</span><% } %><span class="ckn" data-ck-count><%= done %>/<%= shown.length %></span></div>
   <% for (const x of items) { %>
     <div class="ck <%= x.st %>" data-ck="<%= x.k %>"<%- x.block ? ' data-block' : '' %><%- x.hide ? ' hidden' : '' %>>
       <span class="ckic" data-ck-ic><%- icon(ICON[x.st], 16) %></span>

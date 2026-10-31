@@ -1641,5 +1641,31 @@ tr.dr-dup td { background: var(--back-bg); }
 .af-sw .switch[aria-checked='true'] .track::after { left: 23px; }
 .af-none { padding: 14px; color: var(--muted); }
 /* ปลายทางของผลค้นหา: กระพริบสีเหลือง 3 ครั้ง แล้วคงกรอบไว้ให้เห็นว่าอันไหน */
+/* งานที่ต้องทำบนสุดของหน้าแรก (ฟังก์ชันเสริม hometodo) */
+.home-todo { margin-bottom: 16px; }
+.home-todo h2 { margin-bottom: 6px; }
+.ht-row { display: flex; align-items: center; gap: 12px; padding: 11px 0; border-top: 1px solid var(--line); color: var(--ink); }
+.ht-row:hover { text-decoration: none; background: var(--soft); }
+.ht-row .btn { flex: none; }
+.ht-dot { width: 11px; height: 11px; border-radius: 50%; flex: none; background: var(--primary); }
+.ht-dot.back { background: var(--back); }
+.ht-text { flex: 1; min-width: 0; display: flex; flex-direction: column; line-height: 1.4; }
+.ht-text > span { font-size: 0.88rem; color: var(--muted); overflow-wrap: anywhere; }
+.ht-more { display: block; padding-top: 10px; border-top: 1px solid var(--line); font-size: 0.92rem; }
+/* แจ้งเตือนแถบเดียว (ฟังก์ชันเสริม alertstrip) */
+.alert-strip { align-items: center; }
+.alert-strip:hover { text-decoration: none; }
+.alert-strip > div { min-width: 0; }
+.alert-strip > .btn { flex: none; min-width: 0; }
+.as-last { display: block; font-size: 0.88rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+/* ฟอร์มส่งงานแบบสั้น (ฟังก์ชันเสริม formshort) */
+.fs-subj { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; background: var(--soft); border-radius: var(--rs); padding: 11px 14px; margin-bottom: 14px; }
+.fs-subj[hidden] { display: none; }
+.fs-subj > div { flex: 1; min-width: 200px; }
+.form-grid.fs-one { grid-template-columns: minmax(0, 1fr); }
+.form-grid.fs-one .docno-in { max-width: 420px; }
+.fs-more { margin: 0 0 14px; }
+.fs-more > .field { padding: 0 14px; }
+.cklist.ck-short .ck.ok, .cklist.ck-short .ckn, .cklist.ck-short .ck-foot { display: none; }
 .find-hit { scroll-margin-top: 90px; animation: findhit 1s ease-in-out 3; border-radius: var(--rs); outline: 3px solid var(--wait); outline-offset: 3px; }
 @keyframes findhit { 50% { box-shadow: 0 0 0 4px var(--wait), 0 0 0 10px var(--wait-bg); background-color: var(--wait-bg); } }
