@@ -141,7 +141,7 @@
     <script>(function(){var b=document.querySelector('[data-lib]'),k=['<%- views.map((v) => v.key).join("','") %>'],v='';try{v=localStorage.getItem('plan-libview')||''}catch(e){}if(k.indexOf(v)<0)v=b.getAttribute('data-default');if(k.indexOf(v)<0)v=window.matchMedia('(max-width: 760px)').matches?'list':'shelf';b.setAttribute('data-view',v)})()</script>
     <div class="lib-books" data-lib-books><%- include('partials/lib_books', { books, groups }) %></div>
     <% if (more) { %>
-      <div class="lib-more"><a class="btn btn-ghost" href="<%= more %>" data-lib-more>โหลดเพิ่มอีก <%= Math.min(24, total - offset - books.length) %> เล่ม</a></div>
+      <div class="lib-more"><a class="btn btn-ghost" href="<%= more %>" data-lib-more>แสดงทั้งหมดอีก <%= total - offset - books.length %> เล่ม</a></div>
     <% } %>
   </div>
 <% } %>

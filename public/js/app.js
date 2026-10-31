@@ -1682,30 +1682,34 @@
         e.preventDefault();
         if (more.getAttribute('aria-busy') === 'true') return;
         more.setAttribute('aria-busy', 'true');
-        const label = more.textContent;
+        let label = more.textContent;
         more.textContent = 'กำลังโหลด';
         try {
-          const res = await fetch(more.getAttribute('href') + '&part=1', { headers: { 'X-Requested-With': 'XMLHttpRequest' } });
-          if (!res.ok) throw new Error('load');
-          const tpl = document.createElement('template');
-          tpl.innerHTML = await res.text();
-          // ชุดใหม่เริ่มด้วยกลุ่มสาระเดียวกับเล่มสุดท้าย ต่อแถวเดิม ไม่ขึ้นหัวกลุ่มซ้ำ
-          const box = lib.querySelector('[data-lib-books]');
-          const last = box.querySelector('.lib-grp:last-of-type');
-          const first = tpl.content.querySelector('.lib-grp');
-          if (last && first && last.dataset.dept === first.dataset.dept) {
-            last.querySelector('[data-lib-row]').append(...first.querySelector('[data-lib-row]').children);
-            first.remove();
+          // กดครั้งเดียวแสดงครบ: เบราว์เซอร์ขอทีละ 24 เล่มต่อกันจนหมด เซิร์ฟเวอร์ไม่ต้องทำงานหนักในคำขอเดียว · ขอไม่สำเร็จกลางทาง เล่มที่ได้แล้วยังอยู่ กดต่อจากเดิมได้
+          let href = more.getAttribute('href');
+          while (href) {
+            const res = await fetch(href + '&part=1', { headers: { 'X-Requested-With': 'XMLHttpRequest' } });
+            if (!res.ok) throw new Error('load');
+            const tpl = document.createElement('template');
+            tpl.innerHTML = await res.text();
+            // ชุดใหม่เริ่มด้วยกลุ่มสาระเดียวกับเล่มสุดท้าย ต่อแถวเดิม ไม่ขึ้นหัวกลุ่มซ้ำ
+            const box = lib.querySelector('[data-lib-books]');
+            const last = box.querySelector('.lib-grp:last-of-type');
+            const first = tpl.content.querySelector('.lib-grp');
+            if (last && first && last.dataset.dept === first.dataset.dept) {
+              last.querySelector('[data-lib-row]').append(...first.querySelector('[data-lib-row]').children);
+              first.remove();
+            }
+            box.appendChild(tpl.content);
+            href = res.headers.get('X-Lib-Next');
+            if (href) {
+              const left = Number(res.headers.get('X-Lib-Left')) || 0;
+              more.setAttribute('href', href);
+              label = 'แสดงทั้งหมดอีก ' + left + ' เล่ม';
+              more.textContent = 'กำลังโหลด เหลืออีก ' + left + ' เล่ม';
+            }
           }
-          box.appendChild(tpl.content);
-          const next = res.headers.get('X-Lib-Next');
-          const left = Number(res.headers.get('X-Lib-Left')) || 0;
-          if (next) {
-            more.setAttribute('href', next);
-            more.textContent = 'โหลดเพิ่มอีก ' + Math.min(24, left) + ' เล่ม';
-          } else {
-            more.parentElement.remove();
-          }
+          more.parentElement.remove();
         } catch {
           more.textContent = label;
           tell(NET_ERROR);

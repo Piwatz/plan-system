@@ -216,7 +216,7 @@ test('โหลดทีละ 24 เล่ม ปุ่มโหลดเพิ
   const page = (await t.get('/library?shelf=plan&year=2568&semester=2')).text;
   assert.equal((page.match(/<article class="lib-book">/g) || []).length, 24);
   assert.match(page, /ทั้งหมด <b>30<\/b> เล่ม/);
-  assert.match(page, /โหลดเพิ่มอีก 6 เล่ม/);
+  assert.match(page, /แสดงทั้งหมดอีก 6 เล่ม/);
   const href = /href="([^"]+)" data-lib-more/.exec(page)[1].replace(/&amp;/g, '&');
   const part = await t.get(href + '&part=1');
   assert.equal(part.status, 200);
