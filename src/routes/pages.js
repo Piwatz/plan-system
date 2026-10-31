@@ -8,6 +8,7 @@ const teaching = require('../teaching');
 const report = require('../reportsum');
 const { submitWindow } = require('./work');
 const library = require('../library');
+const features = require('../features');
 const homeorder = require('../homeorder');
 const planrange = require('../planrange');
 const skipwork = require('../skipwork');
@@ -397,7 +398,7 @@ async function libStripData(req) {
 router.get('/my', async (req, res) => {
   const t = term(req);
   const works = await q.all(
-    `SELECT ${wf.subCols('s')},
+    `SELECT ${wf.subCols('s')}, s.cover_ref,
        (SELECT COUNT(*) FROM submissions n WHERE n.parent_id = s.id AND n.doc_type = 'note') AS note_total,
        (SELECT COUNT(*) FROM submissions n WHERE n.parent_id = s.id AND n.doc_type = 'note' AND n.status = 'approved') AS note_done,
        (SELECT COUNT(*) FROM submissions n WHERE n.parent_id = s.id AND n.doc_type = 'note' AND n.status IN ('draft', 'returned')) AS note_todo,
@@ -424,8 +425,26 @@ router.get('/my', async (req, res) => {
     'SELECT DISTINCT academic_year AS year, semester FROM submissions WHERE teacher_id = ? ORDER BY academic_year DESC, semester DESC',
     req.me.id
   );
-  res.render('my', {
+  // แบบมีปก (ฟังก์ชันเสริม myshelf): รูปปกเดียวกับคลังงาน และขั้นอนุมัติจากแถบความคืบหน้าเดิม
+  const style = features.myStyle(req.settings);
+  let counts = null;
+  if (style) {
+    const reviews = await wf.reviewsMany(works.map((w) => w.id));
+    const steps = await wf.progressMany(works, { reviews });
+    const book = (w, kind) => ({ kind, shelfLabel: library.SHELF[kind].label, subject_code: w.subject_code, subject_name: w.subject_name, teacher_name: req.me.full_name, gradeText: library.gradeText(w.grade_level), termText: library.termText(w), open: true, cover: null });
+    works.forEach((w, i) => {
+      w.steps = steps[i];
+      w.book = { ...book(w, w.doc_type), cover: req.ff.library && w.status !== 'draft' ? library.coverUrl(w) : null };
+      w.noteBook = book(w, 'note');
+      const back = w.status === 'returned' ? [...reviews.get(w.id)].reverse().find((r) => r.action === 'return') : null;
+      w.return_note = back ? back.comment : '';
+    });
+    const has = (st) => works.filter((w) => w.status === st).length;
+    counts = { all: works.length, pending: has('pending'), returned: has('returned'), approved: has('approved'), draft: has('draft') };
+  }
+  res.render(style ? 'my_shelf' : 'my', {
     title: 'งานของฉัน',
+    counts,
     subjects,
     term: t,
     isCurrent: t.year === Number(req.settings.academic_year) && t.semester === Number(req.settings.semester),

@@ -1188,6 +1188,8 @@ router.get('/features', async (req, res) => {
     libView: features.libraryView(req.settings),
     coverStyles: features.COVER_STYLES,
     teachStyles: features.TEACH_STYLES,
+    myStyles: features.MY_STYLES,
+    myStyleNow: features.myStyle(req.settings) || 'old',
     showModes: library.SHOW_MODES,
     showRule: library.showRule(req.settings),
     showTeachers: req.ff.libshow
@@ -1298,6 +1300,19 @@ router.post('/teachstyle', async (req, res) => {
     await features.audit(req.me, `ตั้งแบบหน้ารายวิชาที่สอนบนมือถือ ${opt.label}`, 'teach_style');
   });
   done(req, res, '/admin/features#teachcards', 'บันทึกแบบหน้ารายวิชาที่สอนเรียบร้อย');
+});
+
+// แบบหน้างานของฉัน (ฟังก์ชันเสริม myshelf) มีผลกับทุกคนทันที
+router.post('/mystyle', async (req, res) => {
+  if (!req.ff.myshelf) return fail(req, res, '/admin/features', 'เปิดฟังก์ชันหน้างานของฉันแบบมีปกเล่มก่อน');
+  const opt = features.MY_STYLES.find((o) => o.key === String((req.body || {}).my_style || ''));
+  if (!opt) return fail(req, res, '/admin/features#myshelf', 'ไม่พบแบบที่เลือก');
+  if (opt.key === (features.myStyle(req.settings) || 'old')) return done(req, res, '/admin/features#myshelf', 'ไม่มีอะไรเปลี่ยน');
+  await q.tx(async () => {
+    await setSetting('my_style', opt.key);
+    await features.audit(req.me, `ตั้งแบบหน้างานของฉัน ${opt.label}`, 'my_style');
+  });
+  done(req, res, '/admin/features#myshelf', 'บันทึกแบบหน้างานของฉันเรียบร้อย');
 });
 
 // ดูตัวอย่างการจัดหน้าลงนามแบบหนึ่งจากเล่มจริง ไม่เปลี่ยนค่าที่ทุกคนใช้ ?web=bar หรือ ?pdf=summary · book = รหัสแผน (เล่ม)

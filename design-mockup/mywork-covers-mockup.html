@@ -1,0 +1,175 @@
+<!doctype html>
+<html lang="th"><head><meta charset="utf-8"><title>ตัวอย่างหน้างานของฉันแบบมีปก</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai+Looped:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#0C1626;--surface:#142139;--ink:#E9EFF8;--muted:#A3B3CA;--line:#25344F;--primary:#3D6BC0;--soft:#1B2D4D;--link:#8FB5F6;--accent:#F2B43A;--ok:#7FD4A2;--okbg:#163828;--wait:#F2C46B;--waitbg:#3A2E12;--back:#FF9C88;--backbg:#432019;--side:#08111F;--cv-plan:#1D3A66;--cv-manual:#17694F;--cv-note:#8E1B2C}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:#050A13;color:var(--ink);font:15px/1.45 'Noto Sans Thai Looped','Sarabun',sans-serif;padding:24px 26px 30px;width:1960px}
+.ttl{font-size:27px;font-weight:700;margin:0}.ttl i{font-style:normal;display:inline-grid;place-items:center;width:38px;height:38px;border-radius:50%;background:var(--accent);color:#2a1d00;margin-right:10px}
+.lead{color:var(--muted);font-size:17px;margin:4px 0 16px}
+.stage{display:flex;gap:26px;align-items:flex-start}
+/* กรอบจอคอม */
+.pc{width:1440px;flex:none;display:flex;background:var(--bg);border-radius:14px;border:1px solid var(--line);overflow:hidden;position:relative;min-height:900px}
+.side{width:230px;flex:none;background:var(--side);padding:16px 12px}
+.side .brand{display:flex;gap:9px;align-items:center;font-weight:700;font-size:17px;margin-bottom:18px}.side .brand img{width:42px}
+.side a{display:block;padding:9px 11px;border-radius:10px;color:var(--muted);font-weight:600;margin-bottom:3px}
+.side a.on{background:#1F3966;color:#fff}
+.main{flex:1;padding:24px 28px;min-width:0}
+/* กรอบมือถือ */
+.ph-wrap{flex:none;width:390px}
+.ph-cap{color:var(--muted);font-size:14px;margin:0 0 6px;font-weight:600}
+.ph{width:390px;background:var(--bg);border-radius:30px;border:8px solid #2a3448;overflow:hidden;position:relative}
+.ph .bar{display:flex;align-items:center;gap:9px;padding:11px 14px;background:var(--side);font-weight:700}.ph .bar img{width:30px}.ph .bar small{display:block;color:var(--muted);font-weight:400;font-size:12px}
+.ph .scr{padding:14px 12px 16px}
+.ph .nav{display:grid;grid-template-columns:repeat(5,1fr);background:var(--side);padding:9px 0;text-align:center;color:var(--muted);font-size:12px}
+/* หัวหน้า */
+.head{display:flex;justify-content:space-between;align-items:flex-start;gap:14px;margin-bottom:14px}
+h1{font-size:27px;margin:0}.sub{color:var(--muted)}
+.ph .head{display:block}.ph h1{font-size:22px}.ph .acts{margin-top:9px}
+.acts{display:flex;gap:8px;flex-wrap:wrap}
+.btn{display:inline-flex;justify-content:center;align-items:center;gap:5px;border-radius:10px;padding:8px 13px;font-weight:600;font-size:14px;background:var(--soft);color:var(--ink);border:1px solid var(--line);white-space:nowrap;text-decoration:none}
+.btn.pri{background:var(--primary);border-color:var(--primary);color:#fff}.btn.yel{background:var(--accent);border-color:var(--accent);color:#2a1d00}.btn.red{background:var(--back);border-color:var(--back);color:#3b100a}
+.btn.block{display:flex;width:100%}
+.select{border:1px solid var(--line);border-radius:10px;padding:8px 13px;font-weight:600;font-size:14px;background:var(--bg)}
+/* ตัวเลขสรุป */
+.sum{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:16px}
+.sum div{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:9px 13px;display:flex;align-items:baseline;gap:8px;font-weight:600;color:var(--muted);font-size:14px}
+.sum b{font-size:23px;color:var(--ink)}.sum .w b{color:var(--wait)}.sum .r b{color:var(--back)}.sum .o b{color:var(--ok)}
+.ph .sum{gap:6px}.ph .sum div{display:block;text-align:center;padding:6px 2px;font-size:12px}.ph .sum b{display:block;font-size:20px;line-height:1.2}
+/* ปก */
+.cover{display:block;position:relative;width:100%;aspect-ratio:210/297;border-radius:4px;overflow:hidden;box-shadow:2px 4px 10px rgba(0,0,0,.45);container-type:inline-size;text-align:center;line-height:1.3;color:#fff;flex:none}
+.cover>span{display:flex;flex-direction:column;align-items:center}
+.cv-d{background:var(--c)}.k-plan{--c:var(--cv-plan)}.k-manual{--c:var(--cv-manual)}.k-note{--c:var(--cv-note)}
+.cv-top{padding:7cqw 6cqw 2cqw;gap:2cqw;font-size:4.2cqw;font-weight:600}.cv-top img{width:24cqw}
+.cv-kind{padding:4cqw 6cqw;gap:3cqw}.cv-kind b{font-size:7.6cqw}.cv-kind i{display:block;width:20cqw;height:1cqw;background:var(--accent)}
+.cv-mid{padding:1cqw 6cqw;gap:1cqw;font-size:5cqw}.cv-mid b{font-size:6.6cqw}
+.cv-bot{position:absolute;left:0;right:0;bottom:0;padding:3cqw 5cqw;background:rgba(0,0,0,.2);font-size:4.4cqw}
+/* ปกรูปจากไฟล์ของครู (จำลองรูปหน้าแรกของ PDF) */
+.img1{background:linear-gradient(160deg,#fff 0 58%,#cfe4ff 58% 72%,#3d7bd9 72%);color:#10264a}.cover>.in{display:block;height:100%}.img1>.in{padding:9cqw 7cqw}
+.img1 b{display:block;font-size:10cqw;line-height:1.2}.img1 u{display:block;text-decoration:none;font-size:6cqw;margin-top:4cqw}
+.img1 em{display:block;font-style:normal;width:44cqw;height:44cqw;border-radius:50%;border:2cqw solid #3d7bd9;margin:7cqw auto 0;position:relative}
+.img1 em:after{content:'';position:absolute;inset:14cqw;border-radius:50%;background:#f2b43a}
+.img2{background:linear-gradient(180deg,#143f2f,#0d2b24);color:#fff}.img2>.in{padding:12cqw 7cqw}
+.img2 b{display:block;font-size:10cqw;line-height:1.2;color:#ffe08a}.img2 u{display:block;text-decoration:none;font-size:6cqw;margin-top:5cqw}
+.img2 em{display:block;font-style:normal;height:30cqw;margin-top:9cqw;background:repeating-linear-gradient(115deg,#ffe08a55 0 2cqw,transparent 2cqw 7cqw)}
+.nocover{display:grid;place-items:center;width:100%;aspect-ratio:210/297;border:2px dashed var(--line);border-radius:6px;color:var(--muted);font-size:12.5px;text-align:center;padding:8px;flex:none}
+/* ป้าย */
+.badge{display:inline-block;border-radius:99px;padding:2px 10px;font-size:13px;font-weight:600;line-height:1.35}
+.b-w{background:var(--waitbg);color:var(--wait);border:1px solid #6b5420}.b-r{background:var(--backbg);color:var(--back);border:1px solid #7a3a2c}.b-o{background:var(--okbg);color:var(--ok);border:1px solid #2a6146}.b-g{background:var(--soft);color:var(--muted)}
+.score{font-size:13px;color:var(--muted)}
+.links{display:flex;flex-wrap:wrap;gap:3px 13px;font-size:13px;font-weight:600}.links a{color:var(--link);text-decoration:none;white-space:nowrap}
+/* ขั้นอนุมัติแบบจุด */
+.dots{display:flex;align-items:center;gap:0}.dots s{width:13px;height:13px;border-radius:50%;background:var(--soft);border:2px solid #3a4c6e;flex:none}.dots q{quotes:none;flex:1;height:2px;background:#3a4c6e;max-width:26px}
+.dots s.d{background:var(--ok);border-color:var(--ok)}.dots q.d{background:var(--ok)}.dots s.n{background:var(--wait);border-color:var(--wait);box-shadow:0 0 0 3px #f2c46b33}.dots s.x{background:var(--back);border-color:var(--back);box-shadow:0 0 0 3px #ff9c8833}
+.where{font-size:13px;color:var(--muted)}.where b{color:var(--ink);font-weight:600}
+/* แบบ ก */
+.subj{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:14px 16px 16px;margin-bottom:14px}
+.subj>h2{font-size:19px;margin:0 0 12px;display:flex;gap:8px;align-items:center}
+.g{font-size:13px;background:var(--soft);color:var(--link);border-radius:8px;padding:1px 9px;font-weight:600}
+.shelf{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+.tile{display:flex;gap:13px;background:var(--bg);border:1px solid var(--line);border-radius:12px;padding:12px}
+.tile .cw{width:104px;flex:none}.tile .bd{display:flex;flex-direction:column;gap:6px;min-width:0;flex:1}
+.tile .bd>b{font-size:15.5px;line-height:1.3}.tile .bd .btn{margin-top:auto}
+.tile.r{border-color:var(--back)}
+.ph .subj{padding:12px}.ph .shelf{grid-template-columns:1fr;gap:9px}.ph .tile .cw{width:88px}
+/* แบบ ข */
+.chips{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px}.chips span{border:1px solid var(--line);border-radius:99px;padding:4px 13px;font-weight:600;font-size:13.5px;color:var(--muted)}.chips .on{background:var(--primary);border-color:var(--primary);color:#fff}
+.gridb{display:grid;grid-template-columns:repeat(4,1fr);gap:20px 18px}
+.book{min-width:0}.book .cover{box-shadow:3px 6px 14px rgba(0,0,0,.5)}.book.sel .cover{outline:3px solid var(--accent);outline-offset:3px}
+.book .t{margin-top:9px;font-weight:600;font-size:14.5px;line-height:1.3}.book .m{color:var(--muted);font-size:13px;margin-bottom:5px}
+.ph .gridb{grid-template-columns:repeat(2,1fr);gap:16px 14px}
+.drawer{width:390px;flex:none;background:var(--surface);border-left:1px solid var(--line);padding:18px;display:flex;flex-direction:column;gap:11px}
+.drawer .top{display:flex;gap:13px}.drawer .top .cw{width:112px;flex:none}.drawer h3{margin:0;font-size:18px;line-height:1.3}
+.ph .sheet{position:relative;margin:0;background:var(--surface);border-radius:20px 20px 0 0;padding:16px 14px;display:flex;flex-direction:column;gap:11px}
+.ph .sheet:before{content:'';display:block;width:44px;height:4px;border-radius:2px;background:#3a4c6e;margin:-6px auto 2px}
+.ph .sheet .top{display:flex;gap:12px}.ph .sheet .top .cw{width:90px;flex:none}.ph .sheet h3{margin:0;font-size:17px;line-height:1.3}
+.dim{height:120px;background:linear-gradient(#0C1626,#050a13);color:var(--muted);display:grid;place-items:center;font-size:13px}
+.tl{list-style:none;margin:0;padding:0}.tl li{position:relative;padding:0 0 11px 24px;font-size:13.5px;line-height:1.35}
+.tl li:before{content:'';position:absolute;left:0;top:3px;width:13px;height:13px;border-radius:50%;background:var(--soft);border:2px solid #3a4c6e}
+.tl li:after{content:'';position:absolute;left:6px;top:17px;bottom:0;width:2px;background:#3a4c6e}.tl li:last-child:after{display:none}.tl li:last-child{padding-bottom:0}
+.tl li.d:before{background:var(--ok);border-color:var(--ok)}.tl li.d:after{background:var(--ok)}.tl li.n:before{background:var(--wait);border-color:var(--wait);box-shadow:0 0 0 3px #f2c46b33}
+.tl li.n b{color:var(--wait)}.tl small{display:block;color:var(--muted);font-size:12.5px}
+.sect{font-weight:700;font-size:14px;color:var(--muted);margin-top:2px}
+/* แบบ ค */
+.rowh{font-size:18px;font-weight:700;margin:18px 0 8px;display:flex;gap:8px;align-items:center}.rowh:first-of-type{margin-top:0}
+.wrow{display:grid;grid-template-columns:78px 250px 1fr 300px;gap:18px;align-items:center;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:11px 14px;margin-bottom:8px}
+.wrow.r{border-color:var(--back)}
+.wrow .inf{display:flex;flex-direction:column;gap:5px;align-items:flex-start}.wrow .inf>b{font-size:15.5px;line-height:1.3}
+.path{display:flex;align-items:flex-start}.path div{flex:1;text-align:center;position:relative;font-size:12px;color:var(--muted);line-height:1.25;padding:0 2px}
+.path div:before{content:'';display:block;width:16px;height:16px;border-radius:50%;background:var(--soft);border:2px solid #3a4c6e;margin:0 auto 5px;position:relative;z-index:1}
+.path div:after{content:'';position:absolute;top:7px;left:-50%;width:100%;height:2px;background:#3a4c6e}.path div:first-child:after{display:none}
+.path .d:before{background:var(--ok);border-color:var(--ok)}.path .d:after,.path .n:after,.path .x:after{background:var(--ok)}
+.path .n{color:var(--wait);font-weight:700}.path .n:before{background:var(--wait);border-color:var(--wait);box-shadow:0 0 0 4px #f2c46b33}
+.path .x{color:var(--back);font-weight:700}.path .x:before{background:var(--back);border-color:var(--back);box-shadow:0 0 0 4px #ff9c8833}
+.wrow .act{display:flex;flex-direction:column;gap:7px;align-items:flex-end}
+.ph .wrow{grid-template-columns:70px 1fr;gap:10px 12px;padding:11px}.ph .wrow .path,.ph .wrow .act,.ph .wrow .full{grid-column:1/-1}.ph .wrow .act{align-items:stretch}.ph .path div{font-size:10.5px}
+</style></head><body>
+<div id="app"></div>
+<script>
+var LOGO='../public/img/school-logo.png';
+var STEPS=['ครูส่งงาน','หัวหน้ากลุ่มสาระ','หัวหน้างานส่งเสริมฯ','หัวหน้ากลุ่มวิชาการ','รองผู้อำนวยการ','ผู้อำนวยการ'];
+var NAMES=['นายสมมติ ใจดี','นางตัวอย่าง รักเรียน','นายทดลอง ตั้งใจ','นางสมมุติ เรียนดี','นายจำลอง มั่นคง','นางสาวสมมติ ชัยชนะ'];
+var DATES=['20 ต.ค.','22 ต.ค.','25 ต.ค.','','',''];
+var W={
+ p1:{type:'plan',st:'w',at:3,score:'98/100 ดีมาก',img:1,code:'ว30204',name:'ฟิสิกส์ 4',grade:'ม.5',txt:'รอหัวหน้ากลุ่มบริหารงานวิชาการ'},
+ m1:{type:'manual',st:'w',at:3,score:'97/100 ดีมาก',img:2,code:'ว30204',name:'ฟิสิกส์ 4',grade:'ม.5',txt:'รอหัวหน้ากลุ่มบริหารงานวิชาการ'},
+ n1:{type:'note',total:3,done:2,code:'ว30204',name:'ฟิสิกส์ 4',grade:'ม.5'},
+ m2:{type:'manual',st:'o',at:6,score:'98/100 ดีมาก',img:0,code:'ว30208',name:'ฟิสิกส์ 2',grade:'ม.4',txt:'อนุมัติแล้ว'},
+ m3:{type:'manual',st:'r',at:1,score:'',img:0,code:'ว32103',name:'วิทยาศาสตร์กายภาพ (ฟิสิกส์)',grade:'ม.5',txt:'ส่งกลับแก้ไข',why:'หัวหน้ากลุ่มสาระส่งกลับ เพิ่มหน้าปกในไฟล์'}
+};
+var KIND={plan:'แผนการจัดการเรียนรู้',manual:'คู่มือรายวิชา',note:'บันทึกหลังแผน'};
+var SUBJ=[
+ {code:'ว30204',name:'ฟิสิกส์ 4',grade:'ม.5',plan:W.p1,manual:W.m1,note:W.n1},
+ {code:'ว30208',name:'ฟิสิกส์ 2',grade:'ม.4',plan:null,manual:W.m2,note:null},
+ {code:'ว32103',name:'วิทยาศาสตร์กายภาพ (ฟิสิกส์)',grade:'ม.5',plan:null,manual:W.m3,note:null}
+];
+function cover(w){
+ if(w.img===1)return '<span class="cover img1"><span class="in"><b>แผนการจัดการเรียนรู้</b><u>'+w.name+'</u><em></em></span></span>';
+ if(w.img===2)return '<span class="cover img2"><span class="in"><b>คู่มือรายวิชา</b><u>'+w.code+' '+w.name+'</u><em></em></span></span>';
+ return '<span class="cover cv-d k-'+w.type+'"><span class="cv-top"><img src="'+LOGO+'" alt="">โรงเรียนชานุมานวิทยาคม</span><span class="cv-kind"><b>'+KIND[w.type]+'</b><i></i></span><span class="cv-mid">รหัสวิชา '+w.code+'<b>'+w.name+'</b></span><span class="cv-bot">ครูผู้สอน นายสมมติ ใจดี</span></span>';
+}
+function badge(w){return '<span class="badge b-'+w.st+'">'+w.txt+'</span>'}
+function dots(w){var h='<div class="dots">';for(var i=0;i<6;i++){var c=w.st==='r'&&i===w.at?'x':i<w.at?'d':i===w.at?'n':'';if(i)h+='<q class="'+(i<=w.at?'d':'')+'"></q>';h+='<s class="'+c+'"></s>'}return h+'</div>'}
+function where(w){
+ if(w.st==='o')return '<div class="where"><b>ผ่านครบทุกขั้นแล้ว</b></div>';
+ if(w.st==='r')return '<div class="where" style="color:var(--back)">'+w.why+'</div>';
+ return '<div class="where">ถึงขั้นที่ '+(w.at+1)+' จาก 6 ตอนนี้อยู่ที่ <b>'+STEPS[w.at]+'</b></div>';
+}
+function main(w,block){var c=block?' block':'';return w.st==='r'?'<a class="btn red'+c+'">แก้ไขแล้วส่งใหม่</a>':'<a class="btn'+c+'">ดูรายละเอียด</a>'}
+function links(w){var f=w.type==='plan'?'เปิดไฟล์แผน':'เปิดไฟล์คู่มือ';return w.st==='r'?'<div class="links"><a>ดูรายละเอียด</a><a>'+f+'</a></div>':'<div class="links"><a>พิมพ์บันทึกข้อความ</a><a>พิมพ์แบบประเมิน</a><a>'+f+'</a></div>'}
+function score(w){return w.score?'<div class="score">คะแนน '+w.score+'</div>':''}
+function head(){return '<div class="head"><div><h1>งานของฉัน</h1><div class="sub">แตะปกเล่มเพื่อดูรายละเอียดและดูว่าอนุมัติถึงใครแล้ว</div></div><div class="acts"><span class="select">ภาคเรียนที่ 2/2569</span><a class="btn">ส่งคู่มือรายวิชา</a></div></div>'+
+ '<div class="sum"><div>งานทั้งหมด <b>4</b></div><div class="w">กำลังตรวจ <b>2</b></div><div class="r">ต้องแก้ไข <b>1</b></div><div class="o">ผ่านครบ <b>1</b></div></div>'}
+/* แบบ ก */
+function tileA(w){return '<article class="tile '+(w.st==='r'?'r':'')+'"><div class="cw">'+cover(w)+'</div><div class="bd"><b>'+KIND[w.type]+'</b><div>'+badge(w)+'</div>'+score(w)+dots(w)+where(w)+main(w,1)+links(w)+'</div></article>'}
+function noteA(s){var n=s.note;if(!n)return '<article class="tile"><div class="cw"><div class="nocover">ยังไม่มี</div></div><div class="bd"><b>บันทึกหลังแผน</b><div class="where">เขียนได้หลังจากส่งแผนการจัดการเรียนรู้ของวิชานี้แล้ว</div></div></article>';
+ return '<article class="tile"><div class="cw">'+cover(n)+'</div><div class="bd"><b>บันทึกหลังแผน</b><div class="where"><b>'+n.total+' ฉบับ</b> ลงนามครบ '+n.done+'</div><a class="btn yel block">เขียนบันทึก</a><div class="links"><a>ดูทั้งหมด</a><a>พิมพ์ทั้งเล่ม</a></div></div></article>'}
+function noPlanA(){return '<article class="tile"><div class="cw"><div class="nocover">ไม่ต้องส่ง</div></div><div class="bd"><b>แผนการจัดการเรียนรู้</b><div class="where">ไม่ต้องส่ง ส่งแผนเฉพาะวิชาหลัก</div></div></article>'}
+function viewA(phone){var h=head();SUBJ.forEach(function(s){h+='<section class="subj"><h2>'+s.code+' '+s.name+' <span class="g">'+s.grade+'</span></h2><div class="shelf">'+(s.plan?tileA(s.plan):(phone?'':noPlanA()))+tileA(s.manual)+(phone&&!s.note?'':noteA(s))+'</div>'+(phone&&!s.plan?'<div class="where" style="margin-top:8px">แผนการจัดการเรียนรู้ ไม่ต้องส่ง ส่งแผนเฉพาะวิชาหลัก</div>':'')+'</section>'});return h}
+/* แบบ ข */
+function bookB(w,sel){var t=w.type==='note'?'<span class="badge b-g">'+w.total+' ฉบับ ลงนามครบ '+w.done+'</span>':badge(w);return '<article class="book '+(sel?'sel':'')+'">'+cover(w)+'<div class="t">'+KIND[w.type]+'</div><div class="m">'+w.code+' '+w.name+' '+w.grade+'</div>'+t+'</article>'}
+function chips(){return '<div class="chips"><span class="on">ทั้งหมด</span><span>แผน</span><span>คู่มือ</span><span>บันทึกหลังแผน</span><span>ต้องแก้ไข</span></div>'}
+function gridB(sel){return '<div class="gridb">'+[W.p1,W.m1,W.n1,W.m2,W.m3].map(function(w,i){return bookB(w,sel&&i===0)}).join('')+'</div>'}
+function timeline(w){var h='<ul class="tl">';STEPS.forEach(function(s,i){var c=i<w.at?'d':i===w.at?'n':'';h+='<li class="'+c+'"><b>'+s+'</b>'+(i<w.at?'<small>'+NAMES[i]+(i?' ผ่านเมื่อ ':' ส่งเมื่อ ')+DATES[i]+' 2569</small>':i===w.at?'<small>อยู่ขั้นนี้ รอลงนาม</small>':'')+'</li>'});return h+'</ul>'}
+function panelB(w){return '<div class="top"><div class="cw">'+cover(w)+'</div><div><h3>'+KIND[w.type]+'</h3><div class="m" style="color:var(--muted);margin:3px 0 7px">'+w.code+' '+w.name+' '+w.grade+'</div>'+badge(w)+score(w)+'</div></div><div class="sect">อนุมัติถึงใครแล้ว</div>'+timeline(w)+'<a class="btn pri block">ดูรายละเอียด</a><a class="btn block">เปิดไฟล์แผน</a><a class="btn block">พิมพ์บันทึกข้อความ</a><a class="btn block">พิมพ์แบบประเมิน</a>'}
+/* แบบ ค */
+function pathC(w){var h='<div class="path">';STEPS.forEach(function(s,i){var c=w.st==='r'&&i===w.at?'x':i<w.at?'d':i===w.at?'n':'';if(w.st==='o')c='d';h+='<div class="'+c+'">'+s+'</div>'});return h+'</div>'}
+function rowC(w){if(w.type==='note')return '<article class="wrow"><div>'+cover(w)+'</div><div class="inf"><b>บันทึกหลังแผน</b><div class="where"><b>'+w.total+' ฉบับ</b> ลงนามครบ '+w.done+'</div></div><div class="where full">กด ดูทั้งหมด เพื่อดูสถานะของแต่ละฉบับ</div><div class="act"><a class="btn yel">เขียนบันทึก</a><div class="links"><a>ดูทั้งหมด</a><a>พิมพ์ทั้งเล่ม</a></div></div></article>';
+ return '<article class="wrow '+(w.st==='r'?'r':'')+'"><div>'+cover(w)+'</div><div class="inf"><b>'+KIND[w.type]+'</b>'+badge(w)+score(w)+'</div>'+pathC(w)+'<div class="act">'+main(w)+links(w)+'</div></article>'}
+function viewC(){var h=head();SUBJ.forEach(function(s){h+='<div class="rowh">'+s.code+' '+s.name+' <span class="g">'+s.grade+'</span></div>'+(s.plan?rowC(s.plan):'')+rowC(s.manual)+(s.note?rowC(s.note):'')});return h}
+/* กรอบ */
+function pcFrame(inner,extra){return '<div class="pc"><nav class="side"><div class="brand"><img src="'+LOGO+'" alt="">CW-PLAN</div><a>หน้าหลัก</a><a>รายวิชาที่สอน</a><a class="on">แผนและคู่มือของฉัน</a><a>บันทึกหลังแผน</a><a>ผลการสอนของฉัน</a><a>แฟ้มผลงาน PA</a><a>การแจ้งเตือน</a><a>งานรอตรวจ</a><a>สถานะกลุ่มสาระ</a><a>ทะเบียนงาน</a><a>คลังงานการจัดการเรียนรู้</a></nav><div class="main">'+inner+'</div>'+(extra||'')+'</div>'}
+function phFrame(inner,cap){return '<div class="ph-wrap"><p class="ph-cap">'+cap+'</p><div class="ph"><div class="bar"><img src="'+LOGO+'" alt=""><div>CW-PLAN<small>ภาคเรียนที่ 2/2569</small></div></div><div class="scr">'+inner+'</div><div class="nav"><span>หน้าแรก</span><span>รอตรวจ</span><span>ส่งงาน</span><span>ผู้ดูแล</span><span>ฉัน</span></div></div></div>'}
+var v=(new URLSearchParams(location.search).get('v')||'A').toUpperCase();
+var T={A:['ก','ชั้นปกแยกรายวิชา','วิชาละ 1 กล่องเหมือนเดิม ข้างในเป็นปก 3 เล่มเรียงกัน ปุ่มครบเห็นทันที จุดสีบอกว่าอนุมัติถึงขั้นไหน'],
+ B:['ข','ชั้นหนังสือ แตะปกแล้วเปิดแผงรายละเอียด','หน้าโล่ง เห็นปกใหญ่เหมือนคลังงาน แตะเล่มไหน แผงเปิดขึ้นมาบอกว่าอนุมัติถึงใคร และมีปุ่มครบ เพิ่มการแตะ 1 ครั้ง'],
+ C:['ค','แถวยาว เห็นเส้นทางอนุมัติเต็ม','งานละ 1 แถว เห็นชื่อทุกขั้นโดยไม่ต้องแตะ แต่ปกเล็กกว่าและหน้ายาวกว่า']}[v];
+var out='<p class="ttl"><i>'+T[0]+'</i>'+T[1]+'</p><p class="lead">'+T[2]+' (ข้อมูลสมมติ ปกสีน้ำเงินขาวและเขียวเข้มแทนรูปหน้าแรกจากไฟล์ครู ปกที่มีตราคือปกที่ระบบวาด)</p>';
+if(v==='A')out+='<div class="stage">'+pcFrame(viewA(false))+phFrame(viewA(true),'มือถือ')+'</div>';
+if(v==='B')out+='<div class="stage">'+pcFrame(head()+chips()+gridB(true),'<aside class="drawer">'+panelB(W.p1)+'</aside>')+'<div style="display:flex;flex-direction:column;gap:18px">'+phFrame(head()+chips()+gridB(false),'มือถือ')+'</div>'+phFrame('<div class="dim">หน้าชั้นหนังสืออยู่ด้านหลัง</div><div class="sheet">'+panelB(W.p1)+'</div>','มือถือ หลังแตะปก')+'</div>';
+if(v==='C')out+='<div class="stage">'+pcFrame(viewC())+phFrame(viewC(),'มือถือ')+'</div>';
+document.getElementById('app').innerHTML=out;
+if(v==='B')document.body.style.width='2360px';
+</script>
+</body></html>

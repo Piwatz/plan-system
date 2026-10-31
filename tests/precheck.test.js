@@ -288,6 +288,7 @@ test('คู่มือใช้เลขบันทึกข้อควา�
 });
 
 test('หน้าแผนและคู่มือของฉันมีปุ่มพิมพ์ในแถวงานที่ส่งแล้ว ปิดสวิตช์แล้วหาย', async () => {
+  await db.setSetting('ff_myshelf', '0');
   const w = await db.q.get(
     "SELECT s.id, u.username FROM submissions s JOIN users u ON u.id = s.teacher_id WHERE s.subject_code = 'ว39011' AND s.status <> 'draft'"
   );
@@ -369,6 +370,7 @@ test('เลขที่บันทึกข้อความ: ผู้ดู
 });
 
 test('หน้างานของฉันบนมือถือเป็นกล่องสีตามสถานะ ปุ่มหลักปุ่มเดียว ปิดสวิตช์แล้วเหลือตาราง (mycards)', async () => {
+  await db.setSetting('ff_myshelf', '0');
   const w = await db.q.get(
     "SELECT s.id, u.username FROM submissions s JOIN users u ON u.id = s.teacher_id WHERE s.subject_code = 'ว39011' AND s.status <> 'draft'"
   );

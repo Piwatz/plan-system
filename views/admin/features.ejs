@@ -138,6 +138,21 @@
       </section>
     <% } %>
 
+    <% if (ff.myshelf) { %>
+      <section class="card" id="myshelf">
+        <h2>แบบหน้างานของฉัน</h2>
+        <p class="muted small">ใช้กับหน้างานของฉันของครูทุกคน ทั้งจอคอมและมือถือ ปกดึงจากคลังงาน เปลี่ยนเมื่อไรก็ได้ มีผลกับทุกคนทันที</p>
+        <form method="post" action="/admin/mystyle" data-confirm="เปลี่ยนแบบหน้างานของฉัน มีผลกับทุกคนทันที" data-ok-label="บันทึก">
+          <div class="field">
+            <% for (const o of myStyles) { %>
+              <label class="check"><input type="radio" name="my_style" value="<%= o.key %>" <%= myStyleNow === o.key ? 'checked' : '' %>> <%= o.label %></label>
+            <% } %>
+          </div>
+          <button class="btn btn-primary" type="submit">บันทึกแบบหน้างานของฉัน</button>
+        </form>
+      </section>
+    <% } %>
+
     <section class="card" id="phrases">
       <h2>ประโยคสำเร็จรูป</h2>
       <p class="muted small">ครูแตะเลือกในหน้าเขียนบันทึกหลังแผน ใส่ [ ] ตรงคำที่ครูต้องแก้เอง เช่น ตัวเลข หรือชื่อเรื่อง</p>

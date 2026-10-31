@@ -1,0 +1,15 @@
+<%# จุดขั้นอนุมัติของงานชิ้นเดียวในหน้างานของฉัน จุดแรกคือครูส่งงาน จุดถัดไปมาจาก wf.progressMany · แต่ละงานเห็นบรรทัดบอกว่าถึงใครแล้ว %>
+<% const all = w.steps || []; const cur = all.findIndex((st) => st.state === 'current'); const back = all.find((st) => st.state === 'returned'); const stateText = { done: 'ผ่านแล้ว', skipped: 'ข้ามขั้นนี้', current: 'อยู่ขั้นนี้', returned: 'ส่งกลับให้แก้ไข', waiting: 'ยังไม่ถึง' }; %>
+<div class="myc-dots">
+  <i class="<%= w.status === 'draft' ? '' : 'd' %>" title="ครูส่งงาน"></i>
+  <% for (const st of all) { const c = st.state === 'done' || st.state === 'skipped' ? 'd' : st.state === 'current' ? 'n' : st.state === 'returned' ? 'x' : ''; %>
+    <u class="<%= c === 'd' || c === 'n' || c === 'x' ? 'd' : '' %>"></u><i class="<%= c %>" title="<%= st.label %> <%= stateText[st.state] %>"></i>
+  <% } %>
+</div>
+<div class="myc-where">
+  <% if (w.status === 'draft') { %>ยังไม่ได้ส่ง เป็นฉบับร่าง
+  <% } else if (w.status === 'approved') { %><b>ผ่านครบทุกขั้นแล้ว</b>
+  <% } else if (w.status === 'returned') { %><span class="myc-back"><%= back ? back.label + ' ' : '' %>ส่งกลับให้แก้ไข<% if (w.return_note) { %> <%= w.return_note %><% } %></span>
+  <% } else if (cur >= 0) { const who = all[cur].people.length <= 2 ? all[cur].people.map((u) => u.full_name).join(' และ ') : ''; %>ถึงขั้นที่ <%= cur + 2 %> จาก <%= all.length + 1 %> ตอนนี้อยู่ที่ <b><%= all[cur].label %></b><% if (who) { %> (<%= who %>)<% } %>
+  <% } %>
+</div>

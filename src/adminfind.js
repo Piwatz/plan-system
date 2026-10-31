@@ -31,6 +31,7 @@ const PLACES = [
   { title: 'มุมมองเริ่มต้นของคลังงาน', where: 'ฟังก์ชันเสริม', href: '/admin/features#libview', desc: 'ชั้นหนังสือ หรือรายการ', ff: 'library', words: 'คลัง' },
   { title: 'งานที่แสดงในคลังงาน', where: 'ฟังก์ชันเสริม', href: '/admin/features#libshow', desc: 'เลือกว่าเล่มไหนขึ้นในคลัง', ff: 'libshow', words: 'คลัง' },
   { title: 'แบบปกที่ระบบวาด', where: 'ฟังก์ชันเสริม', href: '/admin/features#coverstyle', desc: 'เลือกแบบปกของเล่มที่ไม่มีรูปปก', ff: 'coverstyle', words: 'ปก คลัง' },
+  { title: 'แบบหน้างานของฉัน', where: 'ฟังก์ชันเสริม', href: '/admin/features#myshelf', desc: 'ปกเล่ม ชั้นปก หน้าเดิม', ff: 'myshelf' },
   { title: 'แบบหน้ารายวิชาที่สอนบนมือถือ', where: 'ฟังก์ชันเสริม', href: '/admin/features#teachcards', desc: 'กล่องวิชา 3 แบบ', ff: 'teachcards', words: 'มือถือ' },
   { title: 'ประโยคสำเร็จรูปในบันทึกหลังแผน', where: 'ฟังก์ชันเสริม', href: '/admin/features#phrases', desc: 'แก้ประโยคที่ครูแตะเลือก แยกตามหัวข้อ K P A', words: 'ข้อความ' },
   { title: 'เชื่อมต่อ LINE', where: 'ฟังก์ชันเสริม', href: '/admin/features#line', desc: 'ใส่ข้อมูล LINE Official Account และส่งข้อความทดสอบ', words: 'ไลน์ แจ้งเตือน' },

@@ -1480,6 +1480,49 @@ dialog.front-dlg { width: min(720px, calc(100vw - 24px)); max-height: calc(100vh
 .my-box .mb-links { display: flex; flex-wrap: wrap; gap: 4px 16px; font-size: 0.86em; font-weight: 600; }
 .my-box .mb-links a { color: var(--link); padding: 2px 0; }
 
+/* หน้างานของฉันแบบ ก ชั้นปกแยกรายวิชา (ฟังก์ชันเสริม myshelf) จอกว้าง 3 กล่องเรียงกัน มือถือเรียงลงมา */
+.myc-sum { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 10px; margin-bottom: 14px; }
+.myc-sum > div { display: flex; align-items: baseline; gap: 8px; background: var(--surface); border: 1px solid var(--line); border-radius: var(--rs); padding: 8px 13px; color: var(--muted); font-weight: 600; font-size: 0.9rem; }
+.myc-sum b { font-size: 1.45rem; line-height: 1.2; color: var(--ink); }
+.myc-sum .s-wait b { color: var(--wait); }
+.myc-sum .s-back b { color: var(--back); }
+.myc-sum .s-ok b { color: var(--ok); }
+.myc-shelf { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 12px; }
+.myc-tile { display: flex; gap: 13px; min-width: 0; border: 1px solid var(--line); border-radius: var(--rs); padding: 12px; }
+.myc-tile.is-back { border-color: var(--back); }
+.myc-cv { display: block; flex: none; width: 104px; color: inherit; align-self: flex-start; }
+.myc-cv:hover { text-decoration: none; }
+.myc-cv:hover .lib-cover { box-shadow: 0 0 0 3px var(--primary); }
+.myc-none { display: grid; place-items: center; flex: none; width: 104px; aspect-ratio: 210 / 297; align-self: flex-start; border: 2px dashed var(--line); border-radius: 6px; color: var(--muted); font-size: 0.82rem; text-align: center; padding: 6px; }
+.myc-bd { display: flex; flex-direction: column; align-items: flex-start; gap: 6px; flex: 1; min-width: 0; }
+.myc-kind { font-size: 1rem; line-height: 1.3; }
+.myc-ink { color: var(--ink); }
+.myc-main { margin-top: auto; }
+.myc-links { display: flex; flex-wrap: wrap; gap: 3px 13px; font-size: 0.84rem; font-weight: 600; }
+.myc-links a { color: var(--link); padding: 2px 0; white-space: nowrap; text-decoration: underline; }
+.myc-bd .badge { white-space: normal; max-width: 100%; }
+.myc-dots { display: flex; align-items: center; width: 100%; max-width: 210px; }
+.myc-dots i { flex: none; width: 13px; height: 13px; border-radius: 50%; border: 2px solid var(--line); background: var(--surface); }
+.myc-dots u { flex: 1; height: 2px; background: var(--line); }
+.myc-dots i.d { background: var(--ok); border-color: var(--ok); }
+.myc-dots u.d { background: var(--ok); }
+.myc-dots i.n { background: var(--wait); border-color: var(--wait); box-shadow: 0 0 0 3px var(--wait-bg); }
+.myc-dots i.x { background: var(--back); border-color: var(--back); box-shadow: 0 0 0 3px var(--back-bg); }
+.myc-where { font-size: 0.84rem; line-height: 1.4; color: var(--muted); overflow-wrap: anywhere; }
+.myc-where b { color: var(--ink); font-weight: 600; }
+.myc-back { color: var(--back); }
+.myc-hint { display: none; margin-top: 8px; }
+@media (max-width: 640px) {
+  .myc-sum { grid-template-columns: repeat(4, 1fr); gap: 6px; }
+  .myc-sum > div { display: block; padding: 6px 2px; text-align: center; font-size: 0.74rem; }
+  .myc-sum b { display: block; }
+  .myc-sum > div:nth-child(5) { grid-column: 1 / -1; }
+  .myc-shelf { grid-template-columns: minmax(0, 1fr); gap: 9px; }
+  .myc-tile.is-empty { display: none; }
+  .myc-hint { display: block; }
+  .myc-cv, .myc-none { width: 88px; }
+}
+
 /* รายวิชาที่สอนบนมือถือ (ฟังก์ชันเสริม teachcards): วิชาละกล่อง แทนแถวเดิม · HTML ชุดเดียว หน้าตา 3 แบบตาม class ของ section
    tc-a กล่องสีตามสถานะ ปุ่มใหญ่ · tc-b แถวย่อ ปุ่มท้ายแถว · tc-c 2 ช่องเคียงกัน · จอกว้างกว่า 640 px ใช้แถวแบบเดิม */
 .tc-list, .tc-addbtn { display: none; }
