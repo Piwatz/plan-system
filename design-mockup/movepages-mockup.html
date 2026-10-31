@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="th"><head><meta charset="utf-8">
+<link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+:root{--primary:#8b1a2b;--ink:#2c1a1a;--muted:#7d726c;--line:#e4ddd6;--soft:#fbf1f1;--bg:#f6f3ee;--ok:#1f7354}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);font-family:Sarabun,Tahoma,sans-serif;color:var(--ink);padding:22px;width:1420px}
+h1{font-size:25px;margin:0 0 4px}
+.sub{color:var(--muted);margin:0 0 16px;font-size:16px}
+.cols{display:grid;grid-template-columns:repeat(3,1fr);gap:18px}
+.col h2{font-size:21px;margin:0 0 2px;color:var(--primary)}
+.d{margin:0 0 10px;font-size:15px;line-height:1.45;min-height:66px}
+.rec{display:inline-block;background:var(--ok);color:#fff;border-radius:999px;padding:1px 10px;font-size:13px;font-weight:700;margin-left:6px;vertical-align:3px}
+.dlg{background:#fff;border:1px solid var(--line);border-radius:16px;padding:16px;margin-bottom:12px;box-shadow:0 6px 18px rgba(0,0,0,.07)}
+.dlg h3{margin:0 0 8px;font-size:18px}
+.tabs{display:flex;gap:6px;margin-bottom:10px}
+.tab{flex:1;text-align:center;border:1.5px solid var(--line);border-radius:10px;padding:6px;font-weight:600;font-size:15px}
+.tab.on{background:var(--primary);border-color:var(--primary);color:#fff}
+.step{font-size:15px;font-weight:600;margin:10px 0 6px}
+.step b{display:inline-grid;place-items:center;width:22px;height:22px;background:var(--primary);color:#fff;border-radius:50%;font-size:13px;margin-right:6px}
+.inp{display:inline-block;border:1.5px solid var(--primary);border-radius:9px;padding:4px 12px;min-width:70px;font-size:15px;background:#fff}
+.row{display:flex;flex-wrap:wrap;gap:6px;align-items:center;font-size:15px}
+.opt{border:1.5px solid var(--line);border-radius:9px;padding:4px 10px;font-size:14.5px;font-weight:600}
+.opt.on{border-color:var(--primary);background:var(--soft);color:var(--primary)}
+.pages{display:flex;gap:6px;align-items:flex-start}
+.pg{flex:1;text-align:center;font-size:12.5px;min-width:0}
+.sheet{height:84px;border:1px solid var(--line);border-radius:5px;background:repeating-linear-gradient(#fff 0 7px,#e9e4df 7px 8px);margin-bottom:3px}
+.sheet.back{background:linear-gradient(135deg,#f8c8d4,#fff 45%,#f8c8d4);position:relative}
+.pg.moved .sheet{outline:3px solid #d62828;outline-offset:1px}
+.pg.moved{font-weight:700;color:var(--primary)}
+.pg.gap{flex:.45;align-self:center;color:var(--muted);font-size:16px}
+.sum{background:var(--soft);border-radius:9px;padding:7px 10px;font-size:14.5px;margin:10px 0;font-weight:600}
+.acts{display:flex;gap:8px}
+.btn{flex:1;text-align:center;border:1.5px solid var(--line);border-radius:10px;padding:7px;font-weight:600;font-size:15px}
+.btn.p{background:var(--primary);border-color:var(--primary);color:#fff}
+.mini{position:relative}
+.mv{position:absolute;left:50%;transform:translateX(-50%);top:30px;background:var(--primary);color:#fff;border-radius:999px;padding:1px 8px;font-size:12px;font-weight:700;white-space:nowrap}
+.good{font-size:15px;line-height:1.5;background:#fff;border-radius:12px;padding:10px 12px;border:1px solid var(--line)}
+.good b{color:var(--ok)} .good b.bad{color:var(--primary)}
+.pop{border:1.5px solid var(--primary);border-radius:10px;padding:8px;margin-top:8px;font-size:14.5px;background:var(--soft)}
+</style></head><body>
+<h1>ย้ายหน้าในไฟล์ ตัวอย่างให้เลือก 3 แบบ</h1>
+<p class="sub">ตัวอย่างงานจริงที่เจอ ไฟล์ 188 หน้า ครูวางปกหลังไว้หน้า 2 ต้องย้ายไปท้ายเล่ม ไฟล์เดิมเก็บไว้ในไฟล์รุ่นก่อนแก้ไข ผู้ตรวจไม่ต้องลงนามใหม่ เหมือนการตัดหน้า</p>
+<div class="cols">
+
+<div class="col">
+<h2>แบบ ก แท็บในกล่องตัดหน้า<span class="rec">แนะนำ</span></h2>
+<p class="d">ไม่เพิ่มปุ่มใหม่ ปุ่มเดิมเปลี่ยนชื่อเป็น ตัดหรือย้ายหน้าแทนครู เปิดแล้วเลือกแท็บ ย้ายหน้า มีครบทุกหน้า ย้ายทีละหลายหน้าได้</p>
+<div class="dlg"><h3>ตัดหรือย้ายหน้า ว21102</h3>
+<div class="tabs"><span class="tab">ลบหน้า</span><span class="tab on">ย้ายหน้า</span></div>
+<p class="step"><b>1</b>หน้าที่จะย้าย</p><div class="row"><span class="inp">2</span> <span style="color:var(--muted);font-size:13.5px">เช่น 2 หรือ 2-3 หรือกดที่ภาพ</span></div>
+<p class="step"><b>2</b>ย้ายไปไว้</p><div class="row"><span class="opt on">ท้ายเล่ม</span><span class="opt">หน้าแรก</span><span class="opt">หลังหน้า</span><span class="inp" style="min-width:52px;border-color:var(--line)">&nbsp;</span></div>
+<p class="step"><b>3</b>ดูผลก่อนบันทึก</p>
+<div class="pages"><div class="pg"><div class="sheet"></div>หน้า 1</div><div class="pg"><div class="sheet"></div>หน้า 3 เดิม</div><div class="pg gap">ถึง</div><div class="pg"><div class="sheet"></div>หน้า 188 เดิม</div><div class="pg moved"><div class="sheet back"></div>หน้า 2 เดิม</div></div>
+<div class="sum">หน้า 2 ย้ายไปเป็นหน้าสุดท้าย รวมยังมี 188 หน้า</div>
+<div class="acts"><span class="btn">ยกเลิก</span><span class="btn p">ย้ายหน้า</span></div></div>
+<div class="good"><b>เด่น</b> ปุ่มข้างงานไม่เพิ่ม ใช้ภาพทุกหน้าที่มีอยู่แล้ว ย้ายไปตรงไหนก็ได้</div>
+</div>
+
+<div class="col">
+<h2>แบบ ข ปุ่มย้ายในกล่องเปลี่ยนปก</h2>
+<p class="d">ใต้ภาพหน้าที่เห็นในกล่องเปลี่ยนปก มีปุ่มเล็ก ย้าย ใกล้จุดที่ครูเต้ยเห็นปัญหาที่สุด ทำพร้อมกับเปลี่ยนปกได้ในครั้งเดียว</p>
+<div class="dlg"><h3>เปลี่ยนปก ว21102</h3>
+<p class="step"><b>1</b>ติ๊กหน้าที่จะลบ หรือกดย้าย</p>
+<div class="pages"><div class="pg"><div class="sheet"></div>หน้า 1<br><span class="opt" style="font-size:12px;padding:1px 6px">ย้าย</span></div><div class="pg moved"><div class="sheet back"></div>หน้า 2<br><span class="opt on" style="font-size:12px;padding:1px 6px">ย้าย</span></div><div class="pg"><div class="sheet"></div>หน้า 3<br><span class="opt" style="font-size:12px;padding:1px 6px">ย้าย</span></div><div class="pg"><div class="sheet"></div>หน้า 4<br><span class="opt" style="font-size:12px;padding:1px 6px">ย้าย</span></div><div class="pg"><div class="sheet"></div>หน้า 5<br><span class="opt" style="font-size:12px;padding:1px 6px">ย้าย</span></div><div class="pg"><div class="sheet"></div>หน้า 6<br><span class="opt" style="font-size:12px;padding:1px 6px">ย้าย</span></div></div>
+<div class="pop"><b>ย้ายหน้า 2 ไปไว้</b><div class="row" style="margin-top:5px"><span class="opt on">ท้ายเล่ม</span><span class="opt">หลังหน้า</span><span class="inp" style="min-width:52px;border-color:var(--line)">&nbsp;</span></div></div>
+<p class="step"><b>2</b>ปกใหม่</p><div class="opt" style="font-weight:400">ไม่ต่อปกใหม่</div>
+<div class="sum">ย้ายหน้า 2 ไปท้ายเล่ม</div>
+<div class="acts"><span class="btn">ยกเลิก</span><span class="btn p">บันทึก</span></div></div>
+<div class="good"><b>เด่น</b> เจอแล้วกดได้ทันที<br><b class="bad">ด้อย</b> เห็นแค่ 6 หน้าแรก ถ้าหน้าที่ผิดอยู่กลางเล่มย้ายไม่ได้ และกล่องเปลี่ยนปกแน่นขึ้น</div>
+</div>
+
+<div class="col">
+<h2>แบบ ค ปุ่มแยกใหม่</h2>
+<p class="d">เพิ่มปุ่ม ย้ายหน้าไฟล์แทนครู เป็นปุ่มที่สี่ข้างไฟล์ กล่องมีหน้าที่เดียว พิมพ์สองช่องแล้วจบ</p>
+<div class="dlg"><h3>ปุ่มข้างไฟล์ที่ส่ง</h3>
+<div class="row" style="flex-direction:column;align-items:stretch"><span class="opt">ตัดหน้าไฟล์แทนครู</span><span class="opt on">ย้ายหน้าไฟล์แทนครู</span><span class="opt">เปลี่ยนปกแทนครู</span><span class="opt">เพิ่มหน้าปกแทนครู</span></div></div>
+<div class="dlg"><h3>ย้ายหน้าไฟล์ ว21102</h3>
+<div class="row">ย้ายหน้า <span class="inp">2</span> ไปไว้หลังหน้า <span class="inp">188</span></div>
+<p class="step" style="margin-bottom:4px">ดูผลก่อนบันทึก</p>
+<div class="pages"><div class="pg"><div class="sheet"></div>หน้า 187 เดิม</div><div class="pg"><div class="sheet"></div>หน้า 188 เดิม</div><div class="pg moved"><div class="sheet back"></div>หน้า 2 เดิม</div></div>
+<div class="sum">หน้า 2 ย้ายไปเป็นหน้าสุดท้าย</div>
+<div class="acts"><span class="btn">ยกเลิก</span><span class="btn p">ย้ายหน้า</span></div></div>
+<div class="good"><b>เด่น</b> หาเจอง่าย กล่องเรียบที่สุด<br><b class="bad">ด้อย</b> ปุ่มข้างงานยาวขึ้นอีก ต้องจำเลขหน้าสุดท้ายเอง</div>
+</div>
+
+</div>
+</body></html>

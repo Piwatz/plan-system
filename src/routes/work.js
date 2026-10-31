@@ -183,6 +183,14 @@ function pageList(v) {
 function canCutPages(req, sub) {
   return Boolean(req.ff.cutpages && req.me.is_admin && sub && WORK_TYPES.includes(sub.doc_type) && !wf.isOwner(req.me, sub));
 }
+// ย้ายหน้าไฟล์ (ฟังก์ชันเสริม movepages): เป็นแท็บในกล่องตัดหน้า กติกาเดียวกับตัดหน้า
+function canMovePages(req, sub) {
+  return Boolean(req.ff.movepages) && canCutPages(req, sub);
+}
+// แทรกไฟล์ PDF (ฟังก์ชันเสริม insertpages): เป็นแท็บในกล่องตัดหน้า กติกาเดียวกับตัดหน้า
+function canInsertPages(req, sub) {
+  return Boolean(req.ff.insertpages) && canCutPages(req, sub);
+}
 // ช่วงหน้าที่เบราว์เซอร์ส่งมา เช่น 1-18,25 คืน { label: '1 ถึง 18, 25', first: ลบหน้า 1 ด้วย } · รูปแบบไม่ถูกคืน null
 function cutRanges(v) {
   const parts = String(v || '').split(',').slice(0, 500);
@@ -757,6 +765,8 @@ router.get('/s/:id', async (req, res) => {
     canAddCover: canAddCover(req, sub),
     canFrontPages: canFrontPages(req, sub),
     canCutPages: canCutPages(req, sub),
+    canMovePages: canMovePages(req, sub),
+    canInsertPages: canInsertPages(req, sub),
     canOldFile: canOldFile(req, sub),
     // ปกที่ระบบวาดสำหรับต่อเป็นหน้าแรกของ PDF (เฉพาะผู้ดูแลระบบ) หน้าตาเดียวกับคลังงาน ตราใช้รูปใหญ่ให้คมตอนพิมพ์
     drawnBook: canDrawnCover(req, sub)
@@ -969,20 +979,60 @@ router.post('/s/:id/cutpages', async (req, res) => {
   if (!cut) throw new UserError('ยังไม่ได้เลือกหน้าที่จะลบ');
   const left = intOrNull(b.left);
   const what = `ลบหน้า ${cut.label}${left > 0 ? ` เหลือ ${left} หน้า` : ''}`;
+  await replaceEdited(req, sub, { action: 'cutpages', what, firstChanged: cut.first, noun: 'ตัดหน้าไฟล์' });
+  respond(req, res, `/s/${sub.id}`, 'success', 'ตัดหน้าไฟล์เรียบร้อย ไฟล์เดิมเก็บไว้ในไฟล์รุ่นก่อนแก้ไข');
+});
+
+// ย้ายหน้าไฟล์ (ฟังก์ชันเสริม movepages): เบราว์เซอร์จัดเรียงหน้าแล้วส่งเป็นไฟล์ใหม่ เซิร์ฟเวอร์ไม่เปิด PDF · moved = หน้าที่ย้าย · after = วางหลังหน้านี้ 0 = หน้าแรก · to=last = ท้ายเล่ม
+router.post('/s/:id/movepages', async (req, res) => {
+  const sub = await viewable(req, req.params.id);
+  if (!canMovePages(req, sub)) throw new UserError('ย้ายหน้าไฟล์งานนี้ไม่ได้');
+  const b = req.body || {};
+  const moved = cutRanges(b.moved);
+  if (!moved) throw new UserError('ยังไม่ได้เลือกหน้าที่จะย้าย');
+  if (!/^\d{1,5}$/.test(String(b.after ?? ''))) throw new UserError('ยังไม่ได้เลือกปลายทาง');
+  const after = Number(b.after);
+  const where = after === 0 ? 'ไปเป็นหน้าแรก' : b.to === 'last' ? 'ไปเป็นหน้าสุดท้าย' : `ไปไว้หลังหน้า ${after} เดิม`;
+  const pages = intOrNull(b.left);
+  const what = `ย้ายหน้า ${moved.label} ${where}${pages > 0 ? ` รวม ${pages} หน้า` : ''}`;
+  await replaceEdited(req, sub, { action: 'movepages', what, firstChanged: moved.first || after === 0, noun: 'ย้ายหน้าไฟล์' });
+  respond(req, res, `/s/${sub.id}`, 'success', 'ย้ายหน้าไฟล์เรียบร้อย ไฟล์เดิมเก็บไว้ในไฟล์รุ่นก่อนแก้ไข');
+});
+
+// แทรกไฟล์ PDF (ฟังก์ชันเสริม insertpages): เบราว์เซอร์รวมไฟล์แล้วส่งเป็นไฟล์ใหม่ เซิร์ฟเวอร์ไม่เปิด PDF · after = วางหลังหน้านี้ 0 = หน้าแรก · to=last = ท้ายเล่ม · added = จำนวนหน้าที่แทรก · name = ชื่อไฟล์ที่แทรก
+router.post('/s/:id/insertpages', async (req, res) => {
+  const sub = await viewable(req, req.params.id);
+  if (!canInsertPages(req, sub)) throw new UserError('แทรกไฟล์ในงานนี้ไม่ได้');
+  const b = req.body || {};
+  if (!/^\d{1,5}$/.test(String(b.after ?? ''))) throw new UserError('ยังไม่ได้เลือกปลายทาง');
+  const after = Number(b.after);
+  const added = intOrNull(b.added);
+  if (!(added > 0)) throw new UserError('ยังไม่ได้เลือกไฟล์ที่จะแทรก');
+  const where = after === 0 ? 'ไว้หน้าแรก' : b.to === 'last' ? 'ไว้ท้ายเล่ม' : `ไว้หลังหน้า ${after}`;
+  const pages = intOrNull(b.left);
+  const name = str(b.name, 120);
+  const what = `แทรกไฟล์${name ? ` ${name}` : ''} ${added} หน้า ${where}${pages > 0 ? ` รวม ${pages} หน้า` : ''}`;
+  await replaceEdited(req, sub, { action: 'insertpages', what, firstChanged: after === 0, noun: 'แทรกไฟล์ใน' });
+  respond(req, res, `/s/${sub.id}`, 'success', 'แทรกไฟล์เรียบร้อย ไฟล์เดิมเก็บไว้ในไฟล์รุ่นก่อนแก้ไข');
+});
+
+// ใช้ไฟล์ที่เบราว์เซอร์แก้หน้าแล้วแทนไฟล์หลัก · from = ไฟล์ที่เปิดแก้ ถ้าครูเปลี่ยนไฟล์ไปแล้วไม่บันทึกทับ · ไม่เปลี่ยนขั้นการตรวจ · firstChanged = หน้าแรกของไฟล์เปลี่ยน
+async function replaceEdited(req, sub, { action, what, firstChanged, noun }) {
+  const b = req.body || {};
   const files = await up.take(req, 'main_files');
   const cover = req.ff.library ? await up.takeCover(req, library.COVER_MAX) : null;
   let oldCover = null;
   try {
-    if (files.length !== 1 || files[0].ext !== '.pdf') throw new UserError('ไฟล์ที่ตัดแล้วต้องเป็น PDF ไฟล์เดียว');
+    if (files.length !== 1 || files[0].ext !== '.pdf') throw new UserError('ไฟล์ที่แก้แล้วต้องเป็น PDF ไฟล์เดียว');
     const current = await q.all("SELECT id, front_check FROM files WHERE submission_id = ? AND kind = 'main' AND is_current = 1", sub.id);
     if (current.length !== 1 || Number(current[0].id) !== intOrNull(b.from)) throw new UserError('ไฟล์ของงานนี้เปลี่ยนไปแล้ว เปิดหน้างานใหม่แล้วลองอีกครั้ง');
     await rejectBadFiles(req, files);
     oldCover = await q.tx(async () => {
       await q.run('UPDATE files SET is_current = 0 WHERE id = ?', current[0].id);
       await up.attach(sub.id, files, 'main');
-      if (current[0].front_check === 'drawn' && !cut.first) await precheck.markDrawn(sub.id);
+      if (current[0].front_check === 'drawn' && !firstChanged) await precheck.markDrawn(sub.id);
       else await precheck.setFront(req.ff, sub.id, b.front_check);
-      await wf.log(sub.id, req.me, { step_label: 'ผู้ดูแลระบบ', action: 'cutpages', comment: what });
+      await wf.log(sub.id, req.me, { step_label: 'ผู้ดูแลระบบ', action, comment: what });
       return cover ? up.useCover(sub.id, cover) : null;
     });
   } catch (e) {
@@ -990,9 +1040,8 @@ router.post('/s/:id/cutpages', async (req, res) => {
     throw e;
   }
   if (oldCover) await up.trashAll([oldCover]);
-  await features.audit(req.me, `ตัดหน้าไฟล์${wf.DOC_TYPES[sub.doc_type].label} ${sub.subject_code} ของ ${sub.teacher_name} ${what}`, `submission ${sub.id}`);
-  respond(req, res, `/s/${sub.id}`, 'success', 'ตัดหน้าไฟล์เรียบร้อย ไฟล์เดิมเก็บไว้ในไฟล์รุ่นก่อนแก้ไข');
-});
+  await features.audit(req.me, `${noun}${wf.DOC_TYPES[sub.doc_type].label} ${sub.subject_code} ของ ${sub.teacher_name} ${what}`, `submission ${sub.id}`);
+}
 
 // ใช้ไฟล์รุ่นก่อน (ฟังก์ชันเสริม oldfile): สลับ is_current ไฟล์ที่เลือกเป็นไฟล์ที่ส่ง ไฟล์ที่ใช้อยู่กลายเป็นรุ่นก่อน ไม่ลบไฟล์ใด ไม่เปลี่ยนขั้นการตรวจ
 // รูปปกในคลัง: เบราว์เซอร์ทำจากไฟล์ที่กลับไปใช้ส่งมาด้วย · ไม่มีรูป (ไม่ใช่ PDF หรือทำไม่ได้) ล้างรูปเดิม ปุ่มสร้างปกของผู้ดูแลทำให้ใหม่ได้ (ปกที่ระบบวาดที่ผู้ดูแลเลือกไว้คงเดิม)
@@ -1086,6 +1135,20 @@ async function uploadTarget(req, b) {
   if (cp) {
     const sub = await viewable(req, cp[1]);
     if (!canCutPages(req, sub)) throw new UserError('ตัดหน้าไฟล์งานนี้ไม่ได้');
+    return sub;
+  }
+  // ไฟล์ที่ย้ายหน้าแล้ว (ฟังก์ชันเสริม movepages)
+  const mp = /^\/s\/(\d+)\/movepages$/.exec(form);
+  if (mp) {
+    const sub = await viewable(req, mp[1]);
+    if (!canMovePages(req, sub)) throw new UserError('ย้ายหน้าไฟล์งานนี้ไม่ได้');
+    return sub;
+  }
+  // ไฟล์ที่แทรกไฟล์ใหม่แล้ว (ฟังก์ชันเสริม insertpages)
+  const ip = /^\/s\/(\d+)\/insertpages$/.exec(form);
+  if (ip) {
+    const sub = await viewable(req, ip[1]);
+    if (!canInsertPages(req, sub)) throw new UserError('แทรกไฟล์ในงานนี้ไม่ได้');
     return sub;
   }
   // รูปปกในคลังจากไฟล์รุ่นก่อนที่กลับไปใช้ (ฟังก์ชันเสริม oldfile)

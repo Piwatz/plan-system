@@ -365,18 +365,44 @@
         <% if (canCutPages && mainFiles.length === 1 && /pdf/.test(mainFiles[0].mime)) { %>
           <%# ตัดหน้าไฟล์ (ฟังก์ชันเสริม cutpages): เห็นทุกหน้า พิมพ์เลขหน้าหรือกดที่ภาพ ทำไฟล์ใหม่ในเบราว์เซอร์แล้วส่งเข้าระบบ %>
           <div class="add-cover">
-            <button type="button" class="btn btn-sm btn-primary" data-cut-open="cut-dlg"><%- icon('edit', 16) %> ตัดหน้าไฟล์แทนครู</button>
-            <small class="muted">ลบหน้าที่เกินหรือส่งผิดตามเลขหน้า ไฟล์เดิมเก็บไว้ ผู้ตรวจไม่ต้องลงนามใหม่</small>
+            <button type="button" class="btn btn-sm btn-primary" data-cut-open="cut-dlg"><%- icon('edit', 16) %> <%= canMovePages && canInsertPages ? 'ตัด ย้าย หรือแทรกหน้าแทนครู' : canMovePages ? 'ตัดหรือย้ายหน้าแทนครู' : canInsertPages ? 'ตัดหรือแทรกหน้าแทนครู' : 'ตัดหน้าไฟล์แทนครู' %></button>
+            <small class="muted"><%= canMovePages && canInsertPages ? 'ลบหน้าที่เกิน ย้ายหน้าที่วางผิดที่ หรือแทรกไฟล์ PDF ใหม่' : canMovePages ? 'ลบหน้าที่เกินหรือย้ายหน้าที่วางผิดที่' : canInsertPages ? 'ลบหน้าที่เกินหรือแทรกไฟล์ PDF ใหม่' : 'ลบหน้าที่เกินหรือส่งผิดตามเลขหน้า' %> ไฟล์เดิมเก็บไว้ ผู้ตรวจไม่ต้องลงนามใหม่</small>
           </div>
-          <dialog class="modal front-dlg" id="cut-dlg" data-action="/s/<%= sub.id %>/cutpages" data-file="/f/<%= mainFiles[0].id %>/raw" data-from="<%= mainFiles[0].id %>" data-library="<%= ff.library ? '1' : '' %>" data-frontcheck="<%= ff.frontcheck ? '1' : '' %>" data-code="<%= sub.subject_code %>">
-            <h3>ตัดหน้าไฟล์ <%= sub.subject_code %></h3>
+          <dialog class="modal front-dlg" id="cut-dlg" data-action="/s/<%= sub.id %>/cutpages" data-move-action="/s/<%= sub.id %>/movepages" data-insert-action="/s/<%= sub.id %>/insertpages" data-file="/f/<%= mainFiles[0].id %>/raw" data-from="<%= mainFiles[0].id %>" data-library="<%= ff.library ? '1' : '' %>" data-frontcheck="<%= ff.frontcheck ? '1' : '' %>" data-code="<%= sub.subject_code %>">
+            <h3><%= canMovePages && canInsertPages ? 'ตัด ย้าย หรือแทรกหน้า' : canMovePages ? 'ตัดหรือย้ายหน้า' : canInsertPages ? 'ตัดหรือแทรกหน้า' : 'ตัดหน้าไฟล์' %> <%= sub.subject_code %></h3>
+            <% if (canMovePages || canInsertPages) { %>
+              <div class="cut-tabs" role="tablist">
+                <button type="button" class="on" role="tab" aria-selected="true" data-cut-mode="cut">ลบหน้า</button>
+                <% if (canMovePages) { %><button type="button" role="tab" aria-selected="false" data-cut-mode="move">ย้ายหน้า</button><% } %>
+                <% if (canInsertPages) { %><button type="button" role="tab" aria-selected="false" data-cut-mode="insert">แทรกไฟล์</button><% } %>
+              </div>
+            <% } %>
             <p class="muted small" data-cut-info>กำลังเปิดไฟล์</p>
-            <p class="front-step"><b>1</b> พิมพ์เลขหน้าที่จะลบ</p>
-            <div class="cut-input">
-              <input type="text" autocomplete="off" data-cut-text aria-label="เลขหน้าที่จะลบ">
-              <span class="muted small">เช่น 1-18 หรือ 1-18, 25 หรือกดที่ภาพด้านล่างก็ได้</span>
+            <p class="front-step"><b>1</b> <span data-cut-step>พิมพ์เลขหน้าที่จะลบ</span></p>
+            <% if (canInsertPages) { %>
+              <div class="cut-input" data-insert-block hidden>
+                <label class="btn btn-sm btn-primary"><%- icon('plus', 16) %> เลือกไฟล์ PDF<input type="file" accept=".pdf,application/pdf" hidden data-insert-file></label>
+                <span class="muted small" data-insert-name>ยังไม่ได้เลือกไฟล์</span>
+              </div>
+            <% } %>
+            <div class="cut-input" data-cut-row>
+              <input type="text" autocomplete="off" data-cut-text aria-label="เลขหน้า">
+              <span class="muted small" data-cut-hint>เช่น 1-18 หรือ 1-18, 25 หรือกดที่ภาพด้านล่างก็ได้</span>
             </div>
-            <p class="front-step"><b>2</b> ดูให้แน่ใจว่าถูกหน้า</p>
+            <% if (canMovePages || canInsertPages) { %>
+              <div data-move-block hidden>
+                <p class="front-step"><b>2</b> <span data-move-to-label>ย้ายไปไว้</span></p>
+                <div class="move-to">
+                  <label><input type="radio" name="move_to" value="last" checked> ท้ายเล่ม</label>
+                  <label><input type="radio" name="move_to" value="first"> หน้าแรก</label>
+                  <label><input type="radio" name="move_to" value="after"> หลังหน้า</label>
+                  <input type="text" inputmode="numeric" autocomplete="off" data-move-after aria-label="เลขหน้าปลายทาง">
+                </div>
+                <p class="front-step"><b>3</b> ดูผลก่อนบันทึก</p>
+                <div class="move-preview" data-move-preview></div>
+              </div>
+            <% } %>
+            <p class="front-step"><b data-cut-gallery-n>2</b> <span data-cut-gallery>ดูให้แน่ใจว่าถูกหน้า</span></p>
             <div class="front-pages cut-pages" data-cut-pages></div>
             <p class="front-sum" data-cut-sum></p>
             <div class="modal-actions">

@@ -102,6 +102,84 @@
     return { bytes: await out.save(), pages: out.getPageCount(), removed: src.getPageCount() - keep.length };
   }
 
+  // ลำดับหน้าใหม่ของการย้ายหน้า (ฟังก์ชันเสริม movepages) pages = หน้าที่ย้าย · after = วางหลังหน้านี้ (เลขหน้าเดิม) 0 = เป็นหน้าแรก คืนค่า { order, error }
+  function moveOrder(total, pages, after) {
+    const moving = [...new Set(pages)].sort((a, b) => a - b);
+    const set = new Set(moving);
+    if (!moving.length) return { order: [], error: 'ยังไม่ได้เลือกหน้าที่จะย้าย' };
+    if (moving.length >= total) return { order: [], error: 'ย้ายทุกหน้าไม่ได้ ต้องเหลือหน้าอื่นอย่างน้อย 1 หน้า' };
+    if (!Number.isInteger(after) || after < 0 || after > total) return { order: [], error: 'ไฟล์นี้มี ' + total + ' หน้า พิมพ์เลขหน้าปลายทางใหม่' };
+    if (set.has(after)) return { order: [], error: 'หน้าปลายทางต้องไม่ใช่หน้าที่กำลังย้าย' };
+    const rest = [];
+    for (let n = 1; n <= total; n++) if (!set.has(n)) rest.push(n);
+    const at = after === 0 ? 0 : rest.indexOf(after) + 1;
+    const order = [...rest.slice(0, at), ...moving, ...rest.slice(at)];
+    if (order.every((n, i) => n === i + 1)) return { order: [], error: 'ลำดับหน้าเหมือนเดิม เลือกปลายทางใหม่' };
+    return { order, error: '' };
+  }
+
+  // ย้ายหน้า: คัดลอกทุกหน้าลงไฟล์ใหม่ตามลำดับ order (ที่คั่นหน้าไม่ตามมา ไฟล์เดิมเก็บไว้เป็นรุ่นก่อน)
+  async function movePages(PDFLib, bytes, order) {
+    const { PDFDocument } = PDFLib;
+    const broken = new PdfError('เปิดไฟล์เดิมไม่ได้ จึงย้ายหน้าไม่ได้');
+    let src;
+    try {
+      src = await PDFDocument.load(bytes, { ignoreEncryption: true, updateMetadata: false });
+    } catch {
+      throw broken;
+    }
+    if (src.isEncrypted) throw new PdfError('ไฟล์เดิมตั้งรหัสผ่านไว้ จึงย้ายหน้าไม่ได้');
+    if (order.length !== src.getPageCount()) throw new PdfError('จำนวนหน้าของไฟล์เปลี่ยนไปแล้ว เปิดหน้างานใหม่แล้วลองอีกครั้ง');
+    const out = await PDFDocument.create();
+    let pages;
+    try {
+      pages = await out.copyPages(src, order.map((n) => n - 1));
+    } catch {
+      throw broken;
+    }
+    for (const p of pages) out.addPage(p);
+    return { bytes: await out.save(), pages: out.getPageCount() };
+  }
+
+  // แทรกไฟล์ PDF (ฟังก์ชันเสริม insertpages): ทุกหน้าของไฟล์ที่เลือกวางหลังหน้า after ของไฟล์เดิม 0 = ก่อนหน้าแรก (ที่คั่นหน้าไม่ตามมา ไฟล์เดิมเก็บไว้เป็นรุ่นก่อน)
+  async function insertPages(PDFLib, bytes, extraBytes, after) {
+    const { PDFDocument } = PDFLib;
+    const broken = new PdfError('เปิดไฟล์เดิมไม่ได้ จึงแทรกไฟล์ไม่ได้');
+    const badExtra = new PdfError('เปิดไฟล์ที่จะแทรกไม่ได้ ไฟล์อาจเสีย ลองบันทึกเป็น PDF ใหม่');
+    let src;
+    let extra;
+    try {
+      src = await PDFDocument.load(bytes, { ignoreEncryption: true, updateMetadata: false });
+    } catch {
+      throw broken;
+    }
+    try {
+      extra = await PDFDocument.load(extraBytes, { ignoreEncryption: true, updateMetadata: false });
+    } catch {
+      throw badExtra;
+    }
+    if (src.isEncrypted) throw new PdfError('ไฟล์เดิมตั้งรหัสผ่านไว้ จึงแทรกไฟล์ไม่ได้');
+    if (extra.isEncrypted) throw new PdfError('ไฟล์ที่จะแทรกตั้งรหัสผ่านไว้ เอารหัสผ่านออกก่อน');
+    const total = src.getPageCount();
+    if (!extra.getPageCount()) throw badExtra;
+    if (!Number.isInteger(after) || after < 0 || after > total) throw new PdfError('ไฟล์นี้มี ' + total + ' หน้า พิมพ์เลขหน้าปลายทางใหม่');
+    const out = await PDFDocument.create();
+    let head;
+    let added;
+    try {
+      head = await out.copyPages(src, src.getPageIndices());
+    } catch {
+      throw broken;
+    }
+    try {
+      added = await out.copyPages(extra, extra.getPageIndices());
+    } catch {
+      throw badExtra;
+    }
+    for (const p of [...head.slice(0, after), ...added, ...head.slice(after)]) out.addPage(p);
+    return { bytes: await out.save(), pages: out.getPageCount(), added: added.length };
+  }
+
   // อ่านเลขหน้าที่พิมพ์ เช่น 1-18, 25 หรือ ๑ ถึง ๑๘ (total = จำนวนหน้าของไฟล์) คืนค่า { pages: เลขหน้าเรียงน้อยไปมาก, error: ข้อความเมื่อพิมพ์ไม่ถูก }
   function parsePages(text, total) {
     const s = String(text || '')
@@ -135,5 +213,5 @@
     return runs;
   }
 
-  return { mergePdfs, editFront, cutPages, parsePages, pageRuns, PdfError };
+  return { mergePdfs, editFront, cutPages, moveOrder, movePages, insertPages, parsePages, pageRuns, PdfError };
 });

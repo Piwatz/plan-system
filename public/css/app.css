@@ -1384,6 +1384,25 @@ dialog.front-dlg { width: min(720px, calc(100vw - 24px)); max-height: calc(100vh
 .front-page.on .fp-del { display: block; }
 .front-page.on .fp-n { color: var(--back); font-weight: 600; text-decoration: line-through; }
 .front-more { grid-column: 1 / -1; }
+.cut-tabs { display: flex; gap: 6px; margin: 4px 0 8px; }
+.cut-tabs button { flex: 1; border: 1.5px solid var(--line); border-radius: var(--rs); background: var(--surface); color: var(--ink); font: inherit; font-weight: 600; padding: 6px; cursor: pointer; }
+.cut-tabs button.on { background: var(--primary); border-color: var(--primary); color: #fff; }
+.move-to { display: flex; flex-wrap: wrap; gap: 6px 14px; align-items: center; }
+.move-to label { display: inline-flex; gap: 5px; align-items: center; font-weight: 600; cursor: pointer; }
+.move-to label input { width: auto; margin: 0; }
+.move-to input[type='text'] { width: 90px; font-weight: 600; }
+.move-preview { display: flex; gap: 8px; align-items: flex-start; overflow-x: auto; padding: 4px; }
+.move-preview:empty { display: none; }
+.move-cell { flex: 0 0 84px; text-align: center; font-size: 0.78rem; line-height: 1.3; color: var(--muted); }
+.move-cell canvas { display: block; width: 100%; height: auto; }
+.move-cell.moved { color: var(--primary); font-weight: 700; }
+.move-cell.moved .cut-sheet { border-color: var(--primary); box-shadow: 0 0 0 2px var(--primary); }
+[data-cut-row][hidden], [data-insert-block][hidden] { display: none; }
+.cut-moving .cut-pages { max-height: 30vh; }
+.cut-moving .front-page .fp-del { background: var(--primary); }
+.cut-moving .cut-pages .front-page.on .cut-sheet { border-color: var(--primary); }
+.cut-moving .front-page.on canvas { opacity: 1; }
+.cut-moving .front-page.on .fp-n { color: var(--primary); text-decoration: none; }
 .cut-input { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
 .cut-input input { width: 200px; max-width: 100%; font-size: 1.1rem; font-weight: 600; }
 .cut-pages { max-height: 46vh; overflow: auto; padding: 4px; position: relative; }

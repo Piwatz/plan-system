@@ -833,6 +833,46 @@
     let seen = null;
     let queue = [];
     let drawing = false;
+    // แท็บย้ายหน้า (ฟังก์ชันเสริม movepages) ใช้ช่องเลขหน้าและภาพทุกหน้าร่วมกับการลบ
+    let mode = 'cut';
+    let previewRun = 0;
+    const moveBlock = dlg.querySelector('[data-move-block]');
+    const preview = dlg.querySelector('[data-move-preview]');
+    const afterIn = dlg.querySelector('[data-move-after]');
+    const okBtn = dlg.querySelector('[data-cut-ok]');
+    // แท็บแทรกไฟล์ (ฟังก์ชันเสริม insertpages) extra = { bytes, doc, pages, name } ไฟล์ที่เลือกจะแทรก
+    const insertBlock = dlg.querySelector('[data-insert-block]');
+    const insertFile = dlg.querySelector('[data-insert-file]');
+    const insertName = dlg.querySelector('[data-insert-name]');
+    let extra = null;
+    const moveTo = () => {
+      const r = dlg.querySelector('input[name=move_to]:checked');
+      return r ? r.value : 'last';
+    };
+    // ปลายทางเป็นเลขหน้าเดิม คืน { after, error } · ท้ายเล่ม = หลังหน้าสุดท้ายที่ไม่ได้ย้าย
+    function moveAfter() {
+      const to = moveTo();
+      if (to === 'first') return { after: 0, error: '' };
+      if (to === 'last') {
+        if (mode === 'insert') return { after: total, error: '' };
+        const set = new Set(selected);
+        let n = total;
+        while (n > 0 && set.has(n)) n--;
+        return { after: n, error: '' };
+      }
+      if (!afterIn.value.trim()) return { after: -1, error: 'พิมพ์เลขหน้าปลายทาง' };
+      const r = window.PdfMerge.parsePages(afterIn.value, total);
+      if (r.error) return { after: -1, error: r.error };
+      if (r.pages.length !== 1) return { after: -1, error: 'พิมพ์เลขหน้าปลายทางหน้าเดียว' };
+      return { after: r.pages[0], error: '' };
+    }
+    function movePlan() {
+      const dest = moveAfter();
+      if (dest.error) return { order: [], after: -1, error: dest.error };
+      const r = window.PdfMerge.moveOrder(total, selected, dest.after);
+      return { order: r.order, after: dest.after, error: r.error };
+    }
+    const moveWhere = (after) => (after === 0 ? 'เป็นหน้าแรก' : moveTo() === 'last' ? 'เป็นหน้าสุดท้าย' : 'ไว้หลังหน้า ' + after + ' เดิม');
     const needPdfMerge = async () => {
       if (!window.PdfMerge) await loadScript('/static/js/pdfmerge.js');
     };
@@ -844,12 +884,111 @@
         i.closest('label').classList.toggle('on', i.checked);
       });
     }
+    function modeWords() {
+      const move = mode === 'move';
+      const insert = mode === 'insert';
+      dlg.classList.toggle('cut-moving', move || insert);
+      if (moveBlock) moveBlock.hidden = !(move || insert);
+      if (insertBlock) insertBlock.hidden = !insert;
+      dlg.querySelector('[data-cut-row]').hidden = insert;
+      if (moveBlock) dlg.querySelector('[data-move-to-label]').textContent = insert ? 'แทรกไว้' : 'ย้ายไปไว้';
+      dlg.querySelector('[data-cut-step]').textContent = insert ? 'เลือกไฟล์ PDF ที่จะแทรก' : move ? 'พิมพ์เลขหน้าที่จะย้าย' : 'พิมพ์เลขหน้าที่จะลบ';
+      dlg.querySelector('[data-cut-hint]').textContent = move ? 'เช่น 2 หรือ 2-3 หรือกดที่ภาพด้านล่างก็ได้' : 'เช่น 1-18 หรือ 1-18, 25 หรือกดที่ภาพด้านล่างก็ได้';
+      dlg.querySelector('[data-cut-gallery-n]').textContent = move || insert ? '4' : '2';
+      dlg.querySelector('[data-cut-gallery]').textContent = insert ? 'ภาพทุกหน้า กดหน้าที่ต้องการแทรกต่อท้าย' : move ? 'ภาพทุกหน้า' : 'ดูให้แน่ใจว่าถูกหน้า';
+      okBtn.textContent = insert ? 'แทรกไฟล์' : move ? 'ย้ายหน้า' : 'ลบหน้าที่เลือก';
+      box.querySelectorAll('.fp-del').forEach((x) => (x.textContent = insert ? 'แทรกหลังนี้' : move ? 'ย้าย' : 'ลบ'));
+    }
+    // ภาพหน้าข้างเคียงตามลำดับใหม่ เห็นว่าหน้าที่ย้ายไปอยู่ตรงไหนจริง
+    async function drawPreview(cells) {
+      const run = ++previewRun;
+      preview.textContent = '';
+      if (!cells.length || !doc) return;
+      const shown = cells.map((c) => {
+        const cell = document.createElement('div');
+        cell.className = 'move-cell' + (c.hit ? ' moved' : '');
+        const sheet = document.createElement('div');
+        sheet.className = 'cut-sheet';
+        const old = document.createElement('div');
+        old.textContent = c.was;
+        const now = document.createElement('div');
+        now.textContent = 'เป็นหน้า ' + c.now;
+        cell.append(sheet, old, now);
+        preview.appendChild(cell);
+        return sheet;
+      });
+      for (let i = 0; i < cells.length; i++) {
+        try {
+          const canvas = await renderCutPage(cells[i].doc, cells[i].n);
+          if (run !== previewRun) return;
+          shown[i].appendChild(canvas);
+        } catch {
+          // ปิดกล่องระหว่างวาด หรือหน้านี้วาดไม่ได้ เว้นกรอบว่างไว้ ยังเห็นเลขหน้า
+          if (run !== previewRun) return;
+        }
+      }
+    }
+    function moveCells(order) {
+      if (!order.length) return [];
+      const set = new Set(selected);
+      const at = order.findIndex((n) => set.has(n));
+      return [at - 1, at, at + selected.length - 1, at + selected.length]
+        .filter((i, x, all) => i >= 0 && i < order.length && all.indexOf(i) === x)
+        .map((i) => ({ doc, n: order[i], was: 'หน้า ' + order[i] + ' เดิม', now: i + 1, hit: set.has(order[i]) }));
+    }
+    function insertCells(after) {
+      const cells = [];
+      if (after > 0) cells.push({ doc, n: after, was: 'หน้า ' + after + ' เดิม', now: after, hit: false });
+      cells.push({ doc: extra.doc, n: 1, was: 'ไฟล์ใหม่ หน้า 1', now: after + 1, hit: true });
+      if (extra.pages > 1) cells.push({ doc: extra.doc, n: extra.pages, was: 'ไฟล์ใหม่ หน้า ' + extra.pages, now: after + extra.pages, hit: true });
+      if (after < total) cells.push({ doc, n: after + 1, was: 'หน้า ' + (after + 1) + ' เดิม', now: after + extra.pages + 1, hit: false });
+      return cells;
+    }
+    const insertWhere = (after) => (after === 0 ? 'ไว้หน้าแรก' : moveTo() === 'last' ? 'ไว้ท้ายเล่ม' : 'ไว้หลังหน้า ' + after);
+    function refreshInsert() {
+      const dest = moveAfter();
+      // เลือกปลายทางแล้วภาพหน้านั้นขึ้นป้ายบอก
+      selected = !dest.error && dest.after > 0 && moveTo() === 'after' ? [dest.after] : [];
+      paint();
+      if (!extra) {
+        drawPreview([]);
+        sum.textContent = 'ยังไม่ได้เลือกไฟล์ที่จะแทรก';
+      } else if (dest.error) {
+        drawPreview([]);
+        sum.textContent = dest.error;
+      } else {
+        drawPreview(insertCells(dest.after));
+        sum.textContent = 'แทรก ' + extra.name + ' ' + extra.pages + ' หน้า ' + insertWhere(dest.after) + ' รวมเป็น ' + (total + extra.pages) + ' หน้า';
+      }
+    }
+    function refreshMove(error) {
+      const plan = error ? { order: [], error } : movePlan();
+      drawPreview(moveCells(plan.order));
+      if (!selected.length && !error) sum.textContent = 'ยังไม่ได้เลือกหน้าที่จะย้าย';
+      else if (plan.error) sum.textContent = plan.error;
+      else sum.textContent = 'หน้า ' + runsText(', ', ' ถึง ') + ' ย้ายไป' + moveWhere(plan.after) + ' รวมยังมี ' + total + ' หน้า';
+    }
     function refresh(error) {
       if (!total) return (sum.textContent = '');
+      if (mode === 'insert') return refreshInsert();
+      if (mode === 'move') return refreshMove(error);
       if (error) sum.textContent = error;
       else if (!selected.length) sum.textContent = 'ยังไม่ได้เลือกหน้าที่จะลบ';
       else if (selected.length >= total) sum.textContent = 'ลบทุกหน้าไม่ได้ ต้องเหลืออย่างน้อย 1 หน้า';
       else sum.textContent = 'ลบหน้า ' + runsText(', ', ' ถึง ') + ' รวม ' + selected.length + ' หน้า ไฟล์ใหม่เหลือ ' + (total - selected.length) + ' หน้า';
+    }
+    async function renderCutPage(cur, n) {
+      const page = await cur.getPage(n);
+      const vp = page.getViewport({ scale: 200 / page.getViewport({ scale: 1 }).width });
+      const canvas = document.createElement('canvas');
+      canvas.width = Math.floor(vp.width);
+      canvas.height = Math.floor(vp.height);
+      const ctx = canvas.getContext('2d');
+      ctx.fillStyle = '#fff';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      await page.render({ canvas, canvasContext: ctx, viewport: vp }).promise;
+      page.cleanup();
+      return canvas;
     }
     async function drawQueue() {
       if (drawing) return;
@@ -858,16 +997,7 @@
         const label = queue.shift();
         const cur = doc;
         try {
-          const page = await cur.getPage(Number(label.querySelector('input').value));
-          const vp = page.getViewport({ scale: 200 / page.getViewport({ scale: 1 }).width });
-          const canvas = document.createElement('canvas');
-          canvas.width = Math.floor(vp.width);
-          canvas.height = Math.floor(vp.height);
-          const ctx = canvas.getContext('2d');
-          ctx.fillStyle = '#fff';
-          ctx.fillRect(0, 0, canvas.width, canvas.height);
-          await page.render({ canvas, canvasContext: ctx, viewport: vp }).promise;
-          page.cleanup();
+          const canvas = await renderCutPage(cur, Number(label.querySelector('input').value));
           label.querySelector('.cut-sheet').appendChild(canvas);
           label.dataset.drawn = '1';
           seen.unobserve(label);
@@ -880,6 +1010,7 @@
     }
     function closeDoc() {
       queue = [];
+      previewRun++;
       if (seen) seen.disconnect();
       seen = null;
       doc = null;
@@ -897,6 +1028,7 @@
           label.innerHTML = '<input type="checkbox" value="' + n + '"><span class="cut-sheet"></span><span class="fp-del">ลบ</span><span class="fp-n">หน้า ' + n + '</span>';
           box.appendChild(label);
         }
+        modeWords();
       }
       seen = new IntersectionObserver(
         (entries) => {
@@ -920,12 +1052,65 @@
       const firstOn = box.querySelector('label.on');
       if (firstOn) box.scrollTop = firstOn.offsetTop - box.offsetTop;
     });
-    box.addEventListener('change', () => {
+    box.addEventListener('change', (e) => {
+      // แทรกไฟล์: กดภาพเลือกปลายทาง หลังหน้านั้น
+      if (mode === 'insert') {
+        dlg.querySelector('input[name=move_to][value=after]').checked = true;
+        afterIn.value = e.target.value;
+        return refresh();
+      }
       selected = [...box.querySelectorAll('input:checked')].map((i) => Number(i.value));
       textIn.value = runsText(', ', '-');
       paint();
       refresh();
     });
+    // เปลี่ยนแท็บล้างหน้าที่เลือก กันหน้าที่เลือกจะย้ายถูกลบโดยไม่ตั้งใจ
+    dlg.querySelectorAll('[data-cut-mode]').forEach((tab) =>
+      tab.addEventListener('click', () => {
+        mode = tab.dataset.cutMode;
+        dlg.querySelectorAll('[data-cut-mode]').forEach((x) => {
+          x.classList.toggle('on', x === tab);
+          x.setAttribute('aria-selected', x === tab ? 'true' : 'false');
+        });
+        selected = [];
+        textIn.value = '';
+        if (afterIn) afterIn.value = '';
+        const toLast = dlg.querySelector('input[name=move_to][value=last]');
+        if (toLast) toLast.checked = true;
+        previewRun++;
+        if (preview) preview.textContent = '';
+        paint();
+        modeWords();
+        refresh();
+        if (mode !== 'insert') textIn.focus();
+      })
+    );
+    if (insertFile) {
+      insertFile.addEventListener('change', async () => {
+        const f = insertFile.files[0];
+        insertFile.value = '';
+        if (!f) return;
+        try {
+          if (!/\.pdf$/i.test(f.name) && f.type !== 'application/pdf') throw new SendError('เลือกได้เฉพาะไฟล์ PDF');
+          const data = new Uint8Array(await f.arrayBuffer());
+          const opened = await openPdf(await pdfjsLib(), data.slice()).promise;
+          if (extra && extra.doc) extra.doc.destroy();
+          extra = { bytes: data, doc: opened, pages: opened.numPages, name: f.name };
+          insertName.textContent = f.name + ' ' + opened.numPages + ' หน้า';
+          refresh();
+        } catch (err) {
+          tell((err && err.userMessage) || 'เปิดไฟล์นี้ไม่ได้ ไฟล์อาจเสียหรือตั้งรหัสผ่านไว้');
+        }
+      });
+    }
+    dlg.querySelectorAll('input[name=move_to]').forEach((r) => r.addEventListener('change', () => refresh()));
+    if (afterIn) {
+      afterIn.addEventListener('focus', () => {
+        dlg.querySelector('input[name=move_to][value=after]').checked = true;
+        refresh();
+      });
+      afterIn.addEventListener('input', () => refresh());
+    }
     dlg.querySelector('[data-cut-cancel]').addEventListener('click', () => dlg.close());
     dlg.addEventListener('close', closeDoc);
     btn.addEventListener('click', async () => {
@@ -948,29 +1133,54 @@
     });
     dlg.querySelector('[data-cut-ok]').addEventListener('click', async () => {
       if (!bytes || !total) return tell('รอให้เปิดไฟล์เสร็จก่อน');
-      const parsed = window.PdfMerge.parsePages(textIn.value, total);
+      const insert = mode === 'insert';
+      const parsed = insert ? { pages: selected, error: '' } : window.PdfMerge.parsePages(textIn.value, total);
       if (parsed.error) return tell(parsed.error);
       selected = parsed.pages;
-      if (!selected.length) return tell('ยังไม่ได้เลือกหน้าที่จะลบ');
-      if (selected.length >= total) return tell('ลบทุกหน้าไม่ได้ ต้องเหลืออย่างน้อย 1 หน้า');
+      const move = mode === 'move';
+      let plan = null;
+      if (insert) {
+        if (!extra) return tell('ยังไม่ได้เลือกไฟล์ที่จะแทรก');
+        const dest = moveAfter();
+        if (dest.error) return tell(dest.error);
+        plan = { after: dest.after };
+      } else if (move) {
+        plan = movePlan();
+        if (!selected.length) return tell('ยังไม่ได้เลือกหน้าที่จะย้าย');
+        if (plan.error) return tell(plan.error);
+      } else {
+        if (!selected.length) return tell('ยังไม่ได้เลือกหน้าที่จะลบ');
+        if (selected.length >= total) return tell('ลบทุกหน้าไม่ได้ ต้องเหลืออย่างน้อย 1 หน้า');
+      }
       const left = total - selected.length;
+      const to = moveTo();
       dlg.close();
-      const ok = await ask('ลบหน้า ' + runsText(', ', ' ถึง ') + ' ของไฟล์นี้ ใช่ไหม\nไฟล์ใหม่เหลือ ' + left + ' หน้า\nไฟล์เดิมเก็บไว้ในไฟล์รุ่นก่อนแก้ไข กลับไปใช้ได้ถ้าลบผิด', { icon: 'note', ok: 'ลบหน้า' });
+      const ok = insert
+        ? await ask('แทรก ' + extra.name + ' ' + extra.pages + ' หน้า ' + insertWhere(plan.after) + ' ใช่ไหม\nรวมเป็น ' + (total + extra.pages) + ' หน้า\nไฟล์เดิมเก็บไว้ในไฟล์รุ่นก่อนแก้ไข กลับไปใช้ได้ถ้าแทรกผิด', { icon: 'note', ok: 'แทรกไฟล์' })
+        : move
+        ? await ask('ย้ายหน้า ' + runsText(', ', ' ถึง ') + ' ไป' + moveWhere(plan.after) + ' ใช่ไหม\nรวมยังมี ' + total + ' หน้า\nไฟล์เดิมเก็บไว้ในไฟล์รุ่นก่อนแก้ไข กลับไปใช้ได้ถ้าย้ายผิด', { icon: 'note', ok: 'ย้ายหน้า' })
+        : await ask('ลบหน้า ' + runsText(', ', ' ถึง ') + ' ของไฟล์นี้ ใช่ไหม\nไฟล์ใหม่เหลือ ' + left + ' หน้า\nไฟล์เดิมเก็บไว้ในไฟล์รุ่นก่อนแก้ไข กลับไปใช้ได้ถ้าลบผิด', { icon: 'note', ok: 'ลบหน้า' });
       if (!ok) return btn.click();
-      const url = dlg.dataset.action;
+      const url = insert ? dlg.dataset.insertAction : move ? dlg.dataset.moveAction : dlg.dataset.action;
+      const busyText = insert ? 'กำลังแทรกไฟล์' : move ? 'กำลังย้ายหน้าไฟล์' : 'กำลังตัดหน้าไฟล์';
       try {
-        showBusy('กำลังตัดหน้าไฟล์', false);
+        showBusy(busyText, false);
         if (!window.PDFLib) await loadScript('/vendor/pdf-lib/pdf-lib.min.js');
-        const m = await window.PdfMerge.cutPages(window.PDFLib, bytes.slice(), selected);
+        const m = insert
+          ? await window.PdfMerge.insertPages(window.PDFLib, bytes.slice(), extra.bytes.slice(), plan.after)
+          : move
+            ? await window.PdfMerge.movePages(window.PDFLib, bytes.slice(), plan.order)
+            : await window.PdfMerge.cutPages(window.PDFLib, bytes.slice(), selected);
         const merged = new Blob([m.bytes], { type: 'application/pdf' });
-        // รูปปกในคลังเปลี่ยนเฉพาะเมื่อลบหน้า 1
-        const thumb = dlg.dataset.library && selected[0] === 1 ? await makeThumb(new Uint8Array(m.bytes)) : null;
-        showBusy('กำลังตัดหน้าไฟล์', true);
+        // รูปปกในคลังเปลี่ยนเฉพาะเมื่อหน้าแรกของไฟล์เปลี่ยน
+        const firstChanged = insert ? plan.after === 0 : move ? plan.order[0] !== 1 : selected[0] === 1;
+        const thumb = dlg.dataset.library && firstChanged ? await makeThumb(new Uint8Array(m.bytes)) : null;
+        showBusy(busyText, true);
         setProgress(0);
         const all = merged.size + (thumb ? thumb.size : 0);
         const start = await request('POST', '/upload/start', new URLSearchParams({ form: url, field: 'main_files', name: 'merged.pdf', merged: '2', size: String(merged.size) }), { 'Content-Type': 'application/x-www-form-urlencoded' });
         await sendChunks(start.token, merged, start.chunk, (n) => setProgress(Math.min(99, Math.round((n / all) * 100))));
-        const data = new URLSearchParams({ removed: runsText(',', '-'), left: String(m.pages), from: dlg.dataset.from });
+        const data = new URLSearchParams(insert ? { after: String(plan.after), to, added: String(m.added), name: extra.name, left: String(m.pages), from: dlg.dataset.from } : move ? { moved: runsText(',', '-'), after: String(plan.after), to, left: String(m.pages), from: dlg.dataset.from } : { removed: runsText(',', '-'), left: String(m.pages), from: dlg.dataset.from });
         data.append('upload_main_files', start.token);
         if (dlg.dataset.frontcheck) data.append('front_check', await frontCheck(new Uint8Array(m.bytes), dlg.dataset.code));
         if (thumb) data.append('upload_cover_thumb', await uploadBlob(thumb, { form: url, field: 'cover_thumb', name: 'cover.jpg' }));
