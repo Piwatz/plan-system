@@ -1,0 +1,38 @@
+<%- include('../partials/top') %>
+<%# เลือกแบบแถบคลังงานในหน้าแรก และติ๊กงานเด่น (ฟังก์ชันเสริม libfeature) ตัวกรองทำในหน้าเว็บ ลำดับที่ติ๊กคือลำดับที่ขึ้น ยังไม่มีผลกับครูจนกว่าจะบันทึก %>
+<div class="page-head">
+  <div>
+    <h1>แถบคลังงานในหน้าแรก</h1>
+    <div class="sub">เลือกแบบที่ครูทุกคนจะเห็น และติ๊กงานเด่นที่อยากโชว์ ครูยังไม่เห็นจนกว่าจะกดบันทึก</div>
+  </div>
+  <div class="actions"><a class="btn btn-ghost" href="/admin">กลับหน้าผู้ดูแลระบบ</a></div>
+</div>
+<form method="post" action="/admin/libfeature" data-lib-pick data-picked="<%= JSON.stringify(picked) %>" data-confirm="บันทึกแถบคลังงาน ครูทุกคนจะเห็นทันที">
+  <div class="card lf-modes">
+    <label class="check lf-mode"><input type="radio" name="lib_strip_mode" value="recent" <%= mode === 'recent' ? 'checked' : '' %>> <span><b>เล่มใหม่ในคลัง</b><br><span class="muted small">ระบบขึ้นเล่มล่าสุดให้เอง</span></span></label>
+    <label class="check lf-mode"><input type="radio" name="lib_strip_mode" value="featured" <%= mode === 'featured' ? 'checked' : '' %>> <span><b>เมนูคลังงานพร้อมงานเด่น</b><br><span class="muted small">มีปุ่มเข้าแต่ละชั้น ปุ่มกลุ่มสาระ และงานที่ติ๊กไว้ด้านล่าง</span></span></label>
+  </div>
+  <input type="hidden" name="lib_featured" value="<%= JSON.stringify(picked) %>" data-lf-value>
+  <div class="card">
+    <div class="card-head"><h2>เลือกงานเด่น</h2><div class="actions"><button type="button" class="btn btn-sm btn-ghost" data-lf-clear>ล้างที่ติ๊กไว้</button><button type="submit" class="btn btn-sm btn-primary"><%- icon('check', 16) %> บันทึก</button></div></div>
+    <div class="lf-sum"><b data-lf-sum></b><span class="muted small">กดที่ปกเพื่อติ๊ก ตัวเลขบนปกคือลำดับที่ขึ้นในหน้าแรก จอคอมเห็นประมาณ 9 เล่มแรก เล่มที่เหลือกดลูกศรหรือปัดดู</span></div>
+    <div class="lf-filter">
+      <select data-lf-shelf aria-label="เลือกชั้น"><option value="">ทุกชั้น</option><% for (const s of shelves) { %><option value="<%= s.key %>"><%= s.label %></option><% } %></select>
+      <select data-lf-dept aria-label="เลือกกลุ่มสาระ"><option value="">ทุกกลุ่มสาระ</option><% for (const d of departments) { %><option value="<%= d.id %>"><%= d.name %></option><% } %></select>
+      <select data-lf-term aria-label="เลือกภาคเรียน"><option value="">ทุกภาคเรียน</option><% for (const t of terms) { %><option value="<%= t %>">ภาคเรียนที่ <%= t.split('/')[1] %>/<%= t.split('/')[0] %></option><% } %></select>
+      <input type="search" data-lf-q placeholder="ค้นชื่อวิชาหรือชื่อครู" aria-label="ค้นชื่อวิชาหรือชื่อครู">
+      <label class="check"><input type="checkbox" data-lf-only> <span>เฉพาะที่ติ๊กไว้</span></label>
+    </div>
+    <% if (!books.length) { %><p class="muted">ยังไม่มีเล่มในคลัง</p><% } %>
+    <div class="lf-grid">
+      <% for (const b of books) { %>
+        <button type="button" class="lf-item" data-key="<%= b.bkey %>" data-shelf="<%= b.kind %>" data-dept="<%= b.department_id || '' %>" data-term="<%= b.academic_year %>/<%= b.semester %>" data-text="<%= `${b.subject_code} ${b.subject_name} ${b.teacher_name}`.toLowerCase() %>" aria-pressed="false">
+          <span class="lf-no"></span><%- include('../partials/lib_cover', { b }) %>
+          <span class="lib-mini-t"><b><%= b.subject_name || b.subject_code %></b><span><%= b.teacher_name %></span><% if (b.deptShort) { %><i class="lib-mini-d"><%= b.deptShort %></i><% } %></span>
+        </button>
+      <% } %>
+    </div>
+    <p class="muted" data-lf-none hidden>ไม่พบเล่มตามที่เลือก</p>
+  </div>
+</form>
+<%- include('../partials/bottom') %>

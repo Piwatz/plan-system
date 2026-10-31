@@ -1,0 +1,99 @@
+<!doctype html>
+<html lang="th"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>แถบคลังงาน ขนาดจริง</title>
+<style>
+@font-face { font-family: Sarabun; font-weight: 400; src: url(../node_modules/@fontsource/sarabun/files/sarabun-thai-400-normal.woff2) format('woff2'); }
+@font-face { font-family: Sarabun; font-weight: 600; src: url(../node_modules/@fontsource/sarabun/files/sarabun-thai-600-normal.woff2) format('woff2'); }
+@font-face { font-family: Sarabun; font-weight: 700; src: url(../node_modules/@fontsource/sarabun/files/sarabun-thai-700-normal.woff2) format('woff2'); }
+:root { --bg:#F7F3EF; --ink:#241517; --muted:#665558; --line:#E7DDD7; --primary:#8E1B2C; --soft:#F5E6E7; --plan:#1D3A66; --manual:#17694F; --note:#8E1B2C; }
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--ink); font: 400 16px/1.45 Sarabun, Tahoma, sans-serif; padding: 20px; }
+.set { display: none; }
+.lbl { display: flex; gap: 10px; align-items: center; margin: 0 0 8px; font-weight: 700; font-size: 1.1rem; }
+.lbl span { background: var(--ink); color: #fff; border-radius: 8px; padding: 2px 11px; }
+.lbl em { font-style: normal; font-weight: 400; color: var(--muted); font-size: .95rem; }
+.card { background: #fff; border: 1px solid var(--line); border-radius: 22px; }
+.head { display: flex; justify-content: space-between; align-items: center; gap: 10px; }
+.head h2 { margin: 0; }
+.btn { border: 1px solid var(--line); border-radius: 12px; font-weight: 600; white-space: nowrap; background: #fff; }
+.cv { display: block; aspect-ratio: 210/297; border-radius: 4px; box-shadow: 2px 3px 6px rgba(15,30,51,.22); position: relative; overflow: hidden; color: #fff; container-type: inline-size; text-align: center; }
+.cv img { width: 26cqw; margin-top: 8cqw; }
+.cv b { display: block; font-size: 8cqw; line-height: 1.2; margin: 3cqw 5cqw 0; }
+.cv u { position: absolute; left: 0; right: 0; bottom: 0; text-decoration: none; font-size: 5cqw; padding: 2cqw; background: rgba(0,0,0,.25); }
+.g1 { background: linear-gradient(160deg,#C2334D,#6E1422); } .g2 { background: linear-gradient(160deg,#58B7E8,#CFE9D8); color:#14324A; } .g3 { background: linear-gradient(160deg,#F2F2F2,#D9C7C7); color:#3A2024; }
+.g4 { background: linear-gradient(160deg,#8D5BEB,#F08AB8); } .g5 { background: linear-gradient(160deg,#E8B524,#9E2A1C); } .g6 { background: linear-gradient(160deg,#1E74C9,#7C3EC4); } .g7 { background: linear-gradient(160deg,#17694F,#6FD0A5); } .g8 { background: linear-gradient(160deg,#F07B12,#E5468F); } .g9 { background: linear-gradient(160deg,#12A594,#1D3A66); }
+
+/* ขนาดตาม app.css จริง: คอม .lib-fill มือถือ .lib-compact */
+#pc { width: 1256px; }
+#pc .wrap { margin-bottom: 24px; }
+#pc .card { width: 1216px; padding: 18px 20px 20px; }
+#pc .head { margin-bottom: 12px; }
+#pc .head h2 { font-size: 1.3rem; }
+#pc .btn { padding: 6px 13px; font-size: .92rem; }
+.pcrow { display: grid; grid-template-columns: repeat(auto-fill, minmax(112px,1fr)); grid-template-rows: auto; grid-auto-rows: 0; gap: 0 14px; overflow: hidden; }
+.mini { min-width: 0; overflow: hidden; font-size: .8rem; line-height: 1.3; overflow-wrap: anywhere; }
+.mini > b { display: block; margin-top: 6px; }
+.mini > span:not(.cv) { color: var(--muted); display: block; }
+.mini > i { font-style: normal; display: inline-block; margin-top: 3px; background: var(--soft); color: var(--primary); border-radius: 6px; padding: 0 6px; font-size: .74rem; font-weight: 600; }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 12px; }
+.chip { border: 1px solid var(--line); border-radius: 999px; padding: 3px 12px; font-size: .9rem; font-weight: 600; white-space: nowrap; background: #fff; }
+.chip.on { background: var(--primary); border-color: var(--primary); color: #fff; }
+.mis { display: flex; gap: 10px; margin-bottom: 12px; }
+.mi { flex: 1 1 0; min-width: 0; display: flex; align-items: center; gap: 9px; background: var(--soft); border-radius: 12px; padding: 7px 12px; font-weight: 600; font-size: .95rem; }
+.mi s { text-decoration: none; width: 28px; height: 28px; flex: none; border-radius: 8px; color: #fff; display: grid; place-items: center; font-weight: 700; }
+.mi small { font-weight: 400; color: var(--muted); margin-left: 6px; }
+.split { display: grid; grid-template-columns: 220px minmax(0,1fr); gap: 16px; }
+.split .mis { flex-direction: column; margin: 0; }
+.split .mi { flex: none; }
+
+#mb { display: none; grid-template-columns: repeat(4, 390px); gap: 22px; align-items: start; }
+#mb .card { padding: 10px 12px; border-radius: 18px; }
+#mb .head { margin-bottom: 6px; }
+#mb .head h2 { font-size: 1rem; }
+#mb .btn { padding: 4px 10px; font-size: .84rem; }
+.mbrow { display: flex; gap: 9px; overflow: hidden; padding: 0 0 4px; }
+.mbrow .cv { flex: 0 0 66px; width: 66px; }
+#mb .chips { flex-wrap: nowrap; overflow: hidden; gap: 5px; margin-bottom: 8px; }
+#mb .chip { font-size: .8rem; padding: 2px 10px; }
+#mb .mis { gap: 6px; margin-bottom: 8px; }
+#mb .mi { padding: 5px 7px; gap: 5px; font-size: .8rem; flex-direction: column; text-align: center; line-height: 1.2; }
+#mb .mi small { margin: 0; display: block; font-size: .74rem; }
+#mb .lbl { font-size: 1rem; }
+</style></head>
+<body>
+<div id="pc" class="set"></div>
+<div id="mb" class="set"></div>
+<script>
+const LOGO = '../public/img/school-logo-sm.png';
+const B = [
+  ['พระพุทธศาสนา 4','นายยุทธนากรณ์ สมมติ','สังคมศึกษา'],['คณิตศาสตร์ 2','นางวิภารัตน์ วงศ์สมมติ','คณิตศาสตร์'],['ภาษาไทย 1','นางสาววอรุณี กลอนงาม','ภาษาไทย'],
+  ['เคมี 4','นางสาวอรอนงค์ สีมาสมมติ','วิทยาศาสตร์ฯ'],['ทัศนศิลป์ 1','นางศิลปา งามตา','ศิลปะ'],['พลศึกษา 1','นายพละ แข็งแรง','สุขศึกษาฯ'],
+  ['Robotics','นางสาวกัลยรวี สมมติ','การงานอาชีพ'],['ภาษาอังกฤษ 1','นางสาวอลิสา พูดเก่ง','ภาษาต่างประเทศ'],['ฟิสิกส์ 4','นายสมชาย ใจดี','วิทยาศาสตร์ฯ'],
+];
+const cover = (b, i) => `<span class="cv g${i + 1}"><img src="${LOGO}" alt=""><b>${b[0]}</b><u>${b[1]}</u></span>`;
+const pc = (dp, n = 9) => `<div class="pcrow">${B.slice(0, n).map((b, i) => `<div class="mini">${cover(b, i)}<b>${b[0]}</b><span>${b[1]}</span>${dp ? `<i>${b[2]}</i>` : ''}</div>`).join('')}</div>`;
+const mb = () => `<div class="mbrow">${B.map(cover).join('')}</div>`;
+const CH = ['ทุกกลุ่มสาระ','ภาษาไทย','คณิตศาสตร์','วิทยาศาสตร์ฯ','สังคมศึกษา','สุขศึกษาฯ','ศิลปะ','การงานอาชีพ','ภาษาต่างประเทศ'];
+const chips = `<div class="chips">${CH.map((c, i) => `<span class="chip ${i ? '' : 'on'}">${c}</span>`).join('')}</div>`;
+const MI = [['ผ','var(--plan)','แผนการจัดการเรียนรู้','แผน','128 เล่ม'],['ค','var(--manual)','คู่มือรายวิชา','คู่มือ','204 เล่ม'],['บ','var(--note)','บันทึกหลังแผน','บันทึก','57 เล่ม']];
+const mis = `<div class="mis">${MI.map((m) => `<div class="mi"><s style="background:${m[1]}">${m[0]}</s><span>${m[2]}<small>${m[4]}</small></span></div>`).join('')}</div>`;
+const misM = `<div class="mis">${MI.map((m) => `<div class="mi"><span>${m[3]}<small>${m[4]}</small></span></div>`).join('')}</div>`;
+const head = (t, b) => `<div class="head"><h2>${t}</h2><span class="btn">${b}</span></div>`;
+const T = 'คลังงานการจัดการเรียนรู้', TM = 'คลังงาน';
+const V = [
+  ['เดิม','เล่มใหม่ในคลัง', head('เล่มใหม่ในคลัง','ไปที่คลัง') + pc(0), head('เล่มใหม่ในคลัง','ไปที่คลัง') + mb()],
+  ['ค','แถวชื่อกลุ่มสาระ กดแล้วปกเปลี่ยนทันที', head(T,'ดูทั้งหมด') + chips + pc(1), head(TM,'ดูทั้งหมด') + chips + mb()],
+  ['ก','ปุ่ม 3 ชั้นอยู่บน ปกอยู่ล่าง', head(T,'ดูทั้งหมด') + mis + pc(1), head(TM,'ดูทั้งหมด') + misM + mb()],
+  ['ข','เมนูอยู่ซ้าย ปกอยู่ขวา', head(T,'ดูทั้งหมด') + `<div class="split">${mis}${pc(1, 7)}</div>`, head(TM,'ดูทั้งหมด') + misM + mb()],
+];
+document.getElementById('pc').innerHTML = V.map((v) => `<div class="wrap"><p class="lbl"><span>${v[0] === 'เดิม' ? 'แบบเดิม' : 'แบบ ' + v[0]}</span><em>${v[1]}</em></p><div class="card" data-k="pc-${v[0]}">${v[2]}</div></div>`).join('');
+document.getElementById('mb').innerHTML = V.map((v) => `<div><p class="lbl"><span>${v[0] === 'เดิม' ? 'แบบเดิม' : 'แบบ ' + v[0]}</span></p><div class="card" data-k="mb-${v[0]}">${v[3]}</div></div>`).join('');
+const only = new URLSearchParams(location.search).get('show') || 'pc';
+document.getElementById(only).style.display = only === 'mb' ? 'grid' : 'block';
+document.fonts.ready.then(() => setTimeout(() => {
+  document.title = [...document.querySelectorAll('[data-k]')].filter((c) => c.offsetHeight).map((c) => c.dataset.k + '=' + c.offsetHeight + '/' + c.querySelectorAll('.pcrow > .mini').length).join(' ');
+  document.body.setAttribute('data-sizes', document.title);
+}, 300));
+</script>
+</body></html>

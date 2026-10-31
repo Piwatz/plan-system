@@ -157,6 +157,61 @@ async function recent(n = 6, rule = showRule({})) {
   );
 }
 
+// ---------- แถบคลังงานในหน้าแรก (ฟังก์ชันเสริม libfeature) ----------
+// lib_strip_mode: recent เล่มใหม่ล่าสุด (แบบเดิม) · featured ปุ่มเมนูคลังและงานเด่นที่ผู้ดูแลเลือก
+// lib_featured: รหัสเล่มเรียงตามลำดับที่ขึ้น เช่น ["plan:12","note:12"] เล่มที่ถูกซ่อนหรือถูกส่งกลับหลุดจากแถบเอง
+const FEATURED_MAX = 200;
+
+function stripMode(settings, ff) {
+  return ff.libfeature && settings.lib_strip_mode === 'featured' ? 'featured' : 'recent';
+}
+
+function parseFeatured(v) {
+  let list;
+  try {
+    list = JSON.parse(v || '[]');
+  } catch {
+    return [];
+  }
+  if (!Array.isArray(list)) return [];
+  return [...new Set(list.filter((k) => typeof k === 'string' && /^(plan|manual|note):\d+$/.test(k)))].slice(0, FEATURED_MAX);
+}
+
+// ทุกเล่มที่แสดงในคลัง ทุกชั้นทุกภาคเรียน keys = เอาเฉพาะเล่มเหล่านี้ เรียงตามลำดับใน keys
+async function books(rule, keys = null) {
+  if (keys && !keys.length) return [];
+  const parts = SHELVES.map((s) => visibleSql(s.query(filters()), rule));
+  const rows = await q.all(
+    `SELECT * FROM (${parts.map((p) => p.sql).join(' UNION ALL ')}) x${keys ? ' WHERE x.bkey = ANY(?::text[])' : ''} ORDER BY x.done_at DESC NULLS LAST, x.id DESC`,
+    ...parts.flatMap((p) => p.params),
+    ...(keys ? [keys] : [])
+  );
+  if (!keys) return rows;
+  const at = new Map(keys.map((k, i) => [k, i]));
+  return rows.sort((a, b) => at.get(a.bkey) - at.get(b.bkey));
+}
+
+// ปุ่มเมนูของแถบ: จำนวนเล่มในแต่ละชั้นของภาคเรียนปัจจุบัน ตรงกับหน้าคลังที่ปุ่มพาไป
+async function shelfCounts(term, rule) {
+  const parts = SHELVES.map((s) => visibleSql(s.query(filters({ term })), rule));
+  const rows = await q.all(`SELECT x.kind, COUNT(*)::int AS n FROM (${parts.map((p) => p.sql).join(' UNION ALL ')}) x GROUP BY x.kind`, ...parts.flatMap((p) => p.params));
+  const n = Object.fromEntries(rows.map((r) => [r.kind, r.n]));
+  return SHELVES.map((s) => ({ key: s.key, short: s.short, tiny: s.key === 'note' ? 'บันทึก' : s.short, n: n[s.key] || 0 }));
+}
+
+// ชื่อกลุ่มสาระแบบสั้นบนปุ่มและใต้ปก เช่น สุขศึกษาและพลศึกษา เป็น สุขศึกษา
+function deptShort(name) {
+  const v = String(name || '').replace(/^กลุ่มสาระการเรียนรู้\s*/, '').trim();
+  return v.split(/และ|\s|,/)[0] || v;
+}
+
+// ปุ่มกลุ่มสาระในแถบ เฉพาะกลุ่มที่มีงานเด่น กดแล้วจึงไม่มีวันว่าง
+function stripDepts(rows) {
+  const seen = new Map();
+  for (const r of rows) if (r.department_id && !seen.has(r.department_id)) seen.set(r.department_id, { id: r.department_id, name: r.dept_name, short: deptShort(r.dept_name), sort: r.dept_sort });
+  return [...seen.values()].sort((a, b) => (a.sort || 0) - (b.sort || 0));
+}
+
 // เปิดอ่านได้ไหม: งานของตัวเอง ผู้ดูแลระบบ และผู้ตรวจตามสิทธิ์เดิม (ทั้งโรงเรียน หรือกลุ่มสาระตนเอง) · คนอื่นตามหน้าสิทธิ์อ่านงาน (readperm) ถ้าปิดใช้สวิตช์ libread
 // งานที่ยังไม่ผ่านครบ สวิตช์ libread ไม่ทำให้คนอื่นเปิดได้ (ใช้สิทธิ์ผู้ตรวจเดิม)
 function canOpen(me, row, ff) {
@@ -252,4 +307,4 @@ async function readable(ff, sub, { book = false } = {}, me = null) {
   return r.n > 0 && !(a.unapproved ? r.ret : r.bad);
 }
 
-module.exports = { DRAWN, PAGE, COVER_MAX, SHELVES, SHELF, page, recent, canOpen, openHref, coverUrl, gradeText, termText, waitText, SHOW_MODES, showRule, visibleSql, bookState, decorate, readable };
+module.exports = { DRAWN, PAGE, COVER_MAX, SHELVES, SHELF, page, recent, stripMode, parseFeatured, books, shelfCounts, deptShort, stripDepts, canOpen, openHref, coverUrl, gradeText, termText, waitText, SHOW_MODES, showRule, visibleSql, bookState, decorate, readable };

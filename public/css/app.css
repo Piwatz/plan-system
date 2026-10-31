@@ -1818,3 +1818,59 @@ tr.dr-dup td { background: var(--back-bg); }
 .cklist.ck-short .ck.ok, .cklist.ck-short .ckn, .cklist.ck-short .ck-foot { display: none; }
 .find-hit { scroll-margin-top: 90px; animation: findhit 1s ease-in-out 3; border-radius: var(--rs); outline: 3px solid var(--wait); outline-offset: 3px; }
 @keyframes findhit { 50% { box-shadow: 0 0 0 4px var(--wait), 0 0 0 10px var(--wait-bg); background-color: var(--wait-bg); } }
+
+/* แถบคลังงานแบบงานเด่น ปุ่มเมนูอยู่ในแถวหัวข้อ ปกยังเท่าเดิม (ฟังก์ชันเสริม libfeature) */
+.lib-sbs { display: flex; flex: 1 1 auto; gap: 8px; min-width: 0; }
+.lib-sb { display: inline-flex; align-items: center; gap: 6px; flex: 1 1 0; min-width: 0; justify-content: center; padding: 5px 10px; border-radius: var(--rs); background: var(--soft); color: var(--ink); font-size: 0.9rem; white-space: nowrap; }
+.lib-sb:hover { text-decoration: none; filter: brightness(0.97); }
+.lib-sb-dot { width: 10px; height: 10px; border-radius: 50%; flex: none; background: var(--cv-plan); }
+.lib-sb-dot.k-manual { background: var(--cv-manual); }
+.lib-sb-dot.k-note { background: var(--cv-note); }
+.lib-sb-n { color: var(--muted); font-size: 0.85em; }
+.lib-chips { display: flex; flex-wrap: wrap; gap: 6px; margin: -2px 0 12px; }
+.lib-chip { border: 1px solid var(--line); background: var(--surface); color: var(--ink); border-radius: 999px; padding: 3px 12px; font: inherit; font-size: 0.86rem; font-weight: 600; white-space: nowrap; cursor: pointer; }
+.lib-chip.on { background: var(--primary); border-color: var(--primary); color: #fff; }
+.lib-mini[hidden], .lf-item[hidden] { display: none; }
+.lib-mini-d { display: inline-block; align-self: flex-start; margin-top: 3px; padding: 0 6px; border-radius: 6px; background: var(--wait-bg); color: var(--wait); font-style: normal; font-size: 0.74rem; font-weight: 600; }
+.lib-compact.lib-feat .card-head { flex-wrap: nowrap; gap: 8px; }
+.lib-compact.lib-feat h2 { flex: none; }
+.lib-compact .lib-sbs { gap: 5px; }
+.lib-compact .lib-sb { padding: 3px 6px; font-size: 0.78rem; gap: 4px; }
+.lib-compact .lib-sb-dot { width: 7px; height: 7px; }
+.lib-compact .lib-chips { flex-wrap: nowrap; overflow-x: auto; margin: 0 0 8px; padding-bottom: 2px; scrollbar-width: none; -webkit-overflow-scrolling: touch; }
+.lib-compact .lib-chips::-webkit-scrollbar { display: none; }
+.lib-compact .lib-chip { font-size: 0.78rem; padding: 2px 10px; flex: none; }
+
+/* เลื่อนดูได้หลายเล่ม นิ้วปัดบนมือถือ ลูกศรบนคอม (ฟังก์ชันเสริม libslide) ปกกว้าง 118 จอใหญ่เห็นครบ 9 เล่มเหมือนแถบเดิม */
+.lib-rowwrap { position: relative; }
+.lib-slide .lib-strip-row, .lib-fill.lib-slide .lib-strip-row { display: flex; gap: 14px; overflow-x: auto; padding-bottom: 2px; scroll-snap-type: x proximity; scrollbar-width: none; -webkit-overflow-scrolling: touch; }
+.lib-slide .lib-strip-row::-webkit-scrollbar { display: none; }
+.lib-slide .lib-mini, .lib-fill.lib-slide .lib-mini { flex: 0 0 118px; width: 118px; scroll-snap-align: start; overflow: visible; }
+.lib-compact.lib-slide .lib-strip-row { gap: 9px; padding-bottom: 4px; }
+.lib-compact.lib-slide .lib-mini { flex: 0 0 66px; width: 66px; }
+.lib-end-c { gap: 6px; color: var(--primary); text-align: center; font-size: 0.86rem; }
+.lib-end-c svg { flex: none; }
+.lib-compact .lib-end-c { font-size: 0.68rem; padding: 4px; }
+.lib-arrow { position: absolute; top: 62px; width: 40px; height: 40px; display: grid; place-items: center; border-radius: 50%; border: 1px solid var(--line); background: var(--surface); color: var(--ink); box-shadow: 0 2px 8px rgba(15, 30, 51, 0.28); cursor: pointer; }
+.lib-arrow[hidden] { display: none; }
+.lib-arrow.prev { left: -10px; }
+.lib-arrow.next { right: -10px; }
+.lib-arrow:hover { color: var(--primary); }
+
+/* หน้าติ๊กงานเด่น (ฟังก์ชันเสริม libfeature) */
+.lf-modes { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; margin-bottom: 16px; }
+.lf-mode { margin: 0; align-items: flex-start; }
+.lf-sum { display: flex; flex-direction: column; gap: 2px; margin-bottom: 12px; }
+.lf-filter { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-bottom: 14px; }
+.lf-filter select, .lf-filter input[type="search"] { width: auto; flex: 1 1 170px; min-width: 0; margin: 0; }
+.lf-filter .check { margin: 0; }
+.lf-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(118px, 1fr)); gap: 18px 14px; align-items: start; }
+.lf-item { position: relative; display: block; min-width: 0; padding: 0; border: 0; background: none; color: var(--ink); font: inherit; font-size: 0.8rem; text-align: left; cursor: pointer; overflow-wrap: anywhere; }
+.lf-item .lib-lock { display: none; }
+.lf-item.on .lib-cover { outline: 3px solid var(--primary); outline-offset: 2px; }
+.lf-no { position: absolute; left: 6px; top: 6px; z-index: 1; width: 30px; height: 30px; display: grid; place-items: center; border-radius: 8px; border: 2px solid var(--muted); background: var(--surface); font-weight: 700; font-size: 0.95rem; }
+.lf-item.on .lf-no { background: var(--primary); border-color: #fff; color: #fff; }
+@media (max-width: 700px) {
+  .lf-modes { grid-template-columns: minmax(0, 1fr); }
+  .lf-grid { grid-template-columns: repeat(auto-fill, minmax(96px, 1fr)); gap: 14px 10px; }
+}

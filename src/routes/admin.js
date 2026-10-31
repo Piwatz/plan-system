@@ -891,6 +891,33 @@ router.post('/readperm', async (req, res) => {
   done(req, res, '/admin/readperm', 'บันทึกสิทธิ์อ่านงานแล้ว มีผลทันที');
 });
 
+// ---------- แถบคลังงานในหน้าแรก เลือกแบบและติ๊กงานเด่น (ฟังก์ชันเสริม libfeature) ----------
+router.get('/libfeature', async (req, res) => {
+  if (!req.ff.library || !req.ff.libfeature) return fail(req, res, '/admin', 'ปิดฟังก์ชันแถบคลังงานอยู่');
+  const rows = await library.books(library.showRule(req.settings));
+  const books = library.decorate(rows, req.me, req.ff).map((b) => ({ ...b, deptShort: library.deptShort(b.dept_name) }));
+  const present = new Set(rows.map((r) => r.bkey));
+  res.render('admin/libfeature', {
+    title: 'แถบคลังงานในหน้าแรก',
+    mode: library.stripMode(req.settings, req.ff),
+    books,
+    picked: library.parseFeatured(req.settings.lib_featured).filter((k) => present.has(k)),
+    shelves: library.SHELVES,
+    departments: await q.all('SELECT id, name FROM departments ORDER BY sort, name'),
+    terms: [...new Set(rows.map((r) => `${r.academic_year}/${r.semester}`))],
+  });
+});
+
+router.post('/libfeature', async (req, res) => {
+  if (!req.ff.library || !req.ff.libfeature) return fail(req, res, '/admin', 'ปิดฟังก์ชันแถบคลังงานอยู่');
+  const mode = req.body.lib_strip_mode === 'featured' ? 'featured' : 'recent';
+  const picked = library.parseFeatured(req.body.lib_featured);
+  await setSetting('lib_strip_mode', mode);
+  await setSetting('lib_featured', JSON.stringify(picked));
+  await features.audit(req.me, `ตั้งแถบคลังงานในหน้าแรกเป็น${mode === 'featured' ? 'เมนูคลังงานพร้อมงานเด่น' : 'เล่มใหม่ในคลัง'} งานเด่น ${picked.length} เล่ม`, 'lib_feature');
+  done(req, res, '/admin/libfeature', 'บันทึกแถบคลังงานแล้ว ครูทุกคนเห็นทันที');
+});
+
 // ---------- ลำดับหน้าแรก (ฟังก์ชันเสริม homeorder) ----------
 router.get('/homeorder', (req, res) => {
   if (!req.ff.homelayout || !req.ff.homeorder) return fail(req, res, '/admin', 'ปิดฟังก์ชันจัดลำดับหน้าแรกอยู่');

@@ -361,10 +361,25 @@ router.get('/', async (req, res) => {
     homeOrderCss: req.ff.homelayout && req.ff.homeorder ? homeorder.css(homeorder.parse(req.settings.home_order)) : '',
     homeAlerts: homeorder.alertsShown(req.settings, req.ff),
     homeMobileCss: req.ff.homelayout && req.ff.mobileorder ? homeorder.cssMobile(homeorder.mobileList(req.settings)) : '',
-    // แถบเล่มใหม่ในคลังงาน (ฟังก์ชันเสริม library)
-    libRecent: req.ff.library ? library.decorate(await library.recent(req.ff.homelayout ? 14 : 6, library.showRule(req.settings)), me, req.ff) : [],
+    ...(await libStripData(req)),
   });
 });
+
+// แถบคลังงานในหน้าแรก (ฟังก์ชันเสริม library libfeature libslide) libStrip มีค่าเฉพาะแบบงานเด่น
+// libMobile = เล่มบนมือถือ เลื่อนดูได้ทุกเล่มเมื่อเปิด libslide หรือเป็นงานเด่น ไม่งั้น 6 เล่มแบบเดิม
+async function libStripData(req) {
+  if (!req.ff.library) return { libRecent: [], libMobile: [], libStrip: null };
+  const rule = library.showRule(req.settings);
+  if (library.stripMode(req.settings, req.ff) === 'featured') {
+    const rows = await library.books(rule, library.parseFeatured(req.settings.lib_featured));
+    const term = { year: Number(req.settings.academic_year), semester: Number(req.settings.semester) };
+    const books = library.decorate(rows, req.me, req.ff).map((b) => ({ ...b, deptShort: library.deptShort(b.dept_name) }));
+    return { libRecent: books, libMobile: books, libStrip: { shelves: await library.shelfCounts(term, rule), depts: library.stripDepts(rows) } };
+  }
+  const n = req.ff.libslide ? 20 : req.ff.homelayout ? 14 : 6;
+  const books = library.decorate(await library.recent(n, rule), req.me, req.ff);
+  return { libRecent: books, libMobile: req.ff.libslide ? books : books.slice(0, 6), libStrip: null };
+}
 
 // งานของฉัน: จัดกลุ่มตามรายวิชา แต่ละวิชามีคู่มือ แผน และบันทึกหลังแผน
 router.get('/my', async (req, res) => {

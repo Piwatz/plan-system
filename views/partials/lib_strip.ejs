@@ -1,9 +1,36 @@
-<%# แถบเล่มใหม่ในคลังงาน (ฟังก์ชันเสริม library) · fill = เรียงเต็มแถวพอดีความกว้างจอ (ฟังก์ชันเสริม homelayout) · compact = ปกแถวเล็กปัดดูได้บนมือถือ (ฟังก์ชันเสริม mobileorder) %>
-<section class="card lib-strip<%= fill ? ' lib-fill' : '' %><%= typeof compact !== 'undefined' && compact ? ' lib-compact' : '' %>">
-  <div class="card-head"><h2>เล่มใหม่ในคลัง</h2><div class="actions"><a class="btn btn-sm btn-ghost" href="/library"><%- icon('books', 16) %> ไปที่คลัง</a></div></div>
-  <div class="lib-strip-row">
-    <% for (const b of books) { %>
-      <a class="lib-mini" href="/library?shelf=<%= b.kind %>&year=<%= b.academic_year %>&semester=<%= b.semester %>"><%- include('lib_cover', { b }) %><span class="lib-mini-t"><b><%= b.subject_name || b.subject_code %></b><span><%= b.teacher_name %></span></span></a>
+<%# แถบคลังงานในหน้าแรก (ฟังก์ชันเสริม library) · fill = เรียงเต็มแถวพอดีความกว้างจอ (ฟังก์ชันเสริม homelayout) · compact = ปกแถวเล็กปัดดูได้บนมือถือ (ฟังก์ชันเสริม mobileorder)
+    libStrip มีค่า = แบบงานเด่น ปุ่มเมนูอยู่ในแถวหัวข้อ ปุ่มกลุ่มสาระกรองปกในแถบ (ฟังก์ชันเสริม libfeature) · slide = เลื่อนดูได้ มีลูกศรบนคอม (ฟังก์ชันเสริม libslide) %>
+<% const isCompact = typeof compact !== 'undefined' && compact; const st = locals.libStrip; const slide = ff.libslide; %>
+<section class="card lib-strip<%= fill ? ' lib-fill' : '' %><%= isCompact ? ' lib-compact' : '' %><%= st ? ' lib-feat' : '' %><%= slide ? ' lib-slide' : '' %>" data-lib-strip>
+  <div class="card-head">
+    <h2><%= st ? (isCompact ? 'คลังงาน' : 'คลังงานการจัดการเรียนรู้') : 'เล่มใหม่ในคลัง' %></h2>
+    <% if (st) { %>
+      <div class="lib-sbs">
+        <% for (const s of st.shelves) { %>
+          <a class="lib-sb" href="/library?shelf=<%= s.key %>"><span class="lib-sb-dot k-<%= s.key %>"></span><b><%= isCompact ? s.tiny : s.short %></b> <span class="lib-sb-n"><%= s.n %><%= isCompact ? '' : ' เล่ม' %></span></a>
+        <% } %>
+      </div>
+    <% } %>
+    <% if (!st || !isCompact) { %><div class="actions"><a class="btn btn-sm btn-ghost" href="/library"><%- icon('books', 16) %> <%= st ? 'ดูทั้งหมด' : 'ไปที่คลัง' %></a></div><% } %>
+  </div>
+  <% if (st && st.depts.length > 1) { %>
+    <div class="lib-chips" role="group" aria-label="เลือกกลุ่มสาระ">
+      <button type="button" class="lib-chip on" data-lib-dept="">ทุกกลุ่มสาระ</button>
+      <% for (const d of st.depts) { %><button type="button" class="lib-chip" data-lib-dept="<%= d.id %>" title="<%= d.name %>"><%= d.short %></button><% } %>
+    </div>
+  <% } %>
+  <% if (books.length) { %>
+  <div class="lib-rowwrap">
+    <div class="lib-strip-row" data-lib-row>
+      <% for (const b of books) { %>
+        <a class="lib-mini" data-dept="<%= b.department_id || '' %>" href="/library?shelf=<%= b.kind %>&year=<%= b.academic_year %>&semester=<%= b.semester %>"><%- include('lib_cover', { b }) %><span class="lib-mini-t"><b><%= b.subject_name || b.subject_code %></b><span><%= b.teacher_name %></span><% if (st && b.deptShort) { %><i class="lib-mini-d"><%= b.deptShort %></i><% } %></span></a>
+      <% } %>
+      <% if (slide) { %><a class="lib-mini lib-end" href="/library"><span class="lib-cover lib-end-c"><%- icon('books', 24) %><b>ดูทั้งหมด</b></span></a><% } %>
+    </div>
+    <% if (slide && !isCompact) { %>
+      <button type="button" class="lib-arrow prev" data-lib-arrow="-1" aria-label="เลื่อนไปทางซ้าย" hidden><%- icon('chevleft', 20) %></button>
+      <button type="button" class="lib-arrow next" data-lib-arrow="1" aria-label="เลื่อนไปทางขวา" hidden><%- icon('chevright', 20) %></button>
     <% } %>
   </div>
+  <% } %>
 </section>

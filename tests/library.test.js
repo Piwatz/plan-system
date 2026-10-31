@@ -425,8 +425,8 @@ test('หน้าแรกมีแถบเล่มใหม่ในคล�
   const t = await as('teacher');
   const home = (await t.get('/')).text;
   assert.match(home, /เล่มใหม่ในคลัง/);
-  // จัดหน้าแรกใหม่ (homelayout): บนคอมไม่เกิน 14 เล่มเรียงเต็มแถว มือถือไม่เกิน 6 เล่ม
-  assert.ok((home.match(/class="lib-mini"/g) || []).length <= 20);
+  // เลื่อนดูได้ (libslide): บนคอมและมือถืออย่างละไม่เกิน 20 เล่ม
+  assert.ok((home.match(/class="lib-mini"/g) || []).length <= 40);
   assert.match((await t.get('/works/new?type=manual')).text, /data-thumb/);
   const admin = await as('admin');
   await setFlag(admin, 'library', false);
@@ -532,5 +532,78 @@ test('หน้าส่งแผนและคู่มือมีหมา�
     assert.match(html, /หน้าแรกจะเป็นปกในคลังงาน/, type);
     assert.match(html, /ภาพนี้จะเป็นปกในคลังงาน/, type);
     assert.doesNotMatch(html, /ใช้ปกระบบ|ใช้ปกที่ระบบวาด/, 'ครูไม่มีตัวเลือกใช้ปกที่ระบบวาด');
+  }
+});
+
+test('แถบคลังงานแบบงานเด่น: ค่าเริ่มต้นแบบเดิม ติ๊กแล้วขึ้นตามลำดับ เล่มที่ซ่อนหลุดเอง ปิดสวิตช์กลับแบบเดิม (libfeature)', async () => {
+  const library = require('../src/library');
+  const admin = await as('admin');
+  const t = await as('teacher');
+  assert.deepEqual(library.parseFeatured('["plan:1","plan:1","x:2",3,"note:5"]'), ['plan:1', 'note:5']);
+  assert.deepEqual(library.parseFeatured('เสีย'), []);
+  assert.equal(library.deptShort('กลุ่มสาระการเรียนรู้สุขศึกษาและพลศึกษา'), 'สุขศึกษา');
+  assert.equal(library.deptShort('วิทยาศาสตร์และเทคโนโลยี'), 'วิทยาศาสตร์');
+
+  let home = (await t.get('/')).text;
+  assert.match(home, /เล่มใหม่ในคลัง/);
+  assert.doesNotMatch(home, /class="lib-sbs"/);
+
+  // ครูเข้าหน้าตั้งค่าไม่ได้ ผู้ดูแลเข้าได้ ปุ่มบันทึกมีป๊อปยืนยัน
+  assert.notEqual((await t.get('/admin/libfeature')).status, 200);
+  const page = await admin.get('/admin/libfeature');
+  assert.equal(page.status, 200);
+  assert.match(page.text, /data-lib-pick[^>]*data-confirm=/);
+  const keys = [...page.text.matchAll(/class="lf-item" data-key="([^"]+)"/g)].map((m) => m[1]);
+  assert.ok(keys.length >= 2, 'ข้อมูลทดลองต้องมีอย่างน้อย 2 เล่ม');
+  const picks = [keys[1], keys[0]];
+  try {
+    // ติ๊กเล่มที่ 2 ก่อนเล่มที่ 1 ลำดับต้องตามที่ติ๊ก ไม่ใช่ตามวันที่ รหัสเสียถูกทิ้ง
+    assert.equal((await admin.post('/admin/libfeature', { lib_strip_mode: 'featured', lib_featured: JSON.stringify([...picks, 'plan:abc']) })).status, 302);
+    home = (await t.get('/')).text;
+    assert.doesNotMatch(home, /เล่มใหม่ในคลัง/);
+    assert.match(home, /คลังงานการจัดการเรียนรู้<\/h2>/);
+    assert.equal((home.match(/class="lib-sb"/g) || []).length, 6, 'ปุ่มเมนู 3 ชั้น ทั้งคอมและมือถือ');
+    assert.equal((home.match(/class="lib-mini"/g) || []).length, 4, 'งานเด่น 2 เล่ม ทั้งคอมและมือถือ');
+    const rows = await library.books(library.showRule({}), picks);
+    assert.deepEqual(rows.map((r) => r.bkey), picks);
+    assert.ok((await admin.get('/admin/libfeature')).text.includes(JSON.stringify(picks).replace(/"/g, '&#34;')));
+
+    // เล่มที่ถูกซ่อนหลุดจากแถบเอง
+    await db.setSetting('lib_show_books', JSON.stringify({ [picks[0]]: 'hide' }));
+    assert.equal(((await t.get('/')).text.match(/class="lib-mini"/g) || []).length, 2);
+    await db.setSetting('lib_show_books', '{}');
+
+    // ยังไม่ได้ติ๊กเลย เหลือปุ่มเมนู ไม่มีปก
+    await admin.post('/admin/libfeature', { lib_strip_mode: 'featured', lib_featured: '[]' });
+    home = (await t.get('/')).text;
+    assert.match(home, /class="lib-sbs"/);
+    assert.doesNotMatch(home, /class="lib-mini"/);
+
+    // ปิดสวิตช์ กลับเป็นเล่มใหม่ในคลัง และเข้าหน้าตั้งค่าไม่ได้
+    await setFlag(admin, 'libfeature', false);
+    home = (await t.get('/')).text;
+    assert.match(home, /เล่มใหม่ในคลัง/);
+    assert.equal((await admin.get('/admin/libfeature')).status, 302);
+  } finally {
+    await setFlag(admin, 'libfeature', true);
+    await db.setSetting('lib_show_books', '{}');
+    await admin.post('/admin/libfeature', { lib_strip_mode: 'recent', lib_featured: '[]' });
+  }
+});
+
+test('เลื่อนดูปกในหน้าแรก: เปิดมีลูกศรและกล่องดูทั้งหมด ปิดกลับเป็นแถวเดิม (libslide)', async () => {
+  const admin = await as('admin');
+  const t = await as('teacher');
+  const on = (await t.get('/')).text;
+  assert.match(on, /lib-slide/);
+  assert.match(on, /data-lib-arrow="1"/);
+  assert.match(on, /lib-end/);
+  await setFlag(admin, 'libslide', false);
+  try {
+    const off = (await t.get('/')).text;
+    assert.doesNotMatch(off, /lib-slide|data-lib-arrow|lib-end/);
+    assert.match(off, /เล่มใหม่ในคลัง/);
+  } finally {
+    await setFlag(admin, 'libslide', true);
   }
 });

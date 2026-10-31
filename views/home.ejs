@@ -136,11 +136,11 @@
     <% } %>
   <% } %>
   </div>
-  <% if (mobileOrder && locals.libRecent && libRecent.length) { %><%- include('partials/lib_strip', { books: libRecent.slice(0, 6), fill: false, compact: true }) %><% } %>
+  <% if (mobileOrder && locals.libRecent && (libRecent.length || locals.libStrip)) { %><%- include('partials/lib_strip', { books: libMobile, fill: false, compact: true }) %><% } %>
 </div>
 <div class="d-only<%= ff.homelayout ? ' home-layout' : '' %>">
 <% if (locals.homeOrderCss) { %><style><%- homeOrderCss %></style><% } %>
-<% if (ff.homelayout && locals.libRecent && libRecent.length) { %><%# จัดหน้าแรกใหม่ (ฟังก์ชันเสริม homelayout) เล่มใหม่อยู่ในกล่องจัดลำดับบนคอม มือถือคงไว้ท้ายหน้า %>
+<% if (ff.homelayout && locals.libRecent && (libRecent.length || locals.libStrip)) { %><%# จัดหน้าแรกใหม่ (ฟังก์ชันเสริม homelayout) เล่มใหม่อยู่ในกล่องจัดลำดับบนคอม มือถือคงไว้ท้ายหน้า %>
 <%- include('partials/lib_strip', { books: libRecent, fill: true }) %>
 <% } %>
 <% if (ff.hometodo && ff.homelayout) { %><%- include('partials/home_todo') %><% } %>
@@ -256,8 +256,8 @@
   <div class="card home-empty"><div class="empty"><p>ขณะนี้ไม่มีงานรอคุณลงนาม</p><a class="btn btn-ghost" href="/stats">ดูสถิติโรงเรียน</a></div></div>
 <% } %>
 </div>
-<% if (locals.libRecent && libRecent.length) { %>
-  <% if (ff.homelayout) { %><% if (!mobileOrder) { %><div class="m-only"><%- include('partials/lib_strip', { books: libRecent.slice(0, 6), fill: false }) %></div><% } %>
+<% if (locals.libRecent && (libRecent.length || locals.libStrip)) { %>
+  <% if (ff.homelayout) { %><% if (!mobileOrder) { %><div class="m-only"><%- include('partials/lib_strip', { books: libMobile, fill: false }) %></div><% } %>
   <% } else { %><%- include('partials/lib_strip', { books: libRecent, fill: false }) %><% } %>
 <% } %>
 <%- include('partials/bottom') %>

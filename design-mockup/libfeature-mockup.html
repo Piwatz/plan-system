@@ -1,0 +1,176 @@
+<!doctype html>
+<html lang="th"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ตัวอย่างแถบคลังงานหน้าแรก</title>
+<style>
+@font-face { font-family: Sarabun; font-weight: 400; src: url(../node_modules/@fontsource/sarabun/files/sarabun-thai-400-normal.woff2) format('woff2'); }
+@font-face { font-family: Sarabun; font-weight: 600; src: url(../node_modules/@fontsource/sarabun/files/sarabun-thai-600-normal.woff2) format('woff2'); }
+@font-face { font-family: Sarabun; font-weight: 700; src: url(../node_modules/@fontsource/sarabun/files/sarabun-thai-700-normal.woff2) format('woff2'); }
+:root { --bg:#F7F3EF; --surface:#fff; --ink:#241517; --muted:#665558; --line:#E7DDD7; --primary:#8E1B2C; --soft:#F5E6E7; --accent:#A6834B; --side:#6E1422; --plan:#1D3A66; --manual:#17694F; --note:#8E1B2C; }
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--ink); font: 400 16px/1.45 Sarabun, Tahoma, sans-serif; padding: 26px; }
+section.opt { display: none; }
+.tag { display: inline-block; background: var(--ink); color: #fff; font-weight: 700; border-radius: 8px; padding: 3px 12px; font-size: 1.05rem; }
+.opt-h { display: flex; gap: 12px; align-items: baseline; margin-bottom: 4px; }
+.opt-h b { font-size: 1.3rem; }
+.opt-note { color: var(--muted); margin: 0 0 14px; }
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: 22px; padding: 20px 22px; }
+.head { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-bottom: 14px; }
+.head h2 { margin: 0; font-size: 1.35rem; }
+.btn { display: inline-flex; align-items: center; gap: 6px; border: 1px solid var(--line); background: #fff; color: var(--ink); border-radius: 12px; padding: 7px 14px; font-weight: 600; font-size: .95rem; white-space: nowrap; }
+.btn.pri { background: var(--primary); color: #fff; border-color: var(--primary); }
+.row { display: flex; gap: 14px; }
+.bk { flex: 1 1 0; min-width: 0; font-size: .86rem; line-height: 1.3; position: relative; }
+.cv { aspect-ratio: 210/297; border-radius: 4px; color: #fff; display: flex; flex-direction: column; align-items: center; text-align: center; padding: 8% 6% 0; box-shadow: 2px 3px 6px rgba(15,30,51,.22); container-type: inline-size; overflow: hidden; }
+.cv img { width: 24cqw; }
+.cv .s { font-size: 4.6cqw; margin-top: 2cqw; font-weight: 600; }
+.cv .k { font-size: 8cqw; font-weight: 700; margin-top: 5cqw; line-height: 1.2; }
+.cv i { display: block; width: 20cqw; height: 1cqw; min-height: 2px; background: #E8B524; margin: 3cqw 0; }
+.cv .n { font-size: 7.4cqw; font-weight: 700; line-height: 1.2; }
+.cv .t { margin-top: auto; align-self: stretch; margin-left: -7%; margin-right: -7%; background: rgba(0,0,0,.22); font-size: 4.8cqw; padding: 3cqw 2cqw; }
+.bk b { display: block; margin-top: 6px; }
+.bk .tc { color: var(--muted); display: block; }
+.dp { display: inline-block; margin-top: 3px; background: var(--soft); color: var(--primary); border-radius: 6px; padding: 0 7px; font-size: .78rem; font-weight: 600; }
+/* แบบ ก เมนูบนปก */
+.menu-a { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 16px; }
+.mi { display: flex; align-items: center; gap: 10px; flex: 1 1 0; background: var(--soft); border-radius: 14px; padding: 10px 14px; font-weight: 600; min-width: 0; }
+.mi .ic { width: 34px; height: 34px; border-radius: 10px; flex: none; color: #fff; display: grid; place-items: center; font-weight: 700; }
+.mi small { display: block; color: var(--muted); font-weight: 400; font-size: .85rem; }
+.sub { font-weight: 700; margin: 0 0 10px; display: flex; align-items: center; gap: 8px; }
+.star { color: var(--accent); }
+/* แบบ ข เมนูซ้าย */
+.split { display: grid; grid-template-columns: 250px minmax(0,1fr); gap: 20px; }
+.side { display: flex; flex-direction: column; gap: 8px; }
+.side .mi { flex: none; }
+/* แบบ ค ชิปกรอง */
+.chips { display: flex; flex-wrap: wrap; gap: 7px; margin-bottom: 14px; }
+.chip { border: 1px solid var(--line); border-radius: 999px; padding: 4px 13px; font-size: .92rem; background: #fff; font-weight: 600; }
+.chip.on { background: var(--primary); border-color: var(--primary); color: #fff; }
+.big .cv { box-shadow: 3px 5px 12px rgba(15,30,51,.28); }
+.ribbon { position: absolute; left: -2px; top: 10px; background: var(--accent); color: #fff; font-size: .78rem; font-weight: 700; padding: 2px 10px 2px 8px; border-radius: 0 8px 8px 0; z-index: 1; max-width: 90%; }
+#c2 .ribbon { top: 142px; }
+/* หน้าผู้ดูแล */
+.adm { margin-bottom: 20px; }
+.pick2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.ch { border: 2px solid var(--line); border-radius: 14px; padding: 12px 14px; display: flex; gap: 10px; }
+.ch.on { border-color: var(--primary); background: var(--soft); }
+.dot { width: 20px; height: 20px; border-radius: 50%; border: 2px solid var(--muted); flex: none; margin-top: 3px; }
+.ch.on .dot { border: 6px solid var(--primary); }
+.ch small { display: block; color: var(--muted); }
+.bar { display: flex; align-items: center; gap: 12px; background: var(--soft); border-radius: 12px; padding: 10px 14px; margin-bottom: 14px; flex-wrap: wrap; }
+.bar .grow { flex: 1; min-width: 200px; }
+.grid { display: grid; grid-template-columns: repeat(7, minmax(0,1fr)); gap: 14px; }
+.pk { position: relative; }
+.pk .bx { position: absolute; left: 6px; top: 6px; width: 30px; height: 30px; border-radius: 8px; background: #fff; border: 2px solid var(--muted); display: grid; place-items: center; font-weight: 700; z-index: 1; font-size: .95rem; }
+.pk.on .bx { background: var(--primary); border-color: #fff; color: #fff; }
+.pk.on .cv { outline: 3px solid var(--primary); outline-offset: 2px; }
+.ord { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 8px; }
+.ord span { display: inline-flex; gap: 8px; align-items: center; border: 1px solid var(--line); border-radius: 10px; padding: 4px 10px; font-size: .9rem; }
+.ord em { font-style: normal; color: var(--muted); }
+</style></head>
+<body>
+
+<section class="opt" id="base">
+  <div class="opt-h"><span class="tag">แบบเดิม</span><b>เล่มใหม่ในคลัง</b></div>
+  <p class="opt-note">ระบบขึ้นเล่มล่าสุดให้เอง ผู้ดูแลไม่ต้องทำอะไร เก็บไว้เป็นตัวเลือกแรก</p>
+  <div class="card"><div class="head"><h2>เล่มใหม่ในคลัง</h2><span class="btn">ไปที่คลัง</span></div><div class="row" data-books="r7"></div></div>
+</section>
+
+<section class="opt" id="a">
+  <div class="opt-h"><span class="tag">แบบ ก</span><b>ปุ่มเมนูอยู่บน งานเด่นอยู่ล่าง</b></div>
+  <p class="opt-note">เห็นปุ่มเข้า 3 ชั้นของคลังทันที ใต้ปกบอกกลุ่มสาระ กดน้อยสุด เข้าใจง่ายสุด</p>
+  <div class="card">
+    <div class="head"><h2>คลังงานการจัดการเรียนรู้</h2><span class="btn">ดูทั้งหมด</span></div>
+    <div class="menu-a">
+      <div class="mi"><span class="ic" style="background:var(--plan)">ผ</span><span>แผนการจัดการเรียนรู้<small>128 เล่ม</small></span></div>
+      <div class="mi"><span class="ic" style="background:var(--manual)">ค</span><span>คู่มือรายวิชา<small>204 เล่ม</small></span></div>
+      <div class="mi"><span class="ic" style="background:var(--note)">บ</span><span>บันทึกหลังแผน<small>57 เล่ม</small></span></div>
+    </div>
+    <p class="sub"><span class="star">★</span> งานเด่นจากกลุ่มสาระต่าง ๆ</p>
+    <div class="row" data-books="p7"></div>
+  </div>
+</section>
+
+<section class="opt" id="b">
+  <div class="opt-h"><span class="tag">แบบ ข</span><b>เมนูอยู่ซ้าย งานเด่นอยู่ขวา</b></div>
+  <p class="opt-note">ดูคล้ายชั้นหนังสือในห้องสมุด เมนูกับปกอยู่ระดับเดียวกัน แถบเตี้ยกว่าแบบ ก ปกเล็กลงเล็กน้อย</p>
+  <div class="card">
+    <div class="head"><h2>คลังงานการจัดการเรียนรู้</h2><span class="btn">ดูทั้งหมด</span></div>
+    <div class="split">
+      <div class="side">
+        <div class="mi"><span class="ic" style="background:var(--plan)">ผ</span><span>แผนการจัดการเรียนรู้<small>128 เล่ม</small></span></div>
+        <div class="mi"><span class="ic" style="background:var(--manual)">ค</span><span>คู่มือรายวิชา<small>204 เล่ม</small></span></div>
+        <div class="mi"><span class="ic" style="background:var(--note)">บ</span><span>บันทึกหลังแผน<small>57 เล่ม</small></span></div>
+      </div>
+      <div><p class="sub"><span class="star">★</span> งานเด่นจากกลุ่มสาระต่าง ๆ</p><div class="row" data-books="p5"></div></div>
+    </div>
+  </div>
+</section>
+
+<section class="opt" id="c">
+  <div class="opt-h"><span class="tag">แบบ ค</span><b>ปกใหญ่ มีป้ายกลุ่มสาระ กดเลือกกลุ่มได้</b></div>
+  <p class="opt-note">สวยที่สุด เน้นโชว์ปก มีป้ายกลุ่มสาระคาดบนปก กดชื่อกลุ่มแล้วปกเปลี่ยนทันที แถบนี้สูงที่สุดและดันเนื้อหาอื่นลงล่าง</p>
+  <div class="card big">
+    <div class="head"><h2>คลังงานการจัดการเรียนรู้</h2><span class="btn">ดูทั้งหมด</span></div>
+    <div class="chips"><span class="chip on">ทุกกลุ่มสาระ</span><span class="chip">ภาษาไทย</span><span class="chip">คณิตศาสตร์</span><span class="chip">วิทยาศาสตร์ฯ</span><span class="chip">สังคมศึกษา</span><span class="chip">สุขศึกษาฯ</span><span class="chip">ศิลปะ</span><span class="chip">การงานอาชีพ</span><span class="chip">ภาษาต่างประเทศ</span></div>
+    <div class="row" data-books="p5r"></div>
+  </div>
+</section>
+
+<section class="opt" id="c2">
+  <div class="opt-h"><span class="tag">แบบ ค รุ่นปกเท่าเดิม</span><b>ปกขนาดเดียวกับเล่มใหม่ในคลัง 7 เล่ม</b></div>
+  <p class="opt-note">มีป้ายกลุ่มสาระบนปก กดชื่อกลุ่มแล้วปกเปลี่ยนทันที เพิ่มจากแถบเดิมแค่แถวชื่อกลุ่มสาระ</p>
+  <div class="card big">
+    <div class="head"><h2>คลังงานการจัดการเรียนรู้</h2><span class="btn">ดูทั้งหมด</span></div>
+    <div class="chips"><span class="chip on">ทุกกลุ่มสาระ</span><span class="chip">ภาษาไทย</span><span class="chip">คณิตศาสตร์</span><span class="chip">วิทยาศาสตร์ฯ</span><span class="chip">สังคมศึกษา</span><span class="chip">สุขศึกษาฯ</span><span class="chip">ศิลปะ</span><span class="chip">การงานอาชีพ</span><span class="chip">ภาษาต่างประเทศ</span></div>
+    <div class="row" data-books="p7r"></div>
+  </div>
+</section>
+
+<section class="opt" id="admin">
+  <div class="opt-h"><span class="tag">ฝั่งผู้ดูแลระบบ</span><b>เลือกแบบ และติ๊กเลือกงานเด่น</b></div>
+  <p class="opt-note">ใช้เหมือนกันไม่ว่าเลือกแบบ ก ข หรือ ค ครูทั่วไปไม่เห็นหน้านี้</p>
+  <div class="card adm">
+    <div class="head"><h2>แถบคลังงานในหน้าแรก</h2></div>
+    <div class="pick2">
+      <div class="ch"><span class="dot"></span><span><b>เล่มใหม่ในคลัง</b><small>ระบบขึ้นเล่มล่าสุดให้เอง</small></span></div>
+      <div class="ch on"><span class="dot"></span><span><b>เมนูคลังงาน พร้อมงานเด่น</b><small>แสดงปุ่มเมนูและงานที่ผู้ดูแลเลือก</small></span></div>
+    </div>
+  </div>
+  <div class="card">
+    <div class="head"><h2>เลือกงานเด่น</h2><span class="btn pri">บันทึก</span></div>
+    <div class="bar"><span class="grow"><b>เลือกแล้ว 4 เล่ม จาก 4 กลุ่มสาระ</b><br>กดที่ปกเพื่อติ๊ก ตัวเลขบนปกคือลำดับที่จะขึ้นในหน้าแรก</span><span class="btn">เฉพาะที่เลือกไว้</span><span class="btn">ทุกกลุ่มสาระ</span><span class="btn">ทุกชั้น</span></div>
+    <div class="grid" data-books="grid"></div>
+  </div>
+</section>
+
+<script>
+const LOGO = '../public/img/school-logo-sm.png';
+const K = { plan: ['แผนการจัดการเรียนรู้', 'var(--plan)'], manual: ['คู่มือรายวิชา', 'var(--manual)'], note: ['บันทึกหลังแผน', 'var(--note)'] };
+const R = [
+  ['plan', 'ภาษาไทย 1', 'นางสาววอรุณี กลอนงาม', 'ภาษาไทย'], ['manual', 'คณิตศาสตร์ 1', 'นายกิตติ คิดเร็ว', 'คณิตศาสตร์'],
+  ['plan', 'วิทยาศาสตร์ 1', 'นางสาวพิมพ์ใจ รักเรียน', 'วิทยาศาสตร์ฯ'], ['manual', 'ฟิสิกส์ 1', 'นายสมชาย ใจดี', 'วิทยาศาสตร์ฯ'],
+  ['plan', 'โครงงานวิทยาศาสตร์ 1', 'นายวีระ ส่งเสริม', 'วิทยาศาสตร์ฯ'], ['manual', 'วิทยาศาสตร์กายภาพ', 'นางวันดี ศรีวิทย์', 'วิทยาศาสตร์ฯ'],
+  ['plan', 'สังคมศึกษา 1', 'นางสาวกานดา ประวัติดี', 'สังคมศึกษา'],
+];
+const P = [
+  ['plan', 'ภาษาไทย 1', 'นางสาววอรุณี กลอนงาม', 'ภาษาไทย'], ['manual', 'คณิตศาสตร์ 1', 'นายกิตติ คิดเร็ว', 'คณิตศาสตร์'],
+  ['plan', 'ฟิสิกส์ 1', 'นายสมชาย ใจดี', 'วิทยาศาสตร์ฯ'], ['note', 'สังคมศึกษา 1', 'นางสาวกานดา ประวัติดี', 'สังคมศึกษา'],
+  ['plan', 'พลศึกษา 1', 'นายพละ แข็งแรง', 'สุขศึกษาฯ'], ['manual', 'ทัศนศิลป์ 1', 'นางศิลปา งามตา', 'ศิลปะ'],
+  ['plan', 'ภาษาอังกฤษ 1', 'นางสาวอลิสา พูดเก่ง', 'ภาษาต่างประเทศ'],
+];
+const cover = (b) => `<div class="cv" style="background:${K[b[0]][1]}"><img src="${LOGO}" alt=""><span class="s">โรงเรียนชานุมานวิทยาคม</span><span class="k">${K[b[0]][0]}</span><i></i><span class="n">${b[1]}</span><span class="t">ครูผู้สอน ${b[2]}</span></div>`;
+const mini = (b, dp) => `<div class="bk">${cover(b)}<b>${b[1]}</b><span class="tc">${b[2]}</span>${dp ? `<span class="dp">${b[3]}</span>` : ''}</div>`;
+const fill = {
+  r7: () => R.map((b) => mini(b)).join(''),
+  p7: () => P.map((b) => mini(b, 1)).join(''),
+  p5: () => P.slice(0, 5).map((b) => mini(b, 1)).join(''),
+  p5r: () => P.slice(0, 5).map((b) => `<div class="bk"><span class="ribbon">${b[3]}</span>${cover(b)}<b>${b[1]}</b><span class="tc">${b[2]}</span></div>`).join(''),
+  p7r: () => P.map((b) => `<div class="bk"><span class="ribbon">${b[3]}</span>${cover(b)}<b>${b[1]}</b><span class="tc">${b[2]}</span></div>`).join(''),
+  grid: () => { const order = { 0: 1, 2: 2, 3: 3, 6: 4 }; return P.map((b, i) => `<div class="pk bk ${order[i] ? 'on' : ''}"><span class="bx">${order[i] || ''}</span>${cover(b)}<b>${b[1]}</b><span class="dp">${b[3]}</span></div>`).join(''); },
+};
+document.querySelectorAll('[data-books]').forEach((el) => { el.innerHTML = fill[el.dataset.books](); });
+const only = new URLSearchParams(location.search).get('show');
+document.querySelectorAll('section.opt').forEach((s) => { if (!only || s.id === only) s.style.display = 'block'; if (!only) s.style.marginBottom = '34px'; });
+</script>
+</body></html>

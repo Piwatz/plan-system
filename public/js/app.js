@@ -2745,6 +2745,87 @@
     sync();
   });
 
+  // ---------- แถบคลังงานในหน้าแรก ปุ่มกลุ่มสาระและลูกศรเลื่อน (ฟังก์ชันเสริม libfeature libslide) ----------
+  document.querySelectorAll('[data-lib-strip]').forEach((strip) => {
+    const row = strip.querySelector('[data-lib-row]');
+    if (!row) return;
+    const arrows = strip.querySelectorAll('[data-lib-arrow]');
+    const sync = () => {
+      arrows.forEach((a) => {
+        const left = Number(a.dataset.libArrow) < 0;
+        a.hidden = left ? row.scrollLeft <= 2 : row.scrollLeft + row.clientWidth >= row.scrollWidth - 2;
+      });
+    };
+    arrows.forEach((a) => a.addEventListener('click', () => row.scrollBy({ left: Number(a.dataset.libArrow) * row.clientWidth * 0.8, behavior: 'smooth' })));
+    row.addEventListener('scroll', sync, { passive: true });
+    window.addEventListener('resize', sync);
+    sync();
+    strip.querySelectorAll('[data-lib-dept]').forEach((chip) => {
+      chip.addEventListener('click', () => {
+        strip.querySelectorAll('[data-lib-dept]').forEach((x) => x.classList.toggle('on', x === chip));
+        row.querySelectorAll('.lib-mini:not(.lib-end)').forEach((b) => {
+          b.hidden = Boolean(chip.dataset.libDept) && b.dataset.dept !== chip.dataset.libDept;
+        });
+        row.scrollLeft = 0;
+        sync();
+      });
+    });
+  });
+
+  // ---------- ติ๊กงานเด่น ลำดับที่ติ๊กคือลำดับที่ขึ้น ตัวกรองไม่กระทบที่ติ๊กไว้ (ฟังก์ชันเสริม libfeature) ----------
+  document.querySelectorAll('[data-lib-pick]').forEach((form) => {
+    let picked = [];
+    try {
+      picked = JSON.parse(form.dataset.picked || '[]');
+    } catch {
+      picked = [];
+    }
+    const items = [...form.querySelectorAll('.lf-item')];
+    const el = (name) => form.querySelector(`[data-lf-${name}]`);
+    const filter = () => {
+      const shelf = el('shelf').value;
+      const dept = el('dept').value;
+      const term = el('term').value;
+      const words = el('q').value.trim().toLowerCase();
+      const only = el('only').checked;
+      let shown = 0;
+      items.forEach((b) => {
+        const ok = (!shelf || b.dataset.shelf === shelf) && (!dept || b.dataset.dept === dept) && (!term || b.dataset.term === term) && (!words || b.dataset.text.includes(words)) && (!only || picked.includes(b.dataset.key));
+        b.hidden = !ok;
+        if (ok) shown += 1;
+      });
+      el('none').hidden = shown > 0 || !items.length;
+    };
+    const paint = () => {
+      const depts = new Set();
+      items.forEach((b) => {
+        const i = picked.indexOf(b.dataset.key);
+        b.classList.toggle('on', i >= 0);
+        b.setAttribute('aria-pressed', String(i >= 0));
+        b.querySelector('.lf-no').textContent = i >= 0 ? String(i + 1) : '';
+        if (i >= 0 && b.dataset.dept) depts.add(b.dataset.dept);
+      });
+      el('value').value = JSON.stringify(picked);
+      el('sum').textContent = picked.length ? `ติ๊กแล้ว ${picked.length} เล่ม จาก ${depts.size} กลุ่มสาระ` : 'ยังไม่ได้ติ๊กงาน';
+    };
+    items.forEach((b) => b.addEventListener('click', () => {
+      const i = picked.indexOf(b.dataset.key);
+      if (i >= 0) picked.splice(i, 1);
+      else picked.push(b.dataset.key);
+      paint();
+      if (el('only').checked) filter();
+    }));
+    el('clear').addEventListener('click', async () => {
+      if (!picked.length || !(await ask('เอาที่ติ๊กไว้ออกทั้งหมด ยังไม่มีผลกับครูจนกว่าจะกดบันทึก', { icon: 'note', ok: 'ยืนยัน' }))) return;
+      picked = [];
+      paint();
+      filter();
+    });
+    ['shelf', 'dept', 'term', 'only'].forEach((n) => el(n).addEventListener('change', filter));
+    el('q').addEventListener('input', filter);
+    paint();
+  });
+
   // ---------- จัดลำดับหน้าแรก ลากหรือกดลูกศร ภาพย่อขยับตาม (ฟังก์ชันเสริม homeorder) ----------
   // ใช้ pointer events จึงลากได้ทั้งเมาส์และนิ้ว ส่วนลูกศรเป็นทางสำรองที่กดได้แน่นอนทุกเครื่อง
   document.querySelectorAll('[data-home-order]').forEach((form) => {

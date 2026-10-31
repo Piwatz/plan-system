@@ -61,11 +61,11 @@ test('alertstrip: เหลือแถบเดียวบอกจำนว�
   assert.match(on, /alert-strip/);
   assert.match(on, /มีแจ้งเตือนใหม่ \d+ เรื่อง/);
   assert.match(on, /class="as-last"/);
-  assert.doesNotMatch(on, />ดูทั้งหมด</);
+  assert.doesNotMatch(on, /href="\/alerts">ดูทั้งหมด</);
   await db.setSetting('ff_alertstrip', '0');
   const off = await page('/');
   assert.doesNotMatch(off, /alert-strip/);
-  assert.match(off, />ดูทั้งหมด</);
+  assert.match(off, /href="\/alerts">ดูทั้งหมด</);
   await db.setSetting('ff_alertstrip', '1');
 });
 
