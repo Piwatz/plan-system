@@ -1101,6 +1101,32 @@ a.lib-cv:hover .lib-cover { box-shadow: 0 0 0 3px var(--primary); }
   .lib[data-view="group"] .lib-book { flex-basis: 100px; width: 100px; }
   .lib[data-view="group"] .lib-row { gap: 12px; }
 }
+/* หัวหน้าคลังงานแบบกะทัดรัดบนมือถือ (ฟังก์ชันเสริม libslim) แถวงาน แถวตัวกรองกับมุมมอง แถวจำนวนเล่มกับเครื่องมือผู้ดูแล จอคอมเหมือนเดิม */
+.lib-s-short, .lib-tools-btn { display: none; }
+@media (max-width: 760px) {
+  .lib-head.slim { display: grid; grid-template-columns: minmax(0, 1fr) 88px auto; grid-template-areas: "title title title" "tabs tabs tabs" "dept term views" "count count tools" "box box box"; gap: 8px 6px; align-items: center; margin-bottom: 12px; }
+  .lib-head.slim .page-head, .lib-head.slim .lib-filters { display: contents; }
+  .lib-head.slim .page-head > div:first-child { grid-area: title; min-width: 0; }
+  .lib-head.slim h1 { font-size: 1.25rem; line-height: 1.25; }
+  .lib-head.slim .lib-t-more, .lib-head.slim .page-head .sub { display: none; }
+  .lib-head.slim .lib-shelves { grid-area: tabs; display: flex; flex-wrap: nowrap; gap: 3px; margin: 0; padding: 3px; border: 1px solid var(--line); border-radius: 10px; background: var(--surface); }
+  .lib-head.slim .lib-shelves a { flex: 1 1 auto; padding: 7px 8px; border-radius: 7px; background: none; color: var(--muted); text-align: center; font-weight: 700; white-space: nowrap; }
+  .lib-head.slim .lib-shelves a.on { background: var(--primary); color: #fff; }
+  .lib-head.slim .lib-s-long { display: none; }
+  .lib-head.slim .lib-s-short { display: inline; }
+  .lib-head.slim #lib-dept { grid-area: dept; }
+  .lib-head.slim #lib-term { grid-area: term; }
+  .lib-head.slim .lib-filters select { width: 100%; min-width: 0; height: 38px; min-height: 38px; padding: 4px 0 4px 8px; font-size: 0.9rem; }
+  .lib-head.slim .lib-views { grid-area: views; display: flex; flex-wrap: nowrap; gap: 4px; width: auto; margin: 0; }
+  .lib-head.slim .lib-views .btn { padding: 0; width: 38px; height: 38px; min-height: 38px; justify-content: center; }
+  .lib-head.slim .lib-v-t { display: none; }
+  .lib-head.slim .lib-count { grid-area: count; width: auto; margin: 0; font-size: 0.92rem; }
+  .lib-head.slim .lib-nocover { grid-column: 1 / -1; justify-self: start; }
+  .lib-head.slim.has-tools:not(.tools-open) .lib-nocover { display: none; }
+  .lib-head.slim .lib-tools-btn { grid-area: tools; display: inline-flex; align-items: center; gap: 4px; justify-self: end; padding: 2px 0; border: 0; background: none; color: var(--link); font: inherit; font-size: 0.92rem; font-weight: 700; cursor: pointer; white-space: nowrap; }
+  .lib-head.slim .lib-tools { grid-area: box; display: none; min-width: 0; }
+  .lib-head.slim .lib-tools.open { display: block; }
+}
 /* ผู้ดูแลระบบเปลี่ยนปก (coverswap) โหมด one = ปุ่มเล็กบนปก · many = ช่องติ๊กมุมซ้ายบนของปก แล้วกดปุ่มในแถบด้านบน */
 .lib-swapbar { display: flex; flex-wrap: wrap; gap: 8px 14px; align-items: center; margin-bottom: 12px; padding: 8px 12px; border: 1px dashed var(--line); border-radius: 12px; }
 .lib-swap-mode { display: inline-flex; flex-wrap: wrap; gap: 6px; align-items: center; }

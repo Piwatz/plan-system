@@ -1,20 +1,22 @@
 <%- include('partials/top') %>
 <% const qs = (extra) => new URLSearchParams({ ...query, ...extra }).toString(); %>
+<%# หัวหน้าแบบกะทัดรัดบนมือถือ (ฟังก์ชันเสริม libslim) จัดด้วย CSS เท่านั้น จอคอมเหมือนเดิม %>
+<div class="lib-head<%= ff.libslim ? ' slim' : '' %>">
 <div class="page-head">
   <div>
-    <h1>คลังงานการจัดการเรียนรู้</h1>
+    <h1>คลังงาน<span class="lib-t-more">การจัดการเรียนรู้</span></h1>
     <div class="sub"><%= showMode === 'sent' ? 'งานที่ส่งแล้ว เล่มที่ยังลงนามไม่ครบมีป้ายบอก' : 'งานที่ผ่านการตรวจครบทุกระดับแล้ว' %><%= ff.libread ? ' เปิดอ่านได้ทุกเล่ม' : ' ทุกคนเห็นปกและชื่อ เปิดอ่านได้เฉพาะงานของตัวเอง' %></div>
   </div>
   <div class="actions lib-views" role="group" aria-label="เลือกมุมมอง">
     <% for (const v of views) { %>
-      <button type="button" class="btn btn-ghost" data-lib-view="<%= v.key %>" aria-pressed="false"><%- icon(v.icon, 18) %> <%= v.label %></button>
+      <button type="button" class="btn btn-ghost" data-lib-view="<%= v.key %>" aria-label="<%= v.label %>" aria-pressed="false"><%- icon(v.icon, 18) %> <span class="lib-v-t"><%= v.label %></span></button>
     <% } %>
   </div>
 </div>
 
 <nav class="lib-shelves" aria-label="เลือกชั้น">
   <% for (const s of shelves) { %>
-    <a class="<%= s.key === shelf.key ? 'on' : '' %>" href="/library?<%= qs({ shelf: s.key }) %>"<%- s.key === shelf.key ? ' aria-current="page"' : '' %>><%= s.label %></a>
+    <a class="<%= s.key === shelf.key ? 'on' : '' %>" href="/library?<%= qs({ shelf: s.key }) %>"<%- s.key === shelf.key ? ' aria-current="page"' : '' %>><span class="lib-s-long"><%= s.label %></span><span class="lib-s-short"><%= s.label.replace('การจัดการเรียนรู้', '').replace('รายวิชา', '') %></span></a>
   <% } %>
 </nav>
 
@@ -25,12 +27,12 @@
     <% for (const d of departments) { %><option value="<%= d.id %>" <%= department === d.id ? 'selected' : '' %>><%= d.name %></option><% } %>
   </select>
   <select id="lib-term" name="term" data-term aria-label="ภาคเรียน">
-    <% for (const t of terms) { %><option value="<%= t.year %>-<%= t.semester %>" <%= t.year === term.year && t.semester === term.semester ? 'selected' : '' %>>ภาคเรียน <%= t.semester %>/<%= t.year %></option><% } %>
+    <% for (const t of terms) { %><option value="<%= t.year %>-<%= t.semester %>" data-short="<%= t.semester %>/<%= t.year %>" <%= t.year === term.year && t.semester === term.semester ? 'selected' : '' %>>ภาคเรียน <%= t.semester %>/<%= t.year %></option><% } %>
   </select>
   <input type="hidden" name="year" value="<%= term.year %>"><input type="hidden" name="semester" value="<%= term.semester %>">
   <span class="lib-count">ทั้งหมด <b><%= total %></b> เล่ม</span>
   <% if (noCover) { %>
-    <button type="submit" class="btn btn-sm btn-ghost" form="lib-covers"><%- icon('copy', 16) %> สร้างปกงานเดิม <%= noCover %> เล่ม</button>
+    <button type="submit" class="btn btn-sm btn-ghost lib-nocover" form="lib-covers"><%- icon('copy', 16) %> สร้างปกงานเดิม <%= noCover %> เล่ม</button>
   <% } %>
 </form>
 <% if (noCover) { %>
@@ -38,6 +40,9 @@
 เครื่องนี้จะเปิดไฟล์ PDF ทีละเล่มแล้วทำรูปปกเล็ก อาจใช้เวลาหลายนาที ห้ามปิดหน้านี้จนกว่าจะเสร็จ" data-ok-label="สร้างปก"></form>
 <% } %>
 
+<% const toolsOn = manage || books.some((b) => b.swap); %>
+<% if (toolsOn) { %><button type="button" class="lib-tools-btn" data-lib-tools aria-expanded="false"><%- icon('toggle', 16) %> เครื่องมือผู้ดูแล</button><% } %>
+<div class="lib-tools" data-lib-tools-box>
 <% if (manage) { const back = '/library?' + qs({}); %>
   <%# ผู้ดูแลระบบ (libshow) เปิดดูเล่มที่ซ่อนอยู่ (จาง ๆ) แล้วกดแสดงหรือซ่อนทีละเล่ม · ค่าหลักและรายครูตั้งในหน้าฟังก์ชันเสริม %>
   <div class="lib-showbar">
@@ -91,6 +96,41 @@
   <% } %>
   <form id="lib-drawn1" method="post" action="/library/covers/drawn"><input type="hidden" name="back" value="<%= back %>"></form>
   <form id="lib-drawn" method="post" action="/library/covers/drawn"><input type="hidden" name="back" value="<%= back %>"></form>
+<% } %>
+</div>
+</div>
+<% if (ff.libslim) { %>
+  <script>
+    // มือถือ: ภาคเรียนใช้คำสั้นให้พอดีช่อง · เปิดพับเครื่องมือผู้ดูแล จอคอมไม่เปลี่ยน
+    (function () {
+      var phone = window.matchMedia('(max-width: 760px)');
+      document.querySelectorAll('#lib-term option').forEach(function (o) {
+        o.dataset.long = o.textContent;
+        function fit() { o.textContent = phone.matches ? o.dataset.short : o.dataset.long; }
+        fit();
+        phone.addEventListener('change', fit);
+      });
+      <% if (toolsOn) { %>
+      var btn = document.querySelector('[data-lib-tools]');
+      var box = document.querySelector('[data-lib-tools-box]');
+      var head = btn.closest('.lib-head');
+      head.classList.add('has-tools');
+      function set(open) {
+        box.classList.toggle('open', open);
+        head.classList.toggle('tools-open', open);
+        btn.setAttribute('aria-expanded', String(open));
+      }
+      btn.addEventListener('click', function () { set(!box.classList.contains('open')); });
+      // เลือกหลายเล่มค้างไว้ ต้องเห็นแถบปุ่มเปลี่ยนปก
+      <% if (swap) { %>
+      window.addEventListener('load', function () {
+        var bar = document.querySelector('[data-swapbar]');
+        if (bar && bar.getAttribute('data-swap') === 'many') set(true);
+      });
+      <% } %>
+      <% } %>
+    })();
+  </script>
 <% } %>
 
 <% if (!books.length) { %>

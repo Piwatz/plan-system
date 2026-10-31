@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="th"><head><meta charset="utf-8"><title>ตัวอย่างหัวหน้าคลังงาน</title>
+<style>
+@font-face{font-family:Sarabun;font-weight:400;src:url(../node_modules/@fontsource/sarabun/files/sarabun-thai-400-normal.woff2) format('woff2')}
+@font-face{font-family:Sarabun;font-weight:700;src:url(../node_modules/@fontsource/sarabun/files/sarabun-thai-700-normal.woff2) format('woff2')}
+:root{--p:#7A1526;--soft:#F6E4E6;--line:#DDD6D0;--mut:#6B6460;--bg:#F6F3EE}
+*{box-sizing:border-box}
+body{margin:0;padding:22px;background:#55504c;font:15px/1.4 Sarabun,'Leelawadee UI',Tahoma,sans-serif;color:#26211E;width:1290px}
+.wrap{display:grid;grid-template-columns:repeat(3,390px);gap:30px}
+.cap{color:#fff;font-weight:700;font-size:20px;margin-bottom:2px}.capsub{color:#E8E2DC;font-size:15px;margin-bottom:8px;min-height:44px}
+.ph{width:390px;height:844px;background:var(--bg);border-radius:26px;overflow:hidden;position:relative;display:flex;flex-direction:column}
+.top{background:var(--p);color:#fff;padding:36px 16px 10px;display:flex;gap:10px;align-items:center;flex:none}
+.top b{font-size:17px;display:block;line-height:1.1}.top small{opacity:.8;font-size:12px}
+.body{padding:10px 12px;flex:none}
+h1{margin:0 0 8px;font-size:19px}
+.seg{display:grid;grid-template-columns:1fr 1fr 1fr;background:#fff;border:1px solid var(--line);border-radius:10px;padding:3px;gap:3px;margin-bottom:8px}
+.seg span{text-align:center;padding:7px 2px;border-radius:7px;font-weight:700;font-size:14px;color:#5a534e;white-space:nowrap}
+.seg .on{background:var(--p);color:#fff}
+.row{display:flex;gap:6px;align-items:center}
+.sel{flex:1;background:#fff;border:1px solid var(--line);border-radius:9px;padding:6px 8px;font-size:13.5px;white-space:nowrap;overflow:hidden;display:flex;justify-content:space-between;gap:4px}
+.ic{width:34px;height:34px;border:1px solid var(--line);border-radius:9px;background:#fff;display:flex;align-items:center;justify-content:center;flex:none;color:#5a534e;font-size:15px}
+.ic.on{background:var(--p);color:#fff;border-color:var(--p)}
+.btn{background:#fff;border:1px solid var(--line);border-radius:9px;padding:7px 10px;font-weight:700;font-size:14px;white-space:nowrap}
+.btn.p{background:var(--p);border-color:var(--p);color:#fff}
+.more{display:flex;justify-content:space-between;align-items:center;margin-top:8px;color:var(--mut);font-size:13.5px}
+.link{color:var(--p);font-weight:700}
+.chips{display:flex;gap:6px;overflow:hidden;margin-bottom:8px}
+.chip{padding:6px 12px;border-radius:999px;background:var(--soft);color:var(--p);font-weight:700;font-size:14px;white-space:nowrap;flex:none}
+.chip.on{background:var(--p);color:#fff}
+.shelf{flex:1;margin:0 12px;background:#fff;border-radius:18px 18px 0 0;padding:12px;display:grid;grid-template-columns:1fr 1fr;gap:12px;overflow:hidden;align-content:start}
+.cv{height:232px;border-radius:6px;background:linear-gradient(160deg,#E9D9B8,#B98F5E);position:relative;display:flex;align-items:center;justify-content:center;text-align:center;color:#5a2b12;font-weight:700;padding:8px}
+.cv.b{background:linear-gradient(160deg,#CFE0F2,#5D88B8);color:#143359}
+.nav{position:absolute;left:0;right:0;bottom:0;height:70px;background:#fff;border-top:1px solid var(--line);display:flex;justify-content:space-around;align-items:center;font-size:12px;color:var(--mut)}
+.sheet{position:absolute;left:0;right:0;bottom:0;background:#fff;border-radius:18px 18px 0 0;padding:14px;box-shadow:0 -6px 24px rgba(0,0,0,.28)}
+.dim{position:absolute;inset:0;background:rgba(0,0,0,.35)}
+.lab{font-weight:700;font-size:13.5px;margin:8px 0 4px;color:#5a534e}
+</style></head><body>
+<div class="wrap">
+  <div>
+    <div class="cap">แบบ ก กะทัดรัด</div><div class="capsub">เห็นครบในจอเดียว แท็บงาน ตัวกรอง และมุมมองเป็นไอคอน ของผู้ดูแลพับไว้</div>
+    <div class="ph">
+      <div class="top"><div><b>CW-PLAN</b><small>ภาคเรียนที่ 2/2569</small></div></div>
+      <div class="body">
+        <h1>คลังงาน</h1>
+        <div class="seg"><span class="on">แผน</span><span>คู่มือ</span><span>บันทึกหลังแผน</span></div>
+        <div class="row"><div class="sel">ทุกกลุ่มสาระ <span>▾</span></div><div class="sel" style="flex:.7">2/2569 <span>▾</span></div><div class="ic on">▦</div><div class="ic">☰</div><div class="ic">▤</div></div>
+        <div class="more"><span>ทั้งหมด 60 เล่ม</span><span class="link">เครื่องมือผู้ดูแล ▾</span></div>
+      </div>
+      <div class="shelf"><div class="cv">ปกแผนการจัดการเรียนรู้</div><div class="cv b">ปกแผนการจัดการเรียนรู้</div><div class="cv b">ปกแผนการจัดการเรียนรู้</div><div class="cv">ปกแผนการจัดการเรียนรู้</div></div>
+      <div class="nav"><span>หน้าแรก</span><span>รอตรวจ</span><span>ส่งงาน</span><span>ผู้ดูแล</span><span>ฉัน</span></div>
+    </div>
+  </div>
+  <div>
+    <div class="cap">แบบ ข เล็กที่สุด</div><div class="capsub">เหลือแท็บงานกับปุ่มตัวกรองปุ่มเดียว กดแล้วกล่องเลื่อนขึ้นจากล่าง เห็นปกมากที่สุด</div>
+    <div class="ph">
+      <div class="top"><div><b>CW-PLAN</b><small>ภาคเรียนที่ 2/2569</small></div></div>
+      <div class="body">
+        <div class="seg"><span class="on">แผน</span><span>คู่มือ</span><span>บันทึกหลังแผน</span></div>
+        <div class="row" style="justify-content:space-between"><span class="mut" style="color:var(--mut)">60 เล่ม ภาคเรียน 2/2569</span><span class="btn">ตัวกรอง</span></div>
+      </div>
+      <div class="shelf"><div class="cv">ปกแผนการจัดการเรียนรู้</div><div class="cv b">ปกแผนการจัดการเรียนรู้</div><div class="cv b">ปกแผนการจัดการเรียนรู้</div><div class="cv">ปกแผนการจัดการเรียนรู้</div></div>
+      <div class="dim"></div>
+      <div class="sheet">
+        <b style="font-size:16px">ตัวกรองและมุมมอง (กล่องที่เปิดเมื่อกดปุ่ม)</b>
+        <div class="lab">กลุ่มสาระ</div><div class="sel">ทุกกลุ่มสาระ <span>▾</span></div>
+        <div class="lab">ภาคเรียน</div><div class="sel">ภาคเรียน 2/2569 <span>▾</span></div>
+        <div class="lab">มุมมอง</div><div class="row"><span class="btn p">ชั้นวาง</span><span class="btn">รายการ</span><span class="btn">ตามกลุ่มสาระ</span></div>
+        <div class="lab">เครื่องมือผู้ดูแล</div><div class="row" style="flex-wrap:wrap"><span class="btn">ตั้งค่างานที่แสดง</span><span class="btn">เห็นเล่มที่ซ่อน</span><span class="btn">เปลี่ยนปก</span></div>
+        <div class="btn p" style="text-align:center;margin-top:12px">ตกลง</div>
+      </div>
+    </div>
+  </div>
+  <div>
+    <div class="cap">แบบ ค แถวเลื่อนแถวเดียว</div><div class="capsub">ทุกอย่างอยู่ในแถบเลื่อนซ้ายขวา 2 แถว ไม่ต้องกดเปิดกล่อง แต่บางปุ่มต้องปัดจึงเห็น</div>
+    <div class="ph">
+      <div class="top"><div><b>CW-PLAN</b><small>ภาคเรียนที่ 2/2569</small></div></div>
+      <div class="body">
+        <div class="chips"><span class="chip on">แผน</span><span class="chip">คู่มือ</span><span class="chip">บันทึกหลังแผน</span><span class="chip">ชั้นวาง ▾</span></div>
+        <div class="chips" style="margin:0"><span class="btn">ทุกกลุ่มสาระ ▾</span><span class="btn">2/2569 ▾</span><span class="btn">60 เล่ม</span><span class="btn">เปลี่ยนปก</span><span class="btn">เห็นเล่มที่ซ่อน</span></div>
+      </div>
+      <div class="shelf"><div class="cv">ปกแผนการจัดการเรียนรู้</div><div class="cv b">ปกแผนการจัดการเรียนรู้</div><div class="cv b">ปกแผนการจัดการเรียนรู้</div><div class="cv">ปกแผนการจัดการเรียนรู้</div></div>
+      <div class="nav"><span>หน้าแรก</span><span>รอตรวจ</span><span>ส่งงาน</span><span>ผู้ดูแล</span><span>ฉัน</span></div>
+    </div>
+  </div>
+</div>
+</body></html>

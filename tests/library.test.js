@@ -76,6 +76,26 @@ const pdf = () => new Blob(['%PDF-1.4\n1 0 obj << /Type /Page >> endobj\n'], { t
 const jpg = (n = 2000) => new Blob([Buffer.concat([Buffer.from([0xff, 0xd8, 0xff, 0xe0]), Buffer.alloc(n, 7)])]);
 const setFlag = (admin, key, on) => admin.post(`/admin/features/${key}`, { on: on ? '1' : '0' });
 
+test('หัวหน้าคลังงานแบบกะทัดรัด (libslim): เปิดมีคำสั้นและปุ่มเครื่องมือของผู้ดูแล ปิดกลับแบบเดิม ครูไม่เห็นเครื่องมือ', async () => {
+  const admin = await as('admin');
+  const on = (await admin.get('/library?shelf=plan')).text;
+  assert.match(on, /class="lib-head slim"/);
+  assert.match(on, /lib-s-short">แผน</);
+  assert.match(on, /lib-s-short">คู่มือ</);
+  assert.match(on, /lib-s-short">บันทึกหลังแผน</);
+  assert.match(on, /data-short="\d\/\d{4}"/);
+  const teacher = (await db.q.get('SELECT username FROM users WHERE is_admin = 0 AND is_teacher = 1 AND is_active = 1 ORDER BY id LIMIT 1')).username;
+  assert.ok(!(await (await as(teacher)).get('/library?shelf=plan')).text.includes('data-lib-tools aria-expanded'));
+  await setFlag(admin, 'libslim', false);
+  try {
+    const off = (await admin.get('/library?shelf=plan')).text;
+    assert.match(off, /class="lib-head"/);
+    assert.ok(!off.includes('data-long'));
+  } finally {
+    await setFlag(admin, 'libslim', true);
+  }
+});
+
 // ส่งคู่มือใหม่พร้อมรูปปกเล็ก แบบเดียวกับหน้าเว็บ (ช่อง upload_cover_thumb)
 async function sendWithCover(client, code, cover, coverName = 'cover.jpg') {
   const fields = { doc_type: 'manual', subject_code: code, subject_name: 'ทดสอบคลัง', grade_level: 'ม.4', action: 'draft' };
