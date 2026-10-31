@@ -988,3 +988,4 @@
 - ฟังก์ชันเสริม `fontpick` (เปิด ผู้ดูแลระบบ) · หน้าตั้งค่าโรงเรียน #font เลือกได้ 9 แบบ รวมตามธีมสี · ค่าเก็บใน settings.web_font · src/themes.js WEB_FONTS withFont webFontKey webFontChoices · app.js ใช้ทั้งโหมดกลางวันและกลางคืน · TH Sarabun ใช้ของในเครื่อง ขยาย 130% (Web TH ใน app.css) ไม่มีก็ใช้ Sarabun · ฟอนต์ประจำเครื่องใช้ -apple-system ไม่ฝังไฟล์ Apple · เอกสารที่พิมพ์ไม่เปลี่ยน
 - ทดสอบ: npm test ผ่าน 193 · plan-demo Chrome: เลือก IBM Plex Sans Thai Looped กดบันทึก ผ่านป๊อปยืนยัน ฟอนต์เปลี่ยน สีเดิม ภาพ design-mockup/fontpick-result.png
 - ยังไม่ได้ลอง: Safari Mac iPad ไอโฟน โดยเฉพาะฟอนต์ประจำเครื่อง · TH SarabunPSK ไฟล์จริงในเครื่องที่ติดตั้ง · โหมดกลางคืน
+- **ขึ้นเว็บจริงแล้ว 31 ต.ค. 2569 (fontpick):** Version c5ac1f75 (Claude รัน cloud-setup.js ตามที่ครูเต้ยสั่ง) · ไม่มี migration · ฟอนต์บนเว็บยังตามธีมจนกว่าผู้ดูแลจะเลือก · รอครูเต้ยลองเลือกฟอนต์บนเว็บจริงและดูบนเครื่อง Apple
