@@ -1118,4 +1118,5 @@
 - เส้นทางการตรวจ (partials/stepper.ejs): ครูเต้ยขอให้บนมือถือเห็นครบโดยไม่ต้องปัดข้าง ใช้ @container กล่อง .stepper-box แคบกว่า 770 px เรียงลงมา จอคอมยังเป็นแถวเดิม Safari ต่ำกว่า 16 ยังปัดข้างแบบเดิม
 - myshelf ตอนที่สอง: MY_STYLES เพิ่ม b ชั้นหนังสือ (partials/my_books.ejs คลาส .mys- ปุ่มกรอง แตะปกเปิดแผง จอกว้างแผงข้าง มือถือแผงล่าง ไม่มี JavaScript ปกพาไปหน้างาน) และ c แถวยาว (.myr- เห็นเส้นทางอนุมัติในหน้า) · ปุ่มทุกแบบใช้ partials/my_work_btns my_note_btns
 - ทดสอบ: tests/myshelf.test.js เพิ่ม ลิงก์ปุ่มแบบ ข ค เท่าหน้าเดิมทุกครู · จอ 1440 และ 390 ไม่ล้นจอ กดเปิดแผงและกรองจริงด้วย Chrome ภาพ design-mockup/myshelf-result2-*.png รูปปกในภาพเป็นรูปจำลอง
-- ยังไม่ได้ลอง: Safari iPhone iPad Mac จริง · ยังไม่ commit ยังไม่ deploy ไม่มี migration
+- ยังไม่ได้ลอง: Safari iPhone iPad Mac จริง รูปปกจริงในแบบ ข ค บนเว็บจริงหลังเข้าระบบ
+- **ขึ้นเว็บจริงแล้ว 1 พ.ย. 2569 (stepper และ myshelf ข ค):** Version b66415b5 (Claude รัน cloud-setup.js ตามที่ครูเต้ยสั่ง) commit 86130ba · ไม่มี migration · ตรวจ /login 200 /my ส่งไปหน้าเข้าระบบ app.css บนเว็บมีคลาส stepper-box mys- myr- · ค่าเริ่มต้นยังเป็นแบบ ก · ยังไม่ push
