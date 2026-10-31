@@ -723,12 +723,15 @@
         fileIn.value = '';
         if (f && !/\.pdf$/i.test(f.name)) tell('เลือกไฟล์ปกเป็น PDF');
         else if (f) coverFile = f;
-        fname.textContent = coverFile ? coverFile.name : 'ยังไม่ได้เลือก';
+        fname.textContent = coverFile ? coverFile.name : 'กดเพื่อเลือกไฟล์';
         if (coverFile) dlg.querySelector('input[name=front_new][value=file]').checked = true;
       }
       if (e.target.closest('[data-front-pages]')) e.target.closest('label').classList.toggle('on', e.target.checked);
       refresh();
     });
+    // ป้ายนี้มีทั้งปุ่มเลือกและช่องไฟล์ เบราว์เซอร์ผูกป้ายกับปุ่มเลือกเท่านั้น จึงต้องเปิดหน้าต่างเลือกไฟล์เอง
+    const fileRadio = dlg.querySelector('input[name=front_new][value=file]');
+    if (fileRadio) fileRadio.addEventListener('click', () => fileIn.click());
     dlg.querySelector('[data-front-cancel]').addEventListener('click', () => dlg.close());
     btn.addEventListener('click', async () => {
       dlg.showModal();
@@ -774,7 +777,7 @@
       if (!bytes || !total) return tell('รอให้เปิดไฟล์เสร็จก่อน');
       const del = removed();
       const mode = choice();
-      if (mode === 'file' && !coverFile) return tell('ยังไม่ได้เลือกไฟล์ปก กดที่ ไฟล์ปก PDF เพื่อเลือก');
+      if (mode === 'file' && !coverFile) return tell('ยังไม่ได้เลือกไฟล์ปก กดที่ ไฟล์ปก PDF เพื่อเลือกไฟล์');
       if (!del.length && mode === 'none') return tell('ยังไม่ได้เลือกหน้าที่จะลบหรือปกใหม่');
       if (del.length >= total && mode === 'none') return tell('ลบทุกหน้าไม่ได้ ต้องเหลืออย่างน้อย 1 หน้า');
       dlg.close();

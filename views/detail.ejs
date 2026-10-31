@@ -400,7 +400,7 @@
             <div class="front-opts">
               <label><input type="radio" name="front_new" value="none"<%= drawnBook ? '' : ' checked' %>> ไม่ต่อปกใหม่</label>
               <% if (drawnBook) { %><label><input type="radio" name="front_new" value="drawn" checked> ปกที่ระบบวาด แบบเดียวกับคลังงาน</label><% } %>
-              <label><input type="radio" name="front_new" value="file"> ไฟล์ปก PDF <span class="muted small" data-front-fname>ยังไม่ได้เลือก</span><input type="file" accept=".pdf,application/pdf" hidden data-front-file></label>
+              <label><input type="radio" name="front_new" value="file"> ไฟล์ปก PDF <span class="muted small" data-front-fname>กดเพื่อเลือกไฟล์</span><input type="file" accept=".pdf,application/pdf" hidden data-front-file></label>
             </div>
             <% if (drawnBook) { %><div class="front-drawn" data-front-drawn><%- include('partials/lib_cover', { b: drawnBook, logoUrl: logoBig }) %></div><% } %>
             <p class="front-sum" data-front-sum></p>
