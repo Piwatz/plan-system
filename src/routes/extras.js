@@ -8,6 +8,7 @@ const util = require('../util');
 const { mySubjects, currentTerm, registryScope } = require('./pages');
 const { qrSvg } = require('./verify');
 const teaching = require('../teaching');
+const report = require('../reportsum');
 
 const router = express.Router();
 router.use(auth.requireLogin);
@@ -221,6 +222,8 @@ async function boardRows(deptId, t, ff = {}) {
     }
   }
   const taughtOf = ff.teachlist ? await teaching.listMany(ids, t.year, t.semester) : new Map();
+  // งานที่ผู้ดูแลตั้งว่าไม่คิดผล (ฟังก์ชันเสริม reportsum) ไม่นับว่าขาด จึงไม่ถูกส่งเตือน
+  const exempt = ff.reportsum ? await report.exemptions(ids, t.year, t.semester) : new Map();
   const out = [];
   for (const { notes_n: notesN, notes_todo: notesTodo, reminded_at: remindedAt, ...u } of teachers) {
     const subs = subsOf.get(u.id);
@@ -234,6 +237,7 @@ async function boardRows(deptId, t, ff = {}) {
       const ret = list.filter((s) => s.status === 'returned').length;
       const missing = Math.max(0, need[type] - sent.length);
       if (ret) return { text: `รอแก้ไข ${ret}`, cls: 'badge-red', missing: missing + ret };
+      if (!sent.length && exempt.get(u.id) && exempt.get(u.id).has(type)) return { text: 'ไม่ต้องส่ง', cls: 'badge-gray', missing: 0 };
       if (!sent.length) return { text: 'ยังไม่ส่ง', cls: 'badge-gray', missing };
       if (missing > 0) return { text: `ส่ง ${sent.length} จาก ${need[type]}`, cls: 'badge-amber', missing };
       const done = sent.every((s) => s.status === 'approved');

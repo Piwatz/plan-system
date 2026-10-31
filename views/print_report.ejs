@@ -1,0 +1,115 @@
+<%- include('partials/print_top', { paper: 'report' }) %>
+<%
+  // บันทึกข้อความรายงานการส่งงาน (ฟังก์ชันเสริม reportsum) วัดตำแหน่งจากไฟล์ Word ของโรงเรียน 3 ไฟล์ แผน คู่มือ บันทึกหลังแผน
+  // ตารางกว้างเกินขอบกระดาษของเนื้อความ จึงตั้งขอบกระดาษ 5 มม. แล้วเว้นขอบเนื้อความเองในหน้า
+  const round = data.round;
+  const black = round.color_mode === 'black';
+  const school = settings.school_name;
+  const place = String(settings.school_location || '').trim().split(' ').filter(Boolean).join('  ');
+  const tick = '<svg class="mk" viewBox="0 0 20 20"><path d="M3 11 L8 16 L17 4" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+  const cross = '<svg class="mk" viewBox="0 0 20 20"><path d="M4 4 L16 16 M16 4 L4 16" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round"/></svg>';
+  const blank = '..........................................';
+  const signBox = (title, name, pos) => `<div class="rp-box"><div>${util_esc(title)}</div><div class="rp-dots"></div><div class="rp-dots"></div><div class="rp-nm">(${util_esc(name || blank)})</div><div>${util_esc(pos)}</div></div>`;
+  function util_esc(s) { return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); }
+%>
+<style>
+  @page report { size: A4; margin: 15mm 5mm 15mm 5.25mm; }
+  .toolbar label { display: none; }
+  .paper.rpt { page: report; line-height: 18.4pt; font-size: 16pt; }
+  @media screen { .paper.rpt { padding: 15mm 5mm 15mm 5.25mm; } }
+  .rp-memo { margin: 0 10mm 0 14.75mm; }
+  .rp-head { position: relative; height: 69.65pt; }
+  .rp-head img { position: absolute; left: 0; top: 0; width: 61.1pt; height: 64.45pt; }
+  .rp-head h1 { position: absolute; left: 187pt; bottom: 0; margin: 0; font-size: 20pt; line-height: 24pt; font-weight: 700; }
+  .rp-row { display: flex; align-items: baseline; height: 22.6pt; line-height: 22.6pt; white-space: pre; }
+  .rp-row b { font-size: 20pt; font-weight: 700; flex: none; }
+  .rp-row .k1 { width: 107.7pt; }
+  .rp-row .k2 { width: 36pt; }
+  .rp-row .no { width: 86.5pt; flex: none; }
+  .rp-rule { border-bottom: 1px solid #000; margin-top: 7pt; }
+  .rp-to { display: flex; align-items: baseline; margin-top: 8.7pt; height: 29.3pt; line-height: 22pt; }
+  .rp-to b { font-size: 18pt; font-weight: 700; width: 41.5pt; flex: none; }
+  .rp-p { margin: 0; text-indent: 36pt; text-align: justify; text-justify: inter-character; white-space: pre-wrap; }
+  .rp-item { display: grid; grid-template-columns: 141pt 111pt 1fr; padding-left: 72pt; line-height: 17.55pt; white-space: pre; }
+  .rp-note { padding-left: 72pt; margin-top: 3pt; white-space: pre-wrap; }
+  .rp-send { margin-top: 6.75pt; }
+  .rp-close { margin: 11.75pt 0 0 108pt; }
+  .rp-sign { margin-top: 18.4pt; }
+  .rp-sign .l { margin-left: 215.6pt; }
+  .rp-sign .c { margin-left: 188pt; width: 200pt; text-align: center; }
+  .rp-boxes { display: grid; grid-template-columns: 225pt 70pt 1fr; margin-top: 18pt; }
+  .rp-box { text-align: center; min-width: 0; }
+  .rp-box > div:first-child, .rp-box > div:last-child { white-space: nowrap; }
+  .rp-boxes .rp-box:last-child { grid-column: 3; }
+  .rp-dots { overflow: hidden; white-space: nowrap; height: 18.4pt; }
+  .rp-dots::before { content: '..........................................................................................................................................................................'; }
+  .rp-nm { margin-top: 11.8pt; }
+  .rp-dir { width: 204pt; margin: 40pt 0 0 139pt; }
+  .rp-dir .rp-dots:first-of-type { margin-top: 3pt; }
+  .rp-table { width: 100%; border-collapse: collapse; table-layout: fixed; line-height: 18.4pt; }
+  .rp-table th, .rp-table td { border: 0.75pt solid #000; padding: 1pt 4pt; font-weight: 400; }
+  .rp-table th { font-weight: 700; text-align: center; height: 31pt; vertical-align: top; }
+  .rp-table td { height: 21.4pt; }
+  .rp-table td.c { text-align: center; padding: 1pt 2pt; }
+  .rp-table tr { break-inside: avoid; }
+  .rp-table thead { display: table-header-group; }
+  .rp-table .memo-note { font-size: 14pt; line-height: 16pt; overflow-wrap: anywhere; }
+  .mk { width: 13pt; height: 13pt; vertical-align: -1.5pt; }
+  .mk-ok { color: #1E6E50; }
+  .mk-no, .rp-red { color: #C00000; }
+  .rp-black .mk-ok, .rp-black .mk-no { color: #000; }
+  .mk-ok, .mk-no, .rp-red { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  .rp-list-title { margin: 0; text-align: center; font-weight: 700; }
+  .rp-list { margin-top: 18pt; }
+  .rp-list div { display: grid; grid-template-columns: 18.2pt 179.6pt 72.4pt 1fr; padding-left: 17.8pt; }
+  @media screen and (max-width: 820px) {
+    html:not(.fit-measure) .paper.rpt { overflow-x: auto; }
+  }
+</style>
+<div class="paper rpt<%= black ? ' rp-black' : '' %>">
+  <div class="rp-memo">
+    <div class="rp-head"><% if (settings.memo_logo) { %><img src="<%= settings.memo_logo %>" alt=""><% } %><h1>บันทึกข้อความ</h1></div>
+    <div class="rp-row"><b class="k1">ส่วนราชการ</b><span><%= school %>  <%= place %></span></div>
+    <div class="rp-row"><b class="k2">ที่</b><span class="no"><%= round.doc_no %></span><span>วันที่  <%= formDate(round.doc_date) %></span></div>
+    <div class="rp-row"><b class="k2">เรื่อง</b><span><%= text.subject %></span></div>
+    <div class="rp-rule"></div>
+    <div class="rp-to"><b>เรียน</b><span>ผู้อำนวยการ<%= school %></span></div>
+    <p class="rp-p"><%= text.p1 %></p>
+    <p class="rp-p"><%= text.p2 %></p>
+    <% text.items.forEach((it, i) => { %><div class="rp-item"><span><%= i + 1 %>.  <%= it.label %></span><span>จำนวน   <%= it.n %>    คน</span><span>คิดเป็นร้อยละ  <%= it.pct %></span></div><% }) %>
+    <% if (endNote) { %><div class="rp-note"><%= endNote %></div><% } %>
+    <div class="rp-send" style="margin-left:<%= type === 'manual' ? 36 : 72 %>pt">จึงเรียนบันทึกรายงานการส่งเอกสารดังกล่าว ดังเอกสารที่แนบมาพร้อมนี้</div>
+    <div class="rp-close">จึงเรียนมาเพื่อโปรดทราบ</div>
+    <div class="rp-sign"><div class="l">ลงชื่อ</div><div class="c">(<%= names.reporter %>)</div><div class="c">ผู้รายงาน</div></div>
+    <div class="rp-boxes">
+      <%- signBox('ความเห็นของหัวหน้าสำนักงานกลุ่มบริหารงานวิชาการ', names.head, 'หัวหน้าสำนักงานกลุ่มบริหารงานวิชาการ') %>
+      <%- signBox('ความเห็นของรองผู้อำนวยการโรงเรียน', names.deputy, 'รองผู้อำนวยการกลุ่มบริหารงานวิชาการ') %>
+    </div>
+    <div class="rp-dir"><%- signBox('ความเห็นของผู้อำนวยการโรงเรียน', names.director, 'ผู้อำนวยการ' + school) %></div>
+  </div>
+</div>
+<div class="paper rpt<%= black ? ' rp-black' : '' %>">
+  <table class="rp-table">
+    <colgroup><col style="width:5%"><col style="width:26.3%"><col style="width:29.2%"><col style="width:29.5%"><col style="width:10%"></colgroup>
+    <thead><tr><th>ที่</th><th>ชื่อ-สกุล</th><th><%= text.sent %></th><th><%= text.unsent %></th><th>หมายเหตุ</th></tr></thead>
+    <tbody>
+      <% for (const r of rows) { const no = r.state === 'notsent'; %>
+        <tr><td><%= r.no %></td><td><%= r.full_name %></td>
+          <td class="c"><% if (!no) { %><span class="mk-ok"><%- tick %></span><% } %></td>
+          <td class="c"><% if (no) { %><span class="mk-no"><%- cross %></span><% } %></td>
+          <td class="c memo-note<%= r.noteRed ? ' rp-red' : '' %>"><%= r.note %></td></tr>
+      <% } %>
+    </tbody>
+  </table>
+</div>
+<% if (late.length) { %>
+  <div class="paper rpt<%= black ? ' rp-black' : '' %>">
+    <div class="rp-memo">
+      <p class="rp-list-title"><%= text.listTitle %></p>
+      <p class="rp-list-title"><%= text.listCount %></p>
+      <div class="rp-list"><% late.forEach((r, i) => { %><div><span><%= i + 1 %>.</span><span><%= r.full_name %></span><span>ตำแหน่ง</span><span><%= r.position %></span></div><% }) %></div>
+    </div>
+  </div>
+<% } %>
+</body>
+</html>

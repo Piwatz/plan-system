@@ -1,0 +1,115 @@
+<!doctype html>
+<html lang="th"><head><meta charset="utf-8"><title>ตัวอย่างหน้าสรุปการส่งงาน</title>
+<style>
+@font-face{font-family:Sarabun;font-weight:400;src:url(../node_modules/@fontsource/sarabun/files/sarabun-thai-400-normal.woff2) format('woff2')}
+@font-face{font-family:Sarabun;font-weight:700;src:url(../node_modules/@fontsource/sarabun/files/sarabun-thai-700-normal.woff2) format('woff2')}
+:root{--p:#A61B1B;--ok:#1E6E50;--okb:#E1F2EA;--w:#7A5200;--wb:#FBEFD5;--b:#A61B1B;--bb:#FCE7E5;--line:#E3DEDA;--mut:#6B6460;--bg:#F6F3F0}
+*{box-sizing:border-box}
+body{margin:0;padding:24px;background:var(--bg);font:17px/1.5 Sarabun,'Leelawadee UI',Tahoma,sans-serif;color:#26211E;width:1120px}
+.cap{font-weight:700;font-size:21px;margin:26px 0 8px;color:var(--p)}.cap:first-child{margin-top:0}
+.card{background:#fff;border:1px solid var(--line);border-radius:12px;padding:18px 20px}
+h1{font-size:25px;margin:0}
+.tabs{display:flex;gap:8px;margin:12px 0}
+.tab{padding:9px 20px;border-radius:9px;border:1px solid var(--line);background:#fff;font-weight:700;color:var(--mut)}
+.tab.on{background:var(--p);border-color:var(--p);color:#fff}
+.bar{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:12px}
+.sel{border:1px solid var(--line);border-radius:8px;padding:6px 12px;background:#fff}
+.sel small{color:var(--mut);margin-right:6px}
+.btn{margin-left:auto;background:var(--p);color:#fff;border-radius:8px;padding:8px 16px;font-weight:700}
+.btn.g{margin-left:0;background:#fff;color:var(--p);border:1px solid var(--p)}
+.nums{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:14px}
+.n{border-radius:10px;padding:10px 14px;background:#F4F1EE}.n b{font-size:29px;display:block;line-height:1.2}.n span{color:var(--mut);font-size:15px}
+.n.ok b{color:var(--ok)}.n.w b{color:var(--w)}.n.r b{color:var(--b)}
+table{width:100%;border-collapse:collapse}th,td{padding:7px 10px;border-bottom:1px solid var(--line);text-align:left}th{font-size:15px;color:var(--mut)}
+.bd{display:inline-block;border-radius:20px;padding:1px 11px;font-size:15px;font-weight:700;white-space:nowrap}
+.ok{}.bd.ok{background:var(--okb);color:var(--ok)}.bd.w{background:var(--wb);color:var(--w)}.bd.r{background:var(--bb);color:var(--b)}.bd.x{background:#EAE6E2;color:#5A534E}
+tr.ch{background:#FFF8E8}
+.dd{border:1px solid #BFB6AF;border-radius:7px;padding:3px 10px;background:#fff;display:inline-block;font-weight:700;white-space:nowrap}
+.why{color:#3F3935;font-size:15.5px}.mut{color:var(--mut);font-size:15px}
+.strip{background:var(--wb);color:var(--w);border-radius:9px;padding:9px 14px;margin-bottom:12px;font-weight:700}
+.cmp td,.cmp th{text-align:center}.cmp td:first-child,.cmp th:first-child{text-align:left}
+.papers{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.paper{background:#fff;border:1px solid #CFC9C4;padding:26px 28px;font-size:15.5px;line-height:1.5;height:600px;overflow:hidden}
+.paper h3{text-align:center;margin:0 0 6px;font-size:20px}
+.paper p{margin:3px 0}.ind{text-indent:26px}.paper table{font-size:14px}.paper th,.paper td{border:1px solid #555;color:#111;padding:2px 6px;text-align:center}.paper td.l{text-align:left}
+.tick{font-weight:700}
+.hl{background:#FFF0B8}
+</style></head><body>
+
+<div class="cap">หน้า 1 สรุปตามจริง (อ่านอย่างเดียว แก้ไม่ได้)</div>
+<div class="card">
+  <h1>สรุปการส่งงานครู</h1>
+  <div class="tabs"><div class="tab on">ตามจริง</div><div class="tab">ฉบับรายงาน</div></div>
+  <div class="bar"><div class="sel"><small>งาน</small><b>แผนการจัดการเรียนรู้</b></div><div class="sel"><small>ภาคเรียน</small><b>2/2569</b></div><div class="sel"><small>กำหนดส่ง</small><b>30 พ.ย. 2569</b></div><div class="btn">พิมพ์ตามจริง</div></div>
+  <div class="nums"><div class="n"><b>69</b><span>ครูที่ต้องส่ง</span></div><div class="n ok"><b>58</b><span>ส่งทันกำหนด ร้อยละ 84.06</span></div><div class="n w"><b>7</b><span>ส่งเกินกำหนด ร้อยละ 10.14</span></div><div class="n r"><b>4</b><span>ยังไม่ส่ง ร้อยละ 5.80</span></div></div>
+  <table><tr><th>ครู</th><th>กลุ่มสาระ</th><th>ผล</th><th>วันที่ส่ง</th><th>ส่งแล้ว</th></tr>
+    <tr><td>ครูสมมติ หนึ่ง</td><td>วิทยาศาสตร์</td><td><span class="bd ok">ส่งทัน</span></td><td>28 พ.ย. 2569</td><td>1 จาก 1</td></tr>
+    <tr><td>ครูสมมติ สอง</td><td>คณิตศาสตร์</td><td><span class="bd w">ส่งเกินกำหนด</span></td><td>4 ธ.ค. 2569 (ช้า 4 วัน)</td><td>1 จาก 1</td></tr>
+    <tr><td>ครูสมมติ สาม</td><td>ภาษาต่างประเทศ</td><td><span class="bd r">ยังไม่ส่ง</span></td><td class="mut">ไม่มี</td><td>0 จาก 1</td></tr>
+  </table>
+</div>
+
+<div class="cap">หน้า 2 ฉบับรายงาน (เห็นเฉพาะผู้ดูแลระบบ ปรับได้ทีละคน)</div>
+<div class="card">
+  <h1>สรุปการส่งงานครู</h1>
+  <div class="tabs"><div class="tab">ตามจริง</div><div class="tab on">ฉบับรายงาน</div></div>
+  <div class="strip">ฉบับนี้ต่างจากตามจริง 3 คน กดคืนค่าได้ทุกเมื่อ ข้อมูลการส่งงานจริงไม่ถูกเปลี่ยน</div>
+  <table class="cmp" style="margin-bottom:14px"><tr><th></th><th>ครูที่นับ</th><th>ส่งทัน</th><th>ส่งเกินกำหนด</th><th>ยังไม่ส่ง</th><th>ไม่คิดผล</th></tr>
+    <tr><td>ตามจริง</td><td>69</td><td>58</td><td>7</td><td>4</td><td>0</td></tr>
+    <tr><td><b>ฉบับรายงาน</b></td><td><b>68</b></td><td><b>59</b></td><td><b>7</b></td><td><b>2</b></td><td><b>1</b></td></tr></table>
+  <table><tr><th>ครู</th><th>ผลตามจริง</th><th>ผลในรายงาน</th><th>เหตุผล เก็บในระบบ (บังคับกรอก)</th><th>หมายเหตุบนกระดาษ (พิมพ์เอง)</th></tr>
+    <tr class="ch"><td>ครูสมมติ สาม</td><td><span class="bd r">ยังไม่ส่ง</span></td><td><span class="dd">ไม่คิดผล ▾</span></td><td class="why">ครูต่างชาติ</td><td><span class="dd" style="font-weight:400">ไม่อยู่ในตาราง</span></td></tr>
+    <tr class="ch"><td>ครูสมมติ สอง</td><td><span class="bd w">ส่งเกินกำหนด</span></td><td><span class="dd">ส่งทัน ▾</span></td><td class="why">ลาป่วยช่วงกำหนดส่ง</td><td><span class="dd" style="font-weight:400">ลาป่วย</span></td></tr>
+    <tr class="ch"><td>ครูสมมติ สี่</td><td><span class="bd r">ยังไม่ส่ง</span></td><td><span class="dd">ส่งเกินกำหนด ▾</span></td><td class="why">ส่งเป็นเล่มกระดาษกับงาน</td><td><span class="dd" style="font-weight:400">ส่งเป็นเล่ม</span></td></tr>
+    <tr><td>ครูสมมติ หนึ่ง</td><td><span class="bd ok">ส่งทัน</span></td><td><span class="dd" style="font-weight:400">ตามจริง ▾</span></td><td class="mut">ไม่ต้องกรอก</td><td class="mut">เว้นว่าง</td></tr>
+  </table>
+  <div style="margin-top:12px;border:1px solid var(--line);border-radius:10px;padding:10px 16px">
+    <b>สวิตช์ พิมพ์หมายเหตุบนกระดาษ</b> <span class="bd ok">เปิด</span>
+    <div class="mut">ปิดแล้ว ช่องหมายเหตุรายคนและข้อความท้ายบันทึกจะไม่พิมพ์ แต่เหตุผลยังเก็บในระบบเสมอ</div>
+    <div style="margin-top:6px">ข้อความท้ายบันทึก (พิมพ์เอง เว้นว่างได้) <span class="dd" style="font-weight:400">หมายเหตุ ไม่นับรวมครูต่างชาติ 1 คน</span></div>
+  </div>
+  <div style="margin-top:16px;border:1px solid var(--line);border-radius:10px;padding:12px 16px">
+    <b>กดที่ครูแล้วเลือกสถานการณ์ ระบบตั้งผลให้เอง เปลี่ยนเองได้ทุกข้อ</b>
+    <table style="margin-top:6px"><tr><th>สถานการณ์</th><th>ผลในรายงาน</th><th>ยังต้องส่งงานไหม</th></tr>
+      <tr><td>ครูย้ายมาใหม่</td><td><span class="bd x">ยังไม่คิดผล</span></td><td>ต้องส่ง ระบบยังเตือนตามปกติ</td></tr>
+      <tr><td>ครูบรรจุใหม่</td><td><span class="bd x">ยังไม่คิดผล</span></td><td>ต้องส่ง ระบบยังเตือนตามปกติ</td></tr>
+      <tr><td>ครูต่างชาติ</td><td><span class="bd x">ไม่คิดผล</span></td><td>ไม่ต้องส่ง ไม่ขึ้นเตือน</td></tr>
+      <tr><td>ลาคลอด ลาป่วย ไปราชการ</td><td><span class="bd ok">ขยายกำหนดส่งเฉพาะคน</span></td><td>ต้องส่ง ระบบตัดสินทันหรือเกินจากวันใหม่</td></tr>
+      <tr><td>ส่งเป็นเล่มกระดาษ ไม่ได้ส่งในระบบ</td><td><span class="bd ok">ส่งทัน</span> หรือ <span class="bd w">ส่งเกินกำหนด</span></td><td>ส่งแล้ว ไม่เตือน</td></tr>
+      <tr><td>เหตุอื่น พิมพ์เอง</td><td>เลือกได้ทุกผล</td><td>เลือกเอง</td></tr>
+    </table>
+    <div class="mut" style="margin-top:6px">ใช้กับ แผน คู่มือ บันทึกหลังแผน แยกกันได้ · เลือกครูหลายคนพร้อมกันได้ · ตั้งให้มีผลรอบนี้รอบเดียว หรือถึงวันที่กำหนดได้ · ผู้ดูแลเพิ่มสถานการณ์ใหม่เองได้</div>
+  </div>
+  <div class="bar" style="margin:14px 0 0"><div class="btn g">ส่งออกไฟล์ Word</div><div class="btn" style="margin-left:0">พิมพ์บันทึกข้อความ</div></div>
+</div>
+
+<div class="cap">กระดาษที่ได้ (ตามฟอร์มรายงานการส่งแผน ฉบับเดิมของโรงเรียน)</div>
+<div class="papers">
+  <div class="paper"><h3>บันทึกข้อความ</h3>
+    <p><b>ส่วนราชการ</b> โรงเรียนชานุมานวิทยาคม อำเภอชานุมาน จังหวัดอำนาจเจริญ</p>
+    <p><b>ที่</b> วก 000/2569 &nbsp; <b>วันที่</b> 5 ธันวาคม พ.ศ. 2569</p>
+    <p><b>เรื่อง</b> รายงานการส่งแผนการจัดการเรียนรู้ ประจำภาคเรียนที่ 2 ปีการศึกษา 2569</p>
+    <p><b>เรียน</b> ผู้อำนวยการโรงเรียนชานุมานวิทยาคม</p>
+    <p class="ind">ด้วย งานส่งเสริมและพัฒนากระบวนการเรียนรู้ กลุ่มบริหารงานวิชาการ ได้กำหนดส่งแผนการจัดการเรียนรู้ ภายในวันที่ 30 พฤศจิกายน 2569 นั้น</p>
+    <p class="ind">บัดนี้การดำเนินการดังกล่าวเสร็จสิ้นแล้ว ผลปรากฏว่า มีครูที่ปฏิบัติหน้าที่สอน จำนวน 68 คน</p>
+    <p class="ind">๑. ส่งตามกำหนดเวลา จำนวน 59 คน คิดเป็นร้อยละ 86.76</p>
+    <p class="ind">๒. ส่งไม่ทันตามกำหนดเวลา จำนวน 7 คน คิดเป็นร้อยละ 10.29</p>
+    <p class="ind">๓. ยังไม่ส่ง จำนวน 2 คน คิดเป็นร้อยละ 2.94</p>
+    <p class="ind"><span class="hl">หมายเหตุ ไม่นับรวมครูต่างชาติ 1 คน</span></p>
+    <p class="ind">จึงเรียนมาเพื่อโปรดทราบ</p>
+    <p style="text-align:center;margin-top:18px">ลงชื่อ ........................................ ผู้รายงาน</p>
+  </div>
+  <div class="paper"><h3 style="font-size:17px">รายชื่อแนบท้าย</h3>
+    <table><tr><th>ที่</th><th>ชื่อ สกุล</th><th>ส่งทันภายใน 30 พ.ย. 2569</th><th>ส่งหลัง 30 พ.ย. 2569</th><th>หมายเหตุ</th></tr>
+      <tr><td>1</td><td class="l">ครูสมมติ หนึ่ง</td><td class="tick"><svg width="17" height="17" viewBox="0 0 20 20" style="vertical-align:-3px"><path d="M3 11 L8 16 L17 4" fill="none" stroke="#1E6E50" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"/></svg></td><td></td><td></td></tr>
+      <tr><td>2</td><td class="l">ครูสมมติ สอง</td><td class="tick"><svg width="17" height="17" viewBox="0 0 20 20" style="vertical-align:-3px"><path d="M3 11 L8 16 L17 4" fill="none" stroke="#1E6E50" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"/></svg></td><td></td><td class="hl">ลาป่วย</td></tr>
+      <tr><td>3</td><td class="l">ครูสมมติ สี่</td><td></td><td class="tick"><svg width="17" height="17" viewBox="0 0 20 20" style="vertical-align:-3px"><path d="M3 11 L8 16 L17 4" fill="none" stroke="#1E6E50" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"/></svg></td><td class="hl">ส่งเป็นเล่ม</td></tr>
+      <tr><td>4</td><td class="l">ครูสมมติ ห้า</td><td></td><td></td><td style="color:#C00000;font-weight:700;white-space:nowrap"><svg width="17" height="17" viewBox="0 0 20 20" style="vertical-align:-3px"><path d="M4 4 L16 16 M16 4 L4 16" fill="none" stroke="#C00000" stroke-width="3.2" stroke-linecap="round"/></svg> ยังไม่ส่ง</td></tr>
+      <tr><td>5</td><td class="l">ครูสมมติ หก</td><td class="tick"><svg width="17" height="17" viewBox="0 0 20 20" style="vertical-align:-3px"><path d="M3 11 L8 16 L17 4" fill="none" stroke="#1E6E50" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"/></svg></td><td></td><td></td></tr>
+    </table>
+    <p class="mut" style="margin-top:14px">ส่วนที่เน้นสีเหลือง คือหมายเหตุที่ผู้ดูแลพิมพ์เอง มีสวิตช์เปิดปิดในหน้าฉบับรายงาน (บนกระดาษจริงไม่มีสีเหลือง)</p>
+    <p class="mut">ครูที่ไม่คิดผล (ครูสมมติ สาม) ไม่อยู่ในตารางนี้</p>
+    <p class="mut">ยังไม่ส่ง พิมพ์เป็นตัวแดงพร้อมกากบาทเสมอ แม้ปิดสวิตช์หมายเหตุ</p>
+  </div>
+</div>
+</body></html>

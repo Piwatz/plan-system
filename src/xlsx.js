@@ -27,7 +27,7 @@ function zip(files) {
   let offset = 0;
   for (const [name, text] of files) {
     const nameB = enc.encode(name);
-    const data = enc.encode(text);
+    const data = typeof text === 'string' ? enc.encode(text) : text; // รูปภาพส่งมาเป็น Uint8Array
     const crc = crc32(data);
     const local = new DataView(new ArrayBuffer(30));
     local.setUint32(0, 0x04034b50, true);

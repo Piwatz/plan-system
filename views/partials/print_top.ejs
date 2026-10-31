@@ -18,7 +18,7 @@
 
   /* ระยะขอบตามไฟล์ Word ของโรงเรียน: บันทึกข้อความ บน 1.25 ขวา 2.3 ล่าง 1.63 ซ้าย 2.54 ซม. แบบประเมิน บน 1.5 ขวา 1 ล่าง 1 ซ้าย 1.5 ซม. */
   /* ขอบกระดาษหลักของเอกสารฉบับนี้ (Safari บน Mac ไม่รู้จัก @page แบบตั้งชื่อ จึงกำหนดตามชนิดเอกสารที่พิมพ์ด้วย) */
-  @page { size: A4; margin: <%= { memo: '12.5mm 23mm 16.3mm 25.4mm', eval: '15mm 10mm 10mm 15mm' }[locals.paper] || '12.5mm 18mm 12.5mm 22mm' %>; }
+  @page { size: A4; margin: <%= { memo: '12.5mm 23mm 16.3mm 25.4mm', eval: '15mm 10mm 10mm 15mm', report: '15mm 5mm 15mm 5.25mm' }[locals.paper] || '12.5mm 18mm 12.5mm 22mm' %>; }
   @page memo { size: A4; margin: 12.5mm 23mm 16.3mm 25.4mm; }
   @page evalform { size: A4; margin: 15mm 10mm 10mm 15mm; }
   * { box-sizing: border-box; }

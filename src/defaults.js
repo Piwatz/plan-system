@@ -73,6 +73,7 @@ const DEFAULT_RUBRICS = {
 const DEFAULT_SETTINGS = {
   school_name: 'โรงเรียนของเรา',
   school_location: '',
+  report_situations: '',
   school_logo: '',
   memo_logo: '',
   theme: 'i',

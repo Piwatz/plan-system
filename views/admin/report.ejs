@@ -1,0 +1,216 @@
+<%- include('../partials/top') %>
+<%# สรุปการส่งงานครู (ฟังก์ชันเสริม reportsum) เฉพาะผู้ดูแลระบบ ตามจริงแก้ไม่ได้ ฉบับรายงานปรับผลได้โดยไม่แตะข้อมูลการส่งงานจริง %>
+<%
+  const round = data.round;
+  const qs = (o) => `/admin/report?type=${o.type || type}&tab=${o.tab || tab}&year=${term.year}&semester=${term.semester}`;
+  const out = (path, mode) => `/admin/report/${path}?type=${type}&mode=${mode}&year=${term.year}&semester=${term.semester}`;
+  const sum = tab === 'report' ? data.report : data.real;
+  const dateOf = (at) => (at ? util.thaiDate(at, true) : '');
+  const lateDays = (at) => {
+    if (!at || !round.due_date) return 0;
+    return Math.round((new Date(at.slice(0, 10) + 'T00:00:00Z') - new Date(round.due_date + 'T00:00:00Z')) / 86400000);
+  };
+%>
+<style>
+  .rs-tabs { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 12px; }
+  .rs-nums { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; margin-bottom: 14px; }
+  .rs-num { border: 1px solid var(--line); border-radius: 10px; padding: 10px 14px; background: var(--surface); }
+  .rs-num b { display: block; font-size: 1.7rem; line-height: 1.2; }
+  .rs-fields { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 10px 14px; }
+  .rs-row-on { background: var(--wait-bg); }
+  @media (min-height: 850px) and (min-width: 821px) { .rs-panel { position: sticky; top: 8px; z-index: 3; } }
+  .rs-checks { display: flex; flex-wrap: wrap; gap: 14px; align-items: center; }
+  .rs-checks label { display: inline-flex; gap: 6px; align-items: center; }
+  .rs-sit { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 8px; max-width: 620px; margin-bottom: 8px; }
+</style>
+<div class="page-head">
+  <div>
+    <div class="eyebrow">ผู้ดูแลระบบ</div>
+    <h1>สรุปการส่งงานครู</h1>
+    <div class="sub">ตามจริงคิดจากวันที่ส่งในระบบ แก้ไม่ได้ ฉบับรายงานปรับผลได้ โดยข้อมูลการส่งงานจริงไม่เปลี่ยน</div>
+  </div>
+  <div class="actions"><%- include('../partials/term_select', { keep: { type, tab } }) %><a class="btn btn-ghost" href="/admin">กลับหน้าผู้ดูแลระบบ</a></div>
+</div>
+
+<div class="rs-tabs">
+  <% for (const [k, d] of Object.entries(docs)) { %><a class="btn <%= k === type ? 'btn-primary' : 'btn-ghost' %>" href="<%= qs({ type: k }) %>"><%= d.tab %></a><% } %>
+</div>
+<div class="rs-tabs">
+  <a class="btn <%= tab === 'real' ? 'btn-primary' : 'btn-ghost' %>" href="<%= qs({ tab: 'real' }) %>">ตามจริง</a>
+  <a class="btn <%= tab === 'report' ? 'btn-primary' : 'btn-ghost' %>" href="<%= qs({ tab: 'report' }) %>">ฉบับรายงาน</a>
+</div>
+
+<section class="card">
+  <form method="post" action="/admin/report/due" class="rs-checks">
+    <input type="hidden" name="type" value="<%= type %>"><input type="hidden" name="tab" value="<%= tab %>"><input type="hidden" name="year" value="<%= term.year %>"><input type="hidden" name="semester" value="<%= term.semester %>">
+    <label for="rs-due"><b>กำหนดส่ง<%= docs[type].label %></b></label>
+    <input type="date" id="rs-due" name="due_date" value="<%= round.due_date %>" style="width:auto">
+    <button class="btn btn-sm btn-primary" type="submit" data-confirm="บันทึกกำหนดส่ง ระบบจะคิดผลทันหรือเกินกำหนดของรอบนี้ใหม่">บันทึกกำหนดส่ง</button>
+    <% if (!round.due_date) { %><span class="badge badge-amber">ยังไม่ได้ตั้งกำหนดส่ง ทุกคนที่ส่งแล้วจะนับเป็นส่งทัน</span><% } %>
+  </form>
+</section>
+
+<% if (tab === 'report') { %>
+  <% if (data.changed) { %><div class="alert alert-info"><%- icon('shield') %><span>ฉบับนี้ต่างจากตามจริง <%= data.changed %> คน กดคืนค่าได้ทุกเมื่อ ข้อมูลการส่งงานจริงไม่ถูกเปลี่ยน</span></div><% } %>
+  <section class="card">
+    <div class="table-wrap"><table class="table">
+      <thead><tr><th></th><th class="num">ครูที่นับ</th><th class="num">ส่งทัน</th><th class="num">ส่งเกินกำหนด</th><th class="num">ยังไม่ส่ง</th><th class="num">ไม่คิดผล</th></tr></thead>
+      <tbody>
+        <tr><td>ตามจริง</td><td class="num"><%= data.real.total %></td><td class="num"><%= data.real.ontime %></td><td class="num"><%= data.real.late %></td><td class="num"><%= data.real.notsent %></td><td class="num"><%= data.real.skip %></td></tr>
+        <tr><td><b>ฉบับรายงาน</b></td><td class="num"><b><%= data.report.total %></b></td><td class="num"><b><%= data.report.ontime %></b></td><td class="num"><b><%= data.report.late %></b></td><td class="num"><b><%= data.report.notsent %></b></td><td class="num"><b><%= data.report.skip %></b></td></tr>
+      </tbody>
+    </table></div>
+  </section>
+<% } else { %>
+  <div class="rs-nums">
+    <div class="rs-num"><b><%= sum.total %></b>ครูที่ต้องส่ง</div>
+    <div class="rs-num"><b><%= sum.ontime %></b>ส่งทันกำหนด ร้อยละ <%= sum.pct.ontime %></div>
+    <div class="rs-num"><b><%= sum.late %></b>ส่งเกินกำหนด ร้อยละ <%= sum.pct.late %></div>
+    <div class="rs-num"><b><%= sum.notsent %></b>ยังไม่ส่ง ร้อยละ <%= sum.pct.notsent %></div>
+  </div>
+<% } %>
+
+<section class="card">
+  <h2>บันทึกข้อความ</h2>
+  <form method="post" action="/admin/report/round">
+    <input type="hidden" name="type" value="<%= type %>"><input type="hidden" name="tab" value="<%= tab %>"><input type="hidden" name="year" value="<%= term.year %>"><input type="hidden" name="semester" value="<%= term.semester %>">
+    <div class="rs-fields">
+      <div class="field"><label for="rs-no">เลขที่บันทึกข้อความ</label><input type="text" id="rs-no" name="doc_no" value="<%= round.doc_no %>" maxlength="60" placeholder="วก 000/2569"></div>
+      <div class="field"><label for="rs-date">วันที่</label><input type="date" id="rs-date" name="doc_date" value="<%= round.doc_date %>"></div>
+      <div class="field"><label for="rs-rep">ผู้รายงาน</label><input type="text" id="rs-rep" name="sign_reporter" value="<%= round.sign_reporter || names.reporter %>" maxlength="120"></div>
+      <div class="field"><label for="rs-head">หัวหน้าสำนักงานกลุ่มบริหารงานวิชาการ</label><input type="text" id="rs-head" name="sign_head" value="<%= round.sign_head || names.head %>" maxlength="120"></div>
+      <div class="field"><label for="rs-dep">รองผู้อำนวยการกลุ่มบริหารงานวิชาการ</label><input type="text" id="rs-dep" name="sign_deputy" value="<%= round.sign_deputy || names.deputy %>" maxlength="120"></div>
+      <div class="field"><label for="rs-dir">ผู้อำนวยการโรงเรียน</label><input type="text" id="rs-dir" name="sign_director" value="<%= round.sign_director || names.director %>" maxlength="120"></div>
+      <div class="field"><label for="rs-color">สีเครื่องหมายถูกและกากบาท</label><select id="rs-color" name="color_mode"><option value="color" <%= round.color_mode !== 'black' ? 'selected' : '' %>>สีเขียวและสีแดง</option><option value="black" <%= round.color_mode === 'black' ? 'selected' : '' %>>สีดำ</option></select></div>
+    </div>
+    <div class="table-wrap" style="margin-top:10px;max-width:520px"><table class="table">
+      <thead><tr><th>หมายเหตุในตาราง</th><th>แสดงบนกระดาษ</th><th>อักษรสีแดง</th></tr></thead>
+      <tbody>
+        <tr><td>ยังไม่ส่ง</td><td><input type="checkbox" name="note_notsent" value="1" aria-label="แสดงหมายเหตุ ยังไม่ส่ง" <%= round.note_notsent ? 'checked' : '' %> style="width:auto"></td><td><input type="checkbox" name="red_notsent" value="1" aria-label="หมายเหตุ ยังไม่ส่ง เป็นอักษรสีแดง" <%= round.red_notsent ? 'checked' : '' %> style="width:auto"></td></tr>
+        <tr><td>ส่งเกินกำหนด</td><td><input type="checkbox" name="note_late" value="1" aria-label="แสดงหมายเหตุ ส่งเกินกำหนด" <%= round.note_late ? 'checked' : '' %> style="width:auto"></td><td><input type="checkbox" name="red_late" value="1" aria-label="หมายเหตุ ส่งเกินกำหนด เป็นอักษรสีแดง" <%= round.red_late ? 'checked' : '' %> style="width:auto"></td></tr>
+      </tbody>
+    </table></div>
+    <% if (tab === 'report') { %>
+      <div class="field" style="margin-top:10px"><label><input type="checkbox" name="note_on" value="1" <%= round.note_on ? 'checked' : '' %> style="width:auto"> พิมพ์หมายเหตุที่พิมพ์เองบนกระดาษ</label><div class="muted small">ปิดแล้ว หมายเหตุที่พิมพ์เองและข้อความท้ายบันทึกจะไม่พิมพ์ เหตุผลยังเก็บในระบบเสมอ</div></div>
+      <div class="field"><label for="rs-end">ข้อความท้ายบันทึก (พิมพ์เอง เว้นว่างได้)</label><textarea id="rs-end" name="end_note" rows="2" maxlength="500"><%= round.end_note %></textarea></div>
+    <% } else { %>
+      <% if (round.note_on) { %><input type="hidden" name="note_on" value="1"><% } %><input type="hidden" name="end_note" value="<%= round.end_note %>">
+    <% } %>
+    <div class="rs-checks" style="margin-top:12px">
+      <button class="btn btn-primary" type="submit" data-confirm="บันทึกข้อมูลบันทึกข้อความของรอบนี้">บันทึก</button>
+      <a class="btn btn-ghost" target="_blank" rel="noopener" href="<%= out('print', tab) %>">พิมพ์ หรือบันทึกเป็น PDF</a>
+      <a class="btn btn-ghost" href="<%= out('word', tab) %>"><%- icon('download', 18) %> ส่งออกไฟล์ Word</a>
+    </div>
+    <div class="muted small" style="margin-top:6px">กดบันทึกก่อนพิมพ์หรือส่งออก เอกสารจึงจะใช้ค่าล่าสุด</div>
+  </form>
+</section>
+
+<% if (tab === 'real') { %>
+  <section class="card">
+    <h2>รายชื่อตามจริง</h2>
+    <% if (data.noNeed) { %><div class="muted small">ไม่นับครูที่สอนเฉพาะกิจกรรมพัฒนาผู้เรียน <%= data.noNeed %> คน</div><% } %>
+    <div class="table-wrap"><table class="table">
+      <thead><tr><th>ครู</th><th>กลุ่มสาระ</th><th>ผล</th><th>วันที่ส่ง</th><th class="num">ส่งแล้ว</th></tr></thead>
+      <tbody><% for (const r of data.rows) { %>
+        <tr><td><%= r.full_name %></td><td><%= r.dept_name %></td>
+          <td><span class="badge <%= stateBadge[r.real] %>"><%= stateLabel[r.real] %></span></td>
+          <td><%= r.sent ? dateOf(r.lastAt) : '' %><% if (r.real === 'late' && lateDays(r.lastAt) > 0) { %> (ช้า <%= lateDays(r.lastAt) %> วัน)<% } %></td>
+          <td class="num"><%= r.sent %> จาก <%= r.need %></td></tr>
+      <% } %></tbody>
+    </table></div>
+  </section>
+<% } else { %>
+  <form method="post" action="/admin/report/adjust" data-rs-form>
+    <input type="hidden" name="type" value="<%= type %>"><input type="hidden" name="year" value="<%= term.year %>"><input type="hidden" name="semester" value="<%= term.semester %>">
+    <section class="card rs-panel">
+      <h2>ปรับผลครูที่ติ๊ก <span class="muted" data-rs-count>ยังไม่ได้เลือก</span></h2>
+      <div class="rs-fields">
+        <div class="field"><label for="rs-sit">สถานการณ์</label>
+          <select id="rs-sit" name="situation" data-rs-sit>
+            <option value="" data-result="">เลือกสถานการณ์</option>
+            <% for (const s of situations) { %><option value="<%= s.name %>" data-result="<%= s.result %>"><%= s.name %></option><% } %>
+            <option value="เหตุอื่น" data-result="">เหตุอื่น พิมพ์เอง</option>
+          </select></div>
+        <div class="field"><label for="rs-res">ผลในรายงาน</label>
+          <select id="rs-res" name="result" data-rs-res>
+            <option value="">เลือกผล</option>
+            <% for (const [k, v] of Object.entries(results)) { if (k !== 'real') { %><option value="<%= k %>"><%= v %></option><% } } %>
+          </select></div>
+        <div class="field" data-rs-ext hidden><label for="rs-ext">กำหนดส่งใหม่ของครูคนนี้</label><input type="date" id="rs-ext" name="extend_date"></div>
+        <div class="field"><label for="rs-why">เหตุผล เก็บในระบบ (บังคับกรอก)</label><input type="text" id="rs-why" name="reason" maxlength="300" data-rs-why></div>
+        <div class="field"><label for="rs-note">หมายเหตุบนกระดาษ (พิมพ์เอง เว้นว่างได้)</label><input type="text" id="rs-note" name="note" maxlength="120"></div>
+        <div class="field"><label for="rs-until">มีผลต่อถึงวันที่ (เว้นว่าง = รอบนี้รอบเดียว)</label><input type="date" id="rs-until" name="until_date"></div>
+      </div>
+      <div class="rs-checks" style="margin:8px 0 10px"><b>ใช้กับ</b>
+        <% for (const [k, d] of Object.entries(docs)) { %><label><input type="checkbox" name="types" value="<%= k %>" <%= k === type ? 'checked' : '' %> style="width:auto"> <%= d.tab %></label><% } %>
+      </div>
+      <div class="rs-checks">
+        <button class="btn btn-primary" type="submit" name="action" value="apply" data-confirm="ปรับผลในฉบับรายงานของครูที่ติ๊ก ระบบบันทึกเหตุผลและผู้ปรับไว้ในประวัติการใช้งาน">บันทึกการปรับ</button>
+        <button class="btn btn-ghost" type="submit" name="action" value="reset" data-confirm="คืนค่าครูที่ติ๊กกลับเป็นผลตามจริง">คืนค่าตามจริง</button>
+      </div>
+    </section>
+    <section class="card">
+      <div class="rs-checks" style="margin-bottom:8px"><h2 style="margin:0">รายชื่อฉบับรายงาน</h2><input type="search" data-rs-find aria-label="ค้นหาชื่อครู" placeholder="ค้นหาชื่อครู" style="width:auto;max-width:240px"></div>
+      <div class="table-wrap"><table class="table">
+        <thead><tr><th></th><th>ครู</th><th>ผลตามจริง</th><th>ผลในรายงาน</th><th>เหตุผล</th><th>หมายเหตุบนกระดาษ</th></tr></thead>
+        <tbody><% for (const r of data.rows) { const self = r.id === me.id; %>
+          <tr data-rs-row="<%= r.full_name %>"<%= r.adjust ? ' class=rs-row-on' : '' %>>
+            <td><% if (self) { %><span class="muted small">ของตัวเอง</span><% } else { %><input type="checkbox" name="ids" value="<%= r.id %>" aria-label="เลือก <%= r.full_name %>" style="width:auto"><% } %></td>
+            <td><%= r.full_name %></td>
+            <td><span class="badge <%= stateBadge[r.real] %>"><%= stateLabel[r.real] %></span></td>
+            <td><span class="badge <%= stateBadge[r.state] %>"><%= stateLabel[r.state] %></span><% if (r.adjust && r.adjust.result === 'extend') { %><div class="muted small">กำหนดใหม่ <%= dateOf(r.adjust.extend_date) %></div><% } %><% if (r.adjust && r.adjust.carried) { %><div class="muted small">ต่อจากภาคเรียนที่ <%= r.adjust.semester %>/<%= r.adjust.academic_year %></div><% } %></td>
+            <td><%= r.adjust ? [r.adjust.situation, r.adjust.reason].filter((x, i, a) => x && a.indexOf(x) === i).join(' ') : '' %></td>
+            <td><%= r.adjust ? r.adjust.note : '' %></td>
+          </tr>
+        <% } %></tbody>
+      </table></div>
+    </section>
+  </form>
+
+  <section class="card">
+    <details>
+      <summary><b>แก้รายการสถานการณ์</b></summary>
+      <form method="post" action="/admin/report/situations" style="margin-top:10px">
+        <input type="hidden" name="type" value="<%= type %>"><input type="hidden" name="year" value="<%= term.year %>"><input type="hidden" name="semester" value="<%= term.semester %>">
+        <div class="muted small" style="margin-bottom:8px">ลบชื่อออกเพื่อเอารายการนั้นออก ช่องว่างท้ายรายการใช้เพิ่มสถานการณ์ใหม่</div>
+        <% for (const s of [...situations, { name: '', result: 'hold' }, { name: '', result: 'hold' }, { name: '', result: 'hold' }]) { %>
+          <div class="rs-sit">
+            <input type="text" name="names" value="<%= s.name %>" maxlength="60" aria-label="ชื่อสถานการณ์">
+            <select name="results" aria-label="ผลในรายงาน"><% for (const [k, v] of Object.entries(results)) { if (k !== 'real') { %><option value="<%= k %>" <%= k === s.result ? 'selected' : '' %>><%= v %></option><% } } %></select>
+          </div>
+        <% } %>
+        <button class="btn btn-primary" type="submit" data-confirm="บันทึกรายการสถานการณ์">บันทึกรายการ</button>
+      </form>
+    </details>
+  </section>
+  <script>
+    (function () {
+      var form = document.querySelector('[data-rs-form]');
+      var sit = form.querySelector('[data-rs-sit]');
+      var res = form.querySelector('[data-rs-res]');
+      var ext = form.querySelector('[data-rs-ext]');
+      var why = form.querySelector('[data-rs-why]');
+      var count = form.querySelector('[data-rs-count]');
+      function showExt() { ext.hidden = res.value !== 'extend'; }
+      sit.addEventListener('change', function () {
+        var o = sit.options[sit.selectedIndex];
+        if (o.dataset.result) res.value = o.dataset.result;
+        if (!why.value && sit.value && sit.value !== 'เหตุอื่น') why.value = sit.value;
+        showExt();
+      });
+      res.addEventListener('change', showExt);
+      form.addEventListener('change', function (e) {
+        if (e.target.name !== 'ids') return;
+        var n = form.querySelectorAll('input[name=ids]:checked').length;
+        count.textContent = n ? 'เลือกแล้ว ' + n + ' คน' : 'ยังไม่ได้เลือก';
+      });
+      form.querySelector('[data-rs-find]').addEventListener('input', function () {
+        var v = this.value.trim();
+        form.querySelectorAll('[data-rs-row]').forEach(function (r) { r.hidden = v && r.dataset.rsRow.indexOf(v) < 0; });
+      });
+      // กด Enter ในช่องค้นหาไม่ส่งฟอร์ม
+      form.querySelector('[data-rs-find]').addEventListener('keydown', function (e) { if (e.key === 'Enter') e.preventDefault(); });
+    })();
+  </script>
+<% } %>
+<%- include('../partials/bottom') %>

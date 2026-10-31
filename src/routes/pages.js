@@ -5,6 +5,7 @@ const auth = require('../auth');
 const wf = require('../workflow');
 const util = require('../util');
 const teaching = require('../teaching');
+const report = require('../reportsum');
 const { submitWindow } = require('./work');
 const library = require('../library');
 const homeorder = require('../homeorder');
@@ -136,6 +137,7 @@ function nextAction(row) {
     if (s && s.status === 'returned') return { label: 'แก้ไข', href: `/s/${s.id}/edit`, primary: true };
   }
   if (row.needPlan && !row.plan) return { label: 'ส่งแผน', href: newHref('plan', row), primary: true };
+  if (!row.manual && row.noManual) return null;
   if (!row.manual) return { label: 'ส่งคู่มือ', href: newHref('manual', row), primary: true };
   for (const s of [row.plan, row.manual]) {
     if (s && s.status === 'draft') return { label: 'ส่งงาน', href: `/s/${s.id}`, primary: true };
@@ -149,8 +151,8 @@ function rowCells(r) {
   const plan = !r.needPlan
     ? { text: 'ไม่ต้องส่ง', cls: 'badge-gray', href: null }
     : { ...cell(r.plan), href: r.plan ? `/s/${r.plan.id}` : newHref('plan', r) };
-  const manual = { ...cell(r.manual), href: r.manual ? `/s/${r.manual.id}` : newHref('manual', r) };
-  const notes = r.plan
+  const manual = !r.manual && r.noManual ? { text: 'ไม่ต้องส่ง', cls: 'badge-gray', href: null } : { ...cell(r.manual), href: r.manual ? `/s/${r.manual.id}` : newHref('manual', r) };
+  const notes = r.noNote ? { text: 'ไม่ต้องส่ง', cls: 'badge-gray', href: null } : r.plan
     ? { text: r.plan.note_total ? `${r.plan.note_total} ฉบับ` : 'ยังไม่มี', cls: r.plan.note_todo ? 'badge-amber' : 'badge-gray', href: `/s/${r.plan.id}#notes` }
     : { text: r.needPlan ? 'ยังไม่มี' : 'ไม่ต้องเขียน', cls: 'badge-gray', href: null };
   return [plan, manual, notes];
@@ -167,11 +169,12 @@ function actCells(r, ff) {
     return { ...cell(s), href: `/s/${s.id}` };
   };
   const plan = r.needPlan ? work(r.plan, 'plan') : { text: 'ไม่ต้องส่ง', off: true };
-  const manual = work(r.manual, 'manual');
+  const manual = !r.manual && r.noManual ? { text: 'ไม่ต้องส่ง', off: true } : work(r.manual, 'manual');
   const p = r.plan;
   let notes;
   // วิชาหลักที่ยังไม่ได้ส่งแผน: ต้องเขียนแต่รอแผนก่อน (ฟังก์ชันเสริม callout แสดงต่างจาก ไม่ต้องเขียน กดแล้วไปส่งแผน)
-  if (!p || p.status === 'draft') notes = r.needPlan && ff.callout ? { text: 'รอส่งแผนก่อน', wait: true, href: p ? `/s/${p.id}` : newHref('plan', r) } : { text: r.needPlan ? 'ส่งแผนก่อน' : 'ไม่ต้องเขียน', off: true };
+  if (r.noNote && (!p || !Number(p.note_total))) notes = { text: 'ไม่ต้องส่ง', off: true };
+  else if (!p || p.status === 'draft') notes = r.needPlan && ff.callout ? { text: 'รอส่งแผนก่อน', wait: true, href: p ? `/s/${p.id}` : newHref('plan', r) } : { text: r.needPlan ? 'ส่งแผนก่อน' : 'ไม่ต้องเขียน', off: true };
   else if (Number(p.note_back)) notes = act('กดแก้ไข', `/s/${p.id}#notes`, true);
   else if (Number(p.note_todo)) notes = act(ff.notebook ? 'กดส่งทั้งเล่ม' : 'กดส่ง', `/s/${p.id}#notes`);
   else if (!Number(p.note_total)) notes = act('กดเขียน', `/notes/new?plan=${p.id}`);
@@ -185,7 +188,10 @@ function actCells(r, ff) {
 router.get('/', async (req, res) => {
   const me = req.me;
   const t = currentTerm(req.settings);
-  const subjects = (await subjectRows(me, t, req.ff)).map((r) => {
+  // งานที่ผู้ดูแลตั้งว่าไม่คิดผล (ฟังก์ชันเสริม reportsum) ไม่เตือน ถ้าครูส่งมาแล้วยังแสดงตามปกติ
+  const exempt = (req.ff.reportsum && (await report.exemptions([me.id], t.year, t.semester)).get(me.id)) || new Set();
+  const subjects = (await subjectRows(me, t, req.ff)).map((row) => {
+    const r = { ...row, noManual: exempt.has('manual'), noNote: exempt.has('note'), needPlan: row.needPlan && !(exempt.has('plan') && !row.plan) };
     if (!req.ff.homeact) return { ...r, cells: rowCells(r), action: nextAction(r) };
     const cells = actCells(r, req.ff);
     // ปุ่มขวาสุดเหลือเฉพาะเขียนบันทึกฉบับถัดไป เมื่อช่องบันทึกไม่ได้เป็นปุ่มอยู่แล้ว
@@ -194,7 +200,7 @@ router.get('/', async (req, res) => {
     return { ...r, cells, action, todoCount: cells.filter((c) => c.act).length };
   });
   // เปิดแผน 1 วิชาหลักแล้ว แต่ยังไม่มีวิชาไหนต้องส่งแผน แปลว่ายังไม่ได้เลือกวิชาหลัก
-  const mainMissing = Boolean(me.is_teacher && req.ff.onemain && !subjects.some((r) => r.needPlan));
+  const mainMissing = Boolean(me.is_teacher && req.ff.onemain && !exempt.has('plan') && !subjects.some((r) => r.needPlan));
   const mainHref = req.ff.teachlist ? '/teaching' : '/works/new?type=plan';
   const works = subjects.flatMap((r) => [r.manual, r.plan]).filter(Boolean);
   const pendingWorks = works.filter((s) => s.status === 'pending');
@@ -229,6 +235,7 @@ router.get('/', async (req, res) => {
   for (const r of subjects) {
     for (const type of r.needPlan ? ['plan', 'manual'] : ['manual']) {
       const s = r[type];
+      if (!s && exempt.has(type)) continue;
       const name = `${type === 'manual' ? 'คู่มือ' : 'แผน'} ${r.code}`;
       if (!s) todo.push(`${name} ยังไม่ส่ง`);
       else if (s.status === 'returned') todo.push(`${name} รอแก้ไข`);
@@ -243,6 +250,7 @@ router.get('/', async (req, res) => {
     for (const r of subjects) {
       for (const type of r.needPlan ? ['plan', 'manual'] : ['manual']) {
         const s = r[type];
+        if (!s && exempt.has(type)) continue;
         const name = `${type === 'manual' ? 'คู่มือ' : 'แผน'} ${r.code}`;
         if (!s) unsent.push({ name, href: newHref(type, r) });
         else if (s.status === 'draft') {
@@ -308,6 +316,7 @@ router.get('/', async (req, res) => {
   for (const r of subjects) {
     for (const type of r.needPlan ? ['plan', 'manual'] : ['manual']) {
       const s = r[type];
+      if (!s && exempt.has(type)) continue;
       const name = `${type === 'manual' ? 'คู่มือรายวิชา' : 'แผนการจัดการเรียนรู้'} ${r.code}`;
       if (!s) nextUp.push({ title: `ยังไม่ได้ส่ง${name}`, sub: 'แตะเพื่อส่งเลย', href: newHref(type, r), tone: 'wait', act: type === 'manual' ? 'กดส่งคู่มือ' : 'กดส่งแผน', deskSub: `${r.name} ${r.grade}` });
       else if (s.status === 'draft') nextUp.push({ title: `${name} ยังเป็นฉบับร่าง`, sub: 'แตะเพื่อตรวจแล้วกดส่ง', href: `/s/${s.id}`, tone: 'wait', act: 'กดตรวจและส่ง', deskSub: `${r.name} ${r.grade}` });
