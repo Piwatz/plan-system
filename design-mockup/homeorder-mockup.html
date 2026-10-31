@@ -1,0 +1,111 @@
+<!doctype html><html lang="th"><meta charset="utf-8"><title>ตัวอย่างจัดลำดับหน้าแรก</title><style>
+@font-face{font-family:PX;font-weight:400;src:url(../node_modules/@fontsource/ibm-plex-sans-thai/files/ibm-plex-sans-thai-thai-400-normal.woff2);unicode-range:U+0E00-0E7F}
+@font-face{font-family:PX;font-weight:700;src:url(../node_modules/@fontsource/ibm-plex-sans-thai/files/ibm-plex-sans-thai-thai-700-normal.woff2);unicode-range:U+0E00-0E7F}
+@font-face{font-family:PX;font-weight:400;src:url(../node_modules/@fontsource/ibm-plex-sans-thai/files/ibm-plex-sans-thai-latin-400-normal.woff2);unicode-range:U+0000-00FF}
+@font-face{font-family:PX;font-weight:700;src:url(../node_modules/@fontsource/ibm-plex-sans-thai/files/ibm-plex-sans-thai-latin-700-normal.woff2);unicode-range:U+0000-00FF}
+:root{--bg:#F7F3EF;--ink:#241517;--mut:#665558;--line:#E7DDD7;--pri:#8E1B2C;--soft:#F5E6E7;--acc:#A6834B;--side:#6E1422;--ok:#1E6E50;--okb:#E1F2EA;--wait:#7A5200;--waitb:#FBEFD5}
+*{box-sizing:border-box}html,body{margin:0}
+body{width:1200px;font-family:PX,'Leelawadee UI',sans-serif;color:var(--ink)}
+.sheet{width:1200px;height:1000px;overflow:hidden;padding:24px 30px;background:#EFEBE4;border-bottom:1px solid #bbb}
+.ttl{font-size:27px;font-weight:700;margin:0 0 2px}.lead{font-size:17px;color:#4a4644;margin:0 0 14px;line-height:1.5}
+.tag{display:inline-block;background:#3a3331;color:#fff;border-radius:9px;padding:0 12px;font-size:20px;margin-right:8px}.tag.rec{background:var(--acc)}
+.card{background:#fff;border:1px solid var(--line);border-radius:16px;padding:16px 18px}
+.card h3{margin:0 0 3px;font-size:21px}.sub{font-size:15px;color:var(--mut);margin:0 0 12px}
+.row{display:flex;align-items:center;gap:11px;background:#fff;border:1.5px solid var(--line);border-radius:12px;padding:9px 12px;margin-bottom:8px;font-size:17px;min-height:56px}
+.row b{font-weight:700;display:block;line-height:1.3}.row small{display:block;color:var(--mut);font-size:13.5px;line-height:1.3}.row .t{flex:1;min-width:0}
+.grip{width:20px;height:28px;flex:none;color:#b09e9b}.no{width:27px;height:27px;border-radius:50%;background:var(--soft);color:var(--pri);font-weight:700;font-size:15px;display:flex;align-items:center;justify-content:center;flex:none}
+.ar{width:36px;height:36px;border:1.5px solid var(--line);border-radius:9px;display:flex;align-items:center;justify-content:center;color:var(--pri);flex:none}.ar svg{width:17px;height:17px}.ar.off{color:#d6cbc8}
+.sw{width:44px;height:26px;border-radius:13px;background:var(--ok);position:relative;flex:none}.sw:after{content:"";position:absolute;width:22px;height:22px;border-radius:50%;background:#fff;top:2px;right:2px}.sw.off{background:#cfc5c2}.sw.off:after{right:auto;left:2px}
+.lock{font-size:12.5px;color:var(--mut);width:44px;text-align:center;line-height:1.15;flex:none}
+.row.fix{background:#F4F0EC;border-style:dashed}.row.drag{border-color:var(--pri);box-shadow:0 10px 26px #8e1b2c44;transform:rotate(-.7deg) translateX(6px);position:relative;z-index:2}.row.hid{opacity:.5}
+.btns{display:flex;gap:10px;margin-top:12px}.btn{background:var(--pri);color:#fff;font-weight:700;border-radius:10px;padding:9px 20px;font-size:16.5px}.btn.gh{background:#fff;color:var(--pri);border:1.5px solid var(--pri)}
+.two{display:grid;grid-template-columns:690px 1fr;gap:20px;align-items:start}.nt{font-size:16.5px;line-height:1.55}.nt h4{margin:0 0 3px;font-size:17.5px}.nt ul{margin:0 0 12px;padding-left:20px}
+.pv{background:#F7F3EF;border:1px solid #cfc4bd;border-radius:12px;padding:9px;display:flex;flex-direction:column;gap:6px}
+.b{border-radius:7px;background:#fff;border:1px solid var(--line);font-size:13px;font-weight:700;color:#4a3a3a;padding:6px 9px}.b.h{background:linear-gradient(90deg,#6E1422,#A6834B);color:#fff}
+.b.lib{height:80px}.covers{display:flex;gap:5px;margin-top:4px}.covers i{width:30px;height:42px;border-radius:2px;background:#8E1B2C}.covers i:nth-child(2n){background:#1F5C46}
+.b.sub2{height:88px}.lines i{display:block;height:9px;background:#EDE5E1;border-radius:3px;margin-top:6px}.b.mid{height:48px}.st{display:grid;grid-template-columns:repeat(4,1fr);gap:4px;margin-top:3px}.st i{height:20px;background:#F0E7E2;border-radius:3px}
+/* แบบ ค */
+.home{background:var(--bg);border:1px solid #cfc4bd;border-radius:12px;padding:12px;width:100%}
+.topb{display:flex;align-items:center;gap:10px;background:var(--pri);color:#fff;border-radius:11px;padding:10px 14px;font-size:16.5px;font-weight:700;margin-bottom:10px}.topb span{margin-left:auto;font-weight:400;font-size:15px}.topb em{font-style:normal;background:#fff;color:var(--pri);border-radius:8px;padding:3px 13px;font-weight:700;font-size:15px}
+.mv{position:relative;background:#fff;border:2px dashed var(--pri);border-radius:12px;padding:9px 13px 9px 44px;margin-bottom:9px;font-weight:700;font-size:17px}
+.mv .g{position:absolute;left:12px;top:50%;transform:translateY(-50%);width:20px;height:28px;color:var(--pri)}.mv .tools{position:absolute;right:9px;top:8px;display:flex;gap:6px;align-items:center}.mv .ar{width:32px;height:32px;background:#fff}.mv.lift{box-shadow:0 12px 28px #8e1b2c55;transform:rotate(-.6deg) translateX(10px);z-index:2}
+.hhd{height:52px;background:linear-gradient(90deg,#6E1422,#A6834B);border-radius:11px;color:#fff;font-weight:700;display:flex;align-items:center;padding:0 15px;margin-bottom:9px;font-size:18px}
+.drop{height:12px;border-radius:6px;background:var(--acc);margin:0 0 9px}
+.cnt{background:#fff;border-radius:12px;padding:10px 14px;font-size:16.5px;line-height:1.55;margin-top:10px}
+</style>
+<svg width="0" height="0" style="position:absolute"><defs>
+<symbol id="g" viewBox="0 0 20 28"><g fill="currentColor"><circle cx="6" cy="6" r="2.3"/><circle cx="14" cy="6" r="2.3"/><circle cx="6" cy="14" r="2.3"/><circle cx="14" cy="14" r="2.3"/><circle cx="6" cy="22" r="2.3"/><circle cx="14" cy="22" r="2.3"/></g></symbol>
+<symbol id="u" viewBox="0 0 20 20"><path fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" d="M4 13l6-6 6 6"/></symbol>
+<symbol id="d" viewBox="0 0 20 20"><path fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" d="M4 7l6 6 6-6"/></symbol>
+</defs></svg>
+
+<section class="sheet">
+  <p class="ttl"><span class="tag rec">แนะนำ แบบ ก</span>รายการคู่ภาพย่อหน้าแรก</p>
+  <p class="lead">ซ้ายคือรายการกล่อง ขวาคือภาพย่อหน้าแรก ลากหรือกดลูกศรแล้วภาพย่อขยับตามทันที ยังไม่มีผลกับครูจนกว่าจะกดบันทึก</p>
+  <div class="two">
+    <div class="card">
+      <h3>ลำดับหน้าแรก</h3><p class="sub">ลากจุดหกจุด หรือกดลูกศร ใช้กับหน้าจอคอมของทุกคน</p>
+      <div class="row fix"><span class="grip"></span><div class="t"><b>แถบต้อนรับและคำเตือนสำคัญ</b><small>อยู่บนสุดเสมอ เช่น ใกล้กำหนดส่ง ลายเซ็น แจ้งเตือน</small></div><span class="lock">ย้ายไม่ได้</span></div>
+      <div class="row"><svg class="grip"><use href="#g"/></svg><span class="no">1</span><div class="t"><b>เล่มใหม่ในคลัง</b></div><span class="ar off"><svg><use href="#u"/></svg></span><span class="ar"><svg><use href="#d"/></svg></span><span class="sw"></span></div>
+      <div class="row"><svg class="grip"><use href="#g"/></svg><span class="no">2</span><div class="t"><b>งานรอลงนาม</b><small>ซ่อนไม่ได้ เห็นเฉพาะผู้ตรวจ</small></div><span class="ar"><svg><use href="#u"/></svg></span><span class="ar"><svg><use href="#d"/></svg></span><span class="lock">แสดงเสมอ</span></div>
+      <div class="row drag"><svg class="grip" style="color:var(--pri)"><use href="#g"/></svg><span class="no">3</span><div class="t"><b>รายวิชาของฉัน</b><small>ซ่อนไม่ได้</small></div><span class="ar"><svg><use href="#u"/></svg></span><span class="ar"><svg><use href="#d"/></svg></span><span class="lock">แสดงเสมอ</span></div>
+      <div class="row"><svg class="grip"><use href="#g"/></svg><span class="no">4</span><div class="t"><b>สิ่งที่ต้องทำต่อ</b></div><span class="ar"><svg><use href="#u"/></svg></span><span class="ar"><svg><use href="#d"/></svg></span><span class="sw"></span></div>
+      <div class="row"><svg class="grip"><use href="#g"/></svg><span class="no">5</span><div class="t"><b>กล่องตัวเลข</b></div><span class="ar"><svg><use href="#u"/></svg></span><span class="ar"><svg><use href="#d"/></svg></span><span class="sw"></span></div>
+      <div class="row hid"><svg class="grip"><use href="#g"/></svg><span class="no">6</span><div class="t"><b>ความเคลื่อนไหวล่าสุด</b><small>ซ่อนอยู่</small></div><span class="ar"><svg><use href="#u"/></svg></span><span class="ar"><svg><use href="#d"/></svg></span><span class="sw off"></span></div>
+      <div class="row"><svg class="grip"><use href="#g"/></svg><span class="no">7</span><div class="t"><b>แถบส่งงานใหม่</b></div><span class="ar"><svg><use href="#u"/></svg></span><span class="ar off"><svg><use href="#d"/></svg></span><span class="sw"></span></div>
+      <div class="btns"><span class="btn">บันทึกลำดับ</span><span class="btn gh">กลับเป็นค่าเริ่มต้น</span></div>
+    </div>
+    <div>
+      <div class="pv">
+        <div class="b h">สวัสดี ครูสมชาย</div>
+        <div class="b lib">เล่มใหม่ในคลัง<div class="covers"><i></i><i></i><i></i><i></i><i></i><i></i></div></div>
+        <div class="b mid">งานรอลงนาม<div class="lines"><i></i></div></div>
+        <div class="b sub2">รายวิชาของฉัน<div class="lines"><i></i><i></i><i></i></div></div>
+        <div class="b mid">สิ่งที่ต้องทำต่อ<div class="lines"><i></i></div></div>
+        <div class="b">กล่องตัวเลข<div class="st"><i></i><i></i><i></i><i></i></div></div>
+        <div class="b">แถบส่งงานใหม่</div>
+      </div>
+      <div class="cnt"><b>เด่น</b> เห็นผลก่อนบันทึก ไม่ต้องสลับหน้าไปดู<br><b>ข้อด้อย</b> ภาพย่อเป็นกล่องจำลอง ไม่ใช่เนื้อหาจริง</div>
+    </div>
+  </div>
+</section>
+
+<section class="sheet">
+  <p class="ttl"><span class="tag">แบบ ข</span>รายการอย่างเดียว</p>
+  <p class="lead">เรียบง่ายที่สุด จัดแล้วกดบันทึก แล้วเปิดหน้าแรกดูผลเอง เหมือนหน้าการตั้งค่าอื่นของระบบ</p>
+  <div class="two" style="grid-template-columns:760px 1fr">
+    <div class="card">
+      <h3>ลำดับหน้าแรก</h3><p class="sub">ลากจุดหกจุด หรือกดลูกศร ใช้กับหน้าจอคอมของทุกคน</p>
+      <div class="row"><svg class="grip"><use href="#g"/></svg><span class="no">1</span><div class="t"><b>เล่มใหม่ในคลัง</b></div><span class="ar off"><svg><use href="#u"/></svg></span><span class="ar"><svg><use href="#d"/></svg></span><span class="sw"></span></div>
+      <div class="row"><svg class="grip"><use href="#g"/></svg><span class="no">2</span><div class="t"><b>งานรอลงนาม</b></div><span class="ar"><svg><use href="#u"/></svg></span><span class="ar"><svg><use href="#d"/></svg></span><span class="lock">แสดงเสมอ</span></div>
+      <div class="row"><svg class="grip"><use href="#g"/></svg><span class="no">3</span><div class="t"><b>รายวิชาของฉัน</b></div><span class="ar"><svg><use href="#u"/></svg></span><span class="ar"><svg><use href="#d"/></svg></span><span class="lock">แสดงเสมอ</span></div>
+      <div class="row"><svg class="grip"><use href="#g"/></svg><span class="no">4</span><div class="t"><b>สิ่งที่ต้องทำต่อ</b></div><span class="ar"><svg><use href="#u"/></svg></span><span class="ar"><svg><use href="#d"/></svg></span><span class="sw"></span></div>
+      <div class="row"><svg class="grip"><use href="#g"/></svg><span class="no">5</span><div class="t"><b>กล่องตัวเลข</b></div><span class="ar"><svg><use href="#u"/></svg></span><span class="ar"><svg><use href="#d"/></svg></span><span class="sw"></span></div>
+      <div class="row"><svg class="grip"><use href="#g"/></svg><span class="no">6</span><div class="t"><b>ความเคลื่อนไหวล่าสุด</b></div><span class="ar"><svg><use href="#u"/></svg></span><span class="ar"><svg><use href="#d"/></svg></span><span class="sw"></span></div>
+      <div class="row"><svg class="grip"><use href="#g"/></svg><span class="no">7</span><div class="t"><b>แถบส่งงานใหม่</b></div><span class="ar"><svg><use href="#u"/></svg></span><span class="ar off"><svg><use href="#d"/></svg></span><span class="sw"></span></div>
+      <div class="btns"><span class="btn">บันทึกลำดับ</span><span class="btn gh">กลับเป็นค่าเริ่มต้น</span></div>
+    </div>
+    <div class="nt"><h4>เด่น</h4><ul><li>งานน้อยที่สุด</li><li>ใช้บนมือถือได้ดีเพราะแคบ</li></ul><h4>ข้อด้อย</h4><ul><li>ต้องบันทึกแล้วเปิดหน้าแรกดูเอง</li><li>ถ้าไม่ถูกใจต้องกลับมาแก้ ระหว่างนั้นครูเห็นลำดับที่ลองอยู่</li></ul></div>
+  </div>
+</section>
+
+<section class="sheet">
+  <p class="ttl"><span class="tag">แบบ ค</span>ลากบนหน้าแรกจริง</p>
+  <p class="lead">ผู้ดูแลกดปุ่ม จัดหน้า บนหน้าแรก กล่องจริงมีขอบประ ลากสลับที่ได้เลย เหมือนจัดไอคอนบนหน้าจอไอโฟน</p>
+  <div class="two" style="grid-template-columns:760px 1fr">
+    <div class="home">
+      <div class="topb">กำลังจัดหน้าแรก<span>ครูยังเห็นแบบเดิม</span><em>บันทึก</em></div>
+      <div class="hhd">สวัสดี ครูสมชาย</div>
+      <div class="mv"><svg class="g"><use href="#g"/></svg>เล่มใหม่ในคลัง<div class="tools"><span class="sw"></span></div><div class="covers" style="margin-top:6px"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div></div>
+      <div class="drop"></div>
+      <div class="mv lift"><svg class="g"><use href="#g"/></svg>รายวิชาของฉัน<div class="lines" style="font-weight:400"><i></i><i></i><i></i></div></div>
+      <div class="mv"><svg class="g"><use href="#g"/></svg>งานรอลงนาม<div class="lines"><i></i></div></div>
+      <div class="mv"><svg class="g"><use href="#g"/></svg>สิ่งที่ต้องทำต่อ<div class="tools"><span class="sw"></span></div><div class="lines"><i></i></div></div>
+      <div class="mv"><svg class="g"><use href="#g"/></svg>กล่องตัวเลข<div class="tools"><span class="sw"></span></div></div>
+      <div class="mv" style="opacity:.55"><svg class="g"><use href="#g"/></svg>ความเคลื่อนไหวล่าสุด<div class="tools"><span class="sw off"></span></div></div>
+      <div class="mv"><svg class="g"><use href="#g"/></svg>แถบส่งงานใหม่<div class="tools"><span class="sw"></span></div></div>
+    </div>
+    <div class="nt"><h4>เด่น</h4><ul><li>เห็นของจริงขณะจัด เข้าใจง่ายที่สุด</li><li>รู้สึกเหมือนจัดหน้าจอไอโฟน</li></ul><h4>ข้อด้อย</h4><ul><li>ทำยากที่สุด ใช้โควตามากกว่าแบบอื่นชัดเจน</li><li>กล่องสูง เช่น รายวิชาที่ยาว ลากบนจอเล็กลำบาก</li><li>บางกล่องไม่มีข้อมูลในบัญชีผู้ดูแล เช่น งานรอลงนาม จึงต้องแสดงกล่องจำลองแทน</li></ul></div>
+  </div>
+</section>
+</html>

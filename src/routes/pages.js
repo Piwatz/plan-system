@@ -7,6 +7,7 @@ const util = require('../util');
 const teaching = require('../teaching');
 const { submitWindow } = require('./work');
 const library = require('../library');
+const homeorder = require('../homeorder');
 const planrange = require('../planrange');
 
 const router = express.Router();
@@ -356,8 +357,10 @@ router.get('/', async (req, res) => {
     window: submitWindow(req.settings),
     daysLeft: util.daysUntil(req.settings.submit_end),
     warnings,
+    // ลำดับกล่องที่ผู้ดูแลระบบจัดไว้ (ฟังก์ชันเสริม homeorder)
+    homeOrderCss: req.ff.homelayout && req.ff.homeorder ? homeorder.css(homeorder.parse(req.settings.home_order)) : '',
     // แถบเล่มใหม่ในคลังงาน (ฟังก์ชันเสริม library)
-    libRecent: req.ff.library ? library.decorate(await library.recent(6, library.showRule(req.settings)), me, req.ff) : [],
+    libRecent: req.ff.library ? library.decorate(await library.recent(req.ff.homelayout ? 14 : 6, library.showRule(req.settings)), me, req.ff) : [],
   });
 });
 

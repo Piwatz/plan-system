@@ -42,6 +42,7 @@ const PLACES = [
   { title: 'งานที่ยังไม่มีลายเซ็นครู', where: 'ผู้ดูแลระบบ', href: '/admin#sigmissing', desc: 'ส่งเตือนให้ครูตั้งลายเซ็น', ff: 'siglist', words: 'ลายเซ็น เตือน' },
   { title: 'งานที่หน้าแรกน่าจะไม่ใช่ปก', where: 'ผู้ดูแลระบบ', href: '/admin#frontcheck', desc: 'ผลตรวจหน้าแรกของไฟล์ที่ส่ง', ff: 'frontcheck', words: 'ปก หน้าแรก' },
   { title: 'โอนงานระหว่างครู', where: 'ผู้ดูแลระบบ', href: '/admin/transfer', desc: 'ครูสอนแทนส่งไว้ ย้ายงานไปเป็นของครูอีกคน', ff: 'transfer', words: 'ย้าย' },
+  { title: 'ลำดับหน้าแรก', where: 'ผู้ดูแลระบบ', href: '/admin/homeorder', desc: 'ลากสลับกล่องบนหน้าแรก ซ่อนบางกล่อง', words: 'จัดหน้า หน้าแรก ลำดับ ลาก ซ่อน กล่อง สลับ' },
   { title: 'ทะเบียนเลขที่บันทึกข้อความ', where: 'ผู้ดูแลระบบ', href: '/admin/docnoreg', desc: 'เลขที่ครูกรอก เลขซ้ำ งานที่ไม่มีเลข ส่งออก Excel', ff: 'docnoreg', words: 'วก. ทะเบียน' },
   { title: 'ทะเบียนงาน', where: 'ทะเบียนงาน', href: '/registry', desc: 'งานที่ส่งแล้วทั้งโรงเรียน ค้นหา ส่งออก Excel', words: 'รายการงาน' },
   { title: 'สถิติโรงเรียน', where: 'สถิติ', href: '/stats', desc: 'ภาพรวมการส่งงานและผลประเมิน', words: 'กราฟ' },

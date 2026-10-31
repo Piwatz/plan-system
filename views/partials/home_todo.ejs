@@ -1,0 +1,10 @@
+<%# งานที่ต้องทำต่อบนคอม มือถือมีรายการนี้อยู่แล้วด้านล่าง (ฟังก์ชันเสริม hometodo) งานรอลงนามและคำเตือนผู้ดูแลมีกล่องของตัวเอง %>
+<% const homeTodo = nextUp.filter((n) => n.href !== '/inbox' && n.href !== '/admin/users'); if (homeTodo.length) { %>
+<section class="card home-todo">
+    <h2>สิ่งที่ต้องทำต่อ</h2>
+    <% for (const n of homeTodo.slice(0, 6)) { %>
+      <a class="ht-row" href="<%= n.href %>"><span class="ht-dot <%= n.tone === 'back' ? 'back' : '' %>"></span><span class="ht-text"><b><%= n.title %></b><% if (n.deskSub || n.sub) { %><span><%= n.deskSub || n.sub %></span><% } %></span><% if (n.act) { %><span class="btn btn-sm <%= n.tone === 'back' ? 'btn-danger' : 'btn-primary' %>"><%= n.act %></span><% } else { %><%- icon('next', 20) %><% } %></a>
+    <% } %>
+    <% if (homeTodo.length > 6) { %><a class="ht-more" href="/my">ดูงานทั้งหมด อีก <%= homeTodo.length - 6 %> งาน</a><% } %>
+  </section>
+<% } %>

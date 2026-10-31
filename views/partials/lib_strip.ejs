@@ -1,0 +1,9 @@
+<%# แถบเล่มใหม่ในคลังงาน (ฟังก์ชันเสริม library) · fill = เรียงเต็มแถวพอดีความกว้างจอ (ฟังก์ชันเสริม homelayout) %>
+<section class="card lib-strip<%= fill ? ' lib-fill' : '' %>">
+  <div class="card-head"><h2>เล่มใหม่ในคลัง</h2><div class="actions"><a class="btn btn-sm btn-ghost" href="/library"><%- icon('books', 16) %> ไปที่คลัง</a></div></div>
+  <div class="lib-strip-row">
+    <% for (const b of books) { %>
+      <a class="lib-mini" href="/library?shelf=<%= b.kind %>&year=<%= b.academic_year %>&semester=<%= b.semester %>"><%- include('lib_cover', { b }) %><span class="lib-mini-t"><b><%= b.subject_name || b.subject_code %></b><span><%= b.teacher_name %></span></span></a>
+    <% } %>
+  </div>
+</section>

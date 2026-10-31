@@ -1641,6 +1641,72 @@ tr.dr-dup td { background: var(--back-bg); }
 .af-sw .switch[aria-checked='true'] .track::after { left: 23px; }
 .af-none { padding: 14px; color: var(--muted); }
 /* ปลายทางของผลค้นหา: กระพริบสีเหลือง 3 ครั้ง แล้วคงกรอบไว้ให้เห็นว่าอันไหน */
+/* จัดลำดับหน้าแรกใหม่ (ฟังก์ชันเสริม homelayout) ลำดับตาม order เล่มใหม่อยู่เหนือกล่องนี้ */
+.lib-fill { margin: 0 0 16px; }
+.home-layout > .lib-fill { order: 1; }
+.home-layout > .home-empty { order: 8; }
+.lib-fill .lib-strip-row { padding-bottom: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(112px, 1fr)); grid-template-rows: auto; grid-auto-rows: 0; gap: 0 14px; overflow: hidden; }
+.lib-fill .lib-mini { width: auto; overflow: hidden; }
+.home-layout { display: flex; flex-direction: column; }
+.home-layout > .review-panel { order: 2; }
+.home-layout .review-panel { padding-top: 12px; padding-bottom: 8px; margin-bottom: 16px; }
+.home-layout .review-panel .card-head { margin-bottom: 4px; }
+.home-layout .review-panel h2 { font-size: 1.1rem; margin: 0; }
+.home-layout .review-panel .mini-row { padding-top: 6px; padding-bottom: 6px; }
+.home-layout .review-panel .mr-main { flex-direction: row; flex-wrap: wrap; align-items: center; gap: 2px 10px; }
+.home-layout > .grid-3 { display: contents; }
+.home-layout .card.flush { order: 3; margin-bottom: 18px; }
+.home-layout > .home-todo { order: 4; }
+.home-layout > .grid-4 { order: 5; }
+.home-layout .home-activity { order: 6; margin-bottom: 14px; }
+.home-layout > .todo-bar { order: 7; padding-top: 10px; padding-bottom: 10px; }
+.home-activity summary { cursor: pointer; font-weight: 600; color: var(--primary); }
+.home-activity[open] summary { margin-bottom: 12px; }
+.home-layout .todo-bar .what { font-size: 0.92rem; }
+.fx3 .home-layout .todo-bar .fx-medal { display: none; }
+.home-layout .card.flush .card-head h2 { font-size: 1.4rem; }
+.home-layout .rows-head { font-size: 0.95rem; padding-top: 12px; padding-bottom: 12px; }
+.home-layout .rows-item { padding-top: 18px; padding-bottom: 18px; }
+.home-layout .rows-item .subj b { font-size: 1.15rem; }
+.home-layout .rows-item .subj > span { font-size: 0.98rem; }
+.home-layout .rows-item .badge.st { font-size: 0.98rem; padding: 5px 13px; }
+.home-layout .rows-item .cell-act { font-size: 1.05rem; padding: 10px 14px; }
+/* หน้าจัดลำดับหน้าแรก (ฟังก์ชันเสริม homeorder) */
+.ho-grid { display: grid; gap: 18px; grid-template-columns: minmax(0, 2fr) minmax(0, 1fr); align-items: start; }
+@media (max-width: 900px) { .ho-grid { grid-template-columns: minmax(0, 1fr); } }
+.ho-list { list-style: none; margin: 0; padding: 0; }
+.ho-row { display: flex; align-items: center; gap: 10px; background: var(--surface); border: 1.5px solid var(--line); border-radius: var(--rs); padding: 8px 12px; margin-bottom: 8px; min-height: 56px; }
+.ho-fix { background: var(--head-bg); border-style: dashed; }
+.ho-off { opacity: 0.55; }
+.ho-t { flex: 1; min-width: 0; line-height: 1.3; }
+.ho-t b { display: block; }
+.ho-t small { display: block; color: var(--muted); font-size: 0.82rem; }
+.ho-grip { width: 26px; flex: none; color: var(--muted); display: flex; justify-content: center; cursor: grab; touch-action: none; padding: 8px 0; }
+.ho-fix .ho-grip { cursor: default; }
+.ho-grip svg { stroke-width: 3.2; stroke-linecap: round; }
+.ho-row.is-drag { border-color: var(--primary); box-shadow: 0 8px 22px color-mix(in srgb, var(--primary) 30%, transparent); position: relative; z-index: 2; }
+.ho-row.is-drag .ho-grip { color: var(--primary); cursor: grabbing; }
+.ho-no { width: 26px; height: 26px; flex: none; border-radius: 50%; background: var(--soft); color: var(--primary); font-weight: 700; font-size: 0.88rem; display: flex; align-items: center; justify-content: center; }
+.ho-ar { width: 38px; height: 38px; flex: none; border: 1.5px solid var(--line); border-radius: var(--rs); background: var(--surface); color: var(--primary); cursor: pointer; display: flex; align-items: center; justify-content: center; padding: 0; }
+.ho-ar:disabled { color: var(--line); cursor: default; }
+.ho-lock { width: 46px; flex: none; text-align: center; font-size: 0.78rem; line-height: 1.15; color: var(--muted); }
+.ho-sw { width: 46px; height: 26px; flex: none; position: relative; cursor: pointer; }
+.ho-sw input { position: absolute; opacity: 0; inset: 0; margin: 0; width: 100%; height: 100%; cursor: pointer; }
+.ho-sw span { position: absolute; inset: 0; border-radius: 13px; background: var(--line); pointer-events: none; }
+.ho-sw span::after { content: ''; position: absolute; top: 2px; left: 2px; width: 22px; height: 22px; border-radius: 50%; background: var(--surface); }
+.ho-sw input:checked + span { background: var(--ok); }
+.ho-sw input:checked + span::after { left: 22px; }
+.ho-sw input:focus-visible + span { outline: 3px solid var(--primary); }
+.ho-preview { background: var(--bg); border: 1px solid var(--line); border-radius: var(--r); padding: 12px; position: sticky; top: 16px; }
+.ho-pv-head { font-weight: 700; margin-bottom: 8px; }
+.ho-pv { display: block; background: var(--surface); border: 1px solid var(--line); border-radius: var(--rs); padding: 6px 10px; margin-bottom: 6px; font-size: 0.82rem; font-weight: 600; }
+.ho-pv[hidden] { display: none; }
+.ho-pv-hello { background: var(--primary); color: var(--surface); }
+.ho-cvs, .ho-sts { display: flex; gap: 5px; margin-top: 4px; }
+.ho-cvs i { width: 26px; height: 36px; border-radius: 2px; background: var(--cv-plan); }
+.ho-cvs i:nth-child(2n) { background: var(--cv-manual); }
+.ho-sts i { flex: 1; height: 18px; border-radius: 3px; background: var(--soft); }
+.ho-lns i { display: block; height: 8px; margin-top: 5px; border-radius: 3px; background: var(--soft); }
 /* ฟอนต์หน้าเว็บ (ฟังก์ชันเสริม fontpick) TH Sarabun ตัวเล็กกว่าฟอนต์อื่น จึงขยายให้ขนาดเท่ากัน */
 @font-face { font-family: 'Web TH'; font-weight: 400; size-adjust: 130%; src: local('TH SarabunPSK'), local('THSarabunPSK'), local('TH Sarabun New'), local('THSarabunNew'); }
 @font-face { font-family: 'Web TH'; font-weight: 700; size-adjust: 130%; src: local('TH SarabunPSK Bold'), local('THSarabunPSK-Bold'), local('TH Sarabun New Bold'), local('THSarabunNew-Bold'); }

@@ -22,17 +22,7 @@
   <% } %>
 </div>
 
-<% if (ff.hometodo) { const homeTodo = nextUp.filter((n) => n.href !== '/inbox' && n.href !== '/admin/users'); if (homeTodo.length) { %><%# งานที่ต้องทำบนสุดของหน้าแรกบนคอม มือถือมีรายการนี้อยู่แล้วด้านล่าง (ฟังก์ชันเสริม hometodo) งานรอลงนามและคำเตือนผู้ดูแลมีกล่องของตัวเอง %>
-<div class="d-only">
-  <section class="card home-todo">
-    <h2>สิ่งที่ต้องทำต่อ</h2>
-    <% for (const n of homeTodo.slice(0, 6)) { %>
-      <a class="ht-row" href="<%= n.href %>"><span class="ht-dot <%= n.tone === 'back' ? 'back' : '' %>"></span><span class="ht-text"><b><%= n.title %></b><% if (n.deskSub || n.sub) { %><span><%= n.deskSub || n.sub %></span><% } %></span><% if (n.act) { %><span class="btn btn-sm <%= n.tone === 'back' ? 'btn-danger' : 'btn-primary' %>"><%= n.act %></span><% } else { %><%- icon('next', 20) %><% } %></a>
-    <% } %>
-    <% if (homeTodo.length > 6) { %><a class="ht-more" href="/my">ดูงานทั้งหมด อีก <%= homeTodo.length - 6 %> งาน</a><% } %>
-  </section>
-</div>
-<% } } %>
+<% if (ff.hometodo && !ff.homelayout) { %><div class="d-only"><%- include('partials/home_todo') %></div><% } %>
 <% if (locals.dueAlert) { %><%# ใกล้กำหนดส่งแต่ยังมีงานที่ยังไม่ส่ง (ฟังก์ชันเสริม duealert) %>
   <div class="call must due-alert"><%- icon('clock') %>
     <div><span class="call-tag">ห้ามพลาด</span><b class="call-title"><%= dueAlert.days === 0 ? 'วันนี้วันสุดท้าย' : 'เหลืออีก ' + dueAlert.days + ' วัน' %> ถึงกำหนดส่ง ยังไม่ได้ส่ง <%= dueAlert.list.length %> งาน</b>
@@ -138,7 +128,12 @@
     <% } %>
   <% } %>
 </div>
-<div class="d-only">
+<div class="d-only<%= ff.homelayout ? ' home-layout' : '' %>">
+<% if (locals.homeOrderCss) { %><style><%- homeOrderCss %></style><% } %>
+<% if (ff.homelayout && locals.libRecent && libRecent.length) { %><%# จัดหน้าแรกใหม่ (ฟังก์ชันเสริม homelayout) เล่มใหม่อยู่ในกล่องจัดลำดับบนคอม มือถือคงไว้ท้ายหน้า %>
+<%- include('partials/lib_strip', { books: libRecent, fill: true }) %>
+<% } %>
+<% if (ff.hometodo && ff.homelayout) { %><%- include('partials/home_todo') %><% } %>
 <% if (inboxCount) { %>
   <div class="card review-panel">
     <div class="card-head">
@@ -149,7 +144,8 @@
       </div>
     </div>
     <div class="mini-list">
-      <% for (const s of inboxPreview) { %>
+      <%# จัดหน้าแรกใหม่ (homelayout) แสดงแค่ 3 งาน แถวละบรรทัด ที่เหลือกดเปิดงานรอตรวจ %>
+      <% for (const s of ff.homelayout ? inboxPreview.slice(0, 3) : inboxPreview) { %>
         <a class="mini-row" href="<%= s.book ? '/s/' + s.book.planId + '/book' : '/s/' + s.id %>">
           <span class="mr-main"><span class="badge badge-blue"><%= T[s.doc_type].label %></span><b><%= s.subject_code %> <%= s.subject_name %><%= s.doc_type === 'note' ? (s.book ? ' แผนที่ ' + s.book.planNos.map(planrange.short).join(' ') + ' (' + s.book.count + ' แผ่น)' : ' ' + planrange.label(s.plan_no)) : '' %></b><span><%= s.teacher_name %></span></span>
           <span class="btn btn-sm btn-primary">ตรวจ</span>
@@ -210,8 +206,8 @@
       <% } %>
     </section>
 
-    <section class="card">
-      <h2>ความเคลื่อนไหวล่าสุด</h2>
+    <% if (ff.homelayout) { %><details class="card home-activity"><summary>ความเคลื่อนไหวล่าสุด</summary><% } else { %><section class="card">
+      <h2>ความเคลื่อนไหวล่าสุด</h2><% } %>
       <% if (!activity.length) { %>
         <p class="muted">ยังไม่มีผู้ตรวจลงนามในงานของคุณ</p>
       <% } else { %>
@@ -228,7 +224,7 @@
           <% } %>
         </ul>
       <% } %>
-    </section>
+    <% if (ff.homelayout) { %></details><% } else { %></section><% } %>
   </div>
 
   <div class="card todo-bar">
@@ -247,22 +243,16 @@
       <% } %>
     </div>
     <div class="btn-row">
-      <a class="btn btn-primary btn-lg" href="<%= todo.length && locals.mainHref && todo[0].startsWith('แผนวิชาหลัก') ? mainHref : '/works/new?type=' + (canPlan ? 'plan' : 'manual') %>">ส่งงานใหม่</a>
-      <a class="btn btn-ghost btn-lg" href="/my">ดูงานทั้งหมด</a>
+      <a class="btn <%= ff.homelayout ? 'btn-ghost' : 'btn-primary btn-lg' %>" href="<%= todo.length && locals.mainHref && todo[0].startsWith('แผนวิชาหลัก') ? mainHref : '/works/new?type=' + (canPlan ? 'plan' : 'manual') %>">ส่งงานใหม่</a>
+      <a class="btn btn-ghost<%= ff.homelayout ? '' : ' btn-lg' %>" href="/my">ดูงานทั้งหมด</a>
     </div>
   </div>
 <% } else if (!inboxCount) { %>
-  <div class="card"><div class="empty"><p>ขณะนี้ไม่มีงานรอคุณลงนาม</p><a class="btn btn-ghost" href="/stats">ดูสถิติโรงเรียน</a></div></div>
+  <div class="card home-empty"><div class="empty"><p>ขณะนี้ไม่มีงานรอคุณลงนาม</p><a class="btn btn-ghost" href="/stats">ดูสถิติโรงเรียน</a></div></div>
 <% } %>
 </div>
 <% if (locals.libRecent && libRecent.length) { %>
-  <section class="card lib-strip">
-    <div class="card-head"><h2>เล่มใหม่ในคลัง</h2><div class="actions"><a class="btn btn-sm btn-ghost" href="/library"><%- icon('books', 16) %> ไปที่คลัง</a></div></div>
-    <div class="lib-strip-row">
-      <% for (const b of libRecent) { %>
-        <a class="lib-mini" href="/library?shelf=<%= b.kind %>&year=<%= b.academic_year %>&semester=<%= b.semester %>"><%- include('partials/lib_cover', { b }) %><span class="lib-mini-t"><b><%= b.subject_name || b.subject_code %></b><span><%= b.teacher_name %></span></span></a>
-      <% } %>
-    </div>
-  </section>
+  <% if (ff.homelayout) { %><div class="m-only"><%- include('partials/lib_strip', { books: libRecent.slice(0, 6), fill: false }) %></div>
+  <% } else { %><%- include('partials/lib_strip', { books: libRecent, fill: false }) %><% } %>
 <% } %>
 <%- include('partials/bottom') %>

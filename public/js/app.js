@@ -2700,6 +2700,81 @@
     })
   );
 
+  // ---------- จัดลำดับหน้าแรก ลากหรือกดลูกศร ภาพย่อขยับตาม (ฟังก์ชันเสริม homeorder) ----------
+  // ใช้ pointer events จึงลากได้ทั้งเมาส์และนิ้ว ส่วนลูกศรเป็นทางสำรองที่กดได้แน่นอนทุกเครื่อง
+  document.querySelectorAll('[data-home-order]').forEach((form) => {
+    const list = form.querySelector('[data-ho-list]');
+    const pv = form.querySelector('[data-ho-pv-list]');
+    const value = form.querySelector('[data-ho-value]');
+    const rows = () => Array.from(list.querySelectorAll('[data-ho-row]'));
+    const sync = () => {
+      const all = rows();
+      all.forEach((r, i) => {
+        const on = r.querySelector('[data-ho-on]');
+        const shown = !on || on.checked;
+        const note = r.querySelector('[data-ho-note]');
+        r.querySelector('[data-ho-no]').textContent = i + 1;
+        r.querySelector('[data-ho-up]').disabled = i === 0;
+        r.querySelector('[data-ho-down]').disabled = i === all.length - 1;
+        r.classList.toggle('ho-off', !shown);
+        note.textContent = shown ? note.dataset.note : 'ซ่อนอยู่';
+        const box = pv.querySelector('[data-ho-pv="' + r.dataset.k + '"]');
+        box.hidden = !shown;
+        pv.appendChild(box);
+      });
+      value.value = JSON.stringify(all.map((r) => {
+        const on = r.querySelector('[data-ho-on]');
+        return { k: r.dataset.k, on: !on || on.checked };
+      }));
+    };
+    list.addEventListener('click', (e) => {
+      const up = e.target.closest('[data-ho-up]');
+      const down = e.target.closest('[data-ho-down]');
+      if (!up && !down) return;
+      const row = e.target.closest('[data-ho-row]');
+      if (up && row.previousElementSibling) list.insertBefore(row, row.previousElementSibling);
+      if (down && row.nextElementSibling) list.insertBefore(row.nextElementSibling, row);
+      sync();
+      // ปุ่มที่กดอาจถูกปิดเพราะถึงขอบ ย้ายโฟกัสไปปุ่มอีกทางเพื่อให้กดต่อด้วยแป้นพิมพ์ได้
+      const btn = up ? row.querySelector('[data-ho-up]') : row.querySelector('[data-ho-down]');
+      (btn.disabled ? row.querySelector(up ? '[data-ho-down]' : '[data-ho-up]') : btn).focus();
+    });
+    list.addEventListener('change', sync);
+    list.addEventListener('pointerdown', (e) => {
+      const grip = e.target.closest('[data-ho-grip]');
+      if (!grip) return;
+      e.preventDefault();
+      const row = grip.closest('[data-ho-row]');
+      row.classList.add('is-drag');
+      grip.setPointerCapture(e.pointerId);
+      const move = (ev) => {
+        const others = rows().filter((r) => r !== row);
+        const at = others.findIndex((r) => {
+          const box = r.getBoundingClientRect();
+          return ev.clientY < box.top + box.height / 2;
+        });
+        const want = at < 0 ? others.length : at;
+        let now = rows().indexOf(row);
+        if (now === want) return;
+        // ย้ายแถวข้างเคียงแทนแถวที่กำลังลาก ถ้าย้ายแถวที่ลากเอง เบราว์เซอร์จะหลุดการจับเมาส์และนิ้ว
+        for (; now > want; now--) list.insertBefore(row.previousElementSibling, row.nextElementSibling);
+        for (; now < want; now++) list.insertBefore(row.nextElementSibling, row);
+        sync();
+      };
+      const end = () => {
+        row.classList.remove('is-drag');
+        grip.removeEventListener('pointermove', move);
+        grip.removeEventListener('pointerup', end);
+        grip.removeEventListener('pointercancel', end);
+        sync();
+      };
+      grip.addEventListener('pointermove', move);
+      grip.addEventListener('pointerup', end);
+      grip.addEventListener('pointercancel', end);
+    });
+    sync();
+  });
+
   // ---------- ฟอร์มแบบสั้น กดเปลี่ยนวิชาแล้วเปิดช่องเดิม (ฟังก์ชันเสริม formshort) ----------
   document.querySelectorAll('[data-fs-change]').forEach((btn) => {
     btn.addEventListener('click', () => {

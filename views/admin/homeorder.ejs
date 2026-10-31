@@ -1,0 +1,42 @@
+<%- include('../partials/top') %>
+<%# จัดลำดับกล่องบนหน้าแรก (ฟังก์ชันเสริม homeorder) ลากหรือกดลูกศรแล้วภาพย่อขยับตาม ยังไม่มีผลกับครูจนกว่าจะบันทึก · ทำงานใน app.js ส่วน data-home-order %>
+<div class="page-head">
+  <div>
+    <h1>ลำดับหน้าแรก</h1>
+    <div class="sub">ลากจุดหกจุด หรือกดลูกศร ใช้กับหน้าจอคอมของทุกคน ภาพย่อด้านขวาขยับตามทันที ครูยังไม่เห็นจนกว่าจะกดบันทึก</div>
+  </div>
+  <div class="actions"><a class="btn btn-ghost" href="/admin">กลับหน้าผู้ดูแลระบบ</a></div>
+</div>
+<form method="post" action="/admin/homeorder" class="ho-grid" data-home-order>
+  <input type="hidden" name="home_order" value="" data-ho-value>
+  <section class="card">
+    <div class="ho-row ho-fix"><span class="ho-grip"></span><div class="ho-t"><b>แถบต้อนรับและคำเตือนสำคัญ</b><small>อยู่บนสุดเสมอ เช่น ใกล้กำหนดส่ง ลายเซ็น แจ้งเตือน</small></div><span class="ho-lock">ย้ายไม่ได้</span></div>
+    <ol class="ho-list" data-ho-list>
+      <% boxes.forEach((b, i) => { %>
+        <li class="ho-row<%= b.on ? '' : ' ho-off' %>" data-ho-row data-k="<%= b.k %>">
+          <span class="ho-grip" data-ho-grip title="ลากเพื่อย้าย"><%- icon('grip', 22) %></span>
+          <span class="ho-no" data-ho-no><%= i + 1 %></span>
+          <div class="ho-t"><b><%= b.label %></b><small data-ho-note data-note="<%= b.note || '' %>"><%= b.on ? (b.note || '') : 'ซ่อนอยู่' %></small></div>
+          <button type="button" class="ho-ar" data-ho-up aria-label="ย้าย<%= b.label %>ขึ้น"><%- icon('up', 18) %></button>
+          <button type="button" class="ho-ar" data-ho-down aria-label="ย้าย<%= b.label %>ลง"><%- icon('down', 18) %></button>
+          <% if (b.keep) { %><span class="ho-lock">แสดงเสมอ</span>
+          <% } else { %><label class="ho-sw" title="แสดงหรือซ่อน"><input type="checkbox" data-ho-on aria-label="แสดง<%= b.label %>" <%= b.on ? 'checked' : '' %>><span></span></label><% } %>
+        </li>
+      <% }) %>
+    </ol>
+    <div class="btn-row" style="margin-top:12px">
+      <button class="btn btn-primary" type="submit" name="action" value="save" data-confirm="บันทึกลำดับหน้าแรกนี้ ครูทุกคนจะเห็นทันที" data-ok-label="บันทึก">บันทึกลำดับ</button>
+      <button class="btn btn-ghost" type="submit" name="action" value="reset" data-confirm="กลับเป็นลำดับเริ่มต้น และแสดงทุกกล่อง ครูทุกคนจะเห็นทันที" data-ok-label="กลับเป็นค่าเริ่มต้น">กลับเป็นค่าเริ่มต้น</button>
+    </div>
+  </section>
+  <aside class="ho-preview" aria-label="ภาพย่อหน้าแรก">
+    <div class="ho-pv-head">ภาพย่อหน้าแรก</div>
+    <div class="ho-pv ho-pv-hello">สวัสดี คุณครู</div>
+    <div data-ho-pv-list>
+      <% for (const b of boxes) { %>
+        <div class="ho-pv ho-pv-<%= b.k %>" data-ho-pv="<%= b.k %>"<%= b.on ? '' : ' hidden' %>><%= b.label %><% if (b.k === 'lib') { %><span class="ho-cvs"><i></i><i></i><i></i><i></i><i></i><i></i></span><% } else if (b.k === 'stats') { %><span class="ho-sts"><i></i><i></i><i></i><i></i></span><% } else if (b.k !== 'bar' && b.k !== 'activity') { %><span class="ho-lns"><i></i><% if (b.k === 'subjects') { %><i></i><i></i><% } %></span><% } %></div>
+      <% } %>
+    </div>
+  </aside>
+</form>
+<%- include('../partials/bottom') %>

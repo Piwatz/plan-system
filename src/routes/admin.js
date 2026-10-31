@@ -5,6 +5,7 @@ const multer = require('multer');
 const db = require('../db');
 const { q, nowStr, getSettings, setSetting } = db;
 const auth = require('../auth');
+const homeorder = require('../homeorder');
 const wf = require('../workflow');
 const util = require('../util');
 const config = require('../config');
@@ -832,6 +833,25 @@ router.get('/settings', async (req, res) => {
   // ปุ่มปรับเลขย้อนหลัง: บอกจำนวนและตัวอย่างก่อนกด
   const docnoFix = req.ff.docnoreq ? docno.reformat(req.settings, await docNoRows()) : [];
   res.render('admin/settings', { title: 'ตั้งค่าโรงเรียน', themeList: themes.list(), webFonts: themes.webFontChoices(req.settings.theme), fxLevels: themes.FX_LEVELS, fxDefault: themes.FX_DEFAULT, themeOf: (k) => themes.resolve(k), siteFields: site.FIELDS, siteIcons: site.ICONS, docnoFix });
+});
+
+// ---------- ลำดับหน้าแรก (ฟังก์ชันเสริม homeorder) ----------
+router.get('/homeorder', (req, res) => {
+  if (!req.ff.homelayout || !req.ff.homeorder) return fail(req, res, '/admin', 'ปิดฟังก์ชันจัดลำดับหน้าแรกอยู่');
+  res.render('admin/homeorder', { title: 'ลำดับหน้าแรก', boxes: homeorder.parse(req.settings.home_order) });
+});
+
+router.post('/homeorder', async (req, res) => {
+  if (!req.ff.homelayout || !req.ff.homeorder) return fail(req, res, '/admin', 'ปิดฟังก์ชันจัดลำดับหน้าแรกอยู่');
+  if (req.body.action === 'reset') {
+    await setSetting('home_order', '');
+    await features.audit(req.me, 'กลับลำดับหน้าแรกเป็นค่าเริ่มต้น', 'home_order');
+    return done(req, res, '/admin/homeorder', 'กลับเป็นลำดับเริ่มต้นแล้ว');
+  }
+  const list = homeorder.parse(req.body.home_order);
+  await setSetting('home_order', homeorder.serialize(list));
+  await features.audit(req.me, `จัดลำดับหน้าแรกเป็น ${list.filter((b) => b.on).map((b) => b.label).join(' ')}`, 'home_order');
+  done(req, res, '/admin/homeorder', 'บันทึกลำดับหน้าแรกแล้ว ครูทุกคนเห็นทันที');
 });
 
 // ---------- ทะเบียนเลขที่บันทึกข้อความ (ฟังก์ชันเสริม docnoreg) ----------

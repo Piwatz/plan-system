@@ -425,7 +425,8 @@ test('หน้าแรกมีแถบเล่มใหม่ในคล�
   const t = await as('teacher');
   const home = (await t.get('/')).text;
   assert.match(home, /เล่มใหม่ในคลัง/);
-  assert.ok((home.match(/class="lib-mini"/g) || []).length <= 6);
+  // จัดหน้าแรกใหม่ (homelayout): บนคอมไม่เกิน 14 เล่มเรียงเต็มแถว มือถือไม่เกิน 6 เล่ม
+  assert.ok((home.match(/class="lib-mini"/g) || []).length <= 20);
   assert.match((await t.get('/works/new?type=manual')).text, /data-thumb/);
   const admin = await as('admin');
   await setFlag(admin, 'library', false);

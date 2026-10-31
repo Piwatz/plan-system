@@ -51,7 +51,7 @@ test('hometodo: งานที่ต้องทำอยู่เหนือ�
   assert.match(box, /วิทยาศาสตร์กายภาพ/, 'งานที่ยังไม่ส่งบอกชื่อวิชา ไม่ใช่คำว่าแตะ');
   assert.ok(on.indexOf('home-todo') < on.indexOf('class="grid-4"'), 'ต้องอยู่เหนือกล่องตัวเลข');
   await db.setSetting('ff_hometodo', '0');
-  assert.doesNotMatch(await page('/'), /home-todo/);
+  assert.doesNotMatch(await page('/'), /class="card home-todo"/);
   await db.setSetting('ff_hometodo', '1');
 });
 
@@ -139,4 +139,48 @@ test('fontpick: เลือกฟอนต์แล้วสีเดิม ค
   assert.doesNotMatch(html, /anuphan\/400\.css/);
   await db.setSetting('ff_fontpick', '1');
   await db.setSetting('web_font', '');
+});
+
+test('homelayout: เล่มใหม่อยู่บนเรียงเต็มแถว ความเคลื่อนไหวพับไว้ ปิดแล้วกลับเป็นแบบเดิม', async () => {
+  await db.setSetting('ff_homelayout', '1');
+  const on = await page('/');
+  assert.match(on, /home-layout/);
+  assert.match(on, /lib-fill/);
+  assert.ok(on.indexOf('lib-fill') < on.indexOf('class="grid-4"'), 'เล่มใหม่ต้องอยู่เหนือกล่องตัวเลข');
+  assert.match(on, /<details class="card home-activity"><summary>ความเคลื่อนไหวล่าสุด/);
+  await db.setSetting('ff_homelayout', '0');
+  const off = await page('/');
+  assert.doesNotMatch(off, /home-layout|lib-fill|home-activity/);
+  assert.match(off, /<h2>ความเคลื่อนไหวล่าสุด/);
+  assert.ok(off.indexOf('เล่มใหม่ในคลัง') > off.indexOf('class="grid-4"'), 'ปิดแล้วเล่มใหม่กลับไปท้ายหน้า');
+  await db.setSetting('ff_homelayout', '1');
+});
+
+test('homeorder: ค่าเสียไม่ทำให้พัง กล่องที่ต้องเห็นซ่อนไม่ได้ บันทึกแล้วหน้าแรกเปลี่ยน กลับค่าเริ่มต้นได้ ครูเข้าหน้าจัดไม่ได้', async () => {
+  const homeorder = require('../src/homeorder');
+  assert.deepEqual(homeorder.parse('พัง').map((b) => b.k), homeorder.BOXES.map((b) => b.k));
+  const parsed = homeorder.parse(JSON.stringify([{ k: 'hack', on: true }, { k: 'subjects', on: false }, { k: 'subjects', on: true }, { k: 'stats', on: false }]));
+  assert.equal(parsed.length, homeorder.BOXES.length);
+  assert.equal(parsed[0].k, 'subjects');
+  assert.equal(parsed[0].on, true, 'รายวิชาซ่อนไม่ได้');
+  assert.equal(parsed.find((b) => b.k === 'stats').on, false);
+
+  const res = await fetch(base + '/login', { method: 'POST', redirect: 'manual', body: new URLSearchParams({ username: 'admin', password: seed.DEMO_PASSWORD }) });
+  const adminCookie = res.headers.getSetCookie().map((c) => c.split(';')[0]).join('; ');
+  const post = (fields) => fetch(base + '/admin/homeorder', { method: 'POST', redirect: 'manual', body: new URLSearchParams(fields), headers: { cookie: adminCookie } });
+  const form = await (await fetch(base + '/admin/homeorder', { headers: { cookie: adminCookie } })).text();
+  assert.match(form, /data-home-order/);
+  assert.equal((form.match(/data-ho-row/g) || []).length, homeorder.BOXES.length);
+  assert.equal((await post({ action: 'save', home_order: JSON.stringify([{ k: 'subjects', on: true }, { k: 'lib', on: true }, { k: 'activity', on: false }]) })).status, 302);
+  const home = await page('/');
+  assert.match(home, /\.home-layout \.card\.flush\{order:1\}/);
+  assert.match(home, /\.home-layout > \.lib-fill\{order:2\}/);
+  assert.match(home, /home-activity\{order:3;display:none\}/);
+  const teacher = await fetch(base + '/admin/homeorder', { redirect: 'manual', headers: { cookie } });
+  assert.notEqual(teacher.status, 200, 'ครูเข้าหน้าจัดลำดับไม่ได้');
+  await post({ action: 'reset' });
+  assert.equal((await db.getSettings()).home_order, '');
+  await db.setSetting('ff_homeorder', '0');
+  assert.doesNotMatch(await page('/'), /<style>\.home-layout/);
+  await db.setSetting('ff_homeorder', '1');
 });
