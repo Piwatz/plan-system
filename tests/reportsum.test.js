@@ -142,6 +142,23 @@ test('หน้าสรุปเข้าได้เฉพาะผู้ด�
   assert.match((await a.get(`/admin/report?year=${y}&semester=${m}`)).text, /สรุปการส่งงานครู/);
 });
 
+test('หน้าทะเบียนงานและสถานะกลุ่มสาระมีปุ่มไปสรุปการส่งงาน เห็นเฉพาะผู้ดูแลระบบ ปิดฟังก์ชันแล้วปุ่มหาย', async () => {
+  const pages = ['/registry?type=manual', '/dept'];
+  const a = await as(await adminName());
+  const link = /href="\/admin\/report\?[^"]*year=\d+&(amp;)?semester=\d+"[^>]*>สรุปการส่งงานครู</;
+  for (const url of pages) assert.match((await a.get(url)).text, link, url);
+  assert.match((await a.get(pages[0])).text, /href="\/admin\/report\?type=manual&/, 'ทะเบียนคู่มือไปสรุปคู่มือ');
+  const head = await db.q.get("SELECT u.username FROM users u JOIN user_roles r ON r.user_id = u.id WHERE u.is_admin = 0 AND u.is_active = 1 AND r.role = 'dept_head' ORDER BY u.id LIMIT 1");
+  const h = await as(head.username);
+  for (const url of pages) assert.doesNotMatch((await h.get(url)).text, /\/admin\/report/, url);
+  await db.setSetting('ff_reportsum', '0');
+  try {
+    for (const url of pages) assert.doesNotMatch((await a.get(url)).text, /href="\/admin\/report/, url);
+  } finally {
+    await db.setSetting('ff_reportsum', '1');
+  }
+});
+
 test('ปรับผล: ตามจริงไม่เปลี่ยน คืนค่าได้ ต้องมีเหตุผล จดประวัติ ไม่แตะงานจริง', async () => {
   const a = await as(await adminName());
   const adminId = (await db.q.get('SELECT id FROM users WHERE username = ?', await adminName())).id;

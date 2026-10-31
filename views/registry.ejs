@@ -5,7 +5,10 @@
     <h1>ทะเบียนงาน</h1>
     <div class="sub"><%= regScope.all ? 'งานที่ส่งแล้วทั้งโรงเรียน' : 'งานที่ส่งแล้วในกลุ่มสาระของคุณ' %> ไม่รวมฉบับร่าง</div>
   </div>
-  <div class="actions"><a class="btn btn-ghost" href="/registry.csv?<%= qs %>">ส่งออกเป็นไฟล์ Excel (CSV)</a></div>
+  <div class="actions">
+    <% if (ff.reportsum && me.is_admin) { %><a class="btn btn-ghost" href="/admin/report?type=<%= type %>&year=<%= term.year %>&semester=<%= term.semester %>">สรุปการส่งงานครู</a><% } %>
+    <a class="btn btn-ghost" href="/registry.csv?<%= qs %>">ส่งออกเป็นไฟล์ Excel (CSV)</a>
+  </div>
 </div>
 
 <div class="tabs-inner" style="padding:0;margin-bottom:12px;background:#fff;border-radius:12px;box-shadow:var(--shadow)">

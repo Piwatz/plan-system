@@ -11,6 +11,7 @@
       </form>
     <% } %>
     <% if (settings.submit_end && daysLeft != null) { %><span class="pill-note<%= daysLeft < 0 ? ' back' : '' %>">กำหนดส่ง <%= util.thaiDate(settings.submit_end, true) %><%= daysLeft >= 0 ? ' เหลือ ' + daysLeft + ' วัน' : ' เลยกำหนดแล้ว' %></span><% } %>
+    <% if (ff.reportsum && me.is_admin) { %><a class="btn btn-ghost" href="/admin/report?year=<%= term.year %>&semester=<%= term.semester %>">สรุปการส่งงานครู</a><% } %>
   </div>
 </div>
 
