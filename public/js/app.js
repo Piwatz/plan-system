@@ -813,6 +813,175 @@
     if (new URLSearchParams(window.location.search).get('front') === '1') btn.click();
   });
 
+  // ---------- ตัดหน้าไฟล์ (ฟังก์ชันเสริม cutpages) ----------
+  // แสดงภาพทุกหน้า วาดเฉพาะหน้าที่เลื่อนถึงทีละหน้า พิมพ์เลขหน้ากับกดที่ภาพผูกกัน แล้วทำไฟล์ใหม่ในเครื่องนี้ (pdf-lib) ส่งเข้าระบบ
+  document.querySelectorAll('[data-cut-open]').forEach((btn) => {
+    const dlg = document.getElementById(btn.dataset.cutOpen);
+    if (!dlg) return;
+    const box = dlg.querySelector('[data-cut-pages]');
+    const sum = dlg.querySelector('[data-cut-sum]');
+    const info = dlg.querySelector('[data-cut-info]');
+    const textIn = dlg.querySelector('[data-cut-text]');
+    let bytes = null;
+    let total = 0;
+    let selected = [];
+    let task = null;
+    let doc = null;
+    let seen = null;
+    let queue = [];
+    let drawing = false;
+    const needPdfMerge = async () => {
+      if (!window.PdfMerge) await loadScript('/static/js/pdfmerge.js');
+    };
+    const runsText = (join, to) => window.PdfMerge.pageRuns(selected).map(([a, b]) => (a === b ? String(a) : a + to + b)).join(join);
+    function paint() {
+      const on = new Set(selected);
+      box.querySelectorAll('input').forEach((i) => {
+        i.checked = on.has(Number(i.value));
+        i.closest('label').classList.toggle('on', i.checked);
+      });
+    }
+    function refresh(error) {
+      if (!total) return (sum.textContent = '');
+      if (error) sum.textContent = error;
+      else if (!selected.length) sum.textContent = 'ยังไม่ได้เลือกหน้าที่จะลบ';
+      else if (selected.length >= total) sum.textContent = 'ลบทุกหน้าไม่ได้ ต้องเหลืออย่างน้อย 1 หน้า';
+      else sum.textContent = 'ลบหน้า ' + runsText(', ', ' ถึง ') + ' รวม ' + selected.length + ' หน้า ไฟล์ใหม่เหลือ ' + (total - selected.length) + ' หน้า';
+    }
+    async function drawQueue() {
+      if (drawing) return;
+      drawing = true;
+      while (queue.length && doc) {
+        const label = queue.shift();
+        const cur = doc;
+        try {
+          const page = await cur.getPage(Number(label.querySelector('input').value));
+          const vp = page.getViewport({ scale: 200 / page.getViewport({ scale: 1 }).width });
+          const canvas = document.createElement('canvas');
+          canvas.width = Math.floor(vp.width);
+          canvas.height = Math.floor(vp.height);
+          const ctx = canvas.getContext('2d');
+          ctx.fillStyle = '#fff';
+          ctx.fillRect(0, 0, canvas.width, canvas.height);
+          await page.render({ canvas, canvasContext: ctx, viewport: vp }).promise;
+          page.cleanup();
+          label.querySelector('.cut-sheet').appendChild(canvas);
+          label.dataset.drawn = '1';
+          seen.unobserve(label);
+        } catch {
+          // ปิดกล่องระหว่างวาด หรือหน้านี้วาดไม่ได้ เว้นกรอบว่างไว้ ยังเห็นเลขหน้า
+          if (cur === doc) seen.unobserve(label);
+        }
+      }
+      drawing = false;
+    }
+    function closeDoc() {
+      queue = [];
+      if (seen) seen.disconnect();
+      seen = null;
+      doc = null;
+      if (task) task.destroy().catch(() => {});
+      task = null;
+    }
+    async function openDoc() {
+      task = openPdf(await pdfjsLib(), bytes.slice());
+      doc = await task.promise;
+      total = doc.numPages;
+      if (!box.children.length) {
+        for (let n = 1; n <= total; n++) {
+          const label = document.createElement('label');
+          label.className = 'front-page';
+          label.innerHTML = '<input type="checkbox" value="' + n + '"><span class="cut-sheet"></span><span class="fp-del">ลบ</span><span class="fp-n">หน้า ' + n + '</span>';
+          box.appendChild(label);
+        }
+      }
+      seen = new IntersectionObserver(
+        (entries) => {
+          for (const e of entries) {
+            if (e.isIntersecting) queue.push(e.target);
+            else queue = queue.filter((x) => x !== e.target);
+          }
+          drawQueue();
+        },
+        { root: box, rootMargin: '200px' }
+      );
+      box.querySelectorAll('label:not([data-drawn])').forEach((l) => seen.observe(l));
+    }
+    textIn.addEventListener('input', () => {
+      if (!total) return;
+      const r = window.PdfMerge.parsePages(textIn.value, total);
+      if (r.error) return refresh(r.error);
+      selected = r.pages;
+      paint();
+      refresh();
+      const firstOn = box.querySelector('label.on');
+      if (firstOn) box.scrollTop = firstOn.offsetTop - box.offsetTop;
+    });
+    box.addEventListener('change', () => {
+      selected = [...box.querySelectorAll('input:checked')].map((i) => Number(i.value));
+      textIn.value = runsText(', ', '-');
+      paint();
+      refresh();
+    });
+    dlg.querySelector('[data-cut-cancel]').addEventListener('click', () => dlg.close());
+    dlg.addEventListener('close', closeDoc);
+    btn.addEventListener('click', async () => {
+      dlg.showModal();
+      try {
+        if (!bytes) {
+          const res = await fetch(dlg.dataset.file);
+          if (!res.ok) throw new SendError('เปิดไฟล์เดิมไม่ได้ ลองใหม่อีกครั้ง');
+          bytes = new Uint8Array(await res.arrayBuffer());
+        }
+        await needPdfMerge();
+        await openDoc();
+        info.textContent = 'ไฟล์นี้มี ' + total + ' หน้า';
+        refresh();
+        textIn.focus();
+      } catch (err) {
+        bytes = null;
+        info.textContent = (err && err.userMessage) || 'เปิดไฟล์เดิมไม่ได้ ลองใหม่อีกครั้ง';
+      }
+    });
+    dlg.querySelector('[data-cut-ok]').addEventListener('click', async () => {
+      if (!bytes || !total) return tell('รอให้เปิดไฟล์เสร็จก่อน');
+      const parsed = window.PdfMerge.parsePages(textIn.value, total);
+      if (parsed.error) return tell(parsed.error);
+      selected = parsed.pages;
+      if (!selected.length) return tell('ยังไม่ได้เลือกหน้าที่จะลบ');
+      if (selected.length >= total) return tell('ลบทุกหน้าไม่ได้ ต้องเหลืออย่างน้อย 1 หน้า');
+      const left = total - selected.length;
+      dlg.close();
+      const ok = await ask('ลบหน้า ' + runsText(', ', ' ถึง ') + ' ของไฟล์นี้ ใช่ไหม\nไฟล์ใหม่เหลือ ' + left + ' หน้า\nไฟล์เดิมเก็บไว้ในไฟล์รุ่นก่อนแก้ไข กลับไปใช้ได้ถ้าลบผิด', { icon: 'note', ok: 'ลบหน้า' });
+      if (!ok) return btn.click();
+      const url = dlg.dataset.action;
+      try {
+        showBusy('กำลังตัดหน้าไฟล์', false);
+        if (!window.PDFLib) await loadScript('/vendor/pdf-lib/pdf-lib.min.js');
+        const m = await window.PdfMerge.cutPages(window.PDFLib, bytes.slice(), selected);
+        const merged = new Blob([m.bytes], { type: 'application/pdf' });
+        // รูปปกในคลังเปลี่ยนเฉพาะเมื่อลบหน้า 1
+        const thumb = dlg.dataset.library && selected[0] === 1 ? await makeThumb(new Uint8Array(m.bytes)) : null;
+        showBusy('กำลังตัดหน้าไฟล์', true);
+        setProgress(0);
+        const all = merged.size + (thumb ? thumb.size : 0);
+        const start = await request('POST', '/upload/start', new URLSearchParams({ form: url, field: 'main_files', name: 'merged.pdf', merged: '2', size: String(merged.size) }), { 'Content-Type': 'application/x-www-form-urlencoded' });
+        await sendChunks(start.token, merged, start.chunk, (n) => setProgress(Math.min(99, Math.round((n / all) * 100))));
+        const data = new URLSearchParams({ removed: runsText(',', '-'), left: String(m.pages), from: dlg.dataset.from });
+        data.append('upload_main_files', start.token);
+        if (dlg.dataset.frontcheck) data.append('front_check', await frontCheck(new Uint8Array(m.bytes), dlg.dataset.code));
+        if (thumb) data.append('upload_cover_thumb', await uploadBlob(thumb, { form: url, field: 'cover_thumb', name: 'cover.jpg' }));
+        setProgress(100);
+        const r = await request('POST', url, data, { 'Content-Type': 'application/x-www-form-urlencoded' });
+        window.location.href = r.redirect || window.location.pathname;
+      } catch (err) {
+        showPaused(false);
+        hideBusy();
+        tell((err && err.userMessage) || NET_ERROR);
+      }
+    });
+  });
+
   // ---------- รายชื่องานที่หน้าแรกน่าจะไม่ใช่ปก (ฟังก์ชันเสริม frontcheck) หน้าผู้ดูแลระบบ ----------
   // ภาพหน้าแรกเล็ก ๆ ของแต่ละงานในรายการ วาดทีละงานจากไฟล์จริง
   (async () => {

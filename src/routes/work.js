@@ -178,6 +178,23 @@ function canDrawnCover(req, sub) {
 function pageList(v) {
   return [...new Set(String(v || '').split(',').map((x) => intOrNull(x)).filter((n) => n > 0 && n <= 999))].sort((a, b) => a - b).slice(0, 50);
 }
+// ตัดหน้าไฟล์ (ฟังก์ชันเสริม cutpages): ผู้ดูแลระบบเท่านั้น ห้ามดำเนินการแทนในงานของตัวเอง
+function canCutPages(req, sub) {
+  return Boolean(req.ff.cutpages && req.me.is_admin && sub && WORK_TYPES.includes(sub.doc_type) && !wf.isOwner(req.me, sub));
+}
+// ช่วงหน้าที่เบราว์เซอร์ส่งมา เช่น 1-18,25 คืน { label: '1 ถึง 18, 25', first: ลบหน้า 1 ด้วย } · รูปแบบไม่ถูกคืน null
+function cutRanges(v) {
+  const parts = String(v || '').split(',').slice(0, 500);
+  const label = [];
+  let first = false;
+  for (const part of parts) {
+    const m = /^(\d{1,5})(?:-(\d{1,5}))?$/.exec(part);
+    if (!m || Number(m[1]) < 1 || (m[2] && Number(m[2]) < Number(m[1]))) return null;
+    if (Number(m[1]) === 1) first = true;
+    label.push(m[2] ? `${m[1]} ถึง ${m[2]}` : m[1]);
+  }
+  return { label: label.join(', '), first };
+}
 
 function submitWindow(settings) {
   if (settings.submit_open !== '1') return { open: false, reason: 'ขณะนี้ปิดรับการส่งแผนและคู่มือ' };
@@ -735,6 +752,7 @@ router.get('/s/:id', async (req, res) => {
     approveLabel: approveLabel(sub),
     canAddCover: canAddCover(req, sub),
     canFrontPages: canFrontPages(req, sub),
+    canCutPages: canCutPages(req, sub),
     canOldFile: canOldFile(req, sub),
     // ปกที่ระบบวาดสำหรับต่อเป็นหน้าแรกของ PDF (เฉพาะผู้ดูแลระบบ) หน้าตาเดียวกับคลังงาน ตราใช้รูปใหญ่ให้คมตอนพิมพ์
     drawnBook: canDrawnCover(req, sub)
@@ -938,6 +956,40 @@ router.post('/s/:id/cover', async (req, res) => {
   respond(req, res, `/s/${sub.id}`, 'success', `${front ? 'เปลี่ยนปก' : 'เพิ่มหน้าปก'}เรียบร้อย ไฟล์เดิมเก็บไว้ในไฟล์รุ่นก่อนแก้ไข`);
 });
 
+// ตัดหน้าไฟล์ (ฟังก์ชันเสริม cutpages): เบราว์เซอร์ตัดหน้าแล้วส่งเป็นไฟล์ใหม่ เซิร์ฟเวอร์ไม่เปิด PDF · from = ไฟล์ที่เปิดตัด ถ้าครูเปลี่ยนไฟล์ไปแล้วไม่บันทึกทับ · ไม่เปลี่ยนขั้นการตรวจ
+router.post('/s/:id/cutpages', async (req, res) => {
+  const sub = await viewable(req, req.params.id);
+  if (!canCutPages(req, sub)) throw new UserError('ตัดหน้าไฟล์งานนี้ไม่ได้');
+  const b = req.body || {};
+  const cut = cutRanges(b.removed);
+  if (!cut) throw new UserError('ยังไม่ได้เลือกหน้าที่จะลบ');
+  const left = intOrNull(b.left);
+  const what = `ลบหน้า ${cut.label}${left > 0 ? ` เหลือ ${left} หน้า` : ''}`;
+  const files = await up.take(req, 'main_files');
+  const cover = req.ff.library ? await up.takeCover(req, library.COVER_MAX) : null;
+  let oldCover = null;
+  try {
+    if (files.length !== 1 || files[0].ext !== '.pdf') throw new UserError('ไฟล์ที่ตัดแล้วต้องเป็น PDF ไฟล์เดียว');
+    const current = await q.all("SELECT id, front_check FROM files WHERE submission_id = ? AND kind = 'main' AND is_current = 1", sub.id);
+    if (current.length !== 1 || Number(current[0].id) !== intOrNull(b.from)) throw new UserError('ไฟล์ของงานนี้เปลี่ยนไปแล้ว เปิดหน้างานใหม่แล้วลองอีกครั้ง');
+    await rejectBadFiles(req, files);
+    oldCover = await q.tx(async () => {
+      await q.run('UPDATE files SET is_current = 0 WHERE id = ?', current[0].id);
+      await up.attach(sub.id, files, 'main');
+      if (current[0].front_check === 'drawn' && !cut.first) await precheck.markDrawn(sub.id);
+      else await precheck.setFront(req.ff, sub.id, b.front_check);
+      await wf.log(sub.id, req.me, { step_label: 'ผู้ดูแลระบบ', action: 'cutpages', comment: what });
+      return cover ? up.useCover(sub.id, cover) : null;
+    });
+  } catch (e) {
+    await dropFiles(req, cover ? [...files, cover] : files);
+    throw e;
+  }
+  if (oldCover) await up.trashAll([oldCover]);
+  await features.audit(req.me, `ตัดหน้าไฟล์${wf.DOC_TYPES[sub.doc_type].label} ${sub.subject_code} ของ ${sub.teacher_name} ${what}`, `submission ${sub.id}`);
+  respond(req, res, `/s/${sub.id}`, 'success', 'ตัดหน้าไฟล์เรียบร้อย ไฟล์เดิมเก็บไว้ในไฟล์รุ่นก่อนแก้ไข');
+});
+
 // ใช้ไฟล์รุ่นก่อน (ฟังก์ชันเสริม oldfile): สลับ is_current ไฟล์ที่เลือกเป็นไฟล์ที่ส่ง ไฟล์ที่ใช้อยู่กลายเป็นรุ่นก่อน ไม่ลบไฟล์ใด ไม่เปลี่ยนขั้นการตรวจ
 // รูปปกในคลัง: เบราว์เซอร์ทำจากไฟล์ที่กลับไปใช้ส่งมาด้วย · ไม่มีรูป (ไม่ใช่ PDF หรือทำไม่ได้) ล้างรูปเดิม ปุ่มสร้างปกของผู้ดูแลทำให้ใหม่ได้ (ปกที่ระบบวาดที่ผู้ดูแลเลือกไว้คงเดิม)
 router.post('/s/:id/oldfile/:file', async (req, res) => {
@@ -1025,8 +1077,15 @@ async function uploadTarget(req, b) {
     if (!canAddCover(req, sub) && !canFrontPages(req, sub)) throw new UserError('เพิ่มหน้าปกงานนี้ไม่ได้');
     return sub;
   }
+  // ไฟล์ที่ตัดหน้าแล้ว (ฟังก์ชันเสริม cutpages)
+  const cp = /^\/s\/(\d+)\/cutpages$/.exec(form);
+  if (cp) {
+    const sub = await viewable(req, cp[1]);
+    if (!canCutPages(req, sub)) throw new UserError('ตัดหน้าไฟล์งานนี้ไม่ได้');
+    return sub;
+  }
   // รูปปกในคลังจากไฟล์รุ่นก่อนที่กลับไปใช้ (ฟังก์ชันเสริม oldfile)
-  const of = /^\/s\/(\d+)\/oldfile\/\d+$/.exec(form);
+  const of =/^\/s\/(\d+)\/oldfile\/\d+$/.exec(form);
   if (of) {
     const sub = await viewable(req, of[1]);
     if (!canOldFile(req, sub)) throw new UserError('ใช้ไฟล์รุ่นก่อนในงานนี้ไม่ได้');

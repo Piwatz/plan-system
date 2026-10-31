@@ -1,0 +1,125 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<title>ตัวอย่าง ตัดหน้าไฟล์</title>
+<style>
+@font-face { font-family: Sarabun; font-weight: 400; src: url(../node_modules/@fontsource/sarabun/files/sarabun-thai-400-normal.woff2) format('woff2'); }
+@font-face { font-family: Sarabun; font-weight: 600; src: url(../node_modules/@fontsource/sarabun/files/sarabun-thai-600-normal.woff2) format('woff2'); }
+@font-face { font-family: Sarabun; font-weight: 700; src: url(../node_modules/@fontsource/sarabun/files/sarabun-thai-700-normal.woff2) format('woff2'); }
+:root { --bg:#F7F3EF; --ink:#241517; --muted:#665558; --line:#E7DDD7; --primary:#8E1B2C; --soft:#F5E6E7; --back:#B3261E; --back-bg:#FBE9E7; --ok:#17694F; --ok-bg:#E5F2EC; }
+* { box-sizing: border-box; }
+body { margin: 0; background: #5b4f50; color: var(--ink); font: 400 17px/1.5 Sarabun, Tahoma, sans-serif; padding: 24px; }
+section { display: none; }
+section.show { display: block; }
+.tag { display: inline-block; background: #fff; color: var(--primary); font-weight: 700; font-size: 1.15rem; padding: 6px 16px; border-radius: 99px; margin-bottom: 14px; }
+.dlg { background: #fff; border-radius: 18px; padding: 22px 22px 18px; max-width: 900px; margin: 0 auto; }
+.dlg h3 { margin: 0 0 2px; font-size: 1.4rem; }
+.muted { color: var(--muted); }
+.small { font-size: .9rem; }
+.step { margin: 16px 0 8px; font-weight: 600; }
+.step b { display: inline-grid; place-items: center; width: 26px; height: 26px; border-radius: 50%; background: var(--primary); color: #fff; margin-right: 6px; }
+.input { border: 2px solid var(--primary); border-radius: 10px; padding: 8px 14px; font: 600 1.2rem Sarabun; background: #fff; min-width: 120px; display: inline-block; }
+.row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+.pages { display: grid; grid-template-columns: repeat(8, 1fr); gap: 10px; }
+.pg { text-align: center; font-size: .85rem; position: relative; }
+.sheet { aspect-ratio: 210/297; border: 2px solid var(--line); border-radius: 4px; background: #fff; padding: 9% 9%; display: flex; flex-direction: column; gap: 5%; box-shadow: 1px 2px 5px rgba(15,30,51,.15); overflow: hidden; }
+.sheet u { display: block; height: 3px; background: #cfc6c1; text-decoration: none; }
+.sheet u.s { width: 62%; }
+.sheet em { font-style: normal; font-weight: 700; font-size: .7rem; line-height: 1.15; color: #3a2a2c; }
+.del .sheet { border-color: var(--back); opacity: .45; }
+.del .n { color: var(--back); font-weight: 600; text-decoration: line-through; }
+.del i { position: absolute; top: 32%; left: 50%; transform: translateX(-50%); font-style: normal; background: var(--back); color: #fff; font-weight: 700; padding: 1px 10px; border-radius: 99px; z-index: 1; }
+.sum { margin: 14px 0 0; padding: 10px 14px; background: var(--soft); border-radius: 10px; font-weight: 600; }
+.actions { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 14px; }
+.btn { border: 1px solid var(--line); border-radius: 12px; font: 600 1.05rem Sarabun; padding: 10px 14px; background: #fff; text-align: center; }
+.btn.p { background: var(--primary); color: #fff; border-color: var(--primary); }
+.btn.sm { font-size: .92rem; padding: 6px 12px; display: inline-block; }
+.seam { display: grid; grid-template-columns: 1fr 1fr 64px 1fr 1fr; gap: 14px; align-items: end; }
+.seam > div { position: relative; }
+.seam .gap { text-align: center; font-size: 1rem; font-weight: 600; white-space: nowrap; color: var(--muted); align-self: center; }
+.seam .cap { font-weight: 600; margin-bottom: 4px; font-size: .92rem; }
+.seam .sheet { padding: 8%; }
+.seam .sheet em { font-size: 1rem; }
+.seam .sheet u { height: 5px; }
+.card { background: #fff; border-radius: 18px; padding: 18px 20px; max-width: 900px; margin: 0 auto 14px; }
+.card h4 { margin: 0 0 10px; font-size: 1.15rem; }
+.file { display: flex; gap: 10px; align-items: center; padding: 10px 12px; border: 1px solid var(--line); border-radius: 10px; }
+.file .nm { flex: 1; }
+.tool { margin-top: 10px; padding: 10px 12px; border: 1px dashed var(--line); border-radius: 10px; }
+.new { outline: 3px solid var(--primary); outline-offset: 2px; }
+.hist { padding: 8px 0; border-bottom: 1px solid var(--line); }
+.pop { background: #fff; border-radius: 18px; padding: 22px; max-width: 520px; margin: 0 auto 14px; text-align: center; }
+.pop p { margin: 8px 0; }
+</style>
+</head>
+<body>
+
+<section id="a">
+  <div class="tag">แบบ A เห็นทุกหน้า พิมพ์เลขหรือกดที่ภาพก็ได้</div>
+  <div class="dlg">
+    <h3>ตัดหน้าไฟล์ ว30101</h3>
+    <div class="muted small">แผนการจัดการเรียนรู้ของครูสมมติ ใจดี ไฟล์นี้มี 24 หน้า</div>
+    <p class="step"><b>1</b> พิมพ์เลขหน้าที่จะลบ</p>
+    <div class="row"><span class="input">1-18</span><span class="muted small">เช่น 1-18 หรือ 1-18, 25 หรือกดที่ภาพด้านล่างก็ได้</span></div>
+    <p class="step"><b>2</b> ดูให้แน่ใจว่าถูกหน้า</p>
+    <div class="pages" id="grid"></div>
+    <p class="sum">ลบหน้า 1 ถึง 18 รวม 18 หน้า ไฟล์ใหม่เหลือ 6 หน้า</p>
+    <div class="actions"><div class="btn">ยกเลิก</div><div class="btn p">ลบหน้าที่เลือก</div></div>
+  </div>
+</section>
+
+<section id="b">
+  <div class="tag">แบบ B กรอกช่วงหน้า ดูเฉพาะรอยต่อ</div>
+  <div class="dlg">
+    <h3>ตัดหน้าไฟล์ ว30101</h3>
+    <div class="muted small">แผนการจัดการเรียนรู้ของครูสมมติ ใจดี ไฟล์นี้มี 24 หน้า</div>
+    <p class="step"><b>1</b> ลบหน้าไหนถึงหน้าไหน</p>
+    <div class="row">ตั้งแต่หน้า <span class="input">1</span> ถึงหน้า <span class="input">18</span></div>
+    <p class="step"><b>2</b> ดูรอยต่อให้แน่ใจ</p>
+    <div class="seam">
+      <div class="del"><div class="cap">หน้าแรกที่ลบ (หน้า 1)</div><i>ลบ</i><div class="sheet"><em>คู่มือรายวิชา</em><u></u><u></u><u class="s"></u><u></u><u></u></div></div>
+      <div class="del"><div class="cap">หน้าสุดท้ายที่ลบ (หน้า 18)</div><i>ลบ</i><div class="sheet"><u></u><u></u><u class="s"></u><u></u><u></u><u class="s"></u></div></div>
+      <div class="gap">ต่อด้วย</div>
+      <div><div class="cap">หน้าแรกที่เหลือ (หน้า 19)</div><div class="sheet"><em>แผนการจัดการเรียนรู้ที่ 1</em><u></u><u></u><u class="s"></u><u></u></div></div>
+      <div><div class="cap">หน้าสุดท้ายของไฟล์ (หน้า 24)</div><div class="sheet"><u></u><u></u><u class="s"></u><u></u><u class="s"></u></div></div>
+    </div>
+    <p class="sum">ลบหน้า 1 ถึง 18 รวม 18 หน้า ไฟล์ใหม่เหลือ 6 หน้า</p>
+    <div class="actions"><div class="btn">ยกเลิก</div><div class="btn p">ลบหน้าที่เลือก</div></div>
+  </div>
+</section>
+
+<section id="c">
+  <div class="tag">ใช้เหมือนกันทั้ง 2 แบบ</div>
+  <div class="card">
+    <h4>ปุ่มในหน้างาน ส่วนไฟล์ที่ส่ง (เห็นเฉพาะผู้ดูแลระบบ)</h4>
+    <div class="file"><div class="nm"><b>แผน ว30101.pdf</b><br><span class="muted small">5.2 MB</span></div><span class="btn sm p">เปิดดู</span><span class="btn sm">ดาวน์โหลด</span></div>
+    <div class="tool new"><span class="btn sm p">ตัดหน้าไฟล์แทนครู</span> <span class="muted small">ลบหน้าที่เกินหรือส่งผิดตามเลขหน้า ไฟล์เดิมเก็บไว้ ผู้ตรวจไม่ต้องลงนามใหม่</span></div>
+  </div>
+  <div class="pop">
+    <h4 style="margin:0;font-size:1.2rem">ลบหน้า 1 ถึง 18 ของไฟล์นี้ ใช่ไหม</h4>
+    <p>ไฟล์ใหม่เหลือ 6 หน้า</p>
+    <p class="muted small">ไฟล์เดิมเก็บไว้ในไฟล์รุ่นก่อนแก้ไข กลับไปใช้ได้ถ้าลบผิด</p>
+    <div class="actions"><div class="btn">ยกเลิก</div><div class="btn p">ลบหน้า</div></div>
+  </div>
+  <div class="card">
+    <h4>หลังบันทึก: ประวัติของงาน และไฟล์รุ่นก่อน</h4>
+    <div class="hist"><b>ผู้ดูแลระบบ</b> ตัดหน้าไฟล์: ลบหน้า 1 ถึง 18 เหลือ 6 หน้า <span class="muted small">31 ต.ค. 2569 14:20</span></div>
+    <div class="file" style="margin-top:10px;background:var(--bg)"><div class="nm">แผน ว30101 ฉบับก่อนตัด.pdf <span class="muted small">24 หน้า</span></div><span class="btn sm">ดาวน์โหลด</span><span class="btn sm p">ใช้ไฟล์นี้แทนครู</span></div>
+  </div>
+</section>
+
+<script>
+var g = document.getElementById('grid');
+for (var n = 1; n <= 24; n++) {
+  var title = n === 1 ? 'คู่มือรายวิชา' : n === 19 ? 'แผนที่ 1' : '';
+  var d = document.createElement('div');
+  d.className = 'pg' + (n <= 18 ? ' del' : '');
+  d.innerHTML = (n <= 18 ? '<i>ลบ</i>' : '') + '<div class="sheet">' + (title ? '<em>' + title + '</em>' : '') + '<u></u><u></u><u class="s"></u><u></u><u class="s"></u></div><span class="n">หน้า ' + n + '</span>';
+  g.appendChild(d);
+}
+var s = document.getElementById(location.hash.slice(1) || 'a');
+s.classList.add('show');
+</script>
+</body>
+</html>

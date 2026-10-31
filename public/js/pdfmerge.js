@@ -77,5 +77,63 @@
     return { bytes: await doc.save(), pages: doc.getPageCount(), removed: remove.length, added };
   }
 
-  return { mergePdfs, editFront, PdfError };
+  // ตัดหน้าไฟล์ (ฟังก์ชันเสริม cutpages): คัดลอกเฉพาะหน้าที่เหลือลงไฟล์ใหม่ หน้าที่ลบจึงหายจากไฟล์จริง ไฟล์เล็กลง (ที่คั่นหน้าไม่ตามมา ไฟล์เดิมเก็บไว้เป็นรุ่นก่อน)
+  async function cutPages(PDFLib, bytes, remove) {
+    const { PDFDocument } = PDFLib;
+    const broken = new PdfError('เปิดไฟล์เดิมไม่ได้ จึงตัดหน้าไม่ได้');
+    let src;
+    try {
+      src = await PDFDocument.load(bytes, { ignoreEncryption: true, updateMetadata: false });
+    } catch {
+      throw broken;
+    }
+    if (src.isEncrypted) throw new PdfError('ไฟล์เดิมตั้งรหัสผ่านไว้ จึงตัดหน้าไม่ได้');
+    const del = new Set(remove);
+    const keep = src.getPageIndices().filter((i) => !del.has(i + 1));
+    if (!keep.length) throw new PdfError('ลบทุกหน้าไม่ได้ ต้องเหลืออย่างน้อย 1 หน้า');
+    const out = await PDFDocument.create();
+    let pages;
+    try {
+      pages = await out.copyPages(src, keep);
+    } catch {
+      throw broken;
+    }
+    for (const p of pages) out.addPage(p);
+    return { bytes: await out.save(), pages: out.getPageCount(), removed: src.getPageCount() - keep.length };
+  }
+
+  // อ่านเลขหน้าที่พิมพ์ เช่น 1-18, 25 หรือ ๑ ถึง ๑๘ (total = จำนวนหน้าของไฟล์) คืนค่า { pages: เลขหน้าเรียงน้อยไปมาก, error: ข้อความเมื่อพิมพ์ไม่ถูก }
+  function parsePages(text, total) {
+    const s = String(text || '')
+      .replace(/[๐-๙]/g, (c) => String(c.charCodeAt(0) - 0x0e50))
+      .replace(/\s*(?:ถึง|[-–—])\s*/g, '-')
+      .trim();
+    if (!s) return { pages: [], error: '' };
+    const set = new Set();
+    for (const part of s.split(/[,\s]+/).filter(Boolean)) {
+      const m = /^(\d{1,5})(?:-(\d{1,5}))?$/.exec(part);
+      if (!m) return { pages: [], error: 'พิมพ์เลขหน้าแบบ 1-18 หรือ 1-18, 25' };
+      const a = Number(m[1]);
+      const b = m[2] ? Number(m[2]) : a;
+      const lo = Math.min(a, b);
+      const hi = Math.max(a, b);
+      if (lo < 1) return { pages: [], error: 'เลขหน้าเริ่มที่หน้า 1' };
+      if (hi > total) return { pages: [], error: 'ไฟล์นี้มี ' + total + ' หน้า ไม่มีหน้า ' + hi };
+      for (let n = lo; n <= hi; n++) set.add(n);
+    }
+    return { pages: [...set].sort((x, y) => x - y), error: '' };
+  }
+
+  // เลขหน้าเป็นช่วงต่อเนื่อง เช่น [1, 2, 3, 25] เป็น [[1, 3], [25, 25]]
+  function pageRuns(pages) {
+    const runs = [];
+    for (const n of [...pages].sort((a, b) => a - b)) {
+      const last = runs[runs.length - 1];
+      if (last && n === last[1] + 1) last[1] = n;
+      else runs.push([n, n]);
+    }
+    return runs;
+  }
+
+  return { mergePdfs, editFront, cutPages, parsePages, pageRuns, PdfError };
 });

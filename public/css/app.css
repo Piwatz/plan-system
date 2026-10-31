@@ -1341,6 +1341,13 @@ dialog.front-dlg { width: min(720px, calc(100vw - 24px)); max-height: calc(100vh
 .front-page.on .fp-del { display: block; }
 .front-page.on .fp-n { color: var(--back); font-weight: 600; text-decoration: line-through; }
 .front-more { grid-column: 1 / -1; }
+.cut-input { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+.cut-input input { width: 200px; max-width: 100%; font-size: 1.1rem; font-weight: 600; }
+.cut-pages { max-height: 46vh; overflow: auto; padding: 4px; position: relative; }
+.cut-pages .front-page { align-self: start; }
+.cut-sheet { display: flex; align-items: center; width: 100%; aspect-ratio: 210 / 297; background: var(--surface); border: 2px solid var(--line); border-radius: 4px; overflow: hidden; }
+.cut-pages .front-page canvas { display: block; border: 0; border-radius: 0; box-shadow: none; }
+.cut-pages .front-page.on .cut-sheet { border-color: var(--back); }
 .front-opts { display: flex; flex-direction: column; gap: 8px; }
 .front-opts label { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; padding: 8px 10px; border: 1px solid var(--line); border-radius: var(--rs); cursor: pointer; }
 .front-opts label:has(input:checked) { border-color: var(--primary); background: var(--soft); }
