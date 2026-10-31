@@ -1,0 +1,76 @@
+<%- include('../partials/top') %>
+<%# สิทธิ์อ่านงานในคลัง (ฟังก์ชันเสริม readperm) แบบเร็ว ตารางรายตำแหน่ง เปิดชั่วคราว และรายคน · กล่องสรุปคำพูดและแถวรายคนทำงานใน app.js ส่วน data-readperm %>
+<% const levelRadios = (name, cur, noCover) => { %>
+  <div class="rp-seg">
+    <% for (const l of levels) { %>
+      <label class="<%= noCover && l === 'cover' ? 'rp-no' : '' %>"><input type="radio" name="<%= name %>" value="<%= l %>" <%= cur === l ? 'checked' : '' %> <%= noCover && l === 'cover' ? 'disabled' : '' %>><span><%= label[l] %></span></label>
+    <% } %>
+  </div>
+<% }; %>
+<div class="page-head">
+  <div>
+    <h1>สิทธิ์อ่านงานในคลัง</h1>
+    <div class="sub">ใช้กับแผน คู่มือ และบันทึกหลังแผน คนที่ไม่มีสิทธิ์เห็นแค่ปกและชื่อเล่ม มีผลกับทุกคนทันทีหลังบันทึก</div>
+  </div>
+  <div class="actions"><a class="btn btn-ghost" href="/admin">กลับหน้าผู้ดูแลระบบ</a></div>
+</div>
+<form method="post" action="/admin/readperm" data-readperm>
+  <section class="card rp-card">
+    <h2>เลือกแบบเร็ว</h2>
+    <div class="rp-pre">
+      <button type="button" class="rp-p" data-rp-preset="cover,dept"><b>เห็นแค่ปก</b><span>ครูทั่วไปเห็นแค่ปก อ่านได้เฉพาะงานของตัวเอง</span></button>
+      <button type="button" class="rp-p" data-rp-preset="dept,dept"><b>อ่านในกลุ่มสาระ</b><span>ครูอ่านเล่มในกลุ่มสาระตัวเองได้</span></button>
+      <button type="button" class="rp-p" data-rp-preset="all,all"><b>อ่านได้ทั้งโรงเรียน</b><span>ทุกคนอ่านทุกเล่มได้</span></button>
+    </div>
+  </section>
+  <section class="card rp-card">
+    <h2>กำหนดรายตำแหน่ง</h2>
+    <div class="rp-r"><div><b>ครูทั่วไป</b><small>ครูที่ไม่มีหน้าที่ตรวจ</small></div><% levelRadios('read_teacher', cfg.teacher, false); %></div>
+    <div class="rp-r"><div><b>หัวหน้ากลุ่มสาระ</b><small>ตรวจงานในกลุ่มสาระตัวเองอยู่แล้ว</small></div><% levelRadios('read_depthead', cfg.depthead, true); %></div>
+    <div class="rp-r"><div><b>ผู้ตรวจระดับโรงเรียนและผู้ดูแลระบบ</b><small>งานส่งเสริม วิชาการ รอง ผอ. ผอ. ต้องเปิดเพื่อตรวจงาน</small></div><div class="rp-lock">อ่านทุกเล่มเสมอ</div></div>
+    <div class="rp-r"><div><b>เจ้าของงาน</b></div><div class="rp-lock">อ่านงานของตัวเองเสมอ</div></div>
+  </section>
+  <section class="card rp-card">
+    <div class="rp-line">
+      <div class="rp-grow"><h2>เปิดอ่านเล่มที่ยังไม่ผ่านครบ</h2><small class="muted">งานที่กำลังรอลงนาม อ่านได้ตามสิทธิ์ด้านบน งานร่างและงานที่ถูกส่งกลับแก้ไขยังไม่เปิดให้คนอื่นอ่าน</small></div>
+      <label class="ho-sw" title="เปิดหรือปิด"><input type="checkbox" name="read_unapproved" value="1" aria-label="เปิดอ่านเล่มที่ยังไม่ผ่านครบ" <%= cfg.unapproved ? 'checked' : '' %>><span></span></label>
+    </div>
+  </section>
+  <section class="card rp-card">
+    <div class="rp-line">
+      <div class="rp-grow"><h2>เปิดอ่านทั้งโรงเรียนชั่วคราว</h2><small class="muted">เช่น ช่วงกรรมการมาดูงาน ถึงวันสิ้นสุดแล้วกลับเป็นค่าด้านบนเอง</small></div>
+      <label class="rp-date">ถึงวันที่ <input type="date" name="read_temp_until" value="<%= cfg.tempUntil %>" aria-label="วันสิ้นสุดการเปิดชั่วคราว"></label>
+      <label class="ho-sw" title="เปิดหรือปิด"><input type="checkbox" name="read_temp_on" value="1" aria-label="เปิดอ่านทั้งโรงเรียนชั่วคราว" <%= cfg.tempOn ? 'checked' : '' %>><span></span></label>
+    </div>
+    <% if (cfg.tempOn && !tempActive) { %><p class="hint" style="margin:6px 0 0">เลยวันสิ้นสุดแล้ว ตอนนี้ใช้ค่าด้านบน</p><% } %>
+  </section>
+  <section class="card rp-card">
+    <h2>ให้สิทธิ์รายคน</h2>
+    <p class="muted small" style="margin:0 0 8px">เช่น ครูพี่เลี้ยง หรือครูที่กำลังทำผลงาน เว้นวันสิ้นสุดไว้ถ้าไม่จำกัด</p>
+    <div class="table-wrap"><table class="table" data-rp-people>
+      <thead><tr><th>ชื่อ</th><th>อ่านได้</th><th>ถึงวันที่</th><th></th></tr></thead>
+      <tbody>
+        <% for (const p of people) { %>
+          <tr data-rp-row><td><input type="hidden" name="person_id" value="<%= p.id %>"><%= p.name %></td>
+            <td><select name="person_level" aria-label="ระดับ"><% for (const l of ['dept', 'all']) { %><option value="<%= l %>" <%= p.level === l ? 'selected' : '' %>><%= label[l] %></option><% } %></select></td>
+            <td><input type="date" name="person_until" value="<%= p.until %>" aria-label="วันสิ้นสุด"></td>
+            <td style="text-align:right"><button type="button" class="btn btn-sm btn-ghost" data-rp-remove>เอาออก</button></td></tr>
+        <% } %>
+      </tbody>
+    </table></div>
+    <div class="rp-add">
+      <select data-rp-pick aria-label="เลือกครู"><option value="">เลือกชื่อครู</option><% for (const u of users) { %><option value="<%= u.id %>"><%= u.full_name %></option><% } %></select>
+      <button type="button" class="btn btn-ghost" data-rp-add>เพิ่มรายชื่อ</button>
+    </div>
+    <template data-rp-template><tr data-rp-row><td><input type="hidden" name="person_id" value=""><span data-rp-name></span></td>
+      <td><select name="person_level" aria-label="ระดับ"><option value="dept"><%= label.dept %></option><option value="all" selected><%= label.all %></option></select></td>
+      <td><input type="date" name="person_until" value="" aria-label="วันสิ้นสุด"></td>
+      <td style="text-align:right"><button type="button" class="btn btn-sm btn-ghost" data-rp-remove>เอาออก</button></td></tr></template>
+  </section>
+  <div class="rp-say"><b>ถ้าบันทึกตอนนี้</b><span data-rp-say></span></div>
+  <div class="btn-row" style="margin-top:12px">
+    <button class="btn btn-primary" type="submit" name="action" value="save" data-confirm="บันทึกสิทธิ์อ่านงานนี้ มีผลกับทุกคนทันที" data-ok-label="บันทึก">บันทึกสิทธิ์</button>
+    <button class="btn btn-ghost" type="submit" name="action" value="reset" data-confirm="กลับเป็นค่าเริ่มต้น ครูทั่วไปเห็นแค่ปก และล้างรายชื่อกับการเปิดชั่วคราว" data-ok-label="กลับเป็นค่าเริ่มต้น">กลับเป็นค่าเริ่มต้น</button>
+  </div>
+</form>
+<%- include('../partials/bottom') %>

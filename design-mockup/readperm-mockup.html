@@ -1,0 +1,87 @@
+<!doctype html><html lang="th"><meta charset="utf-8"><title>ตัวอย่างสิทธิ์อ่านงาน</title><style>
+@font-face{font-family:SB;font-weight:400;src:url(../node_modules/@fontsource/sarabun/files/sarabun-thai-400-normal.woff2);unicode-range:U+0E00-0E7F}
+@font-face{font-family:SB;font-weight:700;src:url(../node_modules/@fontsource/sarabun/files/sarabun-thai-700-normal.woff2);unicode-range:U+0E00-0E7F}
+@font-face{font-family:SB;font-weight:400;src:url(../node_modules/@fontsource/sarabun/files/sarabun-latin-400-normal.woff2);unicode-range:U+0000-00FF}
+@font-face{font-family:SB;font-weight:700;src:url(../node_modules/@fontsource/sarabun/files/sarabun-latin-700-normal.woff2);unicode-range:U+0000-00FF}
+:root{--bg:#F7F3EF;--ink:#241517;--mut:#665558;--line:#E7DDD7;--pri:#8E1B2C;--soft:#F5E6E7;--acc:#A6834B;--ok:#1E6E50;--okb:#E1F2EA;--wait:#7A5200;--waitb:#FBEFD5}
+*{box-sizing:border-box}html,body{margin:0}
+body{width:1200px;font-family:SB,'Leelawadee UI',sans-serif;color:var(--ink)}
+.sheet{width:1200px;height:1000px;overflow:hidden;padding:24px 30px;background:#EFEBE4;border-bottom:1px solid #bbb}
+.ttl{font-size:28px;font-weight:700;margin:0 0 2px}.lead{font-size:17.5px;color:#4a4644;margin:0 0 14px;line-height:1.5}
+.tag{display:inline-block;background:#3a3331;color:#fff;border-radius:9px;padding:0 12px;font-size:20px;margin-right:8px}.tag.rec{background:var(--acc)}
+.pg{background:var(--bg);border:1px solid #d3c8c1;border-radius:14px;padding:18px 20px}
+.card{background:#fff;border:1px solid var(--line);border-radius:14px;padding:15px 18px;margin-bottom:12px}
+h2{font-size:30px;margin:0 0 2px;line-height:1.25}.sub{font-size:16.5px;color:var(--mut);margin:0 0 13px}h3{font-size:20.5px;margin:0 0 3px}.s2{font-size:15.5px;color:var(--mut);margin:0 0 10px;line-height:1.45}
+.pre{display:grid;grid-template-columns:repeat(3,1fr);gap:9px}.p{border:1.5px solid var(--line);border-radius:12px;padding:9px 12px;font-size:15px;line-height:1.4;color:var(--mut)}.p b{display:block;font-size:17.5px;color:var(--ink)}.p.on{border:2.5px solid var(--pri);background:var(--soft)}
+.r{display:grid;grid-template-columns:1fr 470px;align-items:center;gap:12px;padding:9px 0;border-top:1px solid var(--line)}.r:first-of-type{border-top:0}.r b{font-size:17.5px;display:block;line-height:1.3}.r small{font-size:14.5px;color:var(--mut);display:block;line-height:1.35}
+.seg{display:grid;grid-template-columns:repeat(3,1fr);border:1.5px solid var(--pri);border-radius:10px;overflow:hidden;font-size:15.5px;font-weight:700;text-align:center;color:var(--pri)}.seg span{padding:7px 3px;border-left:1.5px solid var(--pri)}.seg span:first-child{border-left:0}.seg .on{background:var(--pri);color:#fff}.seg .no{color:#c9bcb8;background:#f6f2ef;font-weight:400}
+.lock{font-size:15.5px;color:var(--mut);text-align:center;background:#F4F0EC;border-radius:10px;padding:7px;border:1.5px dashed #d8ccc6}
+.say{background:var(--okb);border-radius:12px;padding:10px 15px;font-size:16.5px;line-height:1.55;color:#134b37}.say b{display:block;font-size:17px}
+.btns{display:flex;gap:10px;margin-top:10px}.btn{background:var(--pri);color:#fff;font-weight:700;border-radius:10px;padding:9px 20px;font-size:17px}.btn.gh{background:#fff;color:var(--pri);border:1.5px solid var(--pri)}.btn.sm{padding:5px 13px;font-size:15px}
+.two{display:grid;grid-template-columns:760px 1fr;gap:20px;align-items:start}.nt{font-size:17px;line-height:1.55}.nt h4{margin:0 0 3px;font-size:18.5px}.nt ul{margin:0 0 13px;padding-left:20px}
+.big{display:grid;grid-template-columns:1fr;gap:10px}.bg{display:flex;gap:13px;align-items:flex-start;background:#fff;border:1.5px solid var(--line);border-radius:14px;padding:13px 16px}.bg.on{border:2.5px solid var(--pri);background:var(--soft)}.rd{width:24px;height:24px;border-radius:50%;border:2px solid #b7a9a5;flex:none;margin-top:3px;background:#fff}.bg.on .rd{border:7px solid var(--pri)}.bg b{font-size:20px;display:block}.bg span.d{font-size:16px;color:var(--mut);line-height:1.5;display:block}
+.sw{width:46px;height:27px;border-radius:14px;background:#cfc5c2;position:relative;flex:none}.sw:after{content:"";position:absolute;width:23px;height:23px;border-radius:50%;background:#fff;top:2px;left:2px}.sw.on{background:var(--ok)}.sw.on:after{left:21px}
+.line{display:flex;align-items:center;gap:12px}.inp{border:1.5px solid #c9bdb7;border-radius:9px;background:#fff;padding:6px 11px;font-size:16.5px}
+.tb{width:100%;border-collapse:collapse;font-size:16px}.tb td,.tb th{padding:8px 6px;border-top:1px solid var(--line);text-align:left}.tb th{font-size:14.5px;color:var(--mut);border-top:0}
+.books{display:grid;grid-template-columns:1fr 1fr;gap:18px}.bk{display:flex;gap:13px;background:#fff;border-radius:14px;padding:13px;border:1px solid var(--line)}.cv{width:110px;height:152px;background:var(--pri);border-radius:5px;color:#fff;font-size:12.5px;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:7px;flex:none;position:relative}.cv.g{background:#17694F}.lk{position:absolute;right:5px;top:5px;background:#000a;border-radius:6px;padding:0 6px;font-size:12px}.bk b{font-size:17.5px;display:block}.bk .m{font-size:15px;color:var(--mut);line-height:1.45}.pill{display:inline-block;border-radius:9px;padding:3px 11px;font-size:14.5px;font-weight:700;margin-top:8px}.po{background:var(--okb);color:var(--ok)}.pn{background:#EFE9E5;color:#6c5f5c}
+.cap{font-size:18px;font-weight:700;margin:0 0 7px}
+</style>
+
+<section class="sheet">
+  <p class="ttl"><span class="tag rec">แนะนำ แบบ ก</span>ชุดสำเร็จ คู่กับตารางรายตำแหน่ง</p>
+  <p class="lead">กดชุดสำเร็จครั้งเดียวก็พอ ถ้าอยากละเอียดค่อยเลือกในตาราง ด้านล่างแปลเป็นคำพูดให้อ่านว่าใครอ่านอะไรได้</p>
+  <div class="pg">
+    <h2>สิทธิ์อ่านงานในคลัง</h2><p class="sub">ใช้กับแผน คู่มือ และบันทึกหลังแผน ที่ผ่านครบทุกระดับแล้ว คนที่ไม่มีสิทธิ์เห็นแค่ปกและชื่อเล่ม</p>
+    <div class="card"><h3>เลือกแบบเร็ว</h3><div class="pre" style="margin-top:8px">
+      <div class="p on"><b>เห็นแค่ปก</b>ครูทั่วไปเห็นแค่ปก แบบที่ใช้อยู่ตอนนี้</div>
+      <div class="p"><b>อ่านในกลุ่มสาระ</b>ครูอ่านเล่มในกลุ่มสาระตัวเองได้</div>
+      <div class="p"><b>อ่านได้ทั้งโรงเรียน</b>ทุกคนอ่านทุกเล่มได้</div>
+    </div></div>
+    <div class="card"><h3>กำหนดรายตำแหน่ง</h3>
+      <div class="r"><div><b>ครูทั่วไป</b><small>ครูที่ไม่มีหน้าที่ตรวจ</small></div><div class="seg"><span class="on">เห็นแค่ปก</span><span>กลุ่มสาระตัวเอง</span><span>ทุกเล่ม</span></div></div>
+      <div class="r"><div><b>หัวหน้ากลุ่มสาระ</b><small>ตรวจงานในกลุ่มสาระตัวเองอยู่แล้ว</small></div><div class="seg"><span class="no">เห็นแค่ปก</span><span class="on">กลุ่มสาระตัวเอง</span><span>ทุกเล่ม</span></div></div>
+      <div class="r"><div><b>ผู้ตรวจระดับโรงเรียนและผู้ดูแลระบบ</b><small>งานส่งเสริม วิชาการ รอง ผอ. ผอ. ต้องเปิดเพื่อตรวจงาน</small></div><div class="lock">อ่านทุกเล่มเสมอ</div></div>
+      <div class="r"><div><b>เจ้าของงาน</b></div><div class="lock">อ่านงานของตัวเองเสมอ</div></div>
+    </div>
+    <div class="say"><b>ตอนนี้ตั้งไว้แบบนี้</b>ครูทั่วไปเห็นแค่ปก อ่านได้เฉพาะงานของตัวเอง หัวหน้ากลุ่มสาระอ่านได้ในกลุ่มสาระตัวเอง</div>
+    <div class="btns"><span class="btn">บันทึกสิทธิ์</span><span class="btn gh">กลับเป็นค่าเดิม</span></div>
+  </div>
+</section>
+
+<section class="sheet">
+  <p class="ttl"><span class="tag">แบบ ข</span>เลือกชุดสำเร็จอย่างเดียว</p>
+  <p class="lead">ไม่มีตาราง เลือก 1 ใน 4 ข้อแล้วบันทึก ง่ายที่สุด แต่ปรับละเอียดไม่ได้</p>
+  <div class="two">
+    <div class="pg">
+      <h2>สิทธิ์อ่านงานในคลัง</h2><p class="sub">ทุกคนเห็นปกและชื่อเล่ม เลือกว่าใครเปิดอ่านเนื้อหาได้</p>
+      <div class="big">
+        <div class="bg on"><span class="rd"></span><div><b>เห็นแค่ปก</b><span class="d">ครูอ่านได้เฉพาะงานของตัวเอง ผู้ตรวจอ่านได้ตามหน้าที่ แบบที่ใช้อยู่ตอนนี้</span></div></div>
+        <div class="bg"><span class="rd"></span><div><b>อ่านในกลุ่มสาระ</b><span class="d">ครูอ่านเล่มในกลุ่มสาระตัวเองได้ กลุ่มอื่นเห็นแค่ปก</span></div></div>
+        <div class="bg"><span class="rd"></span><div><b>หัวหน้ากลุ่มสาระอ่านทุกเล่ม</b><span class="d">ครูยังเห็นแค่ปก หัวหน้ากลุ่มสาระดูตัวอย่างงานจากกลุ่มอื่นได้</span></div></div>
+        <div class="bg"><span class="rd"></span><div><b>อ่านได้ทั้งโรงเรียน</b><span class="d">ทุกคนอ่านทุกเล่มที่ผ่านครบ เหมาะตอนแลกเปลี่ยนเรียนรู้</span></div></div>
+      </div>
+      <div class="btns"><span class="btn">บันทึกสิทธิ์</span></div>
+    </div>
+    <div class="nt"><h4>เด่น</h4><ul><li>อ่านเข้าใจทันที กดครั้งเดียว</li><li>ไม่มีทางตั้งผิดจนงงเอง</li><li>ทำง่าย ใช้โควตาน้อยที่สุด</li></ul><h4>ข้อด้อย</h4><ul><li>ถ้าอยากได้แบบที่ไม่อยู่ใน 4 ข้อ ต้องกลับมาให้ผมเพิ่ม</li></ul></div>
+  </div>
+</section>
+
+<section class="sheet">
+  <p class="ttl"><span class="tag">เสริม เลือกได้</span>เปิดชั่วคราว และให้สิทธิ์รายคน ใช้ได้กับทั้งแบบ ก และ ข</p>
+  <p class="lead">เปิดเพิ่มให้เป็นครั้งคราวโดยไม่ต้องเปลี่ยนค่าหลัก ถึงวันสิ้นสุดแล้วระบบกลับเป็นค่าหลักเอง จะได้ไม่ลืมปิด</p>
+  <div class="pg">
+    <div class="card"><div class="line"><div style="flex:1"><h3>เปิดอ่านทั้งโรงเรียนชั่วคราว</h3><p class="s2" style="margin:0">เช่น ช่วงกรรมการมาดูงาน หรือช่วงแลกเปลี่ยนเรียนรู้</p></div><span style="font-size:16px">ถึงวันที่</span><span class="inp">30 พ.ย. 2569</span><span class="sw on"></span></div></div>
+    <div class="card"><h3>ให้สิทธิ์รายคน</h3><p class="s2">เช่น ครูพี่เลี้ยง หรือครูที่กำลังทำผลงาน เว้นวันสิ้นสุดไว้ถ้าไม่จำกัด</p>
+      <table class="tb"><tr><th>ชื่อ</th><th>อ่านได้</th><th>ถึงวันที่</th><th></th></tr>
+      <tr><td>นางสาวสมศรี ตัวอย่าง</td><td>ทุกเล่ม</td><td>30 พ.ย. 2569</td><td style="text-align:right"><span class="btn gh sm">เอาออก</span></td></tr>
+      <tr><td>นายสมชาย ใจดี</td><td>กลุ่มสาระตัวเอง</td><td>ไม่จำกัด</td><td style="text-align:right"><span class="btn gh sm">เอาออก</span></td></tr></table>
+      <div class="btns" style="margin-top:8px"><span class="btn gh sm">เพิ่มรายชื่อ</span></div>
+    </div>
+    <p class="cap" style="margin-top:14px">ครูจะเห็นในคลังงานแบบนี้</p>
+    <div class="books">
+      <div class="bk"><div class="cv"><span class="lk">ล็อก</span>แผนการจัดการเรียนรู้<br>ว30203</div><div><b>ไม่มีสิทธิ์อ่าน</b><div class="m">ฟิสิกส์เพิ่มเติม 3<br>ครูสมชาย ใจดี</div><span class="pill pn">เห็นแค่ปก</span></div></div>
+      <div class="bk"><div class="cv g">คู่มือรายวิชา<br>ว31101</div><div><b>มีสิทธิ์อ่าน</b><div class="m">วิทยาศาสตร์กายภาพ<br>ครูสมศรี ตัวอย่าง</div><span class="pill po">กดปกแล้วเปิดอ่านได้</span></div></div>
+    </div>
+  </div>
+</section>
+</html>

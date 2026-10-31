@@ -6,6 +6,7 @@ const db = require('../db');
 const { q, nowStr, getSettings, setSetting } = db;
 const auth = require('../auth');
 const homeorder = require('../homeorder');
+const readperm = require('../readperm');
 const wf = require('../workflow');
 const util = require('../util');
 const config = require('../config');
@@ -833,6 +834,61 @@ router.get('/settings', async (req, res) => {
   // ปุ่มปรับเลขย้อนหลัง: บอกจำนวนและตัวอย่างก่อนกด
   const docnoFix = req.ff.docnoreq ? docno.reformat(req.settings, await docNoRows()) : [];
   res.render('admin/settings', { title: 'ตั้งค่าโรงเรียน', themeList: themes.list(), webFonts: themes.webFontChoices(req.settings.theme), fxLevels: themes.FX_LEVELS, fxDefault: themes.FX_DEFAULT, themeOf: (k) => themes.resolve(k), siteFields: site.FIELDS, siteIcons: site.ICONS, docnoFix });
+});
+
+// ---------- สิทธิ์อ่านงานในคลัง (ฟังก์ชันเสริม readperm) ----------
+router.get('/readperm', async (req, res) => {
+  if (!req.ff.library || !req.ff.readperm) return fail(req, res, '/admin', 'ปิดฟังก์ชันสิทธิ์อ่านงานอยู่');
+  const cfg = readperm.config(req.settings, req.ff);
+  const users = await q.all('SELECT id, full_name FROM users WHERE is_active = 1 AND is_teacher = 1 ORDER BY full_name');
+  const nameOf = new Map(users.map((u) => [u.id, u.full_name]));
+  res.render('admin/readperm', {
+    title: 'สิทธิ์อ่านงานในคลัง',
+    cfg,
+    levels: readperm.LEVELS,
+    label: readperm.LABEL,
+    users,
+    people: cfg.people.filter((p) => nameOf.has(p.id)).map((p) => ({ ...p, name: nameOf.get(p.id) })),
+    tempActive: readperm.stillOn(cfg.tempUntil),
+  });
+});
+
+router.post('/readperm', async (req, res) => {
+  if (!req.ff.library || !req.ff.readperm) return fail(req, res, '/admin', 'ปิดฟังก์ชันสิทธิ์อ่านงานอยู่');
+  const b = req.body || {};
+  if (b.action === 'reset') {
+    for (const [k, v] of [['read_teacher', 'cover'], ['read_depthead', 'dept'], ['read_unapproved', '0'], ['read_temp_on', '0'], ['read_temp_until', ''], ['read_people', '[]']]) await setSetting(k, v);
+    await features.audit(req.me, 'กลับสิทธิ์อ่านงานเป็นค่าเริ่มต้น', 'read_perm');
+    return done(req, res, '/admin/readperm', 'กลับเป็นค่าเริ่มต้นแล้ว');
+  }
+  const tempOn = Boolean(b.read_temp_on);
+  const until = readperm.inDate(b.read_temp_until) ? b.read_temp_until : '';
+  if (tempOn && !until) return fail(req, res, '/admin/readperm', 'เปิดชั่วคราวต้องเลือกวันสิ้นสุดก่อน');
+  const teacher = readperm.LEVELS.includes(b.read_teacher) ? b.read_teacher : 'cover';
+  const depthead = b.read_depthead === 'all' ? 'all' : 'dept';
+  const ids = asArray(b.person_id);
+  const levels = asArray(b.person_level);
+  const untils = asArray(b.person_until);
+  const seen = new Set();
+  const people = [];
+  ids.forEach((raw, i) => {
+    const id = Number(raw);
+    if (!Number.isInteger(id) || seen.has(id)) return;
+    seen.add(id);
+    people.push({ id, level: levels[i] === 'dept' ? 'dept' : 'all', until: readperm.inDate(untils[i]) ? untils[i] : '' });
+  });
+  await setSetting('read_teacher', teacher);
+  await setSetting('read_depthead', depthead);
+  await setSetting('read_unapproved', b.read_unapproved ? '1' : '0');
+  await setSetting('read_temp_on', tempOn ? '1' : '0');
+  await setSetting('read_temp_until', until);
+  await setSetting('read_people', JSON.stringify(people));
+  await features.audit(
+    req.me,
+    `ตั้งสิทธิ์อ่านงาน ครูทั่วไป${readperm.LABEL[teacher]} หัวหน้ากลุ่มสาระ${readperm.LABEL[depthead]} เล่มที่ยังไม่ผ่านครบ${b.read_unapproved ? 'เปิด' : 'ปิด'} ชั่วคราว${tempOn ? 'ถึง ' + until : 'ปิด'} รายคน ${people.length} คน`,
+    'read_perm'
+  );
+  done(req, res, '/admin/readperm', 'บันทึกสิทธิ์อ่านงานแล้ว มีผลทันที');
 });
 
 // ---------- ลำดับหน้าแรก (ฟังก์ชันเสริม homeorder) ----------

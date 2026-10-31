@@ -139,7 +139,7 @@ async function viewable(req, id, opts) {
 async function readable(req, id, { book = false, ...opts } = {}) {
   const sub = await loadSub(id, opts);
   if (!sub) return null;
-  if ((await wf.canView(req.me, sub)) || (await library.readable(req.ff, sub, { book }))) return sub;
+  if ((await wf.canView(req.me, sub)) || (await library.readable(req.ff, sub, { book }, req.me))) return sub;
   return null;
 }
 

@@ -301,3 +301,69 @@ test('deptall: ผู้ดูแลเห็นทุกกลุ่มแย�
   assert.doesNotMatch(off, /สถานะทุกกลุ่มสาระ|class="dept-group"|value="all"/);
   await db.setSetting('ff_deptall', '1');
 });
+
+test('readperm: คุมสิทธิ์อ่านรายตำแหน่ง เล่มที่ยังไม่ผ่านครบ เปิดชั่วคราว รายคน และปิดกลับแบบเดิม', async () => {
+  const signIn = async (username) => {
+    const res = await fetch(base + '/login', { method: 'POST', redirect: 'manual', body: new URLSearchParams({ username, password: seed.DEMO_PASSWORD }) });
+    return res.headers.getSetCookie().map((c) => c.split(';')[0]).join('; ');
+  };
+  const admin = await signIn('admin');
+  const me = await db.q.get("SELECT id, department_id FROM users WHERE username = 'teacher'");
+  const fileOf = async (where, ...params) => {
+    const f = await db.q.get(`SELECT f.id FROM files f JOIN submissions s ON s.id = f.submission_id WHERE f.is_current = 1 AND s.doc_type IN ('plan', 'manual') AND s.teacher_id != ? AND ${where} ORDER BY f.id LIMIT 1`, me.id, ...params);
+    assert.ok(f, 'ข้อมูลทดลองต้องมีไฟล์นี้ ' + where);
+    return f.id;
+  };
+  const otherApproved = await fileOf("s.status = 'approved' AND s.department_id != ?", me.department_id);
+  const otherPending = await fileOf("s.status = 'pending' AND s.department_id != ?", me.department_id);
+  // ข้อมูลทดลองไม่มีเล่มผ่านครบในกลุ่มสาระเดียวกัน จึงตั้งให้เล่มหนึ่งผ่านครบชั่วคราวในฐานข้อมูลของตัวทดสอบ
+  const same = await db.q.get("SELECT s.id FROM submissions s JOIN files f ON f.submission_id = s.id AND f.is_current = 1 WHERE s.doc_type IN ('plan', 'manual') AND s.status = 'pending' AND s.teacher_id != ? AND s.department_id = ? ORDER BY s.id LIMIT 1", me.id, me.department_id);
+  assert.ok(same);
+  await db.q.run("UPDATE submissions SET status = 'approved' WHERE id = ?", same.id);
+  const sameApproved = await fileOf("s.status = 'approved' AND s.department_id = ?", me.department_id);
+  const status = async (id) => (await fetch(`${base}/f/${id}/view`, { redirect: 'manual', headers: { cookie } })).status;
+  const save = (fields) => fetch(base + '/admin/readperm', { method: 'POST', redirect: 'manual', headers: { cookie: admin }, body: new URLSearchParams({ action: 'save', read_depthead: 'dept', ...fields }) });
+
+  const page2 = await (await fetch(base + '/admin/readperm', { headers: { cookie: admin } })).text();
+  assert.match(page2, /data-readperm/);
+  assert.equal((await fetch(base + '/admin/readperm', { redirect: 'manual', headers: { cookie } })).status === 200, false, 'ครูเข้าหน้านี้ไม่ได้');
+
+  // ค่าเริ่มต้น ครูเห็นแค่ปก
+  assert.equal(await status(otherApproved), 404);
+  assert.equal(await status(sameApproved), 404);
+  // กลุ่มสาระตัวเอง
+  await save({ read_teacher: 'dept' });
+  assert.notEqual(await status(sameApproved), 404);
+  assert.equal(await status(otherApproved), 404);
+  // ทุกเล่ม เล่มที่ยังไม่ผ่านครบยังอ่านไม่ได้จนกว่าจะเปิดสวิตช์
+  await save({ read_teacher: 'all' });
+  assert.notEqual(await status(otherApproved), 404);
+  assert.equal(await status(otherPending), 404);
+  await save({ read_teacher: 'all', read_unapproved: '1' });
+  assert.notEqual(await status(otherPending), 404);
+  // ระดับเห็นแค่ปก เปิดสวิตช์ก็ไม่เพิ่มสิทธิ์
+  await save({ read_teacher: 'cover', read_unapproved: '1' });
+  assert.equal(await status(otherPending), 404);
+  // เปิดชั่วคราว ต้องมีวันสิ้นสุด เลยวันแล้วกลับเป็นค่าหลัก
+  await save({ read_teacher: 'cover', read_temp_on: '1' });
+  assert.equal((await db.getSettings()).read_temp_on, '0', 'ไม่มีวันสิ้นสุดไม่บันทึก');
+  await save({ read_teacher: 'cover', read_temp_on: '1', read_temp_until: '2099-12-31' });
+  assert.notEqual(await status(otherApproved), 404);
+  await save({ read_teacher: 'cover', read_temp_on: '1', read_temp_until: '2000-01-01' });
+  assert.equal(await status(otherApproved), 404);
+  // รายคน และวันสิ้นสุด
+  await save({ read_teacher: 'cover', person_id: String(me.id), person_level: 'all', person_until: '2099-12-31' });
+  assert.notEqual(await status(otherApproved), 404);
+  await save({ read_teacher: 'cover', person_id: String(me.id), person_level: 'all', person_until: '2000-01-01' });
+  assert.equal(await status(otherApproved), 404);
+  // ปิดฟังก์ชันเสริม ค่าที่ตั้งไว้ไม่มีผล
+  await save({ read_teacher: 'all' });
+  await db.setSetting('ff_readperm', '0');
+  assert.equal(await status(otherApproved), 404);
+  await db.setSetting('ff_readperm', '1');
+  // กลับเป็นค่าเริ่มต้น
+  await fetch(base + '/admin/readperm', { method: 'POST', redirect: 'manual', headers: { cookie: admin }, body: new URLSearchParams({ action: 'reset' }) });
+  assert.equal(await status(otherApproved), 404);
+  assert.ok(await db.q.get("SELECT 1 AS x FROM audit_log WHERE action ILIKE 'ตั้งสิทธิ์อ่านงาน%'"));
+  await db.q.run("UPDATE submissions SET status = 'pending' WHERE id = ?", same.id);
+});

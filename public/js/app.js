@@ -2700,6 +2700,51 @@
     })
   );
 
+  // ---------- สิทธิ์อ่านงานในคลัง แบบเร็ว สรุปคำพูด และรายคน (ฟังก์ชันเสริม readperm) ----------
+  document.querySelectorAll('[data-readperm]').forEach((form) => {
+    const say = form.querySelector('[data-rp-say]');
+    const LABEL = { cover: 'เห็นแค่ปก อ่านได้เฉพาะงานของตัวเอง', dept: 'อ่านเล่มในกลุ่มสาระตัวเองได้', all: 'อ่านทุกเล่มได้' };
+    const val = (n) => {
+      const x = form.querySelector('input[name=' + n + ']:checked');
+      return x ? x.value : '';
+    };
+    const sync = () => {
+      const t = val('read_teacher');
+      const h = val('read_depthead');
+      form.querySelectorAll('[data-rp-preset]').forEach((b) => b.classList.toggle('on', b.dataset.rpPreset === t + ',' + h));
+      const parts = ['ครูทั่วไป' + LABEL[t], 'หัวหน้ากลุ่มสาระ' + LABEL[h]];
+      parts.push(form.elements.read_unapproved.checked ? 'เล่มที่รอลงนามอ่านได้ตามสิทธิ์นี้' : 'เล่มที่ยังไม่ผ่านครบ คนอื่นเห็นแค่ปก');
+      if (form.elements.read_temp_on.checked) parts.push('เปิดอ่านทั้งโรงเรียนชั่วคราวถึงวันที่เลือก');
+      const n = form.querySelectorAll('[data-rp-row]').length;
+      if (n) parts.push('ให้สิทธิ์รายคน ' + n + ' คน');
+      say.textContent = parts.join(' และ ');
+    };
+    form.addEventListener('change', sync);
+    form.addEventListener('click', (e) => {
+      const pre = e.target.closest('[data-rp-preset]');
+      if (pre) {
+        const [t, h] = pre.dataset.rpPreset.split(',');
+        form.querySelector('input[name=read_teacher][value=' + t + ']').checked = true;
+        form.querySelector('input[name=read_depthead][value=' + h + ']').checked = true;
+      }
+      const rm = e.target.closest('[data-rp-remove]');
+      if (rm) rm.closest('[data-rp-row]').remove();
+      if (e.target.closest('[data-rp-add]')) {
+        const pick = form.querySelector('[data-rp-pick]');
+        const id = pick.value;
+        if (id && !form.querySelector('input[name=person_id][value="' + id + '"]')) {
+          const row = form.querySelector('[data-rp-template]').content.firstElementChild.cloneNode(true);
+          row.querySelector('input[name=person_id]').value = id;
+          row.querySelector('[data-rp-name]').textContent = pick.options[pick.selectedIndex].textContent;
+          form.querySelector('[data-rp-people] tbody').appendChild(row);
+        }
+        pick.value = '';
+      }
+      if (pre || rm || e.target.closest('[data-rp-add]')) sync();
+    });
+    sync();
+  });
+
   // ---------- จัดลำดับหน้าแรก ลากหรือกดลูกศร ภาพย่อขยับตาม (ฟังก์ชันเสริม homeorder) ----------
   // ใช้ pointer events จึงลากได้ทั้งเมาส์และนิ้ว ส่วนลูกศรเป็นทางสำรองที่กดได้แน่นอนทุกเครื่อง
   document.querySelectorAll('[data-home-order]').forEach((form) => {

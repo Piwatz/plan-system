@@ -5,6 +5,7 @@ const crypto = require('crypto');
 const { q } = require('./db');
 const wf = require('./workflow');
 const { DRAWN } = require('./upload');
+const readperm = require('./readperm');
 
 // โหลดทีละหน้า หน้าละ 24 เล่ม
 const PAGE = 24;
@@ -156,10 +157,12 @@ async function recent(n = 6, rule = showRule({})) {
   );
 }
 
-// เปิดอ่านได้ไหม: สวิตช์ libread เปิด = ทุกเล่ม · ปิด = งานของตัวเอง ผู้ดูแลระบบ และผู้ตรวจตามสิทธิ์เดิม (ทั้งโรงเรียน หรือกลุ่มสาระตนเอง)
+// เปิดอ่านได้ไหม: งานของตัวเอง ผู้ดูแลระบบ และผู้ตรวจตามสิทธิ์เดิม (ทั้งโรงเรียน หรือกลุ่มสาระตนเอง) · คนอื่นตามหน้าสิทธิ์อ่านงาน (readperm) ถ้าปิดใช้สวิตช์ libread
 // งานที่ยังไม่ผ่านครบ สวิตช์ libread ไม่ทำให้คนอื่นเปิดได้ (ใช้สิทธิ์ผู้ตรวจเดิม)
 function canOpen(me, row, ff) {
-  if (me.is_admin || me.id === row.teacher_id || (ff.libread && (!row.st || row.st === 'approved'))) return true;
+  if (me.is_admin || me.id === row.teacher_id) return true;
+  const a = readperm.access(me, ff);
+  if (readperm.reaches(me, a, row.department_id) && (!row.st || readperm.statusOk(a, row.st))) return true;
   return (me.roles || []).some((r) => {
     const st = wf.stepOf(r);
     return st && (st.scope === 'school' || (st.scope === 'department' && me.department_id === row.department_id));
@@ -233,18 +236,20 @@ function decorate(rows, me, ff, rule = null) {
   return rows.map((r) => ({ ...r, gradeText: gradeText(r.grade_level), termText: termText(r), waitText: waitText(r), hiddenWhy: admin ? hiddenWhy(r, rule) : '', showBtn: admin ? (r.shown === false ? 'show' : 'hide') : '', open: canOpen(me, r, ff), href: openHref(r), cover: coverUrl(r), swap: swapOf(r, me, ff), pdfCover: pdfCoverOf(r, me, ff), mine: me.id === r.teacher_id, shelfLabel: (SHELF[r.kind] || {}).label || '' }));
 }
 
-// เปิดอ่านงานคนอื่นจากคลังได้ไหม (สวิตช์ libread) ใช้กับไฟล์งานและหน้าพิมพ์บันทึกหลังแผนทั้งเล่ม
+// เปิดอ่านงานคนอื่นจากคลังได้ไหม (readperm หรือสวิตช์ libread) ใช้กับไฟล์งานและหน้าพิมพ์บันทึกหลังแผนทั้งเล่ม
 // แผนและคู่มือต้องผ่านครบ · บันทึกหลังแผน (หรือแผนที่เปิดทั้งเล่ม) ต้องอยู่ในเล่มที่ผ่านครบทั้งเล่ม
-async function readable(ff, sub, { book = false } = {}) {
-  if (!ff.library || !ff.libread || !sub) return false;
-  if (!book && (sub.doc_type === 'plan' || sub.doc_type === 'manual')) return sub.status === 'approved';
+async function readable(ff, sub, { book = false } = {}, me = null) {
+  if (!ff.library || !sub || !me) return false;
+  const a = readperm.access(me, ff);
+  if (!readperm.reaches(me, a, sub.department_id)) return false;
+  if (!book && (sub.doc_type === 'plan' || sub.doc_type === 'manual')) return readperm.statusOk(a, sub.status);
   const planId = book ? sub.id : sub.doc_type === 'note' ? sub.parent_id : null;
-  if (!planId || (!book && sub.status !== 'approved')) return false;
+  if (!planId || (!book && !readperm.statusOk(a, sub.status))) return false;
   const r = await q.get(
-    "SELECT COUNT(*)::int AS n, SUM(CASE WHEN status = 'approved' THEN 0 ELSE 1 END)::int AS bad FROM submissions WHERE parent_id = ? AND doc_type = 'note' AND status != 'draft'",
+    "SELECT COUNT(*)::int AS n, SUM(CASE WHEN status = 'approved' THEN 0 ELSE 1 END)::int AS bad, SUM(CASE WHEN status = 'returned' THEN 1 ELSE 0 END)::int AS ret FROM submissions WHERE parent_id = ? AND doc_type = 'note' AND status != 'draft'",
     planId
   );
-  return r.n > 0 && !r.bad;
+  return r.n > 0 && !(a.unapproved ? r.ret : r.bad);
 }
 
 module.exports = { DRAWN, PAGE, COVER_MAX, SHELVES, SHELF, page, recent, canOpen, openHref, coverUrl, gradeText, termText, waitText, SHOW_MODES, showRule, visibleSql, bookState, decorate, readable };
