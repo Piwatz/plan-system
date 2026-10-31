@@ -23,6 +23,7 @@ const planrange = require('../planrange');
 const rooms = require('../rooms');
 const trashbin = require('../trashbin');
 const transfer = require('../transfer');
+const myphrases = require('../myphrases');
 
 const router = express.Router();
 router.use(auth.requireLogin);
@@ -736,6 +737,9 @@ router.get('/s/:id', async (req, res) => {
     parent,
     steps: await wf.progress(sub, { reviews }),
     canReview: canSign && !book,
+    saved: canSign && !book ? await myphrases.load(req) : null,
+    sayNote: myphrases.NOTE_SAYS,
+    sayWork: myphrases.WORK_SAYS,
     bookSign: canSign && book,
     noteReturns,
     bookWaiting: req.ff.notebook ? notes.filter((n) => wf.canReview(req.me, n)).length : 0,
@@ -1453,7 +1457,7 @@ router.get('/s/:id/book', async (req, res) => {
   }
   const total = (await q.get("SELECT COUNT(*) AS n FROM submissions WHERE parent_id = ? AND doc_type = 'note' AND status != 'draft'", plan.id)).n;
   const step = sheets.length ? wf.stepOf(sheets[0].current_role) : null;
-  res.render('note_book', { title: `ลงนามบันทึกหลังแผน ${plan.subject_code}`, plan, sheets, files, total: Number(total), step, isOwner: wf.isOwner(req.me, plan) });
+  res.render('note_book', { title: `ลงนามบันทึกหลังแผน ${plan.subject_code}`, plan, sheets, files, total: Number(total), step, isOwner: wf.isOwner(req.me, plan), saved: await myphrases.load(req), sayList: myphrases.NOTE_SAYS });
 });
 
 // ความเห็นรายแผ่น ช่อง comment_<รหัสแผ่น> ค่าเริ่มต้น รับทราบ
@@ -1489,6 +1493,7 @@ router.post('/s/:id/book/approve', async (req, res) => {
     req.me,
     { comments }
   );
+  await myphrases.remember(req, Object.values(comments));
   const next = await nextInboxUrl(req);
   const msg = `ลงนามบันทึกหลังแผนทั้งเล่มเรียบร้อย ${done} แผ่น`;
   respond(req, res, next || '/inbox', 'success', next ? `${msg} ต่อไปเป็นงานถัดไปที่รอคุณ` : msg);
@@ -1513,6 +1518,7 @@ router.post('/s/:id/book/return', async (req, res) => {
     req.me,
     { comments }
   );
+  await myphrases.remember(req, fixed.map((x) => sheetComment(b, x.id)));
   respond(req, res, '/inbox', 'success', `ส่งกลับทั้งเล่มให้ครูแก้ไขเรียบร้อย ${n} แผ่น (${which})`);
 });
 
@@ -1552,6 +1558,7 @@ router.post('/s/:id/approve', async (req, res) => {
   await applySignature(req);
   const b = req.body || {};
   const after = await wf.approve(sub.id, req.me, { comment: str(b.comment), scores: collectScores(b) });
+  await myphrases.remember(req, [b.comment]);
   const next = await nextInboxUrl(req);
   const msg =
     after.status === 'approved' ? 'ลงนามเรียบร้อย งานนี้ผ่านครบทุกระดับแล้ว' : `ลงนามเรียบร้อย ส่งต่อให้${wf.stepOf(after.current_role).label}แล้ว`;
@@ -1563,6 +1570,7 @@ router.post('/s/:id/return', async (req, res) => {
   if (!sub) throw new UserError('ไม่พบงานนี้');
   noBookSingle(req, sub);
   await wf.sendBack(sub.id, req.me, { comment: str((req.body || {}).comment) });
+  await myphrases.remember(req, [(req.body || {}).comment]);
   respond(req, res, '/inbox', 'success', 'ส่งกลับให้ครูแก้ไขเรียบร้อย');
 });
 
@@ -1607,6 +1615,7 @@ router.post('/inbox/approve-many', async (req, res) => {
   if (!ids.length) throw new UserError('ยังไม่ได้เลือกรายการ');
   // ลงนามทุกงานที่เลือกใน transaction เดียว ข้ามงานที่ต้องให้คะแนนก่อน หรือไม่ได้รอคุณแล้ว
   const { done, skipped } = await wf.approveMany(ids, req.me, { comment: str(b.comment) });
+  await myphrases.remember(req, [b.comment]);
   const extra = skipped ? ` ข้าม ${skipped} รายการที่ต้องให้คะแนนก่อน หรือไม่ได้รอคุณแล้ว` : '';
   respond(req, res, '/inbox', 'success', `ลงนามเรียบร้อย ${done} รายการ${extra}`);
 });

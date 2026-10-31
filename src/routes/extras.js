@@ -9,6 +9,7 @@ const { mySubjects, currentTerm, registryScope } = require('./pages');
 const { qrSvg } = require('./verify');
 const teaching = require('../teaching');
 const report = require('../reportsum');
+const myphrases = require('../myphrases');
 
 const router = express.Router();
 router.use(auth.requireLogin);
@@ -352,7 +353,7 @@ router.get('/quicksign', needFeature('quicksign'), async (req, res) => {
   const card = list[0] || null;
   let files = [];
   if (card) files = await q.all('SELECT id, original_name, mime FROM files WHERE submission_id = ? AND is_current = 1 ORDER BY id', card.id);
-  res.render('quicksign', { title: 'ลงนามบันทึกหลังแผน', card, files, left: list.length, signed, back, total: list.length + signed + back });
+  res.render('quicksign', { title: 'ลงนามบันทึกหลังแผน', card, files, left: list.length, signed, back, total: list.length + signed + back, saved: card ? await myphrases.load(req) : null, sayList: myphrases.QUICK_SAYS });
 });
 
 // บันทึกหลังแผนที่จะลงนามหรือส่งคืน ดึงแค่ id (การลงนามล็อกแถวและตรวจสิทธิ์เองใน workflow)
@@ -375,6 +376,7 @@ router.post('/quicksign/:id/approve', needFeature('quicksign'), noSingle, async 
   const sub = await noteOf(req.params.id);
   if (!sub) throw new wf.WorkflowError('ไม่พบบันทึกนี้');
   await wf.approve(sub.id, req.me, { comment: str(b.comment) || 'รับทราบ' });
+  await myphrases.remember(req, [b.comment]);
   res.redirect(qsNext(req, (Number(b.signed) || 0) + 1, Number(b.back) || 0));
 });
 
@@ -383,6 +385,7 @@ router.post('/quicksign/:id/return', needFeature('quicksign'), noSingle, async (
   const sub = await noteOf(req.params.id);
   if (!sub) throw new wf.WorkflowError('ไม่พบบันทึกนี้');
   await wf.sendBack(sub.id, req.me, { comment: str(b.comment) });
+  await myphrases.remember(req, [b.comment]);
   res.redirect(qsNext(req, Number(b.signed) || 0, (Number(b.back) || 0) + 1));
 });
 
@@ -393,6 +396,17 @@ router.post('/quicksign/approve-rest', needFeature('quicksign'), noSingle, async
   const ids = (await noteQueue(req.me)).map((s) => s.id);
   const { done: n } = await wf.approveMany(ids, req.me, { comment: str(b.comment) || 'รับทราบ' });
   res.redirect(qsNext(req, (Number(b.signed) || 0) + n, Number(b.back) || 0));
+});
+
+// ---------- คำของฉันในช่องความเห็น ----------
+
+router.post('/phrases', needFeature('myphrases'), async (req, res) => {
+  const b = req.body || {};
+  if (b.do === 'add') return res.json({ text: await myphrases.add(req.me.id, b.text) });
+  if (b.do === 'remove') await myphrases.remove(req.me.id, b.text);
+  else if (b.do === 'restore') await myphrases.restore(req.me.id);
+  else return res.status(400).json({ error: 'ไม่รู้จักคำสั่งนี้' });
+  res.json({ ok: true });
 });
 
 module.exports = router;

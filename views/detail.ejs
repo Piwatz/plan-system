@@ -96,7 +96,7 @@
 <% if (canReview) {
   const maxTotal = rubric.reduce((a, it) => a + it.max_score, 0);
   const prev = Object.fromEntries(scoreDetail.map((d) => [d.id, d.score]));
-  const sayList = isNote ? ['รับทราบ', 'ดีมาก เป็นแบบอย่างได้', 'ควรสอนซ่อมเสริมนักเรียนที่ยังไม่ผ่าน'] : ['เห็นควรอนุญาตให้ใช้', 'เห็นชอบ', 'ควรปรับแก้ตามข้อเสนอแนะ'];
+  const sayList = isNote ? sayNote : sayWork;
 %>
   <div class="<%= split ? 'review-split' : noteReview ? 'review-split note-review' : '' %>">
     <% if (split) { %>
@@ -144,7 +144,7 @@
       <div class="field" style="margin-top:12px">
         <label for="comment">ความเห็นของ<%= curStep.label %></label>
         <textarea id="comment" name="comment" style="min-height:80px" placeholder="<%= isNote ? 'เช่น รับทราบ ควรเพิ่มกิจกรรมเสริมสำหรับนักเรียนที่ยังไม่ผ่านเกณฑ์' : 'เช่น เห็นควรอนุญาตให้ใช้ หรือสิ่งที่ต้องปรับแก้' %>"></textarea>
-        <div class="chips"><% for (const say of sayList) { %><button type="button" class="chip" data-say="<%= say %>" data-target="comment"><%= say %></button><% } %></div>
+        <%- include('partials/saychips', { target: 'comment', says: sayList, saved }) %>
       </div>
       <div class="field">
         <span class="label">ลายเซ็น</span>

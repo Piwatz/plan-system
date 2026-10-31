@@ -1,7 +1,6 @@
 <%- include('partials/top') %>
 <%
   // ลงนามบันทึกหลังแผนทั้งเล่ม (ฟังก์ชันเสริม notebook): อ่านไล่ทีละแผ่น ความเห็นตั้งไว้ รับทราบ ทุกแผ่น แก้เฉพาะแผ่น แล้วลงนามครั้งเดียว
-  const sayList = ['รับทราบ', 'ดีมาก เป็นแบบอย่างได้', 'ควรสอนซ่อมเสริมนักเรียนที่ยังไม่ผ่าน'];
   const kpa = [['ด้านความรู้ (K)', 'result_k'], ['ด้านทักษะ / กระบวนการ (P)', 'result_p'], ['ด้านคุณลักษณะ (A)', 'result_a'], ['ปัญหา / อุปสรรค / แนวทางแก้ไข', 'problems'], ['ข้อเสนอแนะ', 'suggestions']];
   const viewable = (id) => (files.get(id) || []).filter((f) => /^(application\/pdf|image\/)/.test(f.mime));
 %>
@@ -61,7 +60,7 @@
         <div class="field" style="margin:14px 0 0">
           <label for="comment_<%= n.id %>">ความเห็นแผ่นนี้</label>
           <input type="text" id="comment_<%= n.id %>" name="comment_<%= n.id %>" value="รับทราบ" maxlength="500">
-          <div class="chips"><% for (const say of sayList) { %><button type="button" class="chip<%= say === 'รับทราบ' ? ' on' : '' %>" data-say="<%= say %>" data-target="comment_<%= n.id %>"><%= say %></button><% } %></div>
+          <%- include('partials/saychips', { target: `comment_${n.id}`, says: sayList, on: 'รับทราบ', saved }) %>
         </div>
         <label class="check" style="margin-top:10px"><input type="checkbox" name="fix" value="<%= n.id %>"> แผ่นนี้ต้องแก้ (ใช้เมื่อส่งกลับทั้งเล่ม เขียนสิ่งที่ต้องแก้ในช่องความเห็น)</label>
       </article>

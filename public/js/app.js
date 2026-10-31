@@ -2775,7 +2775,7 @@
   );
 
   // ---------- ปุ่มความเห็นสำเร็จรูปของผู้ตรวจ ----------
-  document.querySelectorAll('[data-say]').forEach((c) =>
+  document.querySelectorAll('[data-say]:not(.say-text)').forEach((c) =>
     c.addEventListener('click', () => {
       const input = document.getElementById(c.dataset.target);
       if (!input) return;
@@ -2783,6 +2783,145 @@
       document.querySelectorAll('[data-say][data-target="' + c.dataset.target + '"]').forEach((x) => x.classList.toggle('on', x === c));
     })
   );
+
+  // ---------- คำของฉันในช่องความเห็น (ฟังก์ชันเสริม myphrases) ----------
+  const sayBoxes = [...document.querySelectorAll('[data-say-box]')];
+  if (sayBoxes.length) {
+    const sayNorm = (v) => String(v || '').replace(/\s+/g, ' ').trim();
+    const sayItems = (box) => [...box.querySelectorAll('[data-say-item]')];
+    const sayOf = (item) => item.querySelector('[data-say]').dataset.say;
+    const sayFind = (box, text) => sayItems(box).find((x) => sayOf(x) === text);
+
+    const sayPost = async (data) => {
+      const res = await fetch('/phrases', {
+        method: 'POST',
+        headers: { 'X-Requested-With': 'XMLHttpRequest', 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: new URLSearchParams(data),
+      });
+      const out = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(out.error || 'บันทึกไม่สำเร็จ ลองใหม่อีกครั้ง');
+      return out;
+    };
+
+    // ปุ่ม จำข้อความนี้ ขึ้นเมื่อในช่องมีข้อความที่ยังไม่อยู่ในรายการ · คำใน ใช้ล่าสุด กดจำเก็บถาวรได้
+    const sayRefresh = (box) => {
+      const input = document.getElementById(box.dataset.target);
+      const text = sayNorm(input && input.value);
+      const known = sayFind(box, text);
+      const isNew = text && text.length <= Number(box.dataset.max) && (!known || known.hidden || known.classList.contains('recent'));
+      box.querySelector('[data-say-keep]').hidden = !isNew;
+      box.querySelector('[data-say-restore]').hidden = !sayItems(box).some((x) => x.dataset.def && x.hidden);
+      const recent = box.querySelector('[data-say-recent]');
+      recent.hidden = !recent.querySelector('[data-say-item]');
+    };
+
+    // ทุกช่องในหน้า (หน้าลงนามทั้งเล่มมีหลายช่อง) ใช้รายการเดียวกัน
+    const sayAddShow = (text) => {
+      for (const box of sayBoxes) {
+        const old = sayFind(box, text);
+        if (old && old.classList.contains('recent')) old.remove();
+        const same = sayFind(box, text);
+        if (same) {
+          same.hidden = false;
+        } else {
+          const item = box.querySelector('[data-say-tpl]').content.firstElementChild.cloneNode(true);
+          const btn = item.querySelector('.say-text');
+          btn.dataset.say = text;
+          btn.textContent = text;
+          box.querySelector('[data-say-list]').insertBefore(item, box.querySelector('[data-say-open]'));
+        }
+        sayRefresh(box);
+      }
+    };
+
+    const saySave = async (value) => {
+      const text = sayNorm(value);
+      if (!text) {
+        await tell('ยังไม่ได้พิมพ์ข้อความ');
+        return false;
+      }
+      if (!(await ask('จำคำนี้ไว้ใช้ครั้งถัดไป\n' + text, { ok: 'จำคำนี้' }))) return false;
+      try {
+        sayAddShow((await sayPost({ do: 'add', text })).text);
+        return true;
+      } catch (err) {
+        await tell(err.message);
+        return false;
+      }
+    };
+
+    const sayAddClose = (box) => {
+      box.querySelector('[data-say-add]').hidden = true;
+      box.querySelector('[data-say-input]').value = '';
+    };
+
+    for (const box of sayBoxes) {
+      const input = document.getElementById(box.dataset.target);
+      if (input) input.addEventListener('input', () => sayRefresh(box));
+      const addInput = box.querySelector('[data-say-input]');
+      // Enter ในช่องนี้ต้องไม่ส่งฟอร์มลงนาม
+      addInput.addEventListener('keydown', (e) => {
+        if (e.key !== 'Enter') return;
+        e.preventDefault();
+        box.querySelector('[data-say-save]').click();
+      });
+      box.addEventListener('click', async (e) => {
+        const say = e.target.closest('[data-say]');
+        if (say) {
+          if (input) input.value = say.dataset.say;
+          sayItems(box).forEach((x) => x.classList.toggle('on', x === say.closest('[data-say-item]')));
+          sayRefresh(box);
+          return;
+        }
+        const del = e.target.closest('[data-say-del]');
+        if (del) {
+          const text = sayOf(del.closest('[data-say-item]'));
+          if (!(await ask('ลบคำนี้ออกจากรายการของคุณ\n' + text, { danger: true, icon: 'danger', ok: 'ลบคำนี้' }))) return;
+          try {
+            await sayPost({ do: 'remove', text });
+          } catch (err) {
+            await tell(err.message);
+            return;
+          }
+          for (const b of sayBoxes) {
+            const item = sayFind(b, text);
+            if (item) {
+              if (item.dataset.def) item.hidden = true;
+              else item.remove();
+            }
+            sayRefresh(b);
+          }
+          return;
+        }
+        if (e.target.closest('[data-say-open]')) {
+          box.querySelector('[data-say-add]').hidden = false;
+          addInput.value = input ? sayNorm(input.value).slice(0, Number(box.dataset.max)) : '';
+          addInput.focus();
+        } else if (e.target.closest('[data-say-cancel]')) {
+          sayAddClose(box);
+        } else if (e.target.closest('[data-say-save]')) {
+          if (await saySave(addInput.value)) sayAddClose(box);
+        } else if (e.target.closest('[data-say-keep]')) {
+          await saySave(input && input.value);
+        } else if (e.target.closest('[data-say-restore]')) {
+          if (!(await ask('คืนคำเดิมที่ลบไปกลับมาทั้งหมด', { ok: 'คืนคำเดิม' }))) return;
+          try {
+            await sayPost({ do: 'restore' });
+          } catch (err) {
+            await tell(err.message);
+            return;
+          }
+          for (const b of sayBoxes) {
+            sayItems(b).forEach((x) => {
+              if (x.dataset.def) x.hidden = false;
+            });
+            sayRefresh(b);
+          }
+        }
+      });
+      sayRefresh(box);
+    }
+  }
 
   // ---------- กราฟผลการสอน: แตะแท่งเพื่อดูรายละเอียด ----------
   document.querySelectorAll('[data-bars]').forEach((box) => {

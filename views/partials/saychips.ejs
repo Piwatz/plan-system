@@ -1,0 +1,33 @@
+<%# ปุ่มความเห็นใต้ช่องความเห็น รับ target says on(คำที่เลือกไว้) saved(จาก myphrases.load) · saved เป็น null = ปุ่มแบบเดิม %>
+<% const onSay = typeof on === 'undefined' ? '' : on; %>
+<% if (!saved) { %>
+  <div class="chips"><% for (const say of says) { %><button type="button" class="chip<%= say === onSay ? ' on' : '' %>" data-say="<%= say %>" data-target="<%= target %>"><%= say %></button><% } %></div>
+<% } else { %>
+  <div class="say-box" data-say-box data-target="<%= target %>" data-max="<%= saved.maxLen %>">
+    <div class="chips" data-say-list>
+      <% for (const say of says) { %>
+        <span class="say-item<%= say === onSay ? ' on' : '' %>" data-say-item data-def="1"<%= saved.hidden.includes(say) ? ' hidden' : '' %>><button type="button" class="say-text" data-say="<%= say %>" data-target="<%= target %>"><%= say %></button><button type="button" class="say-x" data-say-del aria-label="ลบคำนี้"><%- icon('close', 12) %></button></span>
+      <% } %>
+      <% for (const say of saved.mine) { %>
+        <span class="say-item mine" data-say-item><button type="button" class="say-text" data-say="<%= say %>" data-target="<%= target %>"><%= say %></button><button type="button" class="say-x" data-say-del aria-label="ลบคำนี้"><%- icon('close', 12) %></button></span>
+      <% } %>
+      <button type="button" class="say-tool" data-say-open>+ เพิ่มคำ</button>
+      <button type="button" class="say-tool" data-say-keep hidden>จำข้อความนี้</button>
+      <button type="button" class="say-tool" data-say-restore hidden>คืนคำเดิม</button>
+    </div>
+    <div class="say-add" data-say-add hidden>
+      <input type="text" data-say-input maxlength="<%= saved.maxLen %>" aria-label="คำที่ต้องการจำไว้" placeholder="พิมพ์คำที่ใช้บ่อย">
+      <div class="say-add-row">
+        <button type="button" class="btn btn-sm btn-ghost" data-say-cancel>ยกเลิก</button>
+        <button type="button" class="btn btn-sm btn-primary" data-say-save>จำคำนี้</button>
+      </div>
+    </div>
+    <div class="say-recent" data-say-recent<%= saved.recent.length ? '' : ' hidden' %>>
+      <span class="say-label">ใช้ล่าสุด</span>
+      <% for (const say of saved.recent) { %>
+        <span class="say-item recent" data-say-item><button type="button" class="say-text" data-say="<%= say %>" data-target="<%= target %>"><%= say %></button><button type="button" class="say-x" data-say-del aria-label="ลบคำนี้"><%- icon('close', 12) %></button></span>
+      <% } %>
+    </div>
+    <template data-say-tpl><span class="say-item mine" data-say-item><button type="button" class="say-text" data-target="<%= target %>"></button><button type="button" class="say-x" data-say-del aria-label="ลบคำนี้"><%- icon('close', 12) %></button></span></template>
+  </div>
+<% } %>

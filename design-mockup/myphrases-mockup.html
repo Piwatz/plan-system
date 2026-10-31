@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="th"><head><meta charset="utf-8">
+<link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+:root{--primary:#8b1a2b;--ink:#2c1a1a;--muted:#8a7f7a;--line:#e4ddd6;--soft:#fbf1f1;--bg:#f6f3ee;--gold:#a88a5a;--ok:#1f7354}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);font-family:Sarabun,Tahoma,sans-serif;color:var(--ink);padding:22px;width:1320px}
+h1{font-size:25px;margin:0 0 4px}
+.sub{color:var(--muted);margin:0 0 18px;font-size:16px}
+.cols{display:grid;grid-template-columns:repeat(3,1fr);gap:18px}
+.col h2{font-size:21px;margin:0 0 2px;color:var(--primary)}
+.col p.d{margin:0 0 10px;font-size:15px;line-height:1.45;min-height:66px}
+.card{background:#fff;border:2px solid var(--gold);border-radius:18px;padding:16px;margin-bottom:12px}
+.step{font-weight:700;font-size:14px;color:var(--muted);margin:0 0 6px}
+label{font-weight:600;font-size:16px;display:block;margin-bottom:6px}
+.ta{border:1.5px solid var(--line);border-radius:12px;padding:10px 12px;min-height:66px;font-size:16px}
+.ta.ph{color:#b5aca6}
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+.chip{border:1.5px solid var(--line);background:#fff;border-radius:999px;padding:6px 12px;font-size:15px;line-height:1.35}
+.chip.mine{border-color:var(--primary);background:var(--soft)}
+.chip.add{border:1.5px dashed var(--primary);color:var(--primary);font-weight:600}
+.chip.on{background:var(--primary);color:#fff;border-color:var(--primary)}
+.x{display:inline-block;margin-left:6px;color:var(--primary);font-weight:700}
+.tip{outline:3px solid #d62828;outline-offset:2px}
+.box{border:1.5px solid var(--primary);border-radius:12px;padding:10px;margin-top:8px;background:var(--soft)}
+.inp{background:#fff;border:1.5px solid var(--line);border-radius:10px;padding:7px 10px;font-size:15px;margin-bottom:8px}
+.row{display:flex;gap:6px;justify-content:flex-end;align-items:center}
+.btn{border-radius:10px;padding:6px 14px;font-size:15px;font-weight:600;border:1.5px solid var(--line);background:#fff}
+.btn.p{background:var(--primary);color:#fff;border-color:var(--primary)}
+.small{font-size:13.5px;color:var(--muted);margin-top:6px}
+.good{font-size:15px;line-height:1.5;background:#fff;border-radius:12px;padding:10px 12px;border:1px solid var(--line)}
+.good b{color:var(--ok)}
+.rec{display:inline-block;background:var(--ok);color:#fff;border-radius:999px;padding:1px 10px;font-size:13px;font-weight:700;margin-left:6px;vertical-align:3px}
+</style></head><body>
+<h1>คำของฉัน ในช่องความเห็น ตัวอย่างให้เลือก 3 แบบ</h1>
+<p class="sub">ขึ้นทุกหน้าที่มีช่องความเห็นคู่ลายเซ็น แต่ละคนมีรายการของตัวเอง ใช้ได้ทั้งมือถือและคอม กรอบแดงคือจุดที่เพิ่มใหม่</p>
+<div class="cols">
+
+<div class="col">
+<h2>แบบ ก กดแล้วพิมพ์<span class="rec">แนะนำ</span></h2>
+<p class="d">มีปุ่ม เพิ่มคำของฉัน ตรงกรอบแดงที่ครูเต้ยวงไว้ กดแล้วมีช่องให้พิมพ์ ถ้าในช่องความเห็นมีข้อความอยู่แล้ว จะดึงมาให้เลย</p>
+<div class="card"><p class="step">1. ก่อนเพิ่ม</p>
+<label>ความเห็นของหัวหน้างาน</label><div class="ta ph">เช่น เห็นควรอนุญาตให้ใช้</div>
+<div class="chips"><span class="chip">เห็นควรอนุญาตให้ใช้</span><span class="chip">เห็นชอบ</span><span class="chip">ควรปรับแก้ตามข้อเสนอแนะ</span><span class="chip add tip">+ เพิ่มคำของฉัน</span></div></div>
+<div class="card"><p class="step">2. กดแล้วพิมพ์</p>
+<div class="box tip"><div class="inp">เห็นควรอนุญาต เนื้อหาครบถ้วนดีมาก</div><div class="row"><span class="btn">ยกเลิก</span><span class="btn p">จำคำนี้</span></div></div></div>
+<div class="card"><p class="step">3. ครั้งถัดไป แตะครั้งเดียว</p>
+<div class="chips"><span class="chip">เห็นควรอนุญาตให้ใช้</span><span class="chip">เห็นชอบ</span><span class="chip">ควรปรับแก้ตามข้อเสนอแนะ</span><span class="chip mine tip">เห็นควรอนุญาต เนื้อหาครบถ้วนดีมาก</span><span class="chip add">+ เพิ่มคำของฉัน</span></div>
+<div class="small">แตะค้างหรือกด จัดการ เพื่อแก้หรือลบ</div></div>
+<div class="good"><b>เด่น</b> เข้าใจทันที ตรงกับที่วงไว้ เพิ่มคำได้โดยยังไม่ต้องลงนาม</div>
+</div>
+
+<div class="col">
+<h2>แบบ ข พิมพ์ในช่องแล้วกดจำ</h2>
+<p class="d">พิมพ์ในช่องความเห็นตามปกติ ปุ่ม จำข้อความนี้ จะขึ้นมาเองเมื่อมีข้อความใหม่ กดครั้งเดียวก็เก็บเลย ไม่มีช่องที่สอง</p>
+<div class="card"><p class="step">1. พิมพ์ตามปกติ</p>
+<label>ความเห็นของหัวหน้างาน</label><div class="ta">เห็นควรอนุญาต เนื้อหาครบถ้วนดีมาก</div>
+<div class="chips"><span class="chip">เห็นควรอนุญาตให้ใช้</span><span class="chip">เห็นชอบ</span><span class="chip">ควรปรับแก้ตามข้อเสนอแนะ</span><span class="chip add tip">จำข้อความนี้ไว้ใช้ครั้งหน้า</span></div></div>
+<div class="card"><p class="step">2. ครั้งถัดไป แตะครั้งเดียว</p>
+<div class="chips"><span class="chip">เห็นควรอนุญาตให้ใช้</span><span class="chip">เห็นชอบ</span><span class="chip">ควรปรับแก้ตามข้อเสนอแนะ</span><span class="chip mine tip">เห็นควรอนุญาต เนื้อหาครบถ้วนดีมาก<span class="x">x</span></span></div>
+<div class="small">กากบาทบนคำของตัวเองคือลบ</div></div>
+<div class="good"><b>เด่น</b> กดน้อยที่สุดสำหรับคนที่พิมพ์อยู่แล้ว<br><b style="color:var(--primary)">ด้อย</b> ปุ่มซ่อนอยู่จนกว่าจะพิมพ์ ครูบางท่านอาจไม่รู้ว่ามีความสามารถนี้</div>
+</div>
+
+<div class="col">
+<h2>แบบ ค ระบบจำให้เอง</h2>
+<p class="d">ไม่ต้องกดจำ ความเห็นที่เคยพิมพ์เองตอนลงนาม จะขึ้นเป็นรายการ ใช้ล่าสุด 5 คำโดยอัตโนมัติ</p>
+<div class="card"><p class="step">หลังลงนามไปแล้ว</p>
+<label>ความเห็นของหัวหน้างาน</label><div class="ta ph">เช่น เห็นควรอนุญาตให้ใช้</div>
+<div class="chips"><span class="chip">เห็นควรอนุญาตให้ใช้</span><span class="chip">เห็นชอบ</span><span class="chip">ควรปรับแก้ตามข้อเสนอแนะ</span></div>
+<div class="small tip" style="padding:6px;border-radius:8px">ใช้ล่าสุด
+<div class="chips" style="margin-top:4px"><span class="chip mine">เห็นควรอนุญาต เนื้อหาครบถ้วนดีมาก<span class="x">x</span></span><span class="chip mine">ควรเพิ่มใบงานในแผนที่ 3<span class="x">x</span></span></div></div></div>
+<div class="good"><b>เด่น</b> ไม่ต้องทำอะไรเลย<br><b style="color:var(--primary)">ด้อย</b> คำเฉพาะเรื่องของงานนั้น เช่น แผนที่ 3 ก็ถูกจำด้วย รายการจะรก เลือกเองไม่ได้ว่าจะเก็บคำไหน</div>
+</div>
+
+</div>
+</body></html>

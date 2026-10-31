@@ -57,11 +57,7 @@
         <div class="field" style="margin:0">
           <label for="qs-comment">ความเห็น</label>
           <input type="text" id="qs-comment" name="comment" value="รับทราบ" maxlength="500">
-          <div class="chips">
-            <% for (const say of ['รับทราบ', 'ดีมาก เป็นแบบอย่างได้', 'ควรสอนซ่อมเสริมนักเรียนที่ยังไม่ผ่าน', 'ควรใช้สื่อและกิจกรรมที่หลากหลายขึ้น']) { %>
-              <button type="button" class="chip<%= say === 'รับทราบ' ? ' on' : '' %>" data-say="<%= say %>" data-target="qs-comment"><%= say %></button>
-            <% } %>
-          </div>
+          <%- include('partials/saychips', { target: 'qs-comment', says: sayList, on: 'รับทราบ', saved }) %>
         </div>
         <div class="qs-actions">
           <button class="btn btn-ghost" type="submit" formaction="/quicksign/<%= c.id %>/return" data-require-field="comment" data-require-message="กรุณาเขียนสิ่งที่ครูต้องแก้ไขในช่องความเห็นก่อนส่งกลับ" data-confirm="ส่งบันทึกฉบับนี้กลับให้ครูแก้ไข" data-danger="1" data-ok-label="ส่งกลับ"><%- icon('undo', 20) %> ส่งกลับ</button>

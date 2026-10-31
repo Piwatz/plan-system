@@ -623,6 +623,23 @@ dialog.modal::backdrop { background: rgba(10, 20, 40, 0.5); }
 .chip:hover { border-color: var(--primary); background: var(--soft); }
 .chip.on { background: var(--primary); color: #fff; border-color: var(--primary); }
 .chips-hint { font-size: 0.82rem; color: var(--muted); margin-top: 6px; }
+/* คำของฉัน: แต่ละคำมีกากบาทลบ ปุ่มเครื่องมือเล็กเพื่อประหยัดที่ */
+.say-item { display: inline-flex; align-items: stretch; max-width: 100%; border: 1.5px solid var(--line); background: var(--surface); color: var(--ink); border-radius: 999px; }
+.say-item[hidden] { display: none; }
+.say-item:hover { border-color: var(--primary); }
+.say-item.mine { border-color: var(--primary); background: var(--soft); }
+.say-item.recent { border-style: dashed; }
+.say-item.on { background: var(--primary); border-color: var(--primary); color: #fff; }
+.say-text { border: 0; background: none; color: inherit; font: inherit; font-size: 0.9rem; line-height: 1.35; padding: 6px 2px 6px 12px; cursor: pointer; text-align: left; min-width: 0; overflow-wrap: anywhere; }
+.say-x { border: 0; background: none; color: var(--muted); padding: 0 9px 0 6px; min-width: 28px; display: grid; place-items: center; cursor: pointer; border-radius: 0 999px 999px 0; }
+.say-x:hover { color: var(--back); }
+.say-item.on .say-x { color: #fff; }
+.say-tool { border: 1px dashed var(--primary); background: none; color: var(--primary); border-radius: 999px; padding: 2px 9px; font: inherit; font-size: 0.76rem; font-weight: 600; line-height: 1.4; cursor: pointer; align-self: center; white-space: nowrap; }
+.say-tool[hidden], .say-add[hidden], .say-recent[hidden] { display: none; }
+.say-add { margin-top: 8px; padding: 8px; border: 1px solid var(--line); border-radius: var(--rs); background: var(--soft); }
+.say-add-row { display: flex; justify-content: flex-end; gap: 6px; margin-top: 6px; }
+.say-recent { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-top: 8px; }
+.say-label { font-size: 0.76rem; color: var(--muted); }
 .ta-wrap { position: relative; }
 .mic { position: absolute; right: 8px; bottom: 8px; width: 42px; height: 42px; border-radius: 50%; border: 0; background: var(--soft); color: var(--primary); display: grid; place-items: center; cursor: pointer; }
 .mic.on { background: var(--back); color: #fff; animation: pulse 1.2s infinite; }
